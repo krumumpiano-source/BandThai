@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
 //  LOAD PLAYLIST
 // ─────────────────────────────────────────────────────────────────
 function loadPlaylist() {
-  if (!_date) { showEmpty(); return; }
+  if (!_date) { showEmpty(); initRealtime(); return; }
   apiCall('getPlaylistHistoryByDate', { date: _date }, function(r) {
     var rows = (r && r.success && r.data) ? r.data : [];
     // filter by venue+timeSlot if provided
@@ -468,7 +468,12 @@ function loadPlaylist() {
     } else {
       row = rows[0];
     }
-    if (!row || !row.songs || row.songs.length === 0) { showEmpty(); return; }
+    if (!row || !row.songs || row.songs.length === 0) {
+      // ไม่พบใน DB — แสดง loading และรอรับ state จากสมาชิกผ่าน realtime
+      showWaitingForSync();
+      initRealtime();
+      return;
+    }
     _playlist = row.songs.map(function(s) {
       return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0,
                singer: s.singer || '', artist: s.artist || '',
@@ -480,6 +485,13 @@ function loadPlaylist() {
     renderNowPlaying();
     initRealtime();
   });
+}
+
+function showWaitingForSync() {
+  document.getElementById('songList').innerHTML =
+    '<div id="emptyState"><div style="font-size:2rem">🎵</div>' +
+    '<div>กำลังโหลด playlist...</div>' +
+    '<div style="font-size:.8rem;color:#555;margin-top:4px">รอรับข้อมูลจากสมาชิกในวง</div></div>';
 }
 
 function showEmpty() {
