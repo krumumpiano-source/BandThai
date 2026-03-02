@@ -169,24 +169,11 @@
     </div>
   </main>
 
-  <script src="js/i18n.js?v=20260302b"></script>
+  <script src="js/i18n.js?v=20260302c"></script>
+  <script src="js/app.js?v=20260302c"></script>
+  <script src="js/nav.js?v=20260302c"></script>
+  <script src="js/attendance-payroll.js?v=20260302c"></script>
   <script>
-    // FIX: Force weekEnd=0 (Sunday), weekStart=1 (Monday) in localStorage
-    // BEFORE attendance-payroll.js loads and reads these values.
-    // This ensures even OLD cached JS gets the correct values.
-    try {
-      var _bsFix = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-      if (!_bsFix.payroll) _bsFix.payroll = {};
-      _bsFix.payroll.weekEnd   = 0;  // 0 = Sunday
-      _bsFix.payroll.weekStart = 1;  // 1 = Monday
-      localStorage.setItem('bandSettings', JSON.stringify(_bsFix));
-    } catch(e) {}
-  </script>
-  <script src="js/app.js?v=20260302b"></script>
-  <script src="js/nav.js?v=20260302b"></script>
-  <script src="js/attendance-payroll.js?v=20260302b"></script>
-  <script>
-    // Unregister any stale Service Workers that may be serving cached old JS
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
         regs.forEach(function(reg) { reg.unregister(); });
@@ -197,34 +184,6 @@
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
       if (typeof applyTranslations === 'function') applyTranslations();
       if (typeof apInitPage === 'function') apInitPage();
-
-      // Override endDate = startDate + 6 days, using setTimeout to run AFTER
-      // any async callback from JS file that might override the value.
-      var _fixEnd = function(startVal) {
-        var d = new Date((startVal || document.getElementById('startDate').value || '') + 'T00:00:00');
-        if (isNaN(d.getTime())) return;
-        d.setDate(d.getDate() + 6);
-        var ed = document.getElementById('endDate');
-        if (ed) ed.value = d.toISOString().split('T')[0];
-      };
-      var _sdEl = document.getElementById('startDate');
-      if (_sdEl) {
-        _sdEl.addEventListener('change', function() {
-          var v = this.value;
-          _fixEnd(v);
-          setTimeout(function() { _fixEnd(v); }, 300);
-          setTimeout(function() { _fixEnd(v); }, 1500);
-        });
-      }
-      // Also fix initial endDate after async settings load (up to 3 seconds)
-      setTimeout(function() {
-        var sd = document.getElementById('startDate');
-        if (sd && sd.value) _fixEnd(sd.value);
-      }, 1000);
-      setTimeout(function() {
-        var sd = document.getElementById('startDate');
-        if (sd && sd.value) _fixEnd(sd.value);
-      }, 3000);
     });
   </script>
 </body>

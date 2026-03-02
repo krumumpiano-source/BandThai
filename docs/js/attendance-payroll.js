@@ -144,19 +144,7 @@ function apLoadData() {
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
-          // Re-compute endDate = startDate + 6 days (นับวันเริ่มเป็นวันที่ 1 รวม 7 วัน)
-          var _sdEl = apEl('startDate'), _edEl = apEl('endDate');
-          if (_sdEl && _edEl) {
-            if (_sdEl.value) {
-              var _pd = new Date(_sdEl.value + 'T00:00:00');
-              if (!isNaN(_pd.getTime())) {
-                var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + 6);
-                _edEl.value = _ed.toISOString().split('T')[0];
-              }
-            } else {
-              apApplyWeekRange();
-            }
-          }
+          apApplyWeekRange();
         }
       }
       ready.s = true; onReady();
@@ -938,15 +926,12 @@ function apPrintMemberReceipt() {
 }
 
 /* ═══ INIT ══════════════════════════════════════════ */
-// Set weekly date range: startDate = today, endDate = startDate + 6 days (7 days total)
 function apApplyWeekRange() {
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (!sd || !ed) return;
   var today = new Date();
-  var start = new Date(today);
-  var end = new Date(start); end.setDate(start.getDate() + 6);
-  sd.value = start.toISOString().split('T')[0];
-  ed.value = end.toISOString().split('T')[0];
+  sd.value = today.toISOString().split('T')[0];
+  ed.value = '';
 }
 
 function apInitPage() {
@@ -964,19 +949,6 @@ function apInitPage() {
   if (my) my.value = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
   apShowDateGroups();
   rt = apEl('recordType'); if (rt) rt.addEventListener('change', apShowDateGroups);
-  // Auto-fill endDate when startDate changes, based on manager's week span setting
-  // NOTE: use apWeekStart/apWeekEnd globals directly — these are correctly set by async
-  // getBandSettings. Do NOT read from localStorage which may have stale values.
-  var sdEl = apEl('startDate');
-  if (sdEl) sdEl.addEventListener('change', function() {
-    _apUserEditedDates = true;
-    var edEl = apEl('endDate'); if (!edEl) return;
-    var pickedDate = new Date(this.value + 'T00:00:00');
-    if (isNaN(pickedDate.getTime())) return;
-    // endDate = startDate + 6 days (นับวันเริ่มเป็นวันที่ 1 รวม 7 วัน)
-    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + 6);
-    edEl.value = endDate.toISOString().split('T')[0];
-  });
   var vs = apEl('venue'); if (vs) vs.addEventListener('change', function() { apVenueId = this.value; });
   var lb = apEl('apLoadBtn'); if (lb) lb.addEventListener('click', function() {
     apVenueId = (apEl('venue')||{}).value||'';
