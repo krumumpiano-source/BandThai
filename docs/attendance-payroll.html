@@ -182,6 +182,20 @@
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
       if (typeof applyTranslations === 'function') applyTranslations();
       if (typeof apInitPage === 'function') apInitPage();
+
+      // Inline override: endDate = startDate + 6 days (นับวันเริ่มเป็นวัน 1 รวม 7 วัน)
+      // This runs after apInitPage to ensure it overrides any cached old listener.
+      var _sdEl = document.getElementById('startDate');
+      var _edEl = document.getElementById('endDate');
+      if (_sdEl && _edEl) {
+        _sdEl.addEventListener('change', function() {
+          var picked = new Date(this.value + 'T00:00:00');
+          if (isNaN(picked.getTime())) return;
+          var end = new Date(picked);
+          end.setDate(picked.getDate() + 6);
+          _edEl.value = end.toISOString().split('T')[0];
+        });
+      }
     });
   </script>
 </body>
