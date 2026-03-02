@@ -347,12 +347,12 @@
         }
         var html = '<div style="display:flex;flex-direction:column;gap:6px">';
         rows.forEach(function(sub) {
-          var name = sub.full_name || sub.email || sub.user_id || '—';
-          var ua = sub.user_agent ? sub.user_agent.substring(0, 40) + '…' : 'ไม่ทราบอุปกรณ์';
+          var name = sub.full_name || sub.email || '—';
+          var domain = sub.endpoint ? (function(){ try { return new URL(sub.endpoint).hostname; } catch(e){ return sub.endpoint.substring(0,30)+'…'; }})() : 'ไม่ทราบอุปกรณ์';
           var when = sub.created_at ? new Date(sub.created_at).toLocaleDateString('th-TH') : '—';
           html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(249,207,69,.06);border:1px solid rgba(249,207,69,.18);border-radius:8px;font-size:var(--text-xs)">'
             + '<div><span style="font-weight:600;color:var(--premium-text)">🔔 ' + name + '</span>'
-            + '<span style="color:var(--premium-text-muted);margin-left:8px">' + ua + '</span></div>'
+            + '<span style="color:var(--premium-text-muted);margin-left:8px">' + domain + '</span></div>'
             + '<span style="color:#9ca3af">' + when + '</span>'
             + '</div>';
         });
