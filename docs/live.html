@@ -36,7 +36,7 @@
     #venueLabel{font-size:0.78rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
     .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
     .font-btn:active{background:var(--bg4)}
-    #beatToggleBtn{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.88rem;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:none;align-items:center;justify-content:center}
+    #beatToggleBtn{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.88rem;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:inline-flex;align-items:center;justify-content:center}
     #beatToggleBtn:active{background:rgba(34,197,94,.3)}
     #beatToggleBtn.off{background:var(--bg3);border-color:#444;color:var(--text3)}
     #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
@@ -768,7 +768,7 @@ function startBeatDot(bpm) {
   _beatInterval = 60000 / bpm;
   bd.style.display = 'block';
   var btn = document.getElementById('beatToggleBtn');
-  if (btn) { btn.style.display = 'inline-flex'; btn.classList.toggle('off', !_beatDotEnabled); }
+  if (btn) btn.classList.toggle('off', !_beatDotEnabled);
 
   if (!_isGuest) {
     // MANAGER: drive the metronome, broadcast every tick
@@ -800,8 +800,6 @@ function stopBeatDot() {
   if (_beatLocalTimer) { clearInterval(_beatLocalTimer); _beatLocalTimer = null; }
   var bd = document.getElementById('beatDot');
   if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
-  var btn = document.getElementById('beatToggleBtn');
-  if (btn) btn.style.display = 'none';
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1337,9 +1335,9 @@ function initRealtime() {
       _beatInterval = _beatBpm ? 60000 / _beatBpm : 0;
       var bd = document.getElementById('beatDot');
       var btn = document.getElementById('beatToggleBtn');
-      if (!_beatBpm || !bd) { if (bd) bd.style.display = 'none'; if (btn) btn.style.display = 'none'; return; }
+      if (!_beatBpm || !bd) { if (bd) bd.style.display = 'none'; return; }
       bd.style.display = 'block';
-      if (btn) { btn.style.display = 'inline-flex'; btn.classList.toggle('off', !_beatDotEnabled); }
+      if (btn) btn.classList.toggle('off', !_beatDotEnabled);
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
       // LOCAL PHASE RE-SYNC:
