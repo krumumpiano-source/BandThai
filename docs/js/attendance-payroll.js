@@ -708,46 +708,42 @@ function apPrintVenueReceipt() {
   var vs = apEl('venue'), vn = (vs && vs.selectedIndex>0) ? vs.options[vs.selectedIndex].text : '';
   if (!vn) { apToast('กรุณาเลือกร้าน', 'error'); return; }
   var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – ' + apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
-  var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+  var DN = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  var DNS = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
   var RL = { shift:'บ./เบรค', hourly:'บ./ชม.', fixed:'คงที่' };
   var docNo = 'DOC-' + (apDateRange[0]||'').replace(/-/g,'') + '-' + Date.now().toString().slice(-4);
 
-  var S = {
-    border:    'border:1px solid #c8c5ba',
-    headBg:    'background:linear-gradient(135deg,#2d2d2d,#1a1a1a)',
-    headFont:  'font-size:11px;font-weight:700;color:#f6c849;padding:9px 8px;text-align:center',
-    cellPad:   'padding:7px 9px',
-    cellFont:  'font-size:12px;color:#2d2d2d',
-    check:     'color:#16a34a;font-size:14px',
-    subName:   'font-size:9px;color:#7c3aed;font-weight:700;display:block;margin-top:1px;background:#f3e8ff;border-radius:3px;padding:0 2px',
-    totalBg:   'background:linear-gradient(135deg,#fefce8,#fef9c3)'
-  };
+  // ── Accent colour per day (left border only — not full background) ──
+  var DAY_ACCENT = ['#e74c3c','#f39c12','#9b59b6','#27ae60','#e67e22','#2980b9','#8e44ad'];
+  // Very faint row bg — alternates between day groups for separation
+  var DAY_STRIPE = ['#fafafa','#f5f5f5'];
 
-  // ── Build member headers ──
+  var BD = 'border:1px solid #ddd';
+  var HEAD = 'background:#2c3e50;color:#ecf0f1;font-size:12px;font-weight:700;padding:10px 11px;text-align:center;' + BD;
+
+  // ── Member headers ──
   var memberHeaders = '';
   apMembers.forEach(function(m) {
     var dr = apDefaultRate(m.id);
-    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type] || '') : '—';
-    memberHeaders += '<th style="' + S.headFont + ';' + S.border + '">' +
-      apEsc(m.name) +
-      (m.position ? '<br><span style="font-weight:400;color:#f0d090;font-size:9px">' + apEsc(m.position) + '</span>' : '') +
-      '<br><span style="font-weight:400;color:#fde68a;font-size:9px">(' + rateTxt + ')</span></th>';
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '—';
+    memberHeaders += '<th style="' + HEAD + ';min-width:72px">' + apEsc(m.name) +
+      (m.position ? '<br><span style="font-weight:400;color:#bdc3c7;font-size:10px">' + apEsc(m.position) + '</span>' : '') +
+      '<br><span style="font-weight:400;color:#f39c12;font-size:10px">(' + rateTxt + ')</span></th>';
   });
 
-  // ── Day background colours (very subtle) ──
-  // อา จ อ พ พฤ ศ ส
-  var DAY_BG = ['#fff5f5','#fffde7','#fce4f6','#edfdf4','#fff3e0','#e8f4fd','#f3ebff'];
-
-  // ── Build table rows (วัน+วันที่ merged per day via rowspan) ──
+  // ── Build rows ──
   var total = 0, mGrand = {}, mBreaks = {};
   apMembers.forEach(function(m) { mGrand[m.id] = 0; mBreaks[m.id] = 0; });
-  var tableRows = '';
+  var tableRows = '', stripeIdx = 0;
   apDateRange.forEach(function(ds) {
     var dtObj = new Date(ds), dow = dtObj.getDay(), slots = apSlotsForDay(dow);
-    var dayBg = 'background:' + DAY_BG[dow];
-    var dayBorder = 'border-right:2px solid #d4d0c8';
+    var accent = DAY_ACCENT[dow];
+    var rowBg = DAY_STRIPE[stripeIdx % 2];
+    stripeIdx++;
     slots.forEach(function(slot, si) {
       var sk = slot.start + '-' + slot.end;
+      var isFirst = si === 0;
+      var isLast  = si === slots.length - 1;
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
         var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
@@ -757,80 +753,73 @@ function apPrintVenueReceipt() {
         var amt = slotCovered ? apSlotPay(slot, m.id) : 0;
         mGrand[m.id] += amt; dayTotal += amt;
         if (slotCovered) mBreaks[m.id]++;
-        var cellContent = '';
-        if (slotCovered) {
-          cellContent = '<span style="' + S.check + '">✅</span>';
-          if (hasSub) cellContent += '<span style="' + S.subName + '">↳ ' + apEsc(subInfo.name) + '</span>';
-        }
-        var cellBg = hasSub ? 'background:#f0e8ff;' : (slotCovered ? DAY_BG[dow] + ';' : '');
-        cells += '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + cellBg + '">' + cellContent + '</td>';
+        var cellContent = slotCovered ? '<span style="color:#27ae60;font-size:16px">✓</span>' : '';
+        if (hasSub) cellContent += '<br><span style="font-size:10px;color:#8e44ad;font-weight:700">↳ ' + apEsc(subInfo.name) + '</span>';
+        cells += '<td style="text-align:center;padding:8px 6px;background:' + rowBg + ';' + BD + ';font-size:13px">' + cellContent + '</td>';
       });
       total += dayTotal;
-      tableRows += '<tr style="' + dayBg + '">';
-      // Merge วัน and วันที่ across all slots of the same day
-      // No rowspan — html2canvas clips rowspan cells.
-      // Instead: show day/date text only on first slot, hide on subsequent (remove top border to look merged)
-      var isFirstSlot = si === 0;
-      var dayDateStyle = S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + dayBg;
-      if (!isFirstSlot) dayDateStyle += ';border-top:none';
-      tableRows += '<td style="text-align:center;vertical-align:middle;min-width:48px;font-weight:700;font-size:14px;' + dayDateStyle + '">' + (isFirstSlot ? DN[dow] : '') + '</td>';
-      tableRows += '<td style="vertical-align:middle;min-width:100px;white-space:nowrap;' + dayDateStyle + ';border-right:2px solid #d4d0c8">' + (isFirstSlot ? apFmtDate(dtObj) : '') + '</td>';
-      tableRows +=
-        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px;color:#e65c00;font-weight:600">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+
+      // Visual merge: วัน+วันที่ — first slot shows text + no bottom border, subsequent slots empty + no top/bottom border
+      var topBd    = isFirst ? 'border-top:2px solid ' + accent    : 'border-top:none';
+      var botBd    = isLast  ? 'border-bottom:1px solid #ddd'      : 'border-bottom:none';
+      var dayStyle = 'padding:8px 10px;background:' + rowBg + ';border-left:4px solid ' + accent + ';border-right:1px solid #ddd;' + topBd + ';' + botBd;
+
+      tableRows += '<tr>' +
+        '<td style="text-align:center;vertical-align:middle;min-width:44px;font-weight:700;font-size:14px;color:#2c3e50;' + dayStyle + '">' + (isFirst ? DNs(dow) : '') + '</td>' +
+        '<td style="vertical-align:middle;min-width:96px;white-space:nowrap;font-size:13px;color:#34495e;' + dayStyle + ';border-left:1px solid #ddd;border-right:2px solid #bbb">' + (isFirst ? apFmtDate(dtObj) : '') + '</td>' +
+        '<td style="padding:8px 10px;background:' + rowBg + ';' + BD + ';font-size:13px;font-weight:600;color:#c0392b;white-space:nowrap">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
         cells +
-        '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:700;color:#991b1b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
+        '<td style="text-align:right;padding:8px 10px;background:' + rowBg + ';' + BD + ';font-size:13px;font-weight:700;color:#c0392b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
     });
   });
 
-  // ── Subtotal row (breaks count) ──
-  var subtotalRow = '<tr style="background:#f3f1e8">' +
-    '<td colspan="3" style="text-align:right;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#555">จำนวนเบรค</td>';
+  // helper to get short day name
+  function DNs(d) { return DNS[d]; }
+
+  // ── Subtotal row ──
+  var subtotalRow = '<tr style="background:#ecf0f1">' +
+    '<td colspan="3" style="text-align:right;padding:9px 11px;' + BD + ';font-size:13px;font-weight:700;color:#555">จำนวนเบรค</td>';
   apMembers.forEach(function(m) {
-    subtotalRow += '<td style="text-align:center;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#2d2d2d">' + (mBreaks[m.id] || '—') + ' เบรค</td>';
+    subtotalRow += '<td style="text-align:center;padding:9px 6px;' + BD + ';font-size:13px;font-weight:700;color:#2c3e50">' + (mBreaks[m.id]||0) + ' เบรค</td>';
   });
-  subtotalRow += '<td style="padding:8px;' + S.border + '"></td></tr>';
+  subtotalRow += '<td style="padding:9px;' + BD + '"></td></tr>';
 
   // ── Total row ──
-  var totalRow = '<tr style="' + S.totalBg + '">' +
-    '<td colspan="3" style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#1a1a1a">💰 รวมเงินค่าจ้างทั้งหมด</td>';
+  var totalRow = '<tr style="background:#fef9e7">' +
+    '<td colspan="3" style="text-align:right;padding:12px 11px;' + BD + ';font-weight:700;font-size:14px;color:#1a1a1a">💰 รวมเงินค่าจ้างทั้งหมด</td>';
   apMembers.forEach(function(m) {
-    totalRow += '<td style="text-align:center;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#92400e">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') + ' ฿' : '—') + '</td>';
+    totalRow += '<td style="text-align:center;padding:12px 6px;' + BD + ';font-weight:700;font-size:14px;color:#7d6608">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') + ' ฿' : '—') + '</td>';
   });
-  totalRow += '<td style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:800;font-size:17px;color:#dc2626">' + total.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿</td></tr>';
+  totalRow += '<td style="text-align:right;padding:12px 11px;' + BD + ';font-weight:800;font-size:18px;color:#c0392b">' + total.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿</td></tr>';
 
   var now = new Date();
   var nowStr = apFmtDate(now) + ' เวลา ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ' น.';
 
   var html =
-    // ── Document header (table layout — flex not reliable in html2canvas) ──
-    '<table style="width:100%;border-bottom:3px solid #1a1a1a;margin-bottom:18px;border-collapse:collapse"><tr>' +
+    '<table style="width:100%;border-bottom:3px solid #2c3e50;margin-bottom:20px;border-collapse:collapse"><tr>' +
       '<td style="vertical-align:top;padding-bottom:14px">' +
-        '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">ใบเบิกเงินค่าจ้างนักดนตรี / Musician Payment Request</div>' +
-        '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a;letter-spacing:.3px">' + apEsc(apBandName) + '</h1>' +
-        '<div style="font-size:14px;color:#444;font-weight:600">สถานที่: ' + apEsc(vn) + '</div>' +
-        '<div style="font-size:13px;color:#666;margin-top:2px">ช่วงวันที่: ' + dt + '</div>' +
+        '<div style="font-size:11px;color:#888;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px">ใบเบิกเงินค่าจ้างนักดนตรี / Musician Payment Request</div>' +
+        '<div style="font-size:24px;font-weight:800;color:#1a1a1a;margin-bottom:4px">' + apEsc(apBandName) + '</div>' +
+        '<div style="font-size:14px;color:#333;font-weight:600">สถานที่: ' + apEsc(vn) + '</div>' +
+        '<div style="font-size:13px;color:#555;margin-top:3px">ช่วงวันที่: ' + dt + '</div>' +
       '</td>' +
-      '<td style="vertical-align:top;text-align:right;padding-bottom:14px;font-size:11px;color:#888;white-space:nowrap">' +
-        '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
-        '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
-        '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
+      '<td style="vertical-align:top;text-align:right;padding-bottom:14px;white-space:nowrap">' +
+        '<div style="font-size:13px;font-weight:700;color:#444">เลขที่เอกสาร</div>' +
+        '<div style="font-size:13px;font-family:monospace;color:#333;margin-bottom:6px">' + docNo + '</div>' +
+        '<div style="font-size:12px;color:#777">วันที่พิมพ์: ' + nowStr + '</div>' +
       '</td>' +
     '</tr></table>' +
-    // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:48px">วัน</th>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:100px">วันที่</th>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:110px">ช่วงเวลา</th>' +
+      '<th style="' + HEAD + ';min-width:44px">วัน</th>' +
+      '<th style="' + HEAD + ';min-width:96px">วันที่</th>' +
+      '<th style="' + HEAD + ';min-width:110px">ช่วงเวลา</th>' +
       memberHeaders +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:right">รวม</th>' +
+      '<th style="' + HEAD + ';text-align:right">รวม</th>' +
     '</tr></thead>' +
     '<tbody>' + tableRows + subtotalRow + totalRow + '</tbody></table>' +
-    // ── Footer branding ──
-    '<div style="margin-top:24px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center">' +
-      '<div style="font-size:10px;color:#b0b0b0;letter-spacing:.07em">' +
-        '&#9656;&nbsp;<strong style="color:#c9a227;letter-spacing:.06em">Band Management By SoulCiety</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
-      '</div>' +
+    '<div style="margin-top:20px;padding-top:12px;border-top:1px solid #ddd;text-align:center;font-size:11px;color:#aaa">' +
+      '&#9656;&nbsp;<strong style="color:#c9a227">Band Management By SoulCiety</strong>&nbsp;&#9656;&nbsp;—&nbsp;แพลตฟอร์มบริหารจัดการวงดนตรีระดับมืออาชีพ · ออกแบบมาเพื่อวงดนตรียุคใหม่โดยเฉพาะ' +
     '</div>';
 
   var safeVn = vn.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
