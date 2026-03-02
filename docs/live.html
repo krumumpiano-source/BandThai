@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Live Mode — SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase-api.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#0d0d0d;--bg2:#1a1a1a;--bg3:#252525;--bg4:#2e2e2e;
+      --gold:#d4a843;--gold2:#b7891a;
+      --text:#f0f0f0;--text2:#a0a0a0;--text3:#666;
+      --blue:#3b82f6;--blue-bg:#1e3a8a;
+      --pink:#ec4899;--pink-bg:#9d174d;
+      --green:#10b981;--green-bg:#065f46;
+      --red:#ef4444;--red-dim:#7f1d1d;
+      --orange:#f97316;
+      --radius:12px;--radius-sm:8px;--radius-lg:18px;
+      --font-size-now:2.4rem;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Kanit','Sarabun',sans-serif;overflow:hidden;user-select:none;-webkit-user-select:none}
+
+    /* ─── LAYOUT ─── */
+    #liveApp{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+
+    /* ─── TOP BAR ─── */
+    #topBar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid #333;flex-shrink:0;gap:8px}
+    #topBar .tb-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+    #topBar .tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+    #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
+    #venueLabel{font-size:0.78rem;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+    #batteryIndicator{display:flex;align-items:center;gap:3px;font-size:0.78rem;color:var(--text2)}
+    #batteryBar{width:22px;height:11px;border:1.5px solid currentColor;border-radius:2px;position:relative;overflow:hidden}
+    #batteryBar::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:3px;height:6px;background:currentColor;border-radius:0 1px 1px 0}
+    #batteryFill{height:100%;background:currentColor;transition:width .5s}
+    .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
+    .font-btn:active{background:var(--bg4)}
+    #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #endBreakBtn:active{background:var(--bg4)}
+
+    /* ─── NOW PLAYING ─── */
+    #nowPlaying{flex-shrink:0;padding:18px 16px 14px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:140px}
+    .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
+    .singer-strip.male{background:var(--blue)}
+    .singer-strip.female{background:var(--pink)}
+    .singer-strip.duet{background:var(--green)}
+    #nowTitle{font-size:var(--font-size-now);font-weight:700;line-height:1.2;color:var(--text);word-break:break-word;padding-left:12px;margin-bottom:6px;transition:font-size .2s}
+    .now-meta{display:flex;align-items:center;gap:10px;padding-left:12px;flex-wrap:wrap}
+    #nowKey{font-size:1.1rem;font-weight:600;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.12);border-radius:6px;padding:2px 10px;border:1px solid rgba(212,168,67,0.3);transition:background .15s}
+    #nowKey:active{background:rgba(212,168,67,0.25)}
+    #nowBpm{font-size:0.9rem;color:var(--text2)}
+    #nowSinger{font-size:0.85rem;color:var(--text2)}
+    #nowNote{font-size:0.82rem;color:var(--gold);margin-top:6px;padding-left:12px;font-style:italic;min-height:18px}
+    /* pulse animation */
+    @keyframes songEndPulse{0%{opacity:1}25%{opacity:.15}50%{opacity:1}75%{opacity:.15}100%{opacity:1}}
+    #nowPlaying.pulsing{animation:songEndPulse 3s ease-in-out}
+
+    /* ─── SONG LIST ─── */
+    #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
+    #songList{padding:6px 0 80px}
+    .song-item{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid #1e1e1e;cursor:pointer;transition:background .1s;position:relative;gap:10px;min-height:56px}
+    .song-item:active{background:var(--bg3)}
+    .song-item.is-current{background:rgba(212,168,67,0.08);border-left:3px solid var(--gold)}
+    .song-item.is-skipped{opacity:.38}
+    .song-item.is-skipped .si-name{text-decoration:line-through;text-decoration-thickness:2px}
+    .si-num{font-size:0.78rem;color:var(--text3);width:22px;text-align:right;flex-shrink:0}
+    .si-singer-dot{width:5px;height:42px;border-radius:3px;flex-shrink:0}
+    .si-singer-dot.male{background:var(--blue-bg)}
+    .si-singer-dot.female{background:var(--pink-bg)}
+    .si-singer-dot.duet{background:var(--green-bg)}
+    .si-content{flex:1;min-width:0}
+    .si-name{font-size:0.97rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .si-meta{font-size:0.75rem;color:var(--text2);margin-top:2px}
+    .si-note{font-size:0.72rem;color:var(--gold);font-style:italic;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .si-badges{display:flex;gap:4px;flex-shrink:0;align-items:center}
+    .badge-req{background:#7c3aed;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px;white-space:nowrap}
+    .badge-encore{background:#0e7490;color:#fff;font-size:0.65rem;padding:1px 6px;border-radius:10px}
+    .badge-skip{background:var(--bg4);color:var(--text2);font-size:0.65rem;padding:1px 6px;border-radius:10px;cursor:pointer}
+    /* swipe feedback */
+    .song-item.swipe-left{background:rgba(239,68,68,0.12)!important}
+    .song-item.swipe-right{background:rgba(16,185,129,0.12)!important}
+
+    /* ─── BOTTOM ACTION BAR ─── */
+    #actionBar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));background:linear-gradient(transparent,var(--bg2) 40%);pointer-events:none}
+    #actionBar button{pointer-events:auto;flex:1;border:none;border-radius:10px;padding:12px 8px;font-family:inherit;font-size:0.92rem;font-weight:700;cursor:pointer;transition:transform .1s,opacity .15s}
+    #actionBar button:active{transform:scale(.96)}
+    #endSongBtn{background:var(--gold);color:#000}
+    #requestBtn{background:var(--bg3);border:1px solid #444;color:var(--text)}
+
+    /* ─── LOADING / EMPTY ─── */
+    #loadingState,#emptyState{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--text2)}
+
+    /* ─── MODALS ─── */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:flex-end}
+    .modal-backdrop.show{display:flex}
+    .modal-sheet{width:100%;background:var(--bg2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 16px 32px;max-height:90vh;overflow-y:auto}
+    .modal-sheet h3{font-size:1.05rem;font-weight:700;margin-bottom:14px;color:var(--text)}
+    .modal-input{width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:0.97rem;font-family:inherit;outline:none}
+    .modal-input:focus{border-color:var(--gold)}
+    .modal-row{display:flex;gap:8px;margin-top:8px}
+    .modal-mini{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:0.9rem;font-family:inherit;outline:none}
+    .modal-mini:focus{border-color:var(--gold)}
+    .modal-actions{display:flex;gap:8px;margin-top:14px}
+    .modal-btn{flex:1;border:none;border-radius:var(--radius-sm);padding:12px;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer}
+    .modal-btn.primary{background:var(--gold);color:#000}
+    .modal-btn.secondary{background:var(--bg3);color:var(--text);border:1px solid #444}
+
+    /* autocomplete */
+    #autocompleteList{background:var(--bg3);border:1px solid #444;border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:200px;overflow-y:auto;display:none}
+    .ac-item{padding:10px 12px;cursor:pointer;font-size:0.92rem;border-bottom:1px solid #333;display:flex;flex-direction:column;gap:2px}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:active{background:var(--bg4)}
+    .ac-meta{font-size:0.75rem;color:var(--text2)}
+
+    /* transpose modal */
+    #transposeModal .modal-sheet{padding-bottom:40px}
+    .transpose-display{text-align:center;font-size:2.8rem;font-weight:700;color:var(--gold);padding:20px 0;letter-spacing:2px}
+    .transpose-label{text-align:center;font-size:0.82rem;color:var(--text2);margin-top:-12px;margin-bottom:16px}
+    .transpose-btns{display:flex;gap:12px;justify-content:center}
+    .tr-btn{width:64px;height:64px;border-radius:50%;border:none;background:var(--bg3);color:var(--text);font-size:1.6rem;font-weight:700;cursor:pointer;transition:background .15s}
+    .tr-btn:active{background:var(--bg4)}
+    .tr-reset{display:block;text-align:center;margin-top:12px;font-size:0.82rem;color:var(--text2);cursor:pointer;text-decoration:underline}
+
+    /* note modal */
+    #noteModal textarea{width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:0.97rem;font-family:inherit;outline:none;resize:none;height:90px}
+    #noteModal textarea:focus{border-color:var(--gold)}
+
+    /* toast */
+    #toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 18px;border-radius:20px;font-size:0.85rem;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+    #toast.show{opacity:1}
+
+    /* connected indicator */
+    #realtimeIndicator{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:background .5s}
+    #realtimeIndicator.connected{background:var(--green)}
+    #realtimeIndicator.error{background:var(--red)}
+  </style>
+</head>
+<body>
+
+<div id="liveApp">
+  <!-- ── TOP BAR ── -->
+  <div id="topBar">
+    <div class="tb-left">
+      <div id="clock">--:--:--</div>
+      <div id="realtimeIndicator" title="Realtime"></div>
+      <div id="songCounter">- / -</div>
+      <div id="venueLabel"></div>
+    </div>
+    <div class="tb-right">
+      <div id="batteryIndicator" title="Battery">
+        <div id="batteryBar"><div id="batteryFill" style="width:100%"></div></div>
+        <span id="batteryText"></span>
+      </div>
+      <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
+      <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+      <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
+    </div>
+  </div>
+
+  <!-- ── NOW PLAYING ── -->
+  <div id="nowPlaying">
+    <div class="singer-strip" id="singerStrip"></div>
+    <div id="nowTitle">—</div>
+    <div class="now-meta">
+      <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
+      <div id="nowBpm"></div>
+      <div id="nowSinger"></div>
+    </div>
+    <div id="nowNote"></div>
+  </div>
+
+  <!-- ── SONG LIST ── -->
+  <div id="songListWrap">
+    <div id="songList">
+      <div id="loadingState">
+        <div>🎵</div>
+        <div>กำลังโหลด playlist...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ACTION BAR ── -->
+<div id="actionBar">
+  <button id="endSongBtn" onclick="endSong()">⏭ จบเพลง</button>
+  <button id="requestBtn" onclick="openRequest()">➕ เพลงขอ</button>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<!-- ── SONG REQUEST MODAL ── -->
+<div class="modal-backdrop" id="requestModal">
+  <div class="modal-sheet">
+    <h3>➕ เพลงขอ</h3>
+    <input class="modal-input" id="reqSearch" type="text" placeholder="พิมพ์ชื่อเพลง..." autocomplete="off" oninput="onReqSearch(this.value)">
+    <div id="autocompleteList"></div>
+    <div class="modal-row">
+      <input class="modal-mini" id="reqKey" type="text" placeholder="คีย์ เช่น 3#">
+      <input class="modal-mini" id="reqBpm" type="number" placeholder="BPM">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeRequest()">ยกเลิก</button>
+      <button class="modal-btn primary" onclick="submitRequest()">เพิ่มเพลง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRANSPOSE MODAL ── -->
+<div class="modal-backdrop" id="transposeModal">
+  <div class="modal-sheet">
+    <h3>🎵 ปรับคีย์</h3>
+    <div class="transpose-display" id="trDisplay">—</div>
+    <div class="transpose-label" id="trLabel"></div>
+    <div class="transpose-btns">
+      <button class="tr-btn" onclick="applyTranspose(-1)">−</button>
+      <button class="tr-btn" onclick="applyTranspose(1)">+</button>
+    </div>
+    <span class="tr-reset" onclick="resetTranspose()">คีย์เดิม</span>
+    <div class="modal-actions" style="margin-top:20px">
+      <button class="modal-btn secondary" onclick="closeTranspose()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NOTE MODAL ── -->
+<div class="modal-backdrop" id="noteModal">
+  <div class="modal-sheet">
+    <h3>📝 โน้ต</h3>
+    <textarea id="noteInput" placeholder="เช่น เล่นช้ากว่าปกติ, คีย์เดิม..."></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="closeNote()">ยกเลิก</button>
+      <button class="modal-btn primary" onclick="submitNote()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─────────────────────────────────────────────────────────────────
+//  KEY CONSTANTS (from songs.html)
+// ─────────────────────────────────────────────────────────────────
+const MAJOR_KEYS = [
+  {degree:'C',semi:0},{degree:'1#',semi:7},{degree:'2#',semi:2},{degree:'3#',semi:9},
+  {degree:'4#',semi:4},{degree:'5#',semi:11},{degree:'6#',semi:6},
+  {degree:'1b',semi:5},{degree:'2b',semi:10},{degree:'3b',semi:3},
+  {degree:'4b',semi:8},{degree:'5b',semi:1}
+];
+const MAJOR_THEORY = [{degree:'7#',semi:1},{degree:'7b',semi:11}];
+const MINOR_KEYS = [
+  {degree:'0',semi:9},{degree:'1#',semi:4},{degree:'2#',semi:11},{degree:'3#',semi:6},
+  {degree:'4#',semi:1},{degree:'1b',semi:2},{degree:'2b',semi:7},{degree:'3b',semi:0},
+  {degree:'4b',semi:5},{degree:'5b',semi:10},{degree:'6b',semi:3}
+];
+const MINOR_THEORY = [{degree:'7#',semi:10},{degree:'7b',semi:8}];
+
+function transposeKey(degree, step) {
+  if (!degree || degree === '-') return degree;
+  var isMinor = degree.endsWith('m');
+  var cleanDeg = isMinor ? degree.slice(0, -1) : degree;
+  var pool = isMinor ? [...MINOR_KEYS, ...MINOR_THEORY] : [...MAJOR_KEYS, ...MAJOR_THEORY];
+  var cur = pool.find(function(k){ return k.degree === cleanDeg; });
+  if (!cur) return degree;
+  var newSemi = ((cur.semi + step) % 12 + 12) % 12;
+  var target = pool.find(function(k){ return k.semi === newSemi && !k.degree.startsWith('7'); });
+  return target ? (target.degree + (isMinor ? 'm' : '')) : degree;
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────────
+var _playlist  = [];   // array of {name, key, bpm, singer, artist, _key, _note, _skipped, _isRequest, _isEncore}
+var _current   = 0;    // index of now playing
+var _modified  = false;
+var _channel   = null; // Supabase Broadcast
+var _bandId    = localStorage.getItem('bandId') || '';
+var _joinedAt  = Date.now();
+var _trStep    = 0;   // current transpose offset for active song (temp, before commit)
+var _noteIdx   = -1;  // which song is being noted
+var _acTimer   = null;
+var _reqFromAC = null; // selected autocomplete result
+var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 0=S,1=M,2=L
+var _wakeLock  = null;
+var _endingTimer = null;
+var _isEnding  = false;
+
+// URL params
+var _params    = new URLSearchParams(location.search);
+var _date      = _params.get('date') || '';
+var _venue     = _params.get('venue') || '';
+var _timeSlot  = _params.get('timeSlot') || '';
+
+// ─────────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  setFontLevel(_fontLevel);
+  startClock();
+  initBattery();
+  acquireWakeLock();
+  document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+  loadPlaylist();
+
+  // beforeunload guard
+  window.addEventListener('beforeunload', function(e) {
+    if (_modified) { e.preventDefault(); e.returnValue = ''; }
+  });
+  // touch close modals
+  ['requestModal','transposeModal','noteModal'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('show');
+      }
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────
+//  LOAD PLAYLIST
+// ─────────────────────────────────────────────────────────────────
+function loadPlaylist() {
+  if (!_date) { showEmpty(); return; }
+  apiCall('getPlaylistHistoryByDate', { date: _date }, function(r) {
+    var rows = (r && r.success && r.data) ? r.data : [];
+    // filter by venue+timeSlot if provided
+    var row = null;
+    if (_venue || _timeSlot) {
+      row = rows.find(function(x) {
+        return x.venue === _venue && x.timeSlot === _timeSlot;
+      }) || rows[0];
+    } else {
+      row = rows[0];
+    }
+    if (!row || !row.songs || row.songs.length === 0) { showEmpty(); return; }
+    _playlist = row.songs.map(function(s) {
+      return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0,
+               singer: s.singer || '', artist: s.artist || '',
+               _key: s.key || '', _note: '', _skipped: false,
+               _isRequest: false, _isEncore: false };
+    });
+    _current = 0;
+    renderSongList();
+    renderNowPlaying();
+    initRealtime();
+    setupSwipe();
+  });
+}
+
+function showEmpty() {
+  document.getElementById('songList').innerHTML =
+    '<div id="emptyState"><div>📋</div><div>ไม่พบ playlist</div><div style="font-size:.8rem;color:#555">ตรวจสอบ date/venue ใน URL</div></div>';
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  RENDER
+// ─────────────────────────────────────────────────────────────────
+function singerClass(singer) {
+  if (!singer) return '';
+  var s = singer.toLowerCase();
+  if (s === 'ชาย' || s === 'male') return 'male';
+  if (s === 'หญิง' || s === 'female') return 'female';
+  if (s === 'คู่' || s === 'duet' || s === 'ชาย/หญิง') return 'duet';
+  return '';
+}
+
+function renderNowPlaying() {
+  var s = _playlist[_current];
+  if (!s) return;
+  document.getElementById('nowTitle').textContent = s.name;
+  document.getElementById('nowKey').textContent = s._key || '—';
+  document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
+  var sc = singerClass(s.singer);
+  var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+  document.getElementById('nowSinger').textContent = sc ? '🎤 ' + (singerNames[sc] || s.singer) : '';
+  document.getElementById('nowNote').textContent = s._note || '';
+  var strip = document.getElementById('singerStrip');
+  strip.className = 'singer-strip' + (sc ? ' ' + sc : '');
+  // song counter
+  var visible = _playlist.filter(function(x){ return !x._skipped; });
+  var visIdx  = visible.indexOf(s);
+  document.getElementById('songCounter').textContent =
+    (visIdx + 1) + ' / ' + visible.length;
+}
+
+function renderSongList() {
+  var el = document.getElementById('songList');
+  if (_playlist.length === 0) { showEmpty(); return; }
+  var buf = [];
+  _playlist.forEach(function(s, i) {
+    var sc  = singerClass(s.singer);
+    var dot = sc ? '<div class="si-singer-dot ' + sc + '"></div>' : '<div style="width:5px"></div>';
+    var badges = '';
+    if (s._isRequest) badges += '<span class="badge-req">ขอ</span>';
+    if (s._isEncore)  badges += '<span class="badge-encore">🔁</span>';
+    if (s._skipped)   badges += '<span class="badge-skip" onclick="unskipSong(event,' + i + ')">skip ↩</span>';
+    var meta = [];
+    if (s._key) meta.push('🎵 ' + s._key);
+    if (s.bpm)  meta.push(s.bpm + ' BPM');
+    buf.push(
+      '<div class="song-item' +
+        (i === _current ? ' is-current' : '') +
+        (s._skipped ? ' is-skipped' : '') +
+      '" data-idx="' + i + '">' +
+        '<div class="si-num">' + (i + 1) + '</div>' +
+        dot +
+        '<div class="si-content">' +
+          '<div class="si-name">' + escHtml(s.name) + '</div>' +
+          (meta.length ? '<div class="si-meta">' + meta.join(' · ') + '</div>' : '') +
+          (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
+        '</div>' +
+        (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
+      '</div>'
+    );
+  });
+  el.innerHTML = buf.join('');
+
+  // bind click/long-press events
+  el.querySelectorAll('.song-item').forEach(function(item) {
+    var idx = parseInt(item.dataset.idx, 10);
+    var pressTimer = null;
+    item.addEventListener('touchstart', function(e) {
+      pressTimer = setTimeout(function() { pressTimer = null; openNote(idx); }, 600);
+    }, {passive: true});
+    item.addEventListener('touchend', function(e) {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+    item.addEventListener('click', function(e) {
+      if (e.target.classList.contains('badge-skip')) return;
+      // jump to song
+      _current = idx;
+      renderNowPlaying();
+      renderSongList();
+      scrollToCurrent();
+    });
+  });
+
+  // encore buttons
+  el.querySelectorAll('.song-item').forEach(function(item) {
+    item.addEventListener('dblclick', function() {
+      var idx = parseInt(item.dataset.idx, 10);
+      addEncore(idx);
+    });
+  });
+
+  setupSwipe();
+  scrollToCurrent();
+}
+
+function scrollToCurrent() {
+  var items = document.querySelectorAll('.song-item');
+  if (items[_current]) {
+    items[_current].scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  FONT SIZE
+// ─────────────────────────────────────────────────────────────────
+var FONT_SIZES = ['1.9rem','2.4rem','3rem'];
+function setFontLevel(lvl) {
+  _fontLevel = Math.max(0, Math.min(2, lvl));
+  document.documentElement.style.setProperty('--font-size-now', FONT_SIZES[_fontLevel]);
+  localStorage.setItem('liveFontLevel', _fontLevel);
+}
+function adjustFont(dir) {
+  setFontLevel(_fontLevel + dir);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  CLOCK
+// ─────────────────────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2,'0');
+    var m = String(now.getMinutes()).padStart(2,'0');
+    var s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BATTERY
+// ─────────────────────────────────────────────────────────────────
+function initBattery() {
+  if (!navigator.getBattery) { document.getElementById('batteryIndicator').style.display='none'; return; }
+  navigator.getBattery().then(function(bat) {
+    function updateBat() {
+      var pct = Math.round(bat.level * 100);
+      document.getElementById('batteryFill').style.width = pct + '%';
+      document.getElementById('batteryText').textContent = pct + '%';
+      var indicator = document.getElementById('batteryIndicator');
+      indicator.style.color = pct <= 20 ? '#ef4444' : '#a0a0a0';
+    }
+    updateBat();
+    bat.addEventListener('levelchange', updateBat);
+    bat.addEventListener('chargingchange', updateBat);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  WAKE LOCK
+// ─────────────────────────────────────────────────────────────────
+function acquireWakeLock() {
+  if (!('wakeLock' in navigator)) return;
+  navigator.wakeLock.request('screen').then(function(wl) {
+    _wakeLock = wl;
+  }).catch(function(){});
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible' && !_wakeLock) acquireWakeLock();
+  });
+}
+function releaseWakeLock() {
+  if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  HAPTIC
+// ─────────────────────────────────────────────────────────────────
+function haptic(ms) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  END SONG (จบเพลง → advance)
+// ─────────────────────────────────────────────────────────────────
+function endSong() {
+  if (_isEnding) return;
+  haptic(200);
+  broadcastEvent('song_ending', { from: _current });
+  triggerEnding();
+}
+
+function triggerEnding() {
+  if (_isEnding) return;
+  _isEnding = true;
+  var np = document.getElementById('nowPlaying');
+  np.classList.add('pulsing');
+  np.addEventListener('animationend', function handler() {
+    np.classList.remove('pulsing');
+    np.removeEventListener('animationend', handler);
+    _isEnding = false;
+    advanceSong();
+  }, { once: true });
+}
+
+function advanceSong() {
+  var next = _current + 1;
+  while (next < _playlist.length && _playlist[next]._skipped) next++;
+  if (next < _playlist.length) {
+    _current = next;
+    _modified = true;
+    haptic(100);
+    renderNowPlaying();
+    renderSongList();
+  } else {
+    showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  SKIP / UNSKIP
+// ─────────────────────────────────────────────────────────────────
+function skipSong(idx) {
+  if (_playlist[idx]._skipped) return;
+  haptic(50);
+  _playlist[idx]._skipped = true;
+  _modified = true;
+  broadcastEvent('skip_song', { idx: idx });
+  if (idx === _current) advanceSong();
+  else renderSongList();
+}
+
+function unskipSong(e, idx) {
+  e.stopPropagation();
+  _playlist[idx]._skipped = false;
+  _modified = true;
+  broadcastEvent('unskip_song', { idx: idx });
+  renderSongList();
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  SWIPE GESTURES
+// ─────────────────────────────────────────────────────────────────
+function setupSwipe() {
+  var items = document.querySelectorAll('.song-item');
+  items.forEach(function(item) {
+    var startX = 0, startY = 0, moved = false;
+    item.addEventListener('touchstart', function(e) {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      moved = false;
+    }, { passive: true });
+    item.addEventListener('touchmove', function(e) {
+      var dx = e.touches[0].clientX - startX;
+      var dy = e.touches[0].clientY - startY;
+      if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 20) {
+        moved = true;
+        item.classList.toggle('swipe-left',  dx < -30);
+        item.classList.toggle('swipe-right', dx > 30);
+      }
+    }, { passive: true });
+    item.addEventListener('touchend', function(e) {
+      var idx = parseInt(item.dataset.idx, 10);
+      var dx = e.changedTouches[0].clientX - startX;
+      item.classList.remove('swipe-left','swipe-right');
+      if (!moved) return;
+      if (dx < -50) skipSong(idx);
+      else if (dx > 50 && _playlist[idx]._skipped) unskipSong(e, idx);
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  ENCORE
+// ─────────────────────────────────────────────────────────────────
+function addEncore(idx) {
+  var s = _playlist[idx];
+  var clone = Object.assign({}, s, { _isEncore: true, _skipped: false, _note: '' });
+  _playlist.splice(_current + 1, 0, clone);
+  _modified = true;
+  broadcastEvent('request_song', { song: clone, insertAfter: _current });
+  renderSongList();
+  showToast('🔁 Encore: ' + s.name);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  SONG REQUEST MODAL
+// ─────────────────────────────────────────────────────────────────
+function openRequest() {
+  _reqFromAC = null;
+  document.getElementById('reqSearch').value = '';
+  document.getElementById('reqKey').value = '';
+  document.getElementById('reqBpm').value = '';
+  document.getElementById('autocompleteList').style.display = 'none';
+  document.getElementById('autocompleteList').innerHTML = '';
+  document.getElementById('requestModal').classList.add('show');
+  setTimeout(function(){ document.getElementById('reqSearch').focus(); }, 200);
+}
+function closeRequest() {
+  document.getElementById('requestModal').classList.remove('show');
+  if (_acTimer) { clearTimeout(_acTimer); _acTimer = null; }
+}
+function onReqSearch(val) {
+  _reqFromAC = null;
+  document.getElementById('reqKey').value = '';
+  document.getElementById('reqBpm').value = '';
+  if (_acTimer) clearTimeout(_acTimer);
+  if (val.trim().length < 2) { document.getElementById('autocompleteList').style.display='none'; return; }
+  _acTimer = setTimeout(function() {
+    apiCall('searchSongs', { query: val }, function(r) {
+      var items = (r && r.success && r.data) ? r.data : [];
+      var ac = document.getElementById('autocompleteList');
+      if (items.length === 0) { ac.style.display='none'; return; }
+      ac.innerHTML = items.map(function(s, i) {
+        var meta = [s.key, s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+        return '<div class="ac-item" data-i="' + i + '">' +
+          '<div>' + escHtml(s.name) + '</div>' +
+          (meta ? '<div class="ac-meta">' + meta + '</div>' : '') +
+        '</div>';
+      }).join('');
+      ac.style.display = 'block';
+      ac.querySelectorAll('.ac-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var i = parseInt(el.dataset.i, 10);
+          _reqFromAC = items[i];
+          document.getElementById('reqSearch').value = items[i].name;
+          document.getElementById('reqKey').value = items[i].key || '';
+          document.getElementById('reqBpm').value = items[i].bpm || '';
+          ac.style.display = 'none';
+        });
+      });
+    });
+  }, 300);
+}
+
+function submitRequest() {
+  var name = document.getElementById('reqSearch').value.trim();
+  if (!name) { showToast('กรุณาใส่ชื่อเพลง'); return; }
+  var key = document.getElementById('reqKey').value.trim();
+  var bpm = parseInt(document.getElementById('reqBpm').value, 10) || 0;
+  var singer = _reqFromAC ? (_reqFromAC.singer || '') : '';
+  var artist = _reqFromAC ? (_reqFromAC.artist || '') : '';
+  var song = { name: name, key: key, bpm: bpm, singer: singer, artist: artist,
+               _key: key, _note: '', _skipped: false, _isRequest: true, _isEncore: false };
+  _playlist.splice(_current + 1, 0, song);
+  _modified = true;
+  broadcastEvent('request_song', { song: song, insertAfter: _current });
+  closeRequest();
+  renderSongList();
+  showToast('➕ เพิ่มเพลง: ' + name);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  TRANSPOSE MODAL
+// ─────────────────────────────────────────────────────────────────
+function openTranspose() {
+  var s = _playlist[_current];
+  if (!s) return;
+  _trStep = 0;
+  document.getElementById('trDisplay').textContent = s._key || '—';
+  document.getElementById('trLabel').textContent = 'คีย์เดิม: ' + (s.key || '—');
+  document.getElementById('transposeModal').classList.add('show');
+}
+function closeTranspose() {
+  document.getElementById('transposeModal').classList.remove('show');
+}
+function applyTranspose(dir) {
+  var s = _playlist[_current];
+  if (!s) return;
+  _trStep += dir;
+  var newKey = s.key ? transposeKey(s.key, _trStep) : (s._key || '—');
+  s._key = newKey;
+  document.getElementById('trDisplay').textContent = newKey;
+  document.getElementById('nowKey').textContent = newKey;
+  _modified = true;
+  broadcastEvent('transpose', { idx: _current, key: newKey });
+}
+function resetTranspose() {
+  var s = _playlist[_current];
+  if (!s) return;
+  _trStep = 0;
+  s._key = s.key;
+  document.getElementById('trDisplay').textContent = s.key || '—';
+  document.getElementById('nowKey').textContent = s.key || '—';
+  broadcastEvent('transpose', { idx: _current, key: s.key });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  NOTE MODAL (long press)
+// ─────────────────────────────────────────────────────────────────
+function openNote(idx) {
+  _noteIdx = idx;
+  document.getElementById('noteInput').value = _playlist[idx]._note || '';
+  document.getElementById('noteModal').classList.add('show');
+  setTimeout(function(){ document.getElementById('noteInput').focus(); }, 200);
+}
+function closeNote() {
+  document.getElementById('noteModal').classList.remove('show');
+  _noteIdx = -1;
+}
+function submitNote() {
+  if (_noteIdx < 0) return;
+  var note = document.getElementById('noteInput').value.trim();
+  _playlist[_noteIdx]._note = note;
+  _modified = true;
+  broadcastEvent('note_update', { idx: _noteIdx, note: note });
+  if (_noteIdx === _current) document.getElementById('nowNote').textContent = note;
+  closeNote();
+  renderSongList();
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  END BREAK (จบเบรค)
+// ─────────────────────────────────────────────────────────────────
+function endBreak() {
+  if (_modified) {
+    var songs = _playlist.map(function(s) {
+      return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
+    });
+    apiCall('savePlaylistHistory', {
+      bandId: _bandId,
+      bandName: localStorage.getItem('bandName') || '',
+      date: _date, venue: _venue, timeSlot: _timeSlot,
+      songs: songs
+    }, function() {
+      showToast('บันทึกแล้ว ✅');
+    });
+  }
+  if (_channel) { _channel.unsubscribe(); _channel = null; }
+  releaseWakeLock();
+  var ref = _params.get('from') || 'dashboard.html';
+  setTimeout(function(){ location.href = ref; }, 600);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  REALTIME — Supabase Broadcast
+// ─────────────────────────────────────────────────────────────────
+function initRealtime() {
+  if (!window._sb) return;
+  var channelName = 'live-' + _bandId + '-' + _date + (_timeSlot ? '-' + _timeSlot.replace(/:/g,'') : '');
+  _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
+
+  _channel
+    .on('broadcast', { event: 'song_ending' }, function(payload) {
+      if (!_isEnding) triggerEnding();
+    })
+    .on('broadcast', { event: 'transpose' }, function(payload) {
+      var d = payload.payload || {};
+      if (_playlist[d.idx]) { _playlist[d.idx]._key = d.key; }
+      if (d.idx === _current) {
+        document.getElementById('nowKey').textContent = d.key || '—';
+        document.getElementById('trDisplay').textContent = d.key || '—';
+      }
+      renderSongList();
+    })
+    .on('broadcast', { event: 'note_update' }, function(payload) {
+      var d = payload.payload || {};
+      if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; }
+      if (d.idx === _current) document.getElementById('nowNote').textContent = d.note || '';
+      renderSongList();
+    })
+    .on('broadcast', { event: 'request_song' }, function(payload) {
+      var d = payload.payload || {};
+      if (d.song) { _playlist.splice((d.insertAfter || _current) + 1, 0, d.song); }
+      renderSongList();
+    })
+    .on('broadcast', { event: 'skip_song' }, function(payload) {
+      var d = payload.payload || {};
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; }
+      renderSongList();
+    })
+    .on('broadcast', { event: 'unskip_song' }, function(payload) {
+      var d = payload.payload || {};
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; }
+      renderSongList();
+    })
+    .on('broadcast', { event: 'request_state' }, function(payload) {
+      // someone is asking for state — send if I joined earlier
+      var d = payload.payload || {};
+      if (d.joinedAt && _joinedAt < d.joinedAt) {
+        broadcastEvent('state_sync', getState());
+      }
+    })
+    .on('broadcast', { event: 'state_sync' }, function(payload) {
+      var d = payload.payload || {};
+      if (d.playlist && d.playlist.length > 0) {
+        _playlist = d.playlist;
+        _current  = d.current || 0;
+        _modified = true;
+        renderNowPlaying();
+        renderSongList();
+      }
+    })
+    .subscribe(function(status) {
+      var ind = document.getElementById('realtimeIndicator');
+      if (status === 'SUBSCRIBED') {
+        ind.className = 'connected';
+        // request state from others
+        broadcastEvent('request_state', { joinedAt: _joinedAt });
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        ind.className = 'error';
+      } else {
+        ind.className = '';
+      }
+    });
+}
+
+function getState() {
+  return { playlist: _playlist, current: _current };
+}
+
+function broadcastEvent(event, data) {
+  if (!_channel) return;
+  _channel.send({ type: 'broadcast', event: event, payload: data });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  TOAST
+// ─────────────────────────────────────────────────────────────────
+var _toastTimer = null;
+function showToast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2000);
+}
+</script>
+</body>
+</html>
