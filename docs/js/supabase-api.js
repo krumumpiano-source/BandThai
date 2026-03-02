@@ -237,9 +237,12 @@
         case 'deleteGuestToken':  return doDelete('live_guest_tokens', d.token);
 
         // ── Push Subscriptions ─────────────────────────────────────
-        case 'savePushSubscription':   return doSavePushSubscription(d);
-        case 'deletePushSubscription': return doDeletePushSubscription(d);
-        case 'getPushSubscription':    return doGetPushSubscription(d);
+        case 'savePushSubscription':      return doSavePushSubscription(d);
+        case 'deletePushSubscription':    return doDeletePushSubscription(d);
+        case 'getPushSubscription':       return doGetPushSubscription(d);
+        case 'getNotifSubscribers':       return doGetNotifSubscribers(d);
+        case 'sendTestNotification':      return doSendTestNotification(d);
+        case 'cleanStaleSubscriptions':   return doCleanStaleSubscriptions(d);
 
         // ── Legacy (ไม่รองรับในเวอร์ชันปัจจุบัน) ──────────────────
         case 'createBackup':
@@ -1279,6 +1282,61 @@
         .maybeSingle();
       if (error) throw error;
       return { success: true, data: data || null };
+    }
+
+    async function doGetNotifSubscribers(d) {
+      var { data, error } = await sb.rpc('get_band_subscribers', { p_band_id: d.bandId || '' });
+      if (error) return { success: false, error: error.message };
+      return { success: true, data: data || [] };
+    }
+
+    async function doSendTestNotification(d) {
+      var { data: { session } } = await sb.auth.getSession();
+      if (!session) return { success: false, error: 'ไม่ได้ login' };
+      var jwt = session.access_token;
+      var SUPABASE_URL = (typeof CONFIG !== 'undefined' && CONFIG.SUPABASE_URL) || 'https://wsorngsyowgxikiepice.supabase.co';
+      try {
+        var resp = await fetch(SUPABASE_URL + '/functions/v1/send-notifications', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + jwt,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            action:   'test_push',
+            band_id:  d.bandId  || '',
+            title:    d.title   || '🔔 การแจ้งเตือนทดสอบ',
+            body:     d.body    || 'ระบบการแจ้งเตือนของวงทำงานปกติ ✅'
+          })
+        });
+        var json = await resp.json();
+        return { success: !!json.ok, sent: json.sent || 0, error: json.error };
+      } catch(e) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    async function doCleanStaleSubscriptions(d) {
+      // Stale subscriptions are removed automatically when push fails (410/404 response).
+      // This manual clean simply removes subscriptions for users who are no longer
+      // members of the band (user removed from band but subscription still exists).
+      var bandId = d.bandId || '';
+      if (!bandId) return { success: false, error: 'ไม่พบ bandId' };
+      var { data: { user }, error: ue } = await sb.auth.getUser();
+      if (ue || !user) return { success: false, error: 'ไม่ได้ login' };
+      // Get all user IDs still in the band (profiles with this band_id)
+      var { data: members } = await sb.from('profiles').select('id').eq('band_id', bandId);
+      var memberIds = (members || []).map(function(m){ return m.id; });
+      if (memberIds.length === 0) return { success: true, removed: 0 };
+      // Delete push_subscriptions where user_id NOT in active members
+      var { data: subs } = await sb.from('push_subscriptions')
+        .select('id, user_id').eq('band_id', bandId);
+      var stale = (subs || []).filter(function(s){ return !memberIds.includes(s.user_id); });
+      if (stale.length === 0) return { success: true, removed: 0 };
+      var staleIds = stale.map(function(s){ return s.id; });
+      var { error } = await sb.from('push_subscriptions').delete().in('id', staleIds);
+      if (error) return { success: false, error: error.message };
+      return { success: true, removed: stale.length };
     }
 
     // ── Live Guest Tokens ─────────────────────────────────────────

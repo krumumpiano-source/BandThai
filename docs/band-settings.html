@@ -220,6 +220,34 @@
         <div id="schedLegend" class="sg-legend"></div>
       </div>
 
+      <!-- Notification Management (Admin) -->
+      <div class="card" id="notifAdminCard" style="display:none">
+        <div class="card-header" style="justify-content:space-between">
+          <h3 class="card-title">🔔 จัดการการแจ้งเตือน</h3>
+          <span id="notifSubCountBadge" style="font-size:var(--text-sm);color:var(--premium-text-muted);font-weight:600"></span>
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">
+          ดูสถานะการรับการแจ้งเตือนของสมาชิกในวง และส่งการแจ้งเตือนทดสอบ
+        </p>
+        <!-- Subscriber List -->
+        <div id="notifSubList" style="margin-bottom:var(--spacing-md)">
+          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);padding:12px 0;text-align:center">กำลังโหลด…</div>
+        </div>
+        <!-- Actions -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:var(--spacing-sm)">
+          <button type="button" class="btn btn-primary btn-sm" onclick="notifAdminSendTest(this)">
+            📢 ส่งการแจ้งเตือนทดสอบถึงทุกคน
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="notifAdminCleanStale(this)">
+            🗑️ ล้าง Subscription ที่หมดอายุ
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadNotifAdminPanel()">
+            🔄 รีเฟรช
+          </button>
+        </div>
+        <div id="notifAdminMsg" style="margin-top:10px;font-size:var(--text-xs);color:var(--premium-text-muted)"></div>
+      </div>
+
     </div><!-- /container -->
   </main>
 
@@ -285,12 +313,92 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script src="js/band-settings.js"></script>
+  <script src="js/notification.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       if (typeof requireAuth === 'function') requireAuth();
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
       if (typeof applyTranslations === 'function') applyTranslations();
+      // Show notification admin panel for admin/manager
+      var _role = localStorage.getItem('userRole') || '';
+      if (_role === 'admin' || _role === 'manager') {
+        var card = document.getElementById('notifAdminCard');
+        if (card) card.style.display = '';
+        loadNotifAdminPanel();
+      }
     });
+
+    function loadNotifAdminPanel() {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      var listEl = document.getElementById('notifSubList');
+      var badgeEl = document.getElementById('notifSubCountBadge');
+      if (listEl) listEl.innerHTML = '<div style="font-size:var(--text-xs);color:var(--premium-text-muted);padding:12px 0;text-align:center">กำลังโหลด…</div>';
+      apiCall('getNotifSubscribers', { bandId: bandId }, function(r) {
+        if (!r || !r.success || !r.data) {
+          if (listEl) listEl.innerHTML = '<div style="color:#e53e3e;font-size:var(--text-xs);padding:8px 0">ไม่สามารถโหลดข้อมูลได้</div>';
+          return;
+        }
+        var rows = r.data;
+        if (badgeEl) badgeEl.textContent = rows.length + ' คนเปิดรับการแจ้งเตือน';
+        if (rows.length === 0) {
+          if (listEl) listEl.innerHTML = '<div style="color:var(--premium-text-muted);font-size:var(--text-xs);padding:8px 0;text-align:center">ยังไม่มีสมาชิกที่เปิดรับการแจ้งเตือน</div>';
+          return;
+        }
+        var html = '<div style="display:flex;flex-direction:column;gap:6px">';
+        rows.forEach(function(sub) {
+          var name = sub.full_name || sub.email || sub.user_id || '—';
+          var ua = sub.user_agent ? sub.user_agent.substring(0, 40) + '…' : 'ไม่ทราบอุปกรณ์';
+          var when = sub.created_at ? new Date(sub.created_at).toLocaleDateString('th-TH') : '—';
+          html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(249,207,69,.06);border:1px solid rgba(249,207,69,.18);border-radius:8px;font-size:var(--text-xs)">'
+            + '<div><span style="font-weight:600;color:var(--premium-text)">🔔 ' + name + '</span>'
+            + '<span style="color:var(--premium-text-muted);margin-left:8px">' + ua + '</span></div>'
+            + '<span style="color:#9ca3af">' + when + '</span>'
+            + '</div>';
+        });
+        html += '</div>';
+        if (listEl) listEl.innerHTML = html;
+      });
+    }
+
+    function notifAdminSendTest(btn) {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      var msgEl = document.getElementById('notifAdminMsg');
+      btn.disabled = true; btn.textContent = 'กำลังส่ง…';
+      apiCall('sendTestNotification', { bandId: bandId, title: '🎵 ทดสอบระบบแจ้งเตือน', body: 'ระบบการแจ้งเตือนของวงทำงานปกติ ✅' }, function(r) {
+        btn.disabled = false; btn.textContent = '📢 ส่งการแจ้งเตือนทดสอบถึงทุกคน';
+        if (msgEl) {
+          if (r && r.success) {
+            msgEl.style.color = '#16a34a';
+            msgEl.textContent = '✅ ส่งการแจ้งเตือนสำเร็จ — ' + (r.sent || 0) + ' คน';
+          } else {
+            msgEl.style.color = '#e53e3e';
+            msgEl.textContent = '❌ ' + (r && r.error ? r.error : 'ไม่สามารถส่งได้');
+          }
+        }
+      });
+    }
+
+    function notifAdminCleanStale(btn) {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      var msgEl = document.getElementById('notifAdminMsg');
+      btn.disabled = true; btn.textContent = 'กำลังล้าง…';
+      apiCall('cleanStaleSubscriptions', { bandId: bandId }, function(r) {
+        btn.disabled = false; btn.textContent = '🗑️ ล้าง Subscription ที่หมดอายุ';
+        if (msgEl) {
+          if (r && r.success) {
+            msgEl.style.color = '#16a34a';
+            msgEl.textContent = '✅ ล้างแล้ว ' + (r.removed || 0) + ' รายการ';
+          } else {
+            msgEl.style.color = '#e53e3e';
+            msgEl.textContent = '❌ ' + (r && r.error ? r.error : 'เกิดข้อผิดพลาด');
+          }
+        }
+        loadNotifAdminPanel();
+      });
+    }
   </script>
 </body>
 </html>

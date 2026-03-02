@@ -139,9 +139,82 @@ async function notifyCheckinReminder(thai: Date) {
   }
 }
 
+// ── Admin: Test push to all band subscribers ────────────────────────────────
+async function handleTestPush(bandId: string, jwt: string, title: string, body: string): Promise<{ sent: number; error?: string }> {
+  if (!jwt) return { sent: 0, error: 'Unauthorized — ต้อง login ก่อน' };
+
+  // Verify JWT using service role (getUser works with service role)
+  const { data: { user }, error: ue } = await sb.auth.admin.getUserById(
+    (() => { try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; } })()
+  );
+  if (ue || !user) return { sent: 0, error: 'Unauthorized' };
+
+  const { data: profile } = await sb.from('profiles').select('role, band_id').eq('id', user.id).maybeSingle();
+  if (!profile || !['admin', 'manager'].includes(profile.role ?? '')) {
+    return { sent: 0, error: 'เฉพาะแอดมิน/ผู้จัดการเท่านั้น' };
+  }
+  if (profile.band_id !== bandId) {
+    return { sent: 0, error: 'ไม่ใช่วงของคุณ' };
+  }
+
+  // Fetch all subscriptions for band
+  const { data: subs } = await sb.from('push_subscriptions')
+    .select('endpoint, p256dh, auth_key')
+    .eq('band_id', bandId);
+
+  if (!subs || subs.length === 0) return { sent: 0 };
+
+  const payload = {
+    title: title || '🔔 การแจ้งเตือนทดสอบ',
+    body:  body  || 'ระบบการแจ้งเตือนของวงทำงานปกติ ✅',
+    type:  'test',
+    url:   '/Band-Management-By-SoulCiety/docs/dashboard.html'
+  };
+
+  let sent = 0;
+  for (const sub of subs) {
+    const ok = await sendPush(sub, payload);
+    if (ok) sent++;
+  }
+  return { sent };
+}
+
 // ── Main handler ─────────────────────────────────────────────────────────────
-Deno.serve(async (_req: Request) => {
+Deno.serve(async (req: Request) => {
   try {
+    // If called via HTTP POST with action payload (admin panel)
+    if (req.method === 'POST') {
+      const authHeader = req.headers.get('Authorization') ?? '';
+      const jwt = authHeader.replace('Bearer ', '');
+      let body: Record<string, string> = {};
+      try { body = await req.json(); } catch { /* ignore */ }
+
+      if (body.action === 'test_push') {
+        const result = await handleTestPush(
+          body.band_id ?? '',
+          jwt,
+          body.title ?? '',
+          body.body   ?? ''
+        );
+        return new Response(JSON.stringify({ ok: !result.error, ...result }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+    }
+
+    // CORS preflight
+    if (req.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Authorization, Content-Type'
+        }
+      });
+    }
+
+    // Default: pg_cron scheduled run
     const thai = thaiNow();
     console.log('[send-notifications] Thai time:', thai.toISOString());
 
