@@ -258,6 +258,10 @@ function apLoadCheckIns(cb) {
       var mem = null;
       if (lv.memberId) mem = apMembers.find(function(m) { return m.id === lv.memberId; });
       if (!mem && lv.memberName) mem = apMembers.find(function(m) { return m.name === lv.memberName; });
+      // Fallback: trim whitespace comparison (handles extra spaces in stored name)
+      if (!mem && lv.memberName) mem = apMembers.find(function(m) { return m.name.trim() === (lv.memberName||'').trim(); });
+      // Fallback: check by displayName or nickname if available
+      if (!mem && lv.memberName) mem = apMembers.find(function(m) { return (m.displayName||'').trim() === (lv.memberName||'').trim(); });
       if (!mem) return;
       // Store which specific slots have leave (slot-aware)
       var lvSlots = lv.slots || [];
@@ -363,7 +367,8 @@ function apRenderAttendance() {
         var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
         var isLeaveSlot = leaveSlots.length > 0 ? leaveSlots.indexOf(sk) !== -1 : (ciSt === 'leave');
         // Leave with substitute = slot is covered → auto-check + count money
-        var subCovered = (isLeaveSlot && subInfo && subInfo.name && ri.assigned);
+        // subCovered: slot covered by substitute — allow even if member not in slot.members, as long as they have a band rate
+        var subCovered = (isLeaveSlot && subInfo && subInfo.name && (ri.assigned || apDefaultRate(m.id).rate > 0));
         if (subCovered && !checked) {
           // Auto-fill check for leave+sub so it counts in totals
           if (!apChecked[m.id]) apChecked[m.id] = {};
@@ -484,7 +489,11 @@ function apRenderPayout() {
       var amt = 0;
       slots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id);
+        // Skip slots where this member is on leave — pay goes to substitute instead
+        var lvSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
+        var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr] && apCheckInStatus[m.id][dateStr][sk]) || '';
+        var isLeaveSlot = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : ciSt === 'leave';
+        if (!isLeaveSlot && apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id);
       });
       mGrand[m.id] += amt; dayTotal += amt;
       b += '<td style="text-align:right">' + (amt > 0 ? amt.toLocaleString('th-TH') : '-') + '</td>';
@@ -584,12 +593,14 @@ function apBuildSubSummary() {
         var sub = subsForDate[sk] || null;
         if (!sub || !sub.name) return;
         var ri = apMemberRate(slot, m.id);
-        if (!ri.assigned) return;
+        // Use slot rate if assigned, otherwise fall back to member's default rate
+        var slotPay = ri.rate > 0 ? apSlotPay(slot, m.id) : apDefaultRate(m.id).rate;
+        if (slotPay <= 0) return; // member has no rate at all
         var key = sub.name;
         if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
         if (subDates[key].dates.indexOf(ds) === -1) subDates[key].dates.push(ds);
         subDates[key].slots++;
-        subDates[key].amount += apSlotPay(slot, m.id);
+        subDates[key].amount += slotPay;
       });
     });
     Object.keys(subDates).forEach(function(key) {
