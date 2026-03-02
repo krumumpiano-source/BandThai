@@ -730,28 +730,30 @@ function startClock() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  BEAT DOT  (clock-synced, sharp on/off, all devices in unison)
+//  BEAT DOT  — manager broadcasts on every beat start, receivers phase-correct
 // ─────────────────────────────────────────────────────────────────
 var _beatRAF  = null;
 var _beatRef  = 0;
-var _beatBpm  = 0;   // current bpm — kept so re-joining devices can restart
+var _beatBpm  = 0;
+var _beatInterval = 0;
 function startBeatDot(bpm) {
   stopBeatDot();
   var bd = document.getElementById('beatDot');
   if (!bpm || !bd) return;
   _beatBpm = bpm;
+  _beatInterval = 60000 / bpm;
   bd.style.display = 'block';
-  var interval = 60000 / bpm;   // ms per beat
-  _beatRef = Date.now();        // ← always local clock, never sender's clock
-  var _lastBroadcastBeat = -1; // track last beat index broadcast
+  _beatRef = Date.now();
+  var _prevBeatIdx = -1;
   function frame() {
-    var elapsed = Date.now() - _beatRef;
-    var beatIndex = Math.floor(elapsed / interval);
-    var phase = elapsed % interval;
-    bd.style.opacity = phase < (interval * 0.5) ? '1' : '0';
-    // Manager broadcasts a sync pulse every 4 beats to keep all devices aligned
-    if (!_isGuest && beatIndex > 0 && beatIndex % 4 === 0 && beatIndex !== _lastBroadcastBeat) {
-      _lastBroadcastBeat = beatIndex;
+    var now = Date.now();
+    var elapsed = now - _beatRef;
+    var beatIdx = Math.floor(elapsed / _beatInterval);
+    var phase   = (elapsed % _beatInterval) / _beatInterval;  // 0.0–1.0
+    bd.style.opacity = phase < 0.5 ? '1' : '0';
+    // Manager: broadcast exactly when a new beat starts
+    if (!_isGuest && beatIdx !== _prevBeatIdx) {
+      _prevBeatIdx = beatIdx;
       broadcastEvent('beat_sync', { bpm: _beatBpm });
     }
     _beatRAF = requestAnimationFrame(frame);
@@ -1294,16 +1296,14 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'beat_ref' }, function(payload) {
       var d = payload.payload || {};
-      // Each device uses ITS OWN Date.now() as origin — never the sender's clock
       startBeatDot(d.bpm);
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
-      // Periodic sync pulse from manager — reset local beat phase to now
-      // All receiving devices re-anchor to Date.now() simultaneously → stays in sync
-      var d = payload.payload || {};
-      if (d.bpm && _beatBpm) {
-        _beatRef = Date.now();  // re-anchor phase without restarting RAF
-      }
+      // Manager just crossed a beat boundary — align receiver's phase to beat start
+      // _beatRef = Date.now() means "beat just started right now" on local clock
+      // Devices on same WiFi: latency ~10-30ms → phase error < 6% at 120BPM
+      if (!_beatBpm || !_beatInterval) return;
+      _beatRef = Date.now();
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       var d = payload.payload || {};
