@@ -662,7 +662,16 @@ function apDoSave() {
     } else apToast(msg||'บันทึกไม่สำเร็จ', 'error');
   }
   if (typeof apiCall === 'function' && apBandId) {
-    apiCall('addAttendancePayroll', data, function(r) { done(r&&r.success, r&&r.message); });
+    // Map to actual attendance_payroll table columns
+    var dbData = {
+      band_id: data.bandId,
+      date: data.startDate,
+      venue: data.venue,
+      time_slots: JSON.stringify({ startDate: data.startDate, endDate: data.endDate, recordType: data.recordType }),
+      attendance: JSON.stringify(data.breakdown),
+      total_amount: data.totalAmount
+    };
+    apiCall('addAttendancePayroll', dbData, function(r) { done(r&&r.success, r&&r.message); });
   } else done(true);
 }
 
