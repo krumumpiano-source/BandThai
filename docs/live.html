@@ -160,6 +160,31 @@
     #qrCode{margin:12px auto;display:block;border-radius:var(--radius);background:#fff;padding:10px}
     #qrUrl{font-size:0.72rem;color:var(--text3);word-break:break-all;margin-top:8px;padding:0 8px}
     #qrExpiry{font-size:0.78rem;color:var(--text2);margin-top:6px}
+
+    /* ─── DRAG REORDER ─── */
+    .si-drag{flex-shrink:0;color:var(--text3);font-size:1.1rem;padding:4px 6px;cursor:grab;touch-action:none;line-height:1;user-select:none;-webkit-user-select:none}
+    .si-drag:active{color:var(--gold);cursor:grabbing}
+    .song-item.drag-source{opacity:.35;background:rgba(212,168,67,.08)!important}
+    .song-item.drag-over-before{border-top:2.5px solid var(--gold)!important}
+    .song-item.drag-over-after{border-bottom:2.5px solid var(--gold)!important}
+    #dragGhost{position:fixed;z-index:1500;pointer-events:none;background:var(--bg3);border:1.5px solid var(--gold);border-radius:10px;padding:10px 16px;font-size:.95rem;font-weight:600;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.7);max-width:75vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
+
+    /* ─── BREAK WARNING ─── */
+    #breakWarning{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(185,28,28,.93);color:#fff;padding:18px 38px;border-radius:18px;font-size:1.35rem;font-weight:700;z-index:2000;pointer-events:none;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none}
+    #breakWarning.show{display:block;animation:bwAnim 3.2s ease-in-out forwards}
+    @keyframes bwAnim{0%{opacity:0;transform:translate(-50%,-56%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+
+    /* ─── CLIPBOARD MODAL ─── */
+    #clipModal .modal-sheet{padding-bottom:40px}
+    #clipContent{background:var(--bg3);border:1px solid #444;border-radius:var(--radius-sm);padding:12px;font-size:.8rem;color:var(--text2);font-family:monospace;white-space:pre-wrap;max-height:38vh;overflow-y:auto;margin-top:8px;line-height:1.8}
+
+    /* ─── EXIT BUTTON ─── */
+    #exitLiveBtn{background:none;border:1px solid #333;color:#555;cursor:pointer;border-radius:8px;padding:5px 9px;font-size:.75rem;font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
+    #exitLiveBtn:active{color:var(--red);border-color:var(--red)}
+
+    /* autocomplete add option */
+    .ac-add{border-top:1px solid #3a3a3a!important;background:rgba(212,168,67,.06)}
+    .ac-add strong{color:var(--gold)}
   </style>
 </head>
 <body>
@@ -183,6 +208,7 @@
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
+      <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
     </div>
   </div>
 
@@ -218,6 +244,25 @@
 
 <!-- ── TOAST ── -->
 <div id="toast"></div>
+
+<!-- ── BREAK WARNING ── -->
+<div id="breakWarning">⚡ ใกล้จะจบเบรค!</div>
+
+<!-- ── DRAG GHOST ── -->
+<div id="dragGhost"></div>
+
+<!-- ── CLIPBOARD MODAL (after end break) ── -->
+<div class="modal-backdrop" id="clipModal">
+  <div class="modal-sheet">
+    <h3>📋 รายการเพลงในเบรคนี้</h3>
+    <p style="font-size:.8rem;color:var(--text2);margin-bottom:4px">สามารถคัดลอกรายการนี้ได้</p>
+    <div id="clipContent"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn secondary" onclick="closeClipAndExit()">ปิด & ออก</button>
+      <button class="modal-btn primary" onclick="copyClip()">📋 คัดลอก</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── SONG REQUEST MODAL ── -->
 <div class="modal-backdrop" id="requestModal">
@@ -328,6 +373,13 @@ var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 
 var _wakeLock  = null;
 var _endingTimer = null;
 var _isEnding  = false;
+var _allSongs  = [];   // preloaded band song library for autocomplete
+var _allSongsLoaded = false;
+var _guestLinkToken = null; // pre-generated QR token
+var _breakWarningTimer = null;
+
+// ── Drag-reorder state ────────────────────────────────────────────
+var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
 
 var _isGuest   = false; // guest mode (no login required)
 
@@ -357,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // guest mode — verify token first, then load
     document.getElementById('guestBadge').style.display = 'inline-block';
     document.getElementById('endBreakBtn').style.display = 'none';
+    document.getElementById('exitLiveBtn').style.display = 'none';
     document.getElementById('shareBtn').style.display = 'none';
     document.getElementById('requestBtn').style.display = 'none';
     if (!_guestToken) { showInvalidToken(); return; }
@@ -376,14 +429,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // member mode
     document.getElementById('shareBtn').style.display = 'inline-block';
     loadPlaylist();
+    preGenerateToken();
+    setupBreakWarning();
   }
+
+  // global drag events
+  document.addEventListener('touchmove', onDragMove, { passive: false });
+  document.addEventListener('touchend', onDragEnd);
+  document.addEventListener('touchcancel', onDragEnd);
 
   // beforeunload guard
   window.addEventListener('beforeunload', function(e) {
     if (_modified) { e.preventDefault(); e.returnValue = ''; }
   });
   // touch close modals
-  ['requestModal','transposeModal','noteModal'].forEach(function(id) {
+  ['requestModal','transposeModal','noteModal','clipModal','qrModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('show');
@@ -419,7 +479,6 @@ function loadPlaylist() {
     renderSongList();
     renderNowPlaying();
     initRealtime();
-    setupSwipe();
   });
 }
 
@@ -495,39 +554,60 @@ function renderSongList() {
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
         (!_isGuest ? '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' : '') +
+        (!_isGuest ? '<span class="si-drag" data-idx="' + i + '" title="\u0e25\u0e32\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e23\u0e35\u0e22\u0e07">\u2807</span>' : '') +
       '</div>'
     );
   });
   el.innerHTML = buf.join('');
 
-  // bind click/long-press events
+  // bind tap / long-press (note) on song items
   el.querySelectorAll('.song-item').forEach(function(item) {
     var idx = parseInt(item.dataset.idx, 10);
     var pressTimer = null;
     item.addEventListener('touchstart', function(e) {
-      pressTimer = setTimeout(function() { pressTimer = null; openNote(idx); }, 600);
+      if (e.target.classList.contains('si-drag') ||
+          e.target.classList.contains('badge-skip') ||
+          e.target.classList.contains('si-del')) return;
+      pressTimer = setTimeout(function() { pressTimer = null; openNote(idx); }, 650);
     }, {passive: true});
     item.addEventListener('touchend', function(e) {
       if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     });
+    item.addEventListener('touchmove', function() {
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    }, {passive: true});
     item.addEventListener('click', function(e) {
       if (e.target.classList.contains('badge-skip')) return;
       if (e.target.classList.contains('si-del')) return;
-      // jump to song
+      if (e.target.classList.contains('si-drag')) return;
       _current = idx;
       renderNowPlaying();
       renderSongList();
       scrollToCurrent();
     });
+    item.addEventListener('dblclick', function() { addEncore(idx); });
   });
 
-  // encore buttons
-  el.querySelectorAll('.song-item').forEach(function(item) {
-    item.addEventListener('dblclick', function() {
-      var idx = parseInt(item.dataset.idx, 10);
-      addEncore(idx);
+  // bind drag handles
+  if (!_isGuest) {
+    el.querySelectorAll('.si-drag').forEach(function(handle) {
+      handle.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        var idx = parseInt(handle.dataset.idx, 10);
+        _drag.active  = true;
+        _drag.fromIdx = idx;
+        _drag.toIdx   = idx;
+        haptic(30);
+        handle.closest('.song-item').classList.add('drag-source');
+        var ghost = document.getElementById('dragGhost');
+        ghost.textContent = _playlist[idx] ? _playlist[idx].name : '';
+        ghost.style.display = 'block';
+        ghost.style.left = (e.touches[0].clientX - 80) + 'px';
+        ghost.style.top  = (e.touches[0].clientY + 14) + 'px';
+        _drag.ghostEl = ghost;
+      }, { passive: false });
     });
-  });
+  }
 
   setupSwipe();
   scrollToCurrent();
@@ -695,11 +775,13 @@ function setupSwipe() {
   items.forEach(function(item) {
     var startX = 0, startY = 0, moved = false;
     item.addEventListener('touchstart', function(e) {
+      if (e.target.classList.contains('si-drag')) return; // handled by drag
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
       moved = false;
     }, { passive: true });
     item.addEventListener('touchmove', function(e) {
+      if (_drag.active) return;
       var dx = e.touches[0].clientX - startX;
       var dy = e.touches[0].clientY - startY;
       if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 20) {
@@ -709,6 +791,7 @@ function setupSwipe() {
       }
     }, { passive: true });
     item.addEventListener('touchend', function(e) {
+      if (_drag.active) return;
       var idx = parseInt(item.dataset.idx, 10);
       var dx = e.changedTouches[0].clientX - startX;
       item.classList.remove('swipe-left','swipe-right');
@@ -716,6 +799,97 @@ function setupSwipe() {
       if (dx < -50) skipSong(idx);
       else if (dx > 50 && _playlist[idx]._skipped) unskipSong(e, idx);
     });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  DRAG-TO-REORDER (global handlers)
+// ─────────────────────────────────────────────────────────────────
+function onDragMove(e) {
+  if (!_drag.active) return;
+  e.preventDefault();
+  var touch = e.touches[0];
+  var ghost = _drag.ghostEl;
+  if (ghost) {
+    ghost.style.left = touch.clientX - 80 + 'px';
+    ghost.style.top  = touch.clientY + 14 + 'px';
+  }
+  // find which item the touch is over
+  document.querySelectorAll('.song-item').forEach(function(item) {
+    item.classList.remove('drag-over-before', 'drag-over-after');
+    var rect = item.getBoundingClientRect();
+    if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
+      var midY = rect.top + rect.height / 2;
+      var toIdx = parseInt(item.dataset.idx, 10);
+      if (!isNaN(toIdx)) {
+        _drag.toIdx = toIdx;
+        item.classList.add(touch.clientY < midY ? 'drag-over-before' : 'drag-over-after');
+      }
+    }
+  });
+}
+
+function onDragEnd(e) {
+  if (!_drag.active) return;
+  _drag.active = false;
+  var ghost = _drag.ghostEl;
+  if (ghost) ghost.style.display = 'none';
+  document.querySelectorAll('.song-item').forEach(function(item) {
+    item.classList.remove('drag-source','drag-over-before','drag-over-after');
+  });
+  var from = _drag.fromIdx;
+  var to   = _drag.toIdx;
+  _drag.fromIdx = _drag.toIdx = -1;
+  if (from >= 0 && to >= 0 && from !== to) {
+    var song = _playlist.splice(from, 1)[0];
+    _playlist.splice(to, 0, song);
+    if (_current === from) _current = to;
+    else if (from < to && _current > from && _current <= to) _current--;
+    else if (from > to && _current < from && _current >= to) _current++;
+    _modified = true;
+    renderNowPlaying();
+    renderSongList();
+    broadcastEvent('reorder', { from: from, to: to });
+    showToast('\u0e22\u0e49\u0e32\u0e22\u0e40\u0e1e\u0e25\u0e07\u0e41\u0e25\u0e49\u0e27 ✓');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  BREAK WARNING
+// ─────────────────────────────────────────────────────────────────
+function setupBreakWarning() {
+  if (!_timeSlot) return;
+  // Parse "HH:MM-HH:MM" format from timeSlot param
+  var match = _timeSlot.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
+  if (!match) return;
+  var endH = parseInt(match[3], 10);
+  var endM = parseInt(match[4], 10);
+  var now = new Date();
+  var endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), endH, endM, 0);
+  if (endDate <= now) endDate.setDate(endDate.getDate() + 1); // next day if already past
+  var warnAt = endDate.getTime() - 3 * 60 * 1000; // 3 min before
+  var delay  = warnAt - Date.now();
+  if (delay > 0 && delay < 14 * 60 * 60 * 1000) {
+    _breakWarningTimer = setTimeout(showBreakWarning, delay);
+  }
+}
+
+function showBreakWarning() {
+  var el = document.getElementById('breakWarning');
+  el.classList.add('show');
+  haptic([200, 100, 200]);
+  setTimeout(function() { el.classList.remove('show'); }, 3200);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  PRE-GENERATE GUEST TOKEN
+// ─────────────────────────────────────────────────────────────────
+function preGenerateToken() {
+  if (_isGuest || !_bandId || !_date) return;
+  apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
+    if (r && r.success && r.data) {
+      _guestLinkToken = r.data;
+    }
   });
 }
 
@@ -737,6 +911,7 @@ function addEncore(idx) {
 // ─────────────────────────────────────────────────────────────────
 function openRequest() {
   if (_isGuest) { showToast('Guest ไม่สามารถเพิ่มเพลงได้'); return; }
+  _reqFromAC = null;
   document.getElementById('reqSearch').value = '';
   document.getElementById('reqKey').value = '';
   document.getElementById('reqBpm').value = '';
@@ -744,6 +919,17 @@ function openRequest() {
   document.getElementById('autocompleteList').innerHTML = '';
   document.getElementById('requestModal').classList.add('show');
   setTimeout(function(){ document.getElementById('reqSearch').focus(); }, 200);
+  // preload band songs for instant autocomplete
+  if (!_allSongsLoaded) {
+    apiCall('getSongs', { bandId: _bandId }, function(r) {
+      if (r && r.success && r.data) {
+        _allSongs = r.data.slice().sort(function(a, b) {
+          return (a.name || '').localeCompare(b.name || '', 'th');
+        });
+      }
+      _allSongsLoaded = true;
+    });
+  }
 }
 function closeRequest() {
   document.getElementById('requestModal').classList.remove('show');
@@ -754,32 +940,60 @@ function onReqSearch(val) {
   document.getElementById('reqKey').value = '';
   document.getElementById('reqBpm').value = '';
   if (_acTimer) clearTimeout(_acTimer);
-  if (val.trim().length < 2) { document.getElementById('autocompleteList').style.display='none'; return; }
+  val = (val || '').trim();
+  var ac = document.getElementById('autocompleteList');
+  if (val.length < 1) { ac.style.display = 'none'; ac.innerHTML = ''; return; }
+  // Filter from preloaded library
+  if (_allSongsLoaded && _allSongs.length > 0) {
+    var lower = val.toLowerCase();
+    var hits = _allSongs.filter(function(s) {
+      return (s.name || '').toLowerCase().includes(lower);
+    }).slice(0, 30);
+    renderAutoComplete(hits, val);
+    return;
+  }
+  // Fallback: API search (debounced)
+  if (val.length < 1) return;
   _acTimer = setTimeout(function() {
     apiCall('searchSongs', { query: val }, function(r) {
-      var items = (r && r.success && r.data) ? r.data : [];
-      var ac = document.getElementById('autocompleteList');
-      if (items.length === 0) { ac.style.display='none'; return; }
-      ac.innerHTML = items.map(function(s, i) {
-        var meta = [s.key, s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
-        return '<div class="ac-item" data-i="' + i + '">' +
-          '<div>' + escHtml(s.name) + '</div>' +
-          (meta ? '<div class="ac-meta">' + meta + '</div>' : '') +
-        '</div>';
-      }).join('');
-      ac.style.display = 'block';
-      ac.querySelectorAll('.ac-item').forEach(function(el) {
-        el.addEventListener('click', function() {
-          var i = parseInt(el.dataset.i, 10);
-          _reqFromAC = items[i];
-          document.getElementById('reqSearch').value = items[i].name;
-          document.getElementById('reqKey').value = items[i].key || '';
-          document.getElementById('reqBpm').value = items[i].bpm || '';
-          ac.style.display = 'none';
-        });
-      });
+      renderAutoComplete((r && r.success && r.data) ? r.data : [], val);
     });
-  }, 300);
+  }, 250);
+}
+
+function renderAutoComplete(items, val) {
+  var ac = document.getElementById('autocompleteList');
+  var html = items.map(function(s, i) {
+    var meta = [s.key, s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+    return '<div class="ac-item" data-i="' + i + '">' +
+      '<div>' + escHtml(s.name) + '</div>' +
+      (meta ? '<div class="ac-meta">' + meta + '</div>' : '') +
+    '</div>';
+  }).join('');
+  // Always show "เพิ่มเพลง: val" at bottom
+  html += '<div class="ac-item ac-add" data-add="1">' +
+    '<div>➕ เพิ่ม: <strong>' + escHtml(val) + '</strong></div>' +
+    '<div class="ac-meta">เพลงนี้ยังไม่อยู่ในคลัง — เพิ่มเป็นเพลงขอได้เลย</div>' +
+  '</div>';
+  ac.innerHTML = html;
+  ac.style.display = 'block';
+  ac.querySelectorAll('.ac-item:not(.ac-add)').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var i = parseInt(el.dataset.i, 10);
+      _reqFromAC = items[i];
+      document.getElementById('reqSearch').value = items[i].name;
+      document.getElementById('reqKey').value = items[i].key || '';
+      document.getElementById('reqBpm').value = items[i].bpm || '';
+      ac.style.display = 'none';
+    });
+  });
+  var addBtn = ac.querySelector('.ac-add');
+  if (addBtn) {
+    addBtn.addEventListener('click', function() {
+      _reqFromAC = null;
+      ac.style.display = 'none';
+    });
+  }
 }
 
 function submitRequest() {
@@ -863,23 +1077,66 @@ function submitNote() {
 // ─────────────────────────────────────────────────────────────────
 function endBreak() {
   if (_isGuest) { showToast('เฉพาะสมาชิกเท่านั้นที่กด จบเบรค ได้'); return; }
-  if (_modified) {
-    var songs = _playlist.map(function(s) {
-      return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
-    });
-    apiCall('savePlaylistHistory', {
-      bandId: _bandId,
-      bandName: localStorage.getItem('bandName') || '',
-      date: _date, venue: _venue, timeSlot: _timeSlot,
-      songs: songs
-    }, function() {
-      showToast('บันทึกแล้ว ✅');
-    });
+  if (!_modified) {
+    // No changes made — just exit without saving or showing clipboard
+    doExit();
+    return;
   }
+  // Save playlist history in background
+  var songs = _playlist.map(function(s) {
+    return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
+  });
+  apiCall('savePlaylistHistory', {
+    bandId: _bandId,
+    bandName: localStorage.getItem('bandName') || '',
+    date: _date, venue: _venue, timeSlot: _timeSlot,
+    songs: songs
+  }, function() {});
+  // Show clipboard modal with the final playlist
+  var lines = _playlist.filter(function(s){ return !s._skipped; }).map(function(s, i) {
+    var parts = [(i + 1) + '.', s.name];
+    if (s._key && s._key !== s.key) parts.push('[คีย์ ' + s._key + ']');
+    else if (s._key) parts.push('[' + s._key + ']');
+    if (s.bpm) parts.push(s.bpm + ' BPM');
+    if (s._isRequest) parts.push('(ขอ)');
+    if (s._isEncore)  parts.push('(Encore)');
+    if (s._note)      parts.push('— ' + s._note);
+    return parts.join(' ');
+  });
+  var header = ['📋 รายการเพลง' + (_venue ? ' — ' + _venue : '') + (_timeSlot ? ' ' + _timeSlot : ''),
+                'วันที่: ' + (_date || '—'), ''].join('\n');
+  document.getElementById('clipContent').textContent = header + lines.join('\n');
+  document.getElementById('clipModal').classList.add('show');
+}
+
+function copyClip() {
+  var text = document.getElementById('clipContent').textContent;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() { showToast('📋 คัดลอกแล้ว!'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showToast('📋 คัดลอกแล้ว!');
+  }
+}
+
+function closeClipAndExit() {
+  document.getElementById('clipModal').classList.remove('show');
+  doExit();
+}
+
+function exitLive() {
+  if (_modified && !confirm('ออกจาก Live Mode?\nการเปลี่ยนแปลงจะไม่ถูกบันทึก')) return;
+  doExit();
+}
+
+function doExit() {
+  if (_breakWarningTimer) clearTimeout(_breakWarningTimer);
   if (_channel) { _channel.unsubscribe(); _channel = null; }
   releaseWakeLock();
   var ref = _params.get('from') || 'dashboard.html';
-  setTimeout(function(){ location.href = ref; }, 600);
+  location.href = ref;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -933,6 +1190,20 @@ function initRealtime() {
         renderSongList();
       }
     })
+    .on('broadcast', { event: 'reorder' }, function(payload) {
+      var d = payload.payload || {};
+      var from = d.from; var to = d.to;
+      if (typeof from === 'number' && typeof to === 'number' && from !== to &&
+          from >= 0 && to >= 0 && from < _playlist.length && to <= _playlist.length) {
+        var song = _playlist.splice(from, 1)[0];
+        _playlist.splice(to, 0, song);
+        if (_current === from) _current = to;
+        else if (from < to && _current > from && _current <= to) _current--;
+        else if (from > to && _current < from && _current >= to) _current++;
+        renderNowPlaying();
+        renderSongList();
+      }
+    })
     .on('broadcast', { event: 'request_state' }, function(payload) {
       // someone is asking for state — send if I joined earlier
       var d = payload.payload || {};
@@ -980,23 +1251,35 @@ function showInvalidToken() {
 
 // ─── QR CODE / SHARE ──────────────────────────────────────────────
 function shareQR() {
+  if (_isGuest) return;
+  if (_guestLinkToken) {
+    showQRModal(_guestLinkToken);
+    return;
+  }
+  // Token not ready yet — generate now (fallback)
+  showToast('กำลังสร้าง QR...');
   apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
-    if (!r || !r.success) { showToast('สร้าง token ไม่ได้ กรุณา login ใหม่'); return; }
-    var token = r.data.token;
-    var base  = location.origin + location.pathname;
-    var url   = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
-                '&date=' + encodeURIComponent(_date) +
-                '&venue=' + encodeURIComponent(_venue) +
-                '&timeSlot=' + encodeURIComponent(_timeSlot) +
-                '&token=' + encodeURIComponent(token);
-    var qrSrc = 'https://chart.googleapis.com/chart?cht=qr&chs=200x200&choe=UTF-8&chl=' + encodeURIComponent(url);
-    document.getElementById('qrCode').src = qrSrc;
-    document.getElementById('qrUrl').textContent = url;
-    var exp = new Date(r.data.expiresAt);
-    document.getElementById('qrExpiry').textContent = 'หมดอายุ: ' + exp.toLocaleTimeString('th-TH');
-    document.getElementById('qrModal').classList.add('show');
+    if (!r || !r.success) { showToast('สร้าง QR ไม่ได้ กรุณา login ใหม่'); return; }
+    _guestLinkToken = r.data;
+    showQRModal(r.data);
   });
 }
+
+function showQRModal(data) {
+  var base  = location.origin + location.pathname;
+  var url   = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
+              '&date=' + encodeURIComponent(_date) +
+              '&venue=' + encodeURIComponent(_venue) +
+              '&timeSlot=' + encodeURIComponent(_timeSlot) +
+              '&token=' + encodeURIComponent(data.token);
+  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
+  document.getElementById('qrCode').src = qrSrc;
+  document.getElementById('qrUrl').textContent = url;
+  var exp = new Date(data.expiresAt);
+  document.getElementById('qrExpiry').textContent = 'หมดอายุ: ' + exp.toLocaleTimeString('th-TH');
+  document.getElementById('qrModal').classList.add('show');
+}
+
 function closeQR() {
   document.getElementById('qrModal').classList.remove('show');
 }
