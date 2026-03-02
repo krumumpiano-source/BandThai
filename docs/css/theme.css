@@ -73,10 +73,12 @@ body{
   line-height:var(--leading-normal);
   color:var(--premium-text);
   background:var(--bg-gradient-primary);
-  background-attachment:fixed;
+  /* background-attachment:fixed removed — known iOS Safari bug that freezes page scroll */
   min-height:100vh;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
 /* Page layout */

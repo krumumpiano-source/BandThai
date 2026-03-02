@@ -27,10 +27,11 @@ textarea::placeholder { color:var(--premium-text-muted);opacity:.6 }
   overscroll-behavior: contain;
 }
 
-/* Table responsive: allow horizontal scroll */
+/* Table responsive: allow horizontal scroll + both pan directions */
 .table-responsive{
   overflow-x: auto;
   border-radius: var(--radius-md);
+  touch-action: pan-x pan-y;
 }
 
 /* Prevent text selection flash on tap */
