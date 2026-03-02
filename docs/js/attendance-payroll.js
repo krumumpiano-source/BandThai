@@ -646,7 +646,7 @@ function apDoSave() {
 /* Helper: render an off-screen HTML block, capture it as PNG, trigger download */
 function apSaveAsImage(htmlContent, fileName) {
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:32px;font-family:Sarabun,Kanit,sans-serif;min-width:700px;max-width:900px';
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:36px 40px;font-family:Sarabun,Kanit,sans-serif;min-width:800px;width:max-content;max-width:1400px';
   wrap.innerHTML = htmlContent;
   document.body.appendChild(wrap);
   if (typeof html2canvas === 'undefined') { apToast('กรุณารอโหลด html2canvas', 'error'); document.body.removeChild(wrap); return; }
@@ -668,26 +668,34 @@ function apPrintVenueReceipt() {
   if (!vn) { apToast('กรุณาเลือกร้าน', 'error'); return; }
   var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – ' + apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
   var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
-  var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
+  var RL = { shift:'บ./เบรค', hourly:'บ./ชม.', fixed:'คงที่' };
+  var docNo = 'DOC-' + (apDateRange[0]||'').replace(/-/g,'') + '-' + Date.now().toString().slice(-4);
 
-  // ── Styles ──
   var S = {
-    border:    'border:1px solid #d6d3cb',
-    headBg:    'background:#f7f5ef',
-    headFont:  'font-size:11px;font-weight:700;color:#4a4a4a',
-    cellPad:   'padding:7px 8px',
-    cellFont:  'font-size:12px;color:#333',
-    check:     'color:#2d8a4e;font-size:15px',
-    subName:   'font-size:9px;color:#7c3aed;font-weight:600;display:block;margin-top:1px',
-    rowAlt:    'background:#fdfcf9',
-    totalBg:   'background:#f3f1ea'
+    border:    'border:1px solid #c8c5ba',
+    headBg:    'background:linear-gradient(135deg,#2d2d2d,#1a1a1a)',
+    headFont:  'font-size:11px;font-weight:700;color:#f6c849;padding:9px 8px;text-align:center',
+    cellPad:   'padding:7px 9px',
+    cellFont:  'font-size:12px;color:#2d2d2d',
+    check:     'color:#16a34a;font-size:14px',
+    subName:   'font-size:9px;color:#7c3aed;font-weight:700;display:block;margin-top:1px;background:#f3e8ff;border-radius:3px;padding:0 2px',
+    totalBg:   'background:linear-gradient(135deg,#fefce8,#fef9c3)'
   };
 
-  // ── Build table body ──
-  var total = 0;
-  var mGrand = {}, mBreaks = {};
-  apMembers.forEach(function(m) { mGrand[m.id] = 0; mBreaks[m.id] = 0; });
+  // ── Build member headers ──
+  var memberHeaders = '';
+  apMembers.forEach(function(m) {
+    var dr = apDefaultRate(m.id);
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type] || '') : '—';
+    memberHeaders += '<th style="' + S.headFont + ';' + S.border + '">' +
+      apEsc(m.name) +
+      (m.position ? '<br><span style="font-weight:400;color:#f0d090;font-size:9px">' + apEsc(m.position) + '</span>' : '') +
+      '<br><span style="font-weight:400;color:#fde68a;font-size:9px">(' + rateTxt + ')</span></th>';
+  });
 
+  // ── Build table rows ──
+  var total = 0, mGrand = {}, mBreaks = {};
+  apMembers.forEach(function(m) { mGrand[m.id] = 0; mBreaks[m.id] = 0; });
   var tableRows = '', rowIdx = 0;
   apDateRange.forEach(function(ds) {
     var dtObj = new Date(ds), dow = dtObj.getDay(), slots = apSlotsForDay(dow);
@@ -696,131 +704,252 @@ function apPrintVenueReceipt() {
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
         var checked = apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk) !== -1;
-        // Substitute info — per SLOT (not per-date)
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds] && apCheckInSub[m.id][ds][sk]) || null;
         var hasSub = subInfo && subInfo.name;
-        var slotCovered = checked || hasSub; // slot worked by member OR substitute
+        var slotCovered = checked || hasSub;
         var amt = slotCovered ? apSlotPay(slot, m.id) : 0;
         mGrand[m.id] += amt; dayTotal += amt;
         if (slotCovered) mBreaks[m.id]++;
-        // Cell content: ✅ when covered + substitute name underneath
         var cellContent = '';
         if (slotCovered) {
           cellContent = '<span style="' + S.check + '">✅</span>';
-          if (hasSub) {
-            cellContent += '<span style="' + S.subName + '">' + apEsc(subInfo.name) + '</span>';
-          }
+          if (hasSub) cellContent += '<span style="' + S.subName + '">↳ ' + apEsc(subInfo.name) + '</span>';
         }
-        var cellBg = hasSub ? 'background:#f5f3ff;' : (slotCovered ? 'background:#f0faf4;' : '');
+        var cellBg = hasSub ? 'background:#f5f3ff;' : (slotCovered ? 'background:#f0fdf4;' : '');
         cells += '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + cellBg + '">' + cellContent + '</td>';
       });
       total += dayTotal;
-      var altBg = rowIdx % 2 === 1 ? S.rowAlt + ';' : '';
-      tableRows += '<tr style="' + altBg + '">' +
-        '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + '">' + DN[dow] + '</td>' +
+      var rowBg = rowIdx % 2 === 0 ? 'background:#ffffff' : 'background:#fafaf8';
+      tableRows += '<tr style="' + rowBg + '">' +
+        '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:600">' + DN[dow] + '</td>' +
         '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap">' + apFmtDate(dtObj) + '</td>' +
-        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
         cells +
-        '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:600">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') : '-') + '</td></tr>';
+        '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:700;color:#991b1b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
       rowIdx++;
     });
   });
 
-  // ── Member column headers ──
-  var memberHeaders = '';
+  // ── Subtotal row (breaks count) ──
+  var subtotalRow = '<tr style="background:#f3f1e8">' +
+    '<td colspan="3" style="text-align:right;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#555">จำนวนเบรค</td>';
   apMembers.forEach(function(m) {
-    var dr = apDefaultRate(m.id);
-    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type] || '') : '';
-    memberHeaders += '<th style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.headBg + ';' + S.headFont + '">' +
-      '<strong>' + apEsc(m.name) + '</strong>' +
-      (m.position ? '<br><span style="font-weight:400;color:#999;font-size:9px">' + apEsc(m.position) + '</span>' : '') +
-      (rateTxt ? '<br><span style="font-weight:400;color:#b08000;font-size:9px">' + rateTxt + '</span>' : '') + '</th>';
+    subtotalRow += '<td style="text-align:center;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#2d2d2d">' + (mBreaks[m.id] || '—') + ' เบรค</td>';
   });
+  subtotalRow += '<td style="padding:8px;' + S.border + '"></td></tr>';
 
-  // ── Total row: break counts per member, grand total in red ──
+  // ── Total row ──
   var totalRow = '<tr style="' + S.totalBg + '">' +
-    '<td colspan="3" style="text-align:right;padding:10px 8px;' + S.border + ';font-weight:700;font-size:13px;color:#4a4a4a">รวมทั้งหมด</td>';
+    '<td colspan="3" style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#1a1a1a">💰 รวมเงินค่าจ้างทั้งหมด</td>';
   apMembers.forEach(function(m) {
-    totalRow += '<td style="text-align:center;padding:10px 8px;' + S.border + ';font-weight:700;font-size:13px;color:#4a4a4a">' + (mBreaks[m.id] > 0 ? mBreaks[m.id] : '-') + '</td>';
+    totalRow += '<td style="text-align:center;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#92400e">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') + ' ฿' : '—') + '</td>';
   });
-  totalRow += '<td style="text-align:right;padding:10px 8px;' + S.border + ';font-weight:700;font-size:16px;color:#dc2626">' + total.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿</td></tr>';
+  totalRow += '<td style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:800;font-size:17px;color:#dc2626">' + total.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿</td></tr>';
 
-  // ── Assemble HTML ──
+  // ── Substitute remark section ──
+  var subInfo = apBuildSubSummary(), subSection = '';
+  if (subInfo.length) {
+    subSection = '<div style="margin-top:18px;border-radius:8px;overflow:hidden;border:1px solid #c4b5fd">' +
+      '<div style="background:#6d28d9;padding:9px 14px;font-weight:700;font-size:13px;color:#fff">🔄 หมายเหตุ — การจ้างคนแทน</div>' +
+      '<table style="width:100%;border-collapse:collapse;background:#faf5ff">' +
+      '<tr style="background:#ede9fe"><th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:left">สมาชิกที่ลา</th>' +
+      '<th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:center">จำนวน</th>' +
+      '<th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:left">คนแทน</th>' +
+      '<th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:center">วันที่</th>' +
+      '<th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:right">ค่าจ้างคนแทน</th></tr>';
+    subInfo.forEach(function(s) {
+      var dateStrs = s.dates.map(function(d) { var dt2 = new Date(d); return DN[dt2.getDay()] + ' ' + apFmtDate(dt2); }).join(', ');
+      subSection += '<tr style="border-top:1px solid #ddd6fe">' +
+        '<td style="padding:7px 10px;font-size:12px;color:#4c1d95;font-weight:600">' + apEsc(s.memberName) + '</td>' +
+        '<td style="padding:7px 10px;font-size:12px;text-align:center;color:#5b21b6">' + s.shifts + ' เบรค</td>' +
+        '<td style="padding:7px 10px;font-size:12px;font-weight:700;color:#7c3aed">' + apEsc(s.subName) + (s.contact ? '<span style="font-size:10px;color:#999;font-weight:400"> (' + apEsc(s.contact) + ')</span>' : '') + '</td>' +
+        '<td style="padding:7px 10px;font-size:11px;color:#6d28d9">' + dateStrs + '</td>' +
+        '<td style="padding:7px 10px;font-size:13px;font-weight:700;color:#dc2626;text-align:right">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
+    });
+    subSection += '</table></div>';
+  }
+
+  var now = new Date();
+  var nowStr = apFmtDate(now) + ' เวลา ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ' น.';
+
   var html =
-    '<div style="text-align:center;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #e2e0d8">' +
-      '<h2 style="margin:0 0 2px;font-size:20px;font-weight:700;color:#1a1a1a;letter-spacing:.3px">' + apEsc(apBandName) + ' — ' + apEsc(vn) + '</h2>' +
-      '<p style="margin:0;font-size:13px;color:#888">' + dt + '</p>' +
+    // ── Document header ──
+    '<div style="border-bottom:3px solid #1a1a1a;padding-bottom:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div>' +
+        '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">ใบเบิกเงินค่าจ้างนักดนตรี / Musician Payment Request</div>' +
+        '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a;letter-spacing:.3px">' + apEsc(apBandName) + '</h1>' +
+        '<div style="font-size:14px;color:#444;font-weight:600">สถานที่: ' + apEsc(vn) + '</div>' +
+        '<div style="font-size:13px;color:#666;margin-top:2px">ช่วงเวลา: ' + dt + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;font-size:11px;color:#888">' +
+        '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
+        '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
+        '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
+        '<div>ผู้จัดการวง: ' + apEsc(apBandManager||'—') + '</div>' +
+      '</div>' +
     '</div>' +
+    // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr>' +
-      '<th style="' + S.cellPad + ';' + S.border + ';' + S.headBg + ';' + S.headFont + '">วัน</th>' +
-      '<th style="' + S.cellPad + ';' + S.border + ';' + S.headBg + ';' + S.headFont + '">วันที่</th>' +
-      '<th style="' + S.cellPad + ';' + S.border + ';' + S.headBg + ';' + S.headFont + '">ช่วงเวลา</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">วัน</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">วันที่</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">ช่วงเวลา</th>' +
       memberHeaders +
-      '<th style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.headBg + ';' + S.headFont + '">รวม</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:right">รวม</th>' +
     '</tr></thead>' +
-    '<tbody>' + tableRows + totalRow + '</tbody></table>';
+    '<tbody>' + tableRows + subtotalRow + totalRow + '</tbody></table>' +
+    subSection +
+    // ── Signature area ──
+    '<div style="margin-top:28px;display:flex;gap:40px;justify-content:flex-end">' +
+      '<div style="text-align:center">' +
+        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับเงิน / Received by</div>' +
+      '</div>' +
+      '<div style="text-align:center">' +
+        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้จ่ายเงิน / Paid by</div>' +
+      '</div>' +
+    '</div>' +
+    // ── Footer branding ──
+    '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
+      '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
+        'เอกสารนี้สร้างจาก <strong style="color:#d4a017">Band Management By SoulCiety</strong> — ' +
+        'ระบบจัดการวงดนตรีครบวงจร ตั้งแต่ตารางงาน ลงเวลา ไปจนถึงเบิกจ่าย ใช้งานฟรีไม่มีค่าใช้จ่าย' +
+      '</div>' +
+    '</div>';
 
   var safeVn = vn.replace(/[^a-zA-Z0-9ก-๙]/g, '_');
-  apSaveAsImage(html, 'เบิกร้าน_' + safeVn + '_' + (apDateRange[0]||'') + '.png');
+  apSaveAsImage(html, 'ใบเบิกร้าน_' + safeVn + '_' + (apDateRange[0]||'') + '.png');
 }
 
 function apPrintMemberReceipt() {
   var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – '+apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
-  var RL = { shift:'บ/เบรค', hourly:'บ/ชม', fixed:'คงที่' };
-  var rows = '', grand = 0;
+  var RL = { shift:'บ./เบรค', hourly:'บ./ชม.', fixed:'คงที่' };
+  var B = 'border:1px solid #e5e7eb';
+  var grand = 0, bodyRows = '';
+  var memberData = [];
+
   apMembers.forEach(function(m) {
-    var dr = apDefaultRate(m.id), totalSlots = 0, totalAmt = 0;
+    var dr = apDefaultRate(m.id);
+    var totalSlots = 0, totalAmt = 0;
     apDateRange.forEach(function(ds) {
       apSlotsForDay(new Date(ds).getDay()).forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) { totalSlots++; totalAmt += apSlotPay(slot,m.id); }
+        if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) {
+          totalSlots++; totalAmt += apSlotPay(slot, m.id);
+        }
       });
     });
-    grand += totalAmt;
-    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '-';
-    // Build substitute deduction info for this member (per-slot)
-    var mSubInfo = [];
+    // Substitute info aggregated per substitute name
+    var mSubMap = {};
     apDateRange.forEach(function(ds) {
       var subsForDate = (apCheckInSub[m.id] && apCheckInSub[m.id][ds]) || {};
-      var dow = new Date(ds).getDay();
-      var daySlots = apSlotsForDay(dow);
-      daySlots.forEach(function(slot) {
-        var sk2 = slot.start+'-'+slot.end;
-        var sub = subsForDate[sk2] || null;
+      apSlotsForDay(new Date(ds).getDay()).forEach(function(slot) {
+        var sk = slot.start+'-'+slot.end;
+        var sub = subsForDate[sk];
         if (!sub || !sub.name) return;
-        var existing = mSubInfo.find(function(x){ return x.name === sub.name; });
-        if (!existing) { existing = { name: sub.name, shifts: 0, amount: 0 }; mSubInfo.push(existing); }
-        var ri = apMemberRate(slot, m.id);
-        if (ri.assigned) { existing.shifts++; existing.amount += apSlotPay(slot, m.id); }
+        if (!mSubMap[sub.name]) mSubMap[sub.name] = { name: sub.name, contact: sub.contact||'', shifts: 0, amount: 0 };
+        mSubMap[sub.name].shifts++;
+        mSubMap[sub.name].amount += apSlotPay(slot, m.id);
       });
     });
-    var subNote = '';
-    mSubInfo.forEach(function(si) {
-      subNote += '<br><span style="font-size:11px;color:#805ad5">🔄 ลา ' + si.shifts + ' เบรค → จ่าย ' + apEsc(si.name) + ' = <strong style="color:#e53e3e">' + si.amount.toLocaleString('th-TH') + ' ฿</strong></span>';
-    });
-    rows += '<tr>' +
-      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.name) + subNote + '</td>' +
-      '<td style="padding:8px;border:1px solid #ddd;font-size:13px">' + apEsc(m.position||'-') + '</td>' +
-      '<td style="text-align:center;padding:8px;border:1px solid #ddd;font-size:13px">' + totalSlots + '</td>' +
-      '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-size:13px">' + rateTxt + '</td>' +
-      '<td style="text-align:right;padding:8px;border:1px solid #ddd;font-size:13px;font-weight:bold">' + (totalAmt > 0 ? totalAmt.toLocaleString('th-TH', {minimumFractionDigits: 2}) : '-') + '</td></tr>';
+    var mSubList = Object.values ? Object.values(mSubMap) : Object.keys(mSubMap).map(function(k){ return mSubMap[k]; });
+    var totalSubAmt = mSubList.reduce(function(s,x){ return s+x.amount; }, 0);
+    // Payment method
+    var pmMethod = apPaymentMethod[m.id] || '';
+    grand += totalAmt;
+    memberData.push({ m:m, dr:dr, totalSlots:totalSlots, totalAmt:totalAmt, pmMethod:pmMethod, mSubList:mSubList, totalSubAmt:totalSubAmt });
   });
 
-  var html = '<div style="text-align:center;margin-bottom:16px">' +
-    '<h2 style="margin:0;font-size:18px;color:#333">🧾 แจ้งจ่ายรายคน</h2>' +
-    '<p style="margin:4px 0;font-size:13px;color:#666">วง: ' + apEsc(apBandName) + ' | ผู้จัดการ: ' + apEsc(apBandManager) + ' | ' + dt + '</p></div>' +
+  // ── Table Header ──
+  var headerRow = '<tr style="background:linear-gradient(135deg,#1e3a5f,#0f2640)">' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:left">ชื่อ — ตำแหน่ง</th>' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:center">อัตราค่าจ้าง</th>' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:center">เบรคที่ทำงาน</th>' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:right">ค่าจ้างรวม</th>' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:left">วิธีรับเงิน</th></tr>';
+
+  memberData.forEach(function(d, i) {
+    var m = d.m, dr = d.dr;
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '—';
+    var rowBg = i % 2 === 0 ? 'background:#ffffff' : 'background:#f8fafc';
+    // Sub note inline
+    var subNote = '';
+    d.mSubList.forEach(function(si) {
+      subNote += '<div style="margin-top:3px;font-size:10px;padding:2px 6px;background:#fdf4ff;border-left:2px solid #a855f7;color:#7e22ce;border-radius:0 3px 3px 0">' +
+        '↳ คนแทน: <strong>' + apEsc(si.name) + '</strong>' +
+        (si.contact ? ' <span style="color:#aaa">(' + apEsc(si.contact) + ')</span>' : '') +
+        ' — ' + si.shifts + ' เบรค — ' +
+        '<strong style="color:#dc2626">' + si.amount.toLocaleString('th-TH') + ' ฿</strong></div>';
+    });
+    bodyRows += '<tr style="' + rowBg + '">' +
+      '<td style="padding:9px 10px;' + B + ';vertical-align:top">' +
+        '<div style="font-weight:700;font-size:13px;color:#1a1a1a">' + apEsc(m.name) + '</div>' +
+        '<div style="font-size:11px;color:#6b7280">' + apEsc(m.position||'—') + '</div>' +
+        subNote +
+      '</td>' +
+      '<td style="padding:9px 10px;' + B + ';text-align:center;vertical-align:top">' +
+        '<div style="font-size:12px;color:#374151">' + rateTxt + '</div>' +
+      '</td>' +
+      '<td style="padding:9px 10px;' + B + ';text-align:center;vertical-align:top">' +
+        '<div style="font-size:14px;font-weight:700;color:#1d4ed8">' + d.totalSlots + ' <span style="font-size:11px;font-weight:400;color:#6b7280">เบรค</span></div>' +
+      '</td>' +
+      '<td style="padding:9px 10px;' + B + ';text-align:right;vertical-align:top">' +
+        '<div style="font-size:15px;font-weight:800;color:#115e59">' +
+          (d.totalAmt > 0 ? d.totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿' : '—') +
+        '</div>' +
+        (d.totalSubAmt > 0 ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">หักคนแทน −' + d.totalSubAmt.toLocaleString('th-TH') + ' ฿</div>' +
+          '<div style="font-size:11px;color:#7c3aed;margin-top:1px;font-weight:700">' +
+            'สุทธิ ' + (d.totalAmt - d.totalSubAmt).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿</div>' : '') +
+      '</td>' +
+      '<td style="padding:9px 10px;' + B + ';vertical-align:top">' +
+        '<div style="font-size:11px;color:#374151">' + (d.pmMethod ? apEsc(d.pmMethod) : '<span style="color:#d1d5db">—</span>') + '</div>' +
+      '</td></tr>';
+  });
+
+  // ── Grand total row ──
+  bodyRows += '<tr style="background:linear-gradient(135deg,#fefce8,#fef3c7)">' +
+    '<td colspan="3" style="text-align:right;padding:12px 10px;' + B + ';font-weight:700;font-size:14px;color:#1a1a1a">💰 รวมค่าจ้างสมาชิกทั้งหมด</td>' +
+    '<td style="text-align:right;padding:12px 10px;' + B + ';font-weight:800;font-size:18px;color:#b45309">' + grand.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ฿</td>' +
+    '<td style="padding:12px 10px;' + B + '"></td></tr>';
+
+  var now = new Date();
+  var nowStr = apFmtDate(now) + ' เวลา ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0') + ' น.';
+  var docNo = 'PAY-' + (apDateRange[0]||'').replace(/-/g,'') + '-' + Date.now().toString().slice(-4);
+
+  var html =
+    // ── Document header ──
+    '<div style="border-bottom:3px solid #1e3a5f;padding-bottom:16px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-start">' +
+      '<div>' +
+        '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">ใบแจ้งจ่ายเงินสมาชิก / Member Payment Slip</div>' +
+        '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a">' + apEsc(apBandName) + '</h1>' +
+        '<div style="font-size:13px;color:#444;font-weight:600">ผู้จัดการวง: ' + apEsc(apBandManager||'—') + '</div>' +
+        '<div style="font-size:13px;color:#666;margin-top:2px">ช่วงเวลา: ' + dt + '</div>' +
+      '</div>' +
+      '<div style="text-align:right;font-size:11px;color:#888">' +
+        '<div style="font-weight:700;color:#555;font-size:13px">เลขที่เอกสาร</div>' +
+        '<div style="font-family:monospace;font-size:12px;color:#444">' + docNo + '</div>' +
+        '<div style="margin-top:6px">วันที่พิมพ์: ' + nowStr + '</div>' +
+      '</div>' +
+    '</div>' +
+    // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
-    '<thead><tr>' +
-    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:left">ชื่อ</th>' +
-    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:left">ตำแหน่ง</th>' +
-    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:center">เบรค</th>' +
-    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:right">อัตรา</th>' +
-    '<th style="padding:8px;border:1px solid #ddd;font-size:12px;background:#f5f5f5;text-align:right">จำนวนเงิน</th>' +
-    '</tr></thead><tbody>' + rows +
-    '<tr style="background:#f9f7f0"><td colspan="4" style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:14px">รวมทั้งหมด</td>' +
-    '<td style="text-align:right;padding:10px 8px;border:1px solid #ddd;font-weight:700;font-size:16px;color:#b08000">' + grand.toLocaleString('th-TH', {minimumFractionDigits: 2}) + ' ฿</td></tr>' +
-    '</tbody></table>';
+    '<thead>' + headerRow + '</thead>' +
+    '<tbody>' + bodyRows + '</tbody></table>' +
+    // ── Signature section ──
+    '<div style="margin-top:28px;display:flex;gap:40px">' +
+      '<div style="text-align:center">' +
+        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับรอง / ผู้จัดการวง</div>' +
+      '</div>' +
+      '<div style="text-align:center">' +
+        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับเงิน (สมาชิก)</div>' +
+      '</div>' +
+    '</div>' +
+    // ── Footer branding ──
+    '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
+      '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
+        'เอกสารนี้สร้างจาก <strong style="color:#d4a017">Band Management By SoulCiety</strong> — ' +
+        'ระบบจัดการวงดนตรีครบวงจร ตั้งแต่ตารางงาน ลงเวลา ไปจนถึงเบิกจ่าย ใช้งานฟรีไม่มีค่าใช้จ่าย' +
+      '</div>' +
+    '</div>';
 
   apSaveAsImage(html, 'แจ้งจ่ายรายคน_' + (apDateRange[0]||'') + '.png');
 }
