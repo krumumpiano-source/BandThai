@@ -213,6 +213,9 @@
         </div>
       </div>
 
+      <!-- ===== Notification Prompt ===== -->
+      <div id="notifPromptWrap" style="margin-bottom:var(--spacing-md)"></div>
+
       <!-- ===== Playlist of the Day ===== -->
       <div class="card" id="dashPlaylistCard" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);flex-wrap:wrap;gap:8px">
@@ -297,6 +300,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/notification.js"></script>
   <script>
   function nav(page) {
     window.location.href = page + '.html';
@@ -609,6 +613,11 @@
     requireAuth();
     renderMainNav('mainNav');
     applyTranslations();
+
+    // Notification permission prompt (shows banner if not yet granted)
+    if (typeof showNotificationPrompt === 'function') {
+      showNotificationPrompt('notifPromptWrap');
+    }
 
     var name = localStorage.getItem('userName') || 'ผู้ใช้งาน';
     var band = localStorage.getItem('bandName') || '';
