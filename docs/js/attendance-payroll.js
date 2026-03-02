@@ -678,7 +678,7 @@ function apDoSave() {
 /* ═══ RECEIPTS (save as image) ═══════════════════════ */
 function apSaveAsImage(htmlContent, fileName) {
   var wrap = document.createElement('div');
-  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:36px 40px;font-family:Sarabun,Kanit,sans-serif;min-width:800px;width:max-content;max-width:1400px';
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:36px 40px;font-family:Sarabun,Kanit,sans-serif;min-width:1000px;width:max-content;max-width:1600px';
   wrap.innerHTML = htmlContent;
   document.body.appendChild(wrap);
   if (typeof html2canvas === 'undefined') {
@@ -769,8 +769,8 @@ function apPrintVenueReceipt() {
       tableRows += '<tr style="' + dayBg + '">';
       // Merge วัน and วันที่ across all slots of the same day
       if (si === 0) {
-        tableRows += '<td rowspan="' + slots.length + '" style="text-align:center;vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';font-weight:700;font-size:14px;' + dayBg + '">' + DN[dow] + '</td>';
-        tableRows += '<td rowspan="' + slots.length + '" style="vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';white-space:nowrap;' + dayBg + '">' + apFmtDate(dtObj) + '</td>';
+        tableRows += '<td rowspan="' + slots.length + '" style="text-align:center;vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';font-weight:700;font-size:14px;min-width:48px;' + dayBg + '">' + DN[dow] + '</td>';
+        tableRows += '<td rowspan="' + slots.length + '" style="vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';white-space:nowrap;min-width:100px;' + dayBg + '">' + apFmtDate(dtObj) + '</td>';
       }
       tableRows +=
         '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px;color:#e65c00;font-weight:600">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
@@ -816,9 +816,9 @@ function apPrintVenueReceipt() {
     // ── Table ──
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead><tr>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">วัน</th>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">วันที่</th>' +
-      '<th style="' + S.headFont + ';' + S.border + ';text-align:center">ช่วงเวลา</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:48px">วัน</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:100px">วันที่</th>' +
+      '<th style="' + S.headFont + ';' + S.border + ';text-align:center;min-width:110px">ช่วงเวลา</th>' +
       memberHeaders +
       '<th style="' + S.headFont + ';' + S.border + ';text-align:right">รวม</th>' +
     '</tr></thead>' +
