@@ -1,6 +1,6 @@
 /**
  * Attendance & Payroll v2
- * ???????? (???????????) — ????????????????????????????????
+ * ???????? (???????????) ï¿½ ????????????????????????????????
  * Profile-based members + schedule slot rates + check-in pre-fill
  * Band Management By SoulCiety
  */
@@ -170,7 +170,7 @@ function apUpdateBandInfo() {
 function apRenderVenues() {
   var sel = apEl('venue'); if (!sel) return;
   var list = (apVenues||[]).filter(function(v) { return v.name && v.name.trim(); });
-  sel.innerHTML = '<option value="">— ????????? —</option>';
+  sel.innerHTML = '<option value="">ï¿½ ????????? ï¿½</option>';
   list.forEach(function(v) {
     var o = document.createElement('option'); o.value = v.id||v.name; o.textContent = v.name;
     if (o.value === apVenueId) o.selected = true;
@@ -314,7 +314,7 @@ function apRenderAttendance() {
     var vn = ''; var vs = apEl('venue');
     if (vs && vs.selectedIndex > 0) vn = vs.options[vs.selectedIndex].text;
     var ds = new Date(apDateRange[0]), de = new Date(apDateRange[apDateRange.length-1]);
-    title.textContent = '?? ' + (apBandName||'??') + (vn ? ' · '+vn : '') + ' — ' +
+    title.textContent = '?? ' + (apBandName||'??') + (vn ? ' ï¿½ '+vn : '') + ' ï¿½ ' +
       (apRecordType==='daily' ? apFmtDate(ds) : apRecordType==='weekly' ? apFmtDate(ds)+' ??? '+apFmtDate(de) : apFmtMonth(ds));
   }
 
@@ -350,7 +350,7 @@ function apRenderAttendance() {
         b += '<td rowspan="' + slots.length + '" style="font-weight:600">' + DN[dow] + '</td>';
         b += '<td rowspan="' + slots.length + '">' + apFmtDate(dt) + '</td>';
       }
-      b += '<td style="white-space:nowrap">' + slot.start + ' – ' + slot.end + '</td>';
+      b += '<td style="white-space:nowrap">' + slot.start + ' ï¿½ ' + slot.end + '</td>';
       var rowAmt = 0;
       apMembers.forEach(function(m) {
         var ciSlots = (apChecked[m.id] && apChecked[m.id][dateStr]) || [];
@@ -359,7 +359,7 @@ function apRenderAttendance() {
         var hasCheckIn = apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].length > 0;
         var ciSt = (apCheckInStatus[m.id] && apCheckInStatus[m.id][dateStr] && apCheckInStatus[m.id][dateStr][sk]) || '';
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][dateStr] && apCheckInSub[m.id][dateStr][sk]) || null;
-        // Check if THIS specific slot has leave (slot-aware — both apLeaveSlots AND per-slot ciSt)
+        // Check if THIS specific slot has leave (slot-aware ï¿½ both apLeaveSlots AND per-slot ciSt)
         var leaveSlots = (apLeaveSlots[m.id] && apLeaveSlots[m.id][dateStr]) || [];
         var isLeaveSlot = leaveSlots.length > 0 ? leaveSlots.indexOf(sk) !== -1 : (ciSt === 'leave');
         // Leave with substitute = slot is covered ? auto-check + count money
@@ -378,7 +378,7 @@ function apRenderAttendance() {
         b += '<td style="' + tdCls + '">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '"' + (checked ? ' checked' : '') + '>';
-        // Status badge — only show leave badge for slots actually on leave
+        // Status badge ï¿½ only show leave badge for slots actually on leave
         if (isLeaveSlot) {
           b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="?????">?? ??</span>';
           if (subInfo && subInfo.name) {
@@ -393,7 +393,7 @@ function apRenderAttendance() {
           }
           if (subInfo && subInfo.name) b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px" title="?????: ' + apEsc(subInfo.name) + '">?? ' + apEsc(subInfo.name) + '</span>';
         } else if (!hasCheckIn && ri.assigned) {
-          b += '<span class="ap-ci-badge ap-ci-absent" title="????????????">—</span>';
+          b += '<span class="ap-ci-badge ap-ci-absent" title="????????????">ï¿½</span>';
         }
         b += '</td>';
       });
@@ -513,7 +513,7 @@ function apRenderPayout() {
   var subInfo = apBuildSubSummary();
   if (subInfo.length) {
     b += '<tr><td colspan="' + (apMembers.length + 3) + '" style="padding:0;border:none"><div style="margin:12px 0 4px;border-top:2px solid #d6bcfa"></div></td></tr>';
-    b += '<tr style="background:linear-gradient(135deg,#faf5ff,#f3e8ff)"><td colspan="' + (apMembers.length + 3) + '" style="padding:8px 10px;font-weight:700;font-size:13px;color:#805ad5">?? ???????? — ?????</td></tr>';
+    b += '<tr style="background:linear-gradient(135deg,#faf5ff,#f3e8ff)"><td colspan="' + (apMembers.length + 3) + '" style="padding:8px 10px;font-weight:700;font-size:13px;color:#805ad5">?? ???????? ï¿½ ?????</td></tr>';
     subInfo.forEach(function(s) {
       var dateStrs = s.dates.map(function(d) { var dt = new Date(d); return DN[dt.getDay()] + ' ' + apFmtDate(dt); }).join(', ');
       b += '<tr style="background:#faf5ff">';
@@ -548,7 +548,7 @@ function apRenderPaymentInfo() {
 
   var hasAny = apMembers.some(function(m) { return m.paymentMethod || m.paymentAccount; });
   if (!hasAny) {
-    container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px;text-align:center;padding:12px 0">????????????????????????????????? — ????????????????????? "?????????????"</p>';
+    container.innerHTML = '<p style="color:var(--premium-text-muted);font-size:13px;text-align:center;padding:12px 0">????????????????????????????????? ï¿½ ????????????????????? "?????????????"</p>';
     return;
   }
 
@@ -557,11 +557,11 @@ function apRenderPaymentInfo() {
     var method  = m.paymentMethod  || '';
     var account = m.paymentAccount || '';
     if (!method && !account) return;
-    var label = _payMethodLabels[method] || method || '—';
+    var label = _payMethodLabels[method] || method || 'ï¿½';
     html += '<div class="pay-info-row">'
       + '<span class="pay-info-name">' + apEsc(m.name) + '</span>'
       + '<span class="pay-info-method">' + apEsc(label) + '</span>'
-      + '<span class="pay-info-account">' + apEsc(account || '—') + '</span>'
+      + '<span class="pay-info-account">' + apEsc(account || 'ï¿½') + '</span>'
       + '</div>';
   });
   container.innerHTML = html;
@@ -666,7 +666,7 @@ function apSaveAsImage(htmlContent, fileName) {
 function apPrintVenueReceipt() {
   var vs = apEl('venue'), vn = (vs && vs.selectedIndex>0) ? vs.options[vs.selectedIndex].text : '';
   if (!vn) { apToast('??????????????', 'error'); return; }
-  var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – ' + apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
+  var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' ï¿½ ' + apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
   var DN = ['??.','?.','?.','?.','??.','?.','?.'];
   var RL = { shift:'?./????', hourly:'?./??.', fixed:'?????' };
   var docNo = 'DOC-' + (apDateRange[0]||'').replace(/-/g,'') + '-' + Date.now().toString().slice(-4);
@@ -686,7 +686,7 @@ function apPrintVenueReceipt() {
   var memberHeaders = '';
   apMembers.forEach(function(m) {
     var dr = apDefaultRate(m.id);
-    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type] || '') : '—';
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type] || '') : 'ï¿½';
     memberHeaders += '<th style="' + S.headFont + ';' + S.border + '">' +
       apEsc(m.name) +
       (m.position ? '<br><span style="font-weight:400;color:#f0d090;font-size:9px">' + apEsc(m.position) + '</span>' : '') +
@@ -723,9 +723,9 @@ function apPrintVenueReceipt() {
       tableRows += '<tr style="' + rowBg + '">' +
         '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:600">' + DN[dow] + '</td>' +
         '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap">' + apFmtDate(dtObj) + '</td>' +
-        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px">' + apEsc(slot.start + ' ï¿½ ' + slot.end) + '</td>' +
         cells +
-        '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:700;color:#991b1b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ?' : '—') + '</td></tr>';
+        '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:700;color:#991b1b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ?' : 'ï¿½') + '</td></tr>';
       rowIdx++;
     });
   });
@@ -734,7 +734,7 @@ function apPrintVenueReceipt() {
   var subtotalRow = '<tr style="background:#f3f1e8">' +
     '<td colspan="3" style="text-align:right;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#555">?????????</td>';
   apMembers.forEach(function(m) {
-    subtotalRow += '<td style="text-align:center;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#2d2d2d">' + (mBreaks[m.id] || '—') + ' ????</td>';
+    subtotalRow += '<td style="text-align:center;padding:8px;' + S.border + ';font-size:12px;font-weight:700;color:#2d2d2d">' + (mBreaks[m.id] || 'ï¿½') + ' ????</td>';
   });
   subtotalRow += '<td style="padding:8px;' + S.border + '"></td></tr>';
 
@@ -742,7 +742,7 @@ function apPrintVenueReceipt() {
   var totalRow = '<tr style="' + S.totalBg + '">' +
     '<td colspan="3" style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#1a1a1a">?? ?????????????????????</td>';
   apMembers.forEach(function(m) {
-    totalRow += '<td style="text-align:center;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#92400e">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') + ' ?' : '—') + '</td>';
+    totalRow += '<td style="text-align:center;padding:11px 9px;' + S.border + ';font-weight:700;font-size:13px;color:#92400e">' + (mGrand[m.id] > 0 ? mGrand[m.id].toLocaleString('th-TH') + ' ?' : 'ï¿½') + '</td>';
   });
   totalRow += '<td style="text-align:right;padding:11px 9px;' + S.border + ';font-weight:800;font-size:17px;color:#dc2626">' + total.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ?</td></tr>';
 
@@ -750,7 +750,7 @@ function apPrintVenueReceipt() {
   var subInfo = apBuildSubSummary(), subSection = '';
   if (subInfo.length) {
     subSection = '<div style="margin-top:18px;border-radius:8px;overflow:hidden;border:1px solid #c4b5fd">' +
-      '<div style="background:#6d28d9;padding:9px 14px;font-weight:700;font-size:13px;color:#fff">?? ???????? — ????????????</div>' +
+      '<div style="background:#6d28d9;padding:9px 14px;font-weight:700;font-size:13px;color:#fff">?? ???????? ï¿½ ????????????</div>' +
       '<table style="width:100%;border-collapse:collapse;background:#faf5ff">' +
       '<tr style="background:#ede9fe"><th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:left">???????????</th>' +
       '<th style="padding:7px 10px;font-size:11px;color:#5b21b6;text-align:center">?????</th>' +
@@ -764,7 +764,7 @@ function apPrintVenueReceipt() {
         '<td style="padding:7px 10px;font-size:12px;text-align:center;color:#5b21b6">' + s.shifts + ' ????</td>' +
         '<td style="padding:7px 10px;font-size:12px;font-weight:700;color:#7c3aed">' + apEsc(s.subName) + (s.contact ? '<span style="font-size:10px;color:#999;font-weight:400"> (' + apEsc(s.contact) + ')</span>' : '') + '</td>' +
         '<td style="padding:7px 10px;font-size:11px;color:#6d28d9">' + dateStrs + '</td>' +
-        '<td style="padding:7px 10px;font-size:13px;font-weight:700;color:#dc2626;text-align:right">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ?' : '—') + '</td></tr>';
+        '<td style="padding:7px 10px;font-size:13px;font-weight:700;color:#dc2626;text-align:right">' + (s.amount > 0 ? s.amount.toLocaleString('th-TH') + ' ?' : 'ï¿½') + '</td></tr>';
     });
     subSection += '</table></div>';
   }
@@ -797,11 +797,10 @@ function apPrintVenueReceipt() {
       '<th style="' + S.headFont + ';' + S.border + ';text-align:right">???</th>' +
     '</tr></thead>' +
     '<tbody>' + tableRows + subtotalRow + totalRow + '</tbody></table>' +
-    subSection +
     // -- Footer branding --
     '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
       '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
-        '????????????????? <strong style="color:#d4a017">Band Management By SoulCiety</strong> — ' +
+        '????????????????? <strong style="color:#d4a017">Band Management By SoulCiety</strong> ï¿½ ' +
         '???????????????????????? ??????????????? ?????? ??????????????? ????????????????????????' +
       '</div>' +
     '</div>';
@@ -811,7 +810,7 @@ function apPrintVenueReceipt() {
 }
 
 function apPrintMemberReceipt() {
-  var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' – '+apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
+  var dt = apDateRange.length ? apFmtDate(new Date(apDateRange[0])) + (apDateRange.length>1 ? ' ï¿½ '+apFmtDate(new Date(apDateRange[apDateRange.length-1])) : '') : '';
   var RL = { shift:'?./????', hourly:'?./??.', fixed:'?????' };
   var B = 'border:1px solid #e5e7eb';
   var grand = 0, bodyRows = '';
@@ -851,7 +850,7 @@ function apPrintMemberReceipt() {
 
   // -- Table Header --
   var headerRow = '<tr style="background:linear-gradient(135deg,#1e3a5f,#0f2640)">' +
-    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:left">???? — ???????</th>' +
+    '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:left">???? ï¿½ ???????</th>' +
     '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:center">????????????</th>' +
     '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:center">????????????</th>' +
     '<th style="padding:9px 10px;' + B + ';font-size:11px;font-weight:700;color:#93c5fd;text-align:right">??????????</th>' +
@@ -859,7 +858,7 @@ function apPrintMemberReceipt() {
 
   memberData.forEach(function(d, i) {
     var m = d.m, dr = d.dr;
-    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '—';
+    var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : 'ï¿½';
     var rowBg = i % 2 === 0 ? 'background:#ffffff' : 'background:#f8fafc';
     // Sub note inline
     var subNote = '';
@@ -867,13 +866,13 @@ function apPrintMemberReceipt() {
       subNote += '<div style="margin-top:3px;font-size:10px;padding:2px 6px;background:#fdf4ff;border-left:2px solid #a855f7;color:#7e22ce;border-radius:0 3px 3px 0">' +
         '? ?????: <strong>' + apEsc(si.name) + '</strong>' +
         (si.contact ? ' <span style="color:#aaa">(' + apEsc(si.contact) + ')</span>' : '') +
-        ' — ' + si.shifts + ' ???? — ' +
+        ' ï¿½ ' + si.shifts + ' ???? ï¿½ ' +
         '<strong style="color:#dc2626">' + si.amount.toLocaleString('th-TH') + ' ?</strong></div>';
     });
     bodyRows += '<tr style="' + rowBg + '">' +
       '<td style="padding:9px 10px;' + B + ';vertical-align:top">' +
         '<div style="font-weight:700;font-size:13px;color:#1a1a1a">' + apEsc(m.name) + '</div>' +
-        '<div style="font-size:11px;color:#6b7280">' + apEsc(m.position||'—') + '</div>' +
+        '<div style="font-size:11px;color:#6b7280">' + apEsc(m.position||'ï¿½') + '</div>' +
         subNote +
       '</td>' +
       '<td style="padding:9px 10px;' + B + ';text-align:center;vertical-align:top">' +
@@ -884,14 +883,14 @@ function apPrintMemberReceipt() {
       '</td>' +
       '<td style="padding:9px 10px;' + B + ';text-align:right;vertical-align:top">' +
         '<div style="font-size:15px;font-weight:800;color:#115e59">' +
-          (d.totalAmt > 0 ? d.totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ?' : '—') +
+          (d.totalAmt > 0 ? d.totalAmt.toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ?' : 'ï¿½') +
         '</div>' +
         (d.totalSubAmt > 0 ? '<div style="font-size:10px;color:#dc2626;margin-top:2px">???????? -' + d.totalSubAmt.toLocaleString('th-TH') + ' ?</div>' +
           '<div style="font-size:11px;color:#7c3aed;margin-top:1px;font-weight:700">' +
             '????? ' + (d.totalAmt - d.totalSubAmt).toLocaleString('th-TH', {minimumFractionDigits:2}) + ' ?</div>' : '') +
       '</td>' +
       '<td style="padding:9px 10px;' + B + ';vertical-align:top">' +
-        '<div style="font-size:11px;color:#374151">' + (d.pmMethod ? apEsc(d.pmMethod) : '<span style="color:#d1d5db">—</span>') + '</div>' +
+        '<div style="font-size:11px;color:#374151">' + (d.pmMethod ? apEsc(d.pmMethod) : '<span style="color:#d1d5db">ï¿½</span>') + '</div>' +
       '</td></tr>';
   });
 
@@ -911,7 +910,7 @@ function apPrintMemberReceipt() {
       '<div>' +
         '<div style="font-size:10px;color:#888;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">???????????????????? / Member Payment Slip</div>' +
         '<h1 style="margin:0 0 4px;font-size:22px;font-weight:800;color:#1a1a1a">' + apEsc(apBandName) + '</h1>' +
-        '<div style="font-size:13px;color:#444;font-weight:600">???????????: ' + apEsc(apBandManager||'—') + '</div>' +
+        '<div style="font-size:13px;color:#444;font-weight:600">???????????: ' + apEsc(apBandManager||'ï¿½') + '</div>' +
         '<div style="font-size:13px;color:#666;margin-top:2px">??????????: ' + dt + '</div>' +
       '</div>' +
       '<div style="text-align:right;font-size:11px;color:#888">' +
@@ -927,7 +926,7 @@ function apPrintMemberReceipt() {
     // -- Footer branding --
     '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
       '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
-        '????????????????? <strong style="color:#d4a017">Band Management By SoulCiety</strong> — ' +
+        '????????????????? <strong style="color:#d4a017">Band Management By SoulCiety</strong> ï¿½ ' +
         '???????????????????????? ??????????????? ?????? ??????????????? ????????????????????????' +
       '</div>' +
     '</div>';
