@@ -668,10 +668,7 @@ function renderSongList() {
       _lastTapIdx = idx;
       _tapTimer = setTimeout(function() {
         _tapTimer = null; _lastTapIdx = -1;
-        _current = idx;
-        renderNowPlaying();
-        renderSongList();
-        scrollToCurrent();
+        // single tap — no action
       }, 260);
     });
   });
