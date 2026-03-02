@@ -144,21 +144,16 @@ function apLoadData() {
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
-          // Now that globals have correct weekStart/weekEnd, re-compute dates
+          // Re-compute endDate = startDate + 6 days (นับวันเริ่มเป็นวันที่ 1 รวม 7 วัน)
           var _sdEl = apEl('startDate'), _edEl = apEl('endDate');
           if (_sdEl && _edEl) {
             if (_sdEl.value) {
-              // Re-compute endDate from whatever startDate is currently shown
               var _pd = new Date(_sdEl.value + 'T00:00:00');
               if (!isNaN(_pd.getTime())) {
-                var _pdow = _pd.getDay();
-                var _dte = (apWeekEnd - _pdow + 7) % 7;
-                if (_dte === 0) { var _sp = (apWeekEnd - apWeekStart + 7) % 7; _dte = _sp === 0 ? 6 : _sp; }
-                var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + _dte);
+                var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + 6);
                 _edEl.value = _ed.toISOString().split('T')[0];
               }
             } else {
-              // No date selected yet — apply current week range
               apApplyWeekRange();
             }
           }
@@ -943,18 +938,13 @@ function apPrintMemberReceipt() {
 }
 
 /* ═══ INIT ══════════════════════════════════════════ */
-// Calculate weekly date range from apWeekStart/apWeekEnd
+// Set weekly date range: startDate = today, endDate = startDate + 6 days (7 days total)
 function apApplyWeekRange() {
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (!sd || !ed) return;
   var today = new Date();
-  var dow = today.getDay();
-  // Find the most recent weekStart day
-  var diff = (dow - apWeekStart + 7) % 7;
-  var start = new Date(today); start.setDate(today.getDate() - diff);
-  // Find the weekEnd day from start
-  var span = (apWeekEnd - apWeekStart + 7) % 7; if (span === 0) span = 6;
-  var end = new Date(start); end.setDate(start.getDate() + span);
+  var start = new Date(today);
+  var end = new Date(start); end.setDate(start.getDate() + 6);
   sd.value = start.toISOString().split('T')[0];
   ed.value = end.toISOString().split('T')[0];
 }
@@ -983,14 +973,8 @@ function apInitPage() {
     var edEl = apEl('endDate'); if (!edEl) return;
     var pickedDate = new Date(this.value + 'T00:00:00');
     if (isNaN(pickedDate.getTime())) return;
-    // Use server-loaded globals (apWeekStart/apWeekEnd) — correct source of truth
-    var wS = apWeekStart, wE = apWeekEnd;
-    // Calculate days from picked date to the next weekEnd day
-    var pickedDow = pickedDate.getDay();
-    var daysToEnd = (wE - pickedDow + 7) % 7;
-    // If picked day IS the weekEnd day, go to the NEXT occurrence (full week span)
-    if (daysToEnd === 0) { var sp2 = (wE - wS + 7) % 7; daysToEnd = sp2 === 0 ? 6 : sp2; }
-    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + daysToEnd);
+    // endDate = startDate + 6 days (นับวันเริ่มเป็นวันที่ 1 รวม 7 วัน)
+    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + 6);
     edEl.value = endDate.toISOString().split('T')[0];
   });
   var vs = apEl('venue'); if (vs) vs.addEventListener('change', function() { apVenueId = this.value; });
