@@ -799,15 +799,6 @@ function apPrintVenueReceipt() {
     '</tr></thead>' +
     '<tbody>' + tableRows + subtotalRow + totalRow + '</tbody></table>' +
     subSection +
-    // ── Signature area ──
-    '<div style="margin-top:28px;display:flex;gap:40px;justify-content:flex-end">' +
-      '<div style="text-align:center">' +
-        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับเงิน / Received by</div>' +
-      '</div>' +
-      '<div style="text-align:center">' +
-        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้จ่ายเงิน / Paid by</div>' +
-      '</div>' +
-    '</div>' +
     // ── Footer branding ──
     '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
       '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
@@ -934,15 +925,6 @@ function apPrintMemberReceipt() {
     '<table style="width:100%;border-collapse:collapse">' +
     '<thead>' + headerRow + '</thead>' +
     '<tbody>' + bodyRows + '</tbody></table>' +
-    // ── Signature section ──
-    '<div style="margin-top:28px;display:flex;gap:40px">' +
-      '<div style="text-align:center">' +
-        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับรอง / ผู้จัดการวง</div>' +
-      '</div>' +
-      '<div style="text-align:center">' +
-        '<div style="border-top:1px solid #aaa;padding-top:6px;min-width:160px;font-size:11px;color:#666">ผู้รับเงิน (สมาชิก)</div>' +
-      '</div>' +
-    '</div>' +
     // ── Footer branding ──
     '<div style="margin-top:24px;padding-top:12px;border-top:1px solid #e5e7eb;text-align:center">' +
       '<div style="font-size:10px;color:#9ca3af;letter-spacing:.05em">' +
