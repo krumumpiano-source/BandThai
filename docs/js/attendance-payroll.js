@@ -725,13 +725,19 @@ function apPrintVenueReceipt() {
       '<br><span style="font-weight:400;color:#fde68a;font-size:9px">(' + rateTxt + ')</span></th>';
   });
 
-  // ── Build table rows ──
+  // ── Day background colours (very subtle) ──
+  // อา จ อ พ พฤ ศ ส
+  var DAY_BG = ['#fff5f5','#fffde7','#fce4f6','#edfdf4','#fff3e0','#e8f4fd','#f3ebff'];
+
+  // ── Build table rows (วัน+วันที่ merged per day via rowspan) ──
   var total = 0, mGrand = {}, mBreaks = {};
   apMembers.forEach(function(m) { mGrand[m.id] = 0; mBreaks[m.id] = 0; });
-  var tableRows = '', rowIdx = 0;
+  var tableRows = '';
   apDateRange.forEach(function(ds) {
     var dtObj = new Date(ds), dow = dtObj.getDay(), slots = apSlotsForDay(dow);
-    slots.forEach(function(slot) {
+    var dayBg = 'background:' + DAY_BG[dow];
+    var dayBorder = 'border-right:2px solid #d4d0c8';
+    slots.forEach(function(slot, si) {
       var sk = slot.start + '-' + slot.end;
       var dayTotal = 0, cells = '';
       apMembers.forEach(function(m) {
@@ -747,18 +753,20 @@ function apPrintVenueReceipt() {
           cellContent = '<span style="' + S.check + '">✅</span>';
           if (hasSub) cellContent += '<span style="' + S.subName + '">↳ ' + apEsc(subInfo.name) + '</span>';
         }
-        var cellBg = hasSub ? 'background:#f5f3ff;' : (slotCovered ? 'background:#f0fdf4;' : '');
+        var cellBg = hasSub ? 'background:#f0e8ff;' : (slotCovered ? DAY_BG[dow] + ';' : '');
         cells += '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + cellBg + '">' + cellContent + '</td>';
       });
       total += dayTotal;
-      var rowBg = rowIdx % 2 === 0 ? 'background:#ffffff' : 'background:#fafaf8';
-      tableRows += '<tr style="' + rowBg + '">' +
-        '<td style="text-align:center;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:600">' + DN[dow] + '</td>' +
-        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap">' + apFmtDate(dtObj) + '</td>' +
-        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
+      tableRows += '<tr style="' + dayBg + '">';
+      // Merge วัน and วันที่ across all slots of the same day
+      if (si === 0) {
+        tableRows += '<td rowspan="' + slots.length + '" style="text-align:center;vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';font-weight:700;font-size:14px;' + dayBg + '">' + DN[dow] + '</td>';
+        tableRows += '<td rowspan="' + slots.length + '" style="vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';white-space:nowrap;' + dayBg + '">' + apFmtDate(dtObj) + '</td>';
+      }
+      tableRows +=
+        '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px;color:#e65c00;font-weight:600">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
         cells +
         '<td style="text-align:right;' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';font-weight:700;color:#991b1b">' + (dayTotal > 0 ? dayTotal.toLocaleString('th-TH') + ' ฿' : '—') + '</td></tr>';
-      rowIdx++;
     });
   });
 
