@@ -19,6 +19,7 @@ var apChecked     = {};
 var _apInited     = false;
 var apWeekStart   = 1;  // default Monday (0=Sun..6=Sat)
 var apWeekEnd     = 0;  // default Sunday
+var _apUserEditedDates = false; // true once user manually changes startDate
 
 /* ── Helpers ────────────────────────────────────────── */
 function apEl(id) { return document.getElementById(id); }
@@ -137,7 +138,8 @@ function apLoadData() {
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
-          apApplyWeekRange();
+          // Only auto-apply week range if user hasn't manually edited the dates yet
+          if (!_apUserEditedDates) apApplyWeekRange();
         }
       }
       ready.s = true; onReady();
@@ -953,11 +955,24 @@ function apInitPage() {
   // Auto-fill endDate when startDate changes, based on manager's week span setting
   var sdEl = apEl('startDate');
   if (sdEl) sdEl.addEventListener('change', function() {
+    _apUserEditedDates = true;
     var edEl = apEl('endDate'); if (!edEl) return;
     var pickedDate = new Date(this.value + 'T00:00:00');
     if (isNaN(pickedDate.getTime())) return;
-    var span = (apWeekEnd - apWeekStart + 7) % 7; if (span === 0) span = 6;
-    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + span);
+    // Re-read fresh week settings from bandSettings (handles async load completing after init)
+    var wS = apWeekStart, wE = apWeekEnd;
+    try {
+      var _bs = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+      if (_bs.payroll) {
+        if (_bs.payroll.weekStart !== undefined) wS = parseInt(_bs.payroll.weekStart, 10);
+        if (_bs.payroll.weekEnd !== undefined) wE = parseInt(_bs.payroll.weekEnd, 10);
+      }
+    } catch(e) {}
+    // Find next occurrence of weekEnd day from picked date
+    var pickedDow = pickedDate.getDay();
+    var daysToEnd = (wE - pickedDow + 7) % 7;
+    if (daysToEnd === 0) { var sp2 = (wE - wS + 7) % 7; daysToEnd = sp2 === 0 ? 6 : sp2; }
+    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + daysToEnd);
     edEl.value = endDate.toISOString().split('T')[0];
   });
   var vs = apEl('venue'); if (vs) vs.addEventListener('change', function() { apVenueId = this.value; });
