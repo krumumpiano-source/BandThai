@@ -697,22 +697,25 @@ function startClock() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  BATTERY
+//  BATTERY  (local device only — called once, guarded)
 // ─────────────────────────────────────────────────────────────────
+var _batteryInited = false;
 function initBattery() {
-  if (!navigator.getBattery) { document.getElementById('batteryIndicator').style.display='none'; return; }
+  if (_batteryInited) return;          // ป้องกัน init ซ้ำ
+  _batteryInited = true;
+  var el = document.getElementById('batteryIndicator');
+  if (!navigator.getBattery) { el.style.display = 'none'; return; }
   navigator.getBattery().then(function(bat) {
     function updateBat() {
       var pct = Math.round(bat.level * 100);
       document.getElementById('batteryFill').style.width = pct + '%';
       document.getElementById('batteryText').textContent = pct + '%';
-      var indicator = document.getElementById('batteryIndicator');
-      indicator.style.color = pct <= 20 ? '#ef4444' : '#a0a0a0';
+      el.style.color = pct <= 20 ? '#ef4444' : pct <= 50 ? '#f59e0b' : '#a0a0a0';
     }
     updateBat();
-    bat.addEventListener('levelchange', updateBat);
+    bat.addEventListener('levelchange',   updateBat);
     bat.addEventListener('chargingchange', updateBat);
-  });
+  }).catch(function() { el.style.display = 'none'; });
 }
 
 // ─────────────────────────────────────────────────────────────────
