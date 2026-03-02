@@ -144,8 +144,21 @@ function apLoadData() {
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
-          // Only auto-apply week range if user hasn't manually edited the dates yet
-          if (!_apUserEditedDates) apApplyWeekRange();
+          // Re-apply week range with now-correct settings
+          // Always recalculate endDate from current startDate using fresh weekEnd
+          var _sdEl = apEl('startDate'), _edEl = apEl('endDate');
+          if (_sdEl && _sdEl.value && _edEl) {
+            var _pd = new Date(_sdEl.value + 'T00:00:00');
+            if (!isNaN(_pd.getTime())) {
+              var _pdow = _pd.getDay();
+              var _dte = (apWeekEnd - _pdow + 7) % 7;
+              if (_dte === 0) { var _sp = (apWeekEnd - apWeekStart + 7) % 7; _dte = _sp === 0 ? 6 : _sp; }
+              var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + _dte);
+              _edEl.value = _ed.toISOString().split('T')[0];
+            }
+          } else {
+            apApplyWeekRange();
+          }
         }
       }
       ready.s = true; onReady();
