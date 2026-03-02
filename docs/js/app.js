@@ -287,3 +287,26 @@
     initThaiDates();
   }
 })();
+
+// ── Service Worker Registration ───────────────────────────────────────
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  // ไม่ register บนหน้า index/register/create-band (ไม่ต้องการ push)
+  var path = location.pathname;
+  if (/\/(index|register|create-band|terms|forgot)/.test(path)) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/Band-Management-By-SoulCiety/docs/sw.js')
+      .then(function (reg) {
+        window._swReg = reg;
+        // รับฟัง subscription changed จาก SW
+        navigator.serviceWorker.addEventListener('message', function (e) {
+          if (e.data && e.data.type === 'SUBSCRIPTION_CHANGED') {
+            if (typeof window.resubscribePush === 'function') window.resubscribePush();
+          }
+        });
+      })
+      .catch(function (err) {
+        console.warn('[SW] registration failed', err);
+      });
+  });
+})();

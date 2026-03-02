@@ -236,6 +236,11 @@
         case 'verifyGuestToken':  return doVerifyGuestToken(d);
         case 'deleteGuestToken':  return doDelete('live_guest_tokens', d.token);
 
+        // ── Push Subscriptions ─────────────────────────────────────
+        case 'savePushSubscription':   return doSavePushSubscription(d);
+        case 'deletePushSubscription': return doDeletePushSubscription(d);
+        case 'getPushSubscription':    return doGetPushSubscription(d);
+
         // ── Legacy (ไม่รองรับในเวอร์ชันปัจจุบัน) ──────────────────
         case 'createBackup':
         case 'getSpreadsheetUrl':
@@ -1234,6 +1239,46 @@
       var blob = new Blob([html], { type: 'text/html' });
       var url = URL.createObjectURL(blob);
       return { success: true, url: url };
+    }
+
+    // ── Push Subscriptions ────────────────────────────────────────
+    async function doSavePushSubscription(d) {
+      var { data: { user }, error: ue } = await sb.auth.getUser();
+      if (ue || !user) throw new Error('ต้อง login ก่อน');
+      var row = {
+        user_id:  user.id,
+        band_id:  d.bandId || getBandId(),
+        endpoint: d.endpoint,
+        p256dh:   d.p256dh,
+        auth_key: d.authKey
+      };
+      var { error } = await sb.from('push_subscriptions')
+        .upsert(row, { onConflict: 'user_id,endpoint' });
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doDeletePushSubscription(d) {
+      var { data: { user }, error: ue } = await sb.auth.getUser();
+      if (ue || !user) return { success: true }; // ไม่ต้องทำอะไรถ้าไม่ได้ login
+      var { error } = await sb.from('push_subscriptions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('endpoint', d.endpoint);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doGetPushSubscription(d) {
+      var { data: { user }, error: ue } = await sb.auth.getUser();
+      if (ue || !user) return { success: true, data: null };
+      var { data, error } = await sb.from('push_subscriptions')
+        .select('endpoint, p256dh, auth_key, created_at')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return { success: true, data: data || null };
     }
 
     // ── Live Guest Tokens ─────────────────────────────────────────
