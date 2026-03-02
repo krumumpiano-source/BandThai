@@ -768,10 +768,13 @@ function apPrintVenueReceipt() {
       total += dayTotal;
       tableRows += '<tr style="' + dayBg + '">';
       // Merge วัน and วันที่ across all slots of the same day
-      if (si === 0) {
-        tableRows += '<td rowspan="' + slots.length + '" style="text-align:center;vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';font-weight:700;font-size:14px;min-width:48px;' + dayBg + '">' + DN[dow] + '</td>';
-        tableRows += '<td rowspan="' + slots.length + '" style="vertical-align:middle;' + S.cellPad + ';' + S.border + ';' + dayBorder + ';' + S.cellFont + ';white-space:nowrap;min-width:100px;' + dayBg + '">' + apFmtDate(dtObj) + '</td>';
-      }
+      // No rowspan — html2canvas clips rowspan cells.
+      // Instead: show day/date text only on first slot, hide on subsequent (remove top border to look merged)
+      var isFirstSlot = si === 0;
+      var dayDateStyle = S.cellPad + ';' + S.border + ';' + S.cellFont + ';' + dayBg;
+      if (!isFirstSlot) dayDateStyle += ';border-top:none';
+      tableRows += '<td style="text-align:center;vertical-align:middle;min-width:48px;font-weight:700;font-size:14px;' + dayDateStyle + '">' + (isFirstSlot ? DN[dow] : '') + '</td>';
+      tableRows += '<td style="vertical-align:middle;min-width:100px;white-space:nowrap;' + dayDateStyle + ';border-right:2px solid #d4d0c8">' + (isFirstSlot ? apFmtDate(dtObj) : '') + '</td>';
       tableRows +=
         '<td style="' + S.cellPad + ';' + S.border + ';' + S.cellFont + ';white-space:nowrap;font-size:11px;color:#e65c00;font-weight:600">' + apEsc(slot.start + ' – ' + slot.end) + '</td>' +
         cells +
