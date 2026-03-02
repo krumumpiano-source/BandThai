@@ -939,6 +939,16 @@ function apInitPage() {
   if (my) my.value = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0');
   apShowDateGroups();
   rt = apEl('recordType'); if (rt) rt.addEventListener('change', apShowDateGroups);
+  // Auto-fill endDate when startDate changes, based on manager's week span setting
+  var sdEl = apEl('startDate');
+  if (sdEl) sdEl.addEventListener('change', function() {
+    var edEl = apEl('endDate'); if (!edEl) return;
+    var pickedDate = new Date(this.value + 'T00:00:00');
+    if (isNaN(pickedDate.getTime())) return;
+    var span = (apWeekEnd - apWeekStart + 7) % 7; if (span === 0) span = 6;
+    var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + span);
+    edEl.value = endDate.toISOString().split('T')[0];
+  });
   var vs = apEl('venue'); if (vs) vs.addEventListener('change', function() { apVenueId = this.value; });
   var lb = apEl('apLoadBtn'); if (lb) lb.addEventListener('click', function() {
     apVenueId = (apEl('venue')||{}).value||'';
