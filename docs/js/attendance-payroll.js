@@ -135,6 +135,12 @@ function apLoadData() {
           if (r.data.payroll.period) apRecordType = r.data.payroll.period;
           if (r.data.payroll.weekStart !== undefined) apWeekStart = parseInt(r.data.payroll.weekStart, 10);
           if (r.data.payroll.weekEnd !== undefined) apWeekEnd = parseInt(r.data.payroll.weekEnd, 10);
+          // Sync correct values back to localStorage so stale cache is cleared
+          try {
+            var _lsSync = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+            _lsSync.payroll = Object.assign(_lsSync.payroll || {}, r.data.payroll);
+            localStorage.setItem('bandSettings', JSON.stringify(_lsSync));
+          } catch(e) {}
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
@@ -953,24 +959,20 @@ function apInitPage() {
   apShowDateGroups();
   rt = apEl('recordType'); if (rt) rt.addEventListener('change', apShowDateGroups);
   // Auto-fill endDate when startDate changes, based on manager's week span setting
+  // NOTE: use apWeekStart/apWeekEnd globals directly — these are correctly set by async
+  // getBandSettings. Do NOT read from localStorage which may have stale values.
   var sdEl = apEl('startDate');
   if (sdEl) sdEl.addEventListener('change', function() {
     _apUserEditedDates = true;
     var edEl = apEl('endDate'); if (!edEl) return;
     var pickedDate = new Date(this.value + 'T00:00:00');
     if (isNaN(pickedDate.getTime())) return;
-    // Re-read fresh week settings from bandSettings (handles async load completing after init)
+    // Use server-loaded globals (apWeekStart/apWeekEnd) — correct source of truth
     var wS = apWeekStart, wE = apWeekEnd;
-    try {
-      var _bs = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-      if (_bs.payroll) {
-        if (_bs.payroll.weekStart !== undefined) wS = parseInt(_bs.payroll.weekStart, 10);
-        if (_bs.payroll.weekEnd !== undefined) wE = parseInt(_bs.payroll.weekEnd, 10);
-      }
-    } catch(e) {}
-    // Find next occurrence of weekEnd day from picked date
+    // Calculate days from picked date to the next weekEnd day
     var pickedDow = pickedDate.getDay();
     var daysToEnd = (wE - pickedDow + 7) % 7;
+    // If picked day IS the weekEnd day, go to the NEXT occurrence (full week span)
     if (daysToEnd === 0) { var sp2 = (wE - wS + 7) % 7; daysToEnd = sp2 === 0 ? 6 : sp2; }
     var endDate = new Date(pickedDate); endDate.setDate(pickedDate.getDate() + daysToEnd);
     edEl.value = endDate.toISOString().split('T')[0];
