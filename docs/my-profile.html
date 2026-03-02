@@ -320,11 +320,36 @@
       </div>
 
     </div>
+
+    <!-- ===== Notification Settings Card ===== -->
+    <div class="card" id="notifSettingsCard" style="max-width:680px;margin:0 auto var(--spacing-xl);margin-top:0">
+      <div class="card-header" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe)">
+        <h3 class="card-title" style="margin:0">🔔 การแจ้งเตือน</h3>
+        <span id="notifStatusBadge" style="display:inline-block;padding:2px 12px;border-radius:999px;font-size:var(--text-xs);font-weight:700;margin-left:8px"></span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 var(--spacing-md);color:var(--premium-text-muted);font-size:var(--text-sm)">
+          รับการแจ้งเตือนสำหรับงานที่กำลังจะมาถึง, การเช็คอิน และกิจกรรมในวง
+        </p>
+        <div id="notifPromptWrapProfile" style="margin-bottom:var(--spacing-md)"></div>
+        <div id="notifActionRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button id="notifToggleBtn" class="btn btn-primary" onclick="profileToggleNotif()" style="min-width:160px">⏳ กำลังตรวจสอบ...</button>
+          <button class="btn" onclick="profileTestNotif()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db">🧪 ทดสอบ</button>
+        </div>
+        <!-- iOS install hint -->
+        <div id="notifIOSHint" style="display:none;margin-top:var(--spacing-md);padding:12px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;font-size:var(--text-sm)">
+          📱 <strong>iPhone/iPad:</strong> กด <strong>แชร์</strong> → <strong>เพิ่มไปยังหน้าจอโฮม</strong> แล้วเปิดแอปจาก Home Screen เพื่อเปิดใช้การแจ้งเตือน
+        </div>
+        <div id="notifMsg" style="margin-top:var(--spacing-md)"></div>
+      </div>
+    </div>
+
   </main>
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
+  <script src="js/notification.js"></script>
   <script>
   var instrumentIcons = {
     'ร้องนำ': '🎤', 'ร้องประสาน': '🎤',
@@ -367,6 +392,11 @@
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof requireAuth === 'function') requireAuth();
     renderMainNav('mainNav');
+
+    // การแจ้งเตือน — init หลังจาก app.js โหลด (ใช้ setTimeout เผื่อ SW ลงทะเบียน)
+    setTimeout(function() {
+      initNotifSettings();
+    }, 800);
 
     // ── โหลดข้อมูล ──
     function loadProfile() {
@@ -480,6 +510,106 @@
         msgEl.className = 'msg-box error';
         msgEl.textContent = (r && r.message) || 'เปลี่ยนอีเมลไม่สำเร็จ';
       }
+    });
+  }
+
+  // ── การแจ้งเตือน (Notification Settings) ──
+  var _notifEnabled = false;
+
+  function initNotifSettings() {
+    var btn  = document.getElementById('notifToggleBtn');
+    var badge = document.getElementById('notifStatusBadge');
+    var iosHint = document.getElementById('notifIOSHint');
+
+    // ตรวจสอบ iOS ที่ยังไม่ได้ add to home
+    function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+    function isStandalone() { return window.navigator.standalone === true; }
+    if (isIOS() && !isStandalone()) {
+      if (iosHint) iosHint.style.display = 'block';
+      if (btn) { btn.textContent = '📱 iOS: ดูคำแนะนำด้านล่าง'; btn.disabled = true; }
+      return;
+    }
+
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      if (btn) { btn.textContent = '❌ เบราว์เซอร์ไม่รองรับ'; btn.disabled = true; }
+      if (badge) { badge.textContent = 'ไม่รองรับ'; badge.style.background = '#fee2e2'; badge.style.color = '#b91c1c'; }
+      return;
+    }
+
+    var perm = Notification.permission;
+    if (perm === 'denied') {
+      if (btn) { btn.textContent = '🚫 ถูกบล็อก - เปิดในการตั้งค่าเบราว์เซอร์'; btn.disabled = true; }
+      if (badge) { badge.textContent = 'ถูกบล็อก'; badge.style.background = '#fee2e2'; badge.style.color = '#b91c1c'; }
+      return;
+    }
+
+    // ตรวจ subscription ปัจจุบัน
+    if (typeof checkCurrentSubscription === 'function') {
+      checkCurrentSubscription(function(sub) {
+        _notifEnabled = !!sub;
+        updateNotifUI();
+      });
+    } else {
+      _notifEnabled = perm === 'granted';
+      updateNotifUI();
+    }
+  }
+
+  function updateNotifUI() {
+    var btn   = document.getElementById('notifToggleBtn');
+    var badge = document.getElementById('notifStatusBadge');
+    if (_notifEnabled) {
+      if (btn)   { btn.textContent = '🔔 ปิดการแจ้งเตือน'; btn.style.background = '#ef4444'; }
+      if (badge) { badge.textContent = 'เปิดอยู่'; badge.style.background = '#dcfce7'; badge.style.color = '#15803d'; }
+    } else {
+      if (btn)   { btn.textContent = '🔔 เปิดการแจ้งเตือน'; btn.style.background = ''; }
+      if (badge) { badge.textContent = 'ปิดอยู่'; badge.style.background = '#f3f4f6'; badge.style.color = '#6b7280'; }
+    }
+  }
+
+  function profileToggleNotif() {
+    var msgEl = document.getElementById('notifMsg');
+    if (_notifEnabled) {
+      // ปิด - ยกเลิก subscription
+      if (typeof unsubscribePush === 'function') {
+        unsubscribePush(function(ok) {
+          if (ok) {
+            _notifEnabled = false; updateNotifUI();
+            if (msgEl) { msgEl.style.color = '#6b7280'; msgEl.textContent = '✅ ปิดการแจ้งเตือนแล้ว'; }
+          } else {
+            if (msgEl) { msgEl.style.color = '#b91c1c'; msgEl.textContent = '❌ ไม่สามารถปิดได้ กรุณาลองใหม่'; }
+          }
+        });
+      }
+    } else {
+      // เปิด - ขอ permission และ subscribe
+      if (typeof requestAndSubscribePush === 'function') {
+        requestAndSubscribePush(function(ok) {
+          if (ok) {
+            _notifEnabled = true; updateNotifUI();
+            if (msgEl) { msgEl.style.color = '#15803d'; msgEl.textContent = '✅ เปิดการแจ้งเตือนแล้ว!'; }
+          } else {
+            if (msgEl) { msgEl.style.color = '#b91c1c'; msgEl.textContent = '❌ ไม่สามารถเปิดได้ กรุณาตรวจสอบการตั้งค่าเบราว์เซอร์'; }
+          }
+        });
+      }
+    }
+  }
+
+  function profileTestNotif() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') {
+      alert('กรุณาเปิดการแจ้งเตือนก่อน');
+      return;
+    }
+    navigator.serviceWorker.ready.then(function(reg) {
+      reg.showNotification('🔔 ทดสอบ SoulCiety', {
+        body: 'การแจ้งเตือนทำงานปกติ! 🎵',
+        icon: '/Band-Management-By-SoulCiety/docs/icons/icon-192.png',
+        badge: '/Band-Management-By-SoulCiety/docs/icons/icon-192.png',
+        tag: 'test-notif',
+        requireInteraction: false
+      });
     });
   }
 
