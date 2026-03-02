@@ -539,7 +539,7 @@ function renderNowPlaying() {
   var visIdx  = visible.indexOf(s);
   document.getElementById('songCounter').textContent =
     (visIdx + 1) + ' / ' + visible.length;
-  startBeatDot(s.bpm);
+  startBeatDot(s.bpm, _beatRef);
 }
 
 function renderSongList() {
@@ -723,23 +723,24 @@ function startClock() {
 // ─────────────────────────────────────────────────────────────────
 //  BEAT DOT  (clock-synced, sharp on/off, all devices in unison)
 // ─────────────────────────────────────────────────────────────────
-var _beatTimer = null;
-function startBeatDot(bpm) {
+var _beatRAF  = null;
+var _beatRef  = 0;   // beat phase origin — shared across all devices via broadcast
+function startBeatDot(bpm, ref) {
   stopBeatDot();
   var bd = document.getElementById('beatDot');
   if (!bpm || !bd) return;
   bd.style.display = 'block';
   var interval = 60000 / bpm;   // ms per beat
-  function tick() {
-    // Date.now() % interval = position within current beat cycle
-    // all devices using same wall clock → perfectly synchronized
-    bd.style.opacity = (Date.now() % interval) < (interval / 2) ? '1' : '0';
+  _beatRef = (ref && ref > 0) ? ref : Date.now();
+  function frame() {
+    // All devices compute same phase using shared _beatRef as origin
+    bd.style.opacity = ((Date.now() - _beatRef) % interval) < (interval * 0.5) ? '1' : '0';
+    _beatRAF = requestAnimationFrame(frame);
   }
-  tick();
-  _beatTimer = setInterval(tick, 30);  // check 33×/sec — crisp & light
+  frame();
 }
 function stopBeatDot() {
-  if (_beatTimer) { clearInterval(_beatTimer); _beatTimer = null; }
+  if (_beatRAF) { cancelAnimationFrame(_beatRAF); _beatRAF = null; }
   var bd = document.getElementById('beatDot');
   if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
 }
@@ -797,6 +798,9 @@ function advanceSong() {
     _current = next;
     _modified = true;
     haptic(100);
+    // Establish a shared beat origin so all devices sync to same phase
+    _beatRef = Date.now();
+    broadcastEvent('beat_ref', { bpm: _playlist[_current].bpm || 0, ref: _beatRef });
     renderNowPlaying();
     renderSongList();
   } else {
@@ -1241,12 +1245,20 @@ function initRealtime() {
         broadcastEvent('state_sync', getState());
       }
     })
+    .on('broadcast', { event: 'beat_ref' }, function(payload) {
+      var d = payload.payload || {};
+      if (d.ref) {
+        _beatRef = d.ref;
+        startBeatDot(d.bpm, d.ref);
+      }
+    })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       var d = payload.payload || {};
       if (d.playlist && d.playlist.length > 0) {
         _playlist = d.playlist;
         _current  = d.current || 0;
         _modified = true;
+        if (d.beatRef) _beatRef = d.beatRef;
         renderNowPlaying();
         renderSongList();
       }
@@ -1266,7 +1278,7 @@ function initRealtime() {
 }
 
 function getState() {
-  return { playlist: _playlist, current: _current };
+  return { playlist: _playlist, current: _current, beatRef: _beatRef };
 }
 
 function broadcastEvent(event, data) {
