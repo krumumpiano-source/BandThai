@@ -135,7 +135,6 @@ function apLoadData() {
           if (r.data.payroll.period) apRecordType = r.data.payroll.period;
           if (r.data.payroll.weekStart !== undefined) apWeekStart = parseInt(r.data.payroll.weekStart, 10);
           if (r.data.payroll.weekEnd !== undefined) apWeekEnd = parseInt(r.data.payroll.weekEnd, 10);
-          console.log('[AP DEBUG] Server payroll:', JSON.stringify(r.data.payroll), '|weekStart='+apWeekStart,'|weekEnd='+apWeekEnd);
           // Sync correct values back to localStorage so stale cache is cleared
           try {
             var _lsSync = JSON.parse(localStorage.getItem('bandSettings') || '{}');
@@ -155,7 +154,6 @@ function apLoadData() {
                 var _pdow = _pd.getDay();
                 var _dte = (apWeekEnd - _pdow + 7) % 7;
                 if (_dte === 0) { var _sp = (apWeekEnd - apWeekStart + 7) % 7; _dte = _sp === 0 ? 6 : _sp; }
-                console.log('[AP DEBUG] async re-compute: startDate='+_sdEl.value+' dow='+_pdow+' weekEnd='+apWeekEnd+' daysToEnd='+_dte);
                 var _ed = new Date(_pd); _ed.setDate(_pd.getDate() + _dte);
                 _edEl.value = _ed.toISOString().split('T')[0];
               }
@@ -987,7 +985,6 @@ function apInitPage() {
     if (isNaN(pickedDate.getTime())) return;
     // Use server-loaded globals (apWeekStart/apWeekEnd) — correct source of truth
     var wS = apWeekStart, wE = apWeekEnd;
-    console.log('[AP DEBUG] startDate changed to', this.value, '| apWeekStart='+wS, '| apWeekEnd='+wE);
     // Calculate days from picked date to the next weekEnd day
     var pickedDow = pickedDate.getDay();
     var daysToEnd = (wE - pickedDow + 7) % 7;
