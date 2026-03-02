@@ -957,6 +957,191 @@ function apPrintMemberReceipt() {
 }
 
 /* ═══ INIT ══════════════════════════════════════════════════════════════ */
+// ── Payroll History ──────────────────────────────────────────────
+var _apDayNames = ['อา','จ','อ','พ','พฤ','ศ','ส'];
+
+function apOpenHistoryModal() {
+  var m = document.getElementById('apHistoryModal');
+  if (m) { m.style.display = 'block'; apLoadHistory(); }
+}
+
+function apCloseHistoryModal() {
+  var m = document.getElementById('apHistoryModal');
+  if (m) m.style.display = 'none';
+}
+
+function apLoadHistory() {
+  var el = document.getElementById('apHistoryContent');
+  if (!el) return;
+  el.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:2rem">กำลังโหลด...</p>';
+
+  var bandId = (typeof getBandId === 'function') ? getBandId() : '';
+  if (!bandId) {
+    el.innerHTML = '<p style="text-align:center;color:#e53e3e;padding:1rem">ไม่พบ Band ID</p>';
+    return;
+  }
+
+  apiCall('getAllAttendancePayroll', { bandId: bandId, year: 'all', pageSize: 100, page: 1 }, function(res) {
+    if (!res || !res.success || !res.data || res.data.length === 0) {
+      el.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:2rem">ยังไม่มีประวัติการบันทึก</p>';
+      return;
+    }
+    apRenderHistoryList(el, res.data, res.total);
+  });
+}
+
+function apRenderHistoryList(container, records, total) {
+  var _dayColors = ['#c53030','#2b6cb0','#b7791f','#276749','#553c9a','#2c7a7b','#822727'];
+  var rows = records.map(function(r) {
+    var ts = {};
+    try { ts = typeof r.timeSlots === 'string' ? JSON.parse(r.timeSlots) : (r.timeSlots || {}); } catch(e){}
+    var sd = ts.startDate || r.date || '';
+    var ed = ts.endDate || sd;
+    var recType = ts.recordType || 'daily';
+    var typeLabel = recType === 'weekly' ? 'รายสัปดาห์' : recType === 'monthly' ? 'รายเดือน' : 'รายวัน';
+
+    // Format dates
+    var sdObj = sd ? new Date(sd + 'T00:00:00') : null;
+    var edObj = ed ? new Date(ed + 'T00:00:00') : null;
+    var fmtDate = function(d) {
+      if (!d) return '';
+      return _apDayNames[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth()+1) + '/' + (d.getFullYear()+543);
+    };
+    var dateRange = fmtDate(sdObj);
+    if (sd !== ed && edObj) dateRange += ' – ' + fmtDate(edObj);
+
+    // Day color
+    var dayColor = sdObj ? _dayColors[sdObj.getDay()] : '#4a5568';
+
+    // Venue name
+    var venueName = '-';
+    if (r.venue) {
+      var vns = apVenues || [];
+      var vobj = vns.find(function(v){ return (v.id || v.name) === r.venue; });
+      venueName = vobj ? (vobj.name || r.venue) : r.venue;
+    }
+
+    // Amount
+    var amt = Number(r.totalAmount || 0);
+    var amtStr = amt.toLocaleString('th-TH') + ' ฿';
+
+    // Created date
+    var createdAt = r.createdAt || r.created_at || '';
+    var createdStr = '';
+    if (createdAt) {
+      var cDate = new Date(createdAt);
+      createdStr = cDate.getDate() + '/' + (cDate.getMonth()+1) + '/' + (cDate.getFullYear()+543) + ' ' + String(cDate.getHours()).padStart(2,'0') + ':' + String(cDate.getMinutes()).padStart(2,'0');
+    }
+
+    var rid = r.id || '';
+    return '<tr>' +
+      '<td style="padding:8px 10px;font-size:13px;white-space:nowrap">' +
+        '<span style="display:inline-block;background:' + dayColor + ';color:#fff;border-radius:4px;padding:2px 7px;font-weight:600;font-size:12px;margin-right:6px">' + typeLabel + '</span>' +
+        dateRange +
+      '</td>' +
+      '<td style="padding:8px 10px;font-size:13px">' + apEscape(venueName) + '</td>' +
+      '<td style="padding:8px 10px;font-size:13px;text-align:right;font-weight:700;color:#2b6cb0">' + amtStr + '</td>' +
+      '<td style="padding:8px 10px;font-size:12px;color:var(--premium-text-muted);white-space:nowrap">' + createdStr + '</td>' +
+      '<td style="padding:8px 10px;white-space:nowrap;text-align:center">' +
+        '<button onclick="apViewHistoryRecord(' + JSON.stringify(rid) + ')" class="btn btn-secondary" style="font-size:12px;padding:3px 10px;margin-right:4px">🔍 ดู</button>' +
+        '<button onclick="apDeleteHistoryRecord(' + JSON.stringify(rid) + ')" class="btn" style="font-size:12px;padding:3px 10px;background:#fed7d7;color:#c53030;border:1px solid #feb2b2">🗑 ลบ</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+
+  container.innerHTML =
+    '<p style="font-size:13px;color:var(--premium-text-muted);margin-bottom:12px">พบ ' + (total || records.length) + ' รายการ</p>' +
+    '<div style="overflow-x:auto">' +
+      '<table style="width:100%;border-collapse:collapse;font-family:inherit">' +
+        '<thead>' +
+          '<tr style="background:#f7fafc">' +
+            '<th style="padding:8px 10px;text-align:left;font-size:13px;border-bottom:2px solid #e2e8f0">ช่วงวันที่</th>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:13px;border-bottom:2px solid #e2e8f0">สถานที่</th>' +
+            '<th style="padding:8px 10px;text-align:right;font-size:13px;border-bottom:2px solid #e2e8f0">ยอดรวม</th>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:13px;border-bottom:2px solid #e2e8f0">บันทึกเมื่อ</th>' +
+            '<th style="padding:8px 10px;text-align:center;font-size:13px;border-bottom:2px solid #e2e8f0">จัดการ</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody id="apHistoryTableBody">' + rows + '</tbody>' +
+      '</table>' +
+    '</div>';
+
+  // Store records on window for quick lookup
+  window._apHistoryRecords = records;
+}
+
+function apEscape(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function apViewHistoryRecord(id) {
+  var records = window._apHistoryRecords || [];
+  var r = records.find(function(x){ return x.id === id; });
+  if (!r) return;
+
+  var modal = document.getElementById('apHistoryDetailModal');
+  var title = document.getElementById('apHistoryDetailTitle');
+  var content = document.getElementById('apHistoryDetailContent');
+  if (!modal || !content) return;
+
+  var ts = {};
+  try { ts = typeof r.timeSlots === 'string' ? JSON.parse(r.timeSlots) : (r.timeSlots || {}); } catch(e){}
+  var sd = ts.startDate || r.date || '';
+  var venueName = r.venue || '-';
+  var vns = apVenues || [];
+  var vobj = vns.find(function(v){ return (v.id || v.name) === r.venue; });
+  if (vobj) venueName = vobj.name || r.venue;
+
+  try { var sdObj = new Date(sd + 'T00:00:00'); title.textContent = '📅 ' + sdObj.getDate() + '/' + (sdObj.getMonth()+1) + '/' + (sdObj.getFullYear()+543) + ' — ' + apEscape(venueName); } catch(e) { title.textContent = 'รายละเอียด'; }
+
+  var attendance = [];
+  try { attendance = typeof r.attendance === 'string' ? JSON.parse(r.attendance) : (r.attendance || []); } catch(e) {}
+
+  var memberRows = attendance.map(function(m) {
+    var amt = Number(m.amount || 0);
+    return '<tr>' +
+      '<td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #e2e8f0">' + apEscape(m.memberName || m.member_name || '-') + '</td>' +
+      '<td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #e2e8f0;color:var(--premium-text-muted)">' + apEscape(m.position || '-') + '</td>' +
+      '<td style="padding:7px 10px;font-size:13px;border-bottom:1px solid #e2e8f0;text-align:right;font-weight:600;color:#2b6cb0">' + amt.toLocaleString('th-TH') + ' ฿</td>' +
+    '</tr>';
+  }).join('');
+
+  var totalAmt = Number(r.totalAmount || 0);
+
+  content.innerHTML =
+    '<div style="margin-bottom:14px;font-size:13px;color:var(--premium-text-muted)">' +
+      '<strong style="color:#2d3748">สถานที่:</strong> ' + apEscape(venueName) +
+      ' &nbsp;|&nbsp; <strong style="color:#2d3748">ยอดรวม:</strong> <span style="color:#2c7a7b;font-weight:700">' + totalAmt.toLocaleString('th-TH') + ' ฿</span>' +
+    '</div>' +
+    (attendance.length > 0 ?
+      '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">' +
+        '<thead><tr style="background:#f7fafc">' +
+          '<th style="padding:7px 10px;text-align:left;font-size:13px;border-bottom:2px solid #e2e8f0">สมาชิก</th>' +
+          '<th style="padding:7px 10px;text-align:left;font-size:13px;border-bottom:2px solid #e2e8f0">ตำแหน่ง</th>' +
+          '<th style="padding:7px 10px;text-align:right;font-size:13px;border-bottom:2px solid #e2e8f0">รับเงิน</th>' +
+        '</tr></thead>' +
+        '<tbody>' + memberRows + '</tbody>' +
+        '<tfoot><tr style="background:#f7fafc;font-weight:700">' +
+          '<td colspan="2" style="padding:8px 10px;font-size:13px;border-top:2px solid #e2e8f0">รวมทั้งหมด</td>' +
+          '<td style="padding:8px 10px;font-size:13px;text-align:right;color:#2b6cb0;border-top:2px solid #e2e8f0">' + totalAmt.toLocaleString('th-TH') + ' ฿</td>' +
+        '</tr></tfoot>' +
+      '</table></div>'
+    : '<p style="color:var(--premium-text-muted);text-align:center;padding:1rem">ไม่มีข้อมูลสมาชิก</p>');
+
+  modal.style.display = 'block';
+}
+
+function apDeleteHistoryRecord(id) {
+  if (!confirm('ต้องการลบรายการนี้?')) return;
+  apiCall('deleteAttendancePayroll', { recordId: id }, function(res) {
+    if (res && res.success) {
+      apLoadHistory();
+    } else {
+      alert('ลบไม่สำเร็จ: ' + ((res && res.message) || 'ข้อผิดพลาดไม่ทราบสาเหตุ'));
+    }
+  });
+}
+
 function apApplyWeekRange() {
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (!sd || !ed) return;
@@ -987,6 +1172,7 @@ function apInitPage() {
     apLoadCheckIns(function() { apRenderAttendance(); apRenderPayout(); apRenderPaymentInfo(); });
   });
   var sb = apEl('saveBtn'); if (sb) sb.addEventListener('click', apDoSave);
+  var hb = apEl('historyBtn'); if (hb) hb.addEventListener('click', apOpenHistoryModal);
   var vr = apEl('generateVenueReceiptBtn'); if (vr) vr.addEventListener('click', apPrintVenueReceipt);
   var mr = apEl('generateMemberReceiptBtn'); if (mr) mr.addEventListener('click', apPrintMemberReceipt);
   apLoadData();

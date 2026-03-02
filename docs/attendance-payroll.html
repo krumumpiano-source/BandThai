@@ -164,15 +164,44 @@
 
       <!-- Action Buttons -->
       <div class="action-btns" style="justify-content:flex-end">
+        <button id="historyBtn" class="btn btn-secondary">📋 ประวัติการบันทึก</button>
         <button id="saveBtn" class="btn btn-primary">💾 บันทึกข้อมูล</button>
       </div>
     </div>
   </main>
 
+  <!-- History Modal -->
+  <div id="apHistoryModal" style="display:none;position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.5);overflow-y:auto;padding:24px 12px">
+    <div style="max-width:860px;margin:0 auto;background:var(--premium-white,#fff);border-radius:var(--radius-lg,12px);box-shadow:0 8px 40px rgba(0,0,0,.3);overflow:hidden">
+      <!-- Modal Header -->
+      <div style="background:#2c3e50;color:#fff;padding:18px 24px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:18px;font-weight:700">📋 ประวัติการบันทึกเบิกจ่าย</span>
+        <button onclick="apCloseHistoryModal()" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <!-- Modal Body -->
+      <div style="padding:20px">
+        <div id="apHistoryContent">
+          <p style="text-align:center;color:var(--premium-text-muted);padding:2rem">กำลังโหลด...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Detail Modal -->
+  <div id="apHistoryDetailModal" style="display:none;position:fixed;inset:0;z-index:3100;background:rgba(0,0,0,.55);overflow-y:auto;padding:24px 12px">
+    <div style="max-width:680px;margin:0 auto;background:var(--premium-white,#fff);border-radius:var(--radius-lg,12px);box-shadow:0 8px 40px rgba(0,0,0,.3);overflow:hidden">
+      <div style="background:#2c3e50;color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between">
+        <span id="apHistoryDetailTitle" style="font-size:16px;font-weight:700">รายละเอียด</span>
+        <button onclick="document.getElementById('apHistoryDetailModal').style.display='none'" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1">✕</button>
+      </div>
+      <div id="apHistoryDetailContent" style="padding:20px"></div>
+    </div>
+  </div>
+
   <script src="js/i18n.js?v=20260302c"></script>
   <script src="js/app.js?v=20260302c"></script>
   <script src="js/nav.js?v=20260302c"></script>
-  <script src="js/attendance-payroll.js?v=20260302c"></script>
+  <script src="js/attendance-payroll.js?v=20260303a"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then(function(regs) {
