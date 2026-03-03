@@ -713,18 +713,21 @@
       var today = new Date().toISOString().split('T')[0];
       var firstOfMonth = today.substring(0, 7) + '-01';
 
-      var [memberRes, jobRes, upcomingRes, quotRes, finRes] = await Promise.all([
+      var [memberRes, jobRes, upcomingRes, quotRes, fundRes] = await Promise.all([
         sb.from('band_members').select('id', { count: 'exact', head: true }).eq('band_id', bandId),
         sb.from('schedule').select('id,venue_name,date,type').eq('band_id', bandId).gte('date', today).order('date', { ascending: true }).limit(5),
         sb.from('schedule').select('id', { count: 'exact', head: true }).eq('band_id', bandId).gte('date', today),
         sb.from('quotations').select('id', { count: 'exact', head: true }).eq('band_id', bandId),
-        sb.from('attendance_payroll').select('total_amount').eq('band_id', bandId).gte('date', firstOfMonth)
+        sb.from('band_fund').select('amount,type').eq('band_id', bandId).gte('date', firstOfMonth)
       ]);
 
-      var income = 0;
-      (finRes.data || []).forEach(function(r) { income += (r.total_amount || 0); });
+      // Calculate income/expense from band_fund table
+      var income = 0, expense = 0;
+      (fundRes.data || []).forEach(function(r) {
+        if (r.type === 'income') income += (r.amount || 0);
+        else expense += (r.amount || 0);
+      });
 
-      // fund/expense: future tables; use 0 for now
       return {
         success: true,
         data: {
@@ -735,7 +738,7 @@
           jobs: (jobRes.data || []).map(function(j) {
             return { date: j.date, venue: j.venue_name || '', band: '', type: j.type || '' };
           }),
-          finance: { income: income, expense: 0, fund: 0 }
+          finance: { income: income, expense: expense, fund: income - expense }
         }
       };
     }

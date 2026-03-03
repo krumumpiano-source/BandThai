@@ -253,7 +253,7 @@
         <div class="card">
           <div class="card-header">
             <h3 class="card-title" data-i18n="upcomingJobs">งานที่กำลังจะมาถึง</h3>
-            <a href="?page=schedule" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
+            <a href="schedule.html" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
           </div>
           <div id="jobList">
             <div class="empty-state"><p data-i18n="noData">ไม่มีข้อมูล</p></div>
@@ -278,7 +278,7 @@
           <div class="card">
             <div class="card-header">
               <h3 class="card-title" data-i18n="financeThisMonth">การเงินเดือนนี้</h3>
-              <a href="?page=statistics" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
+              <a href="statistics.html" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
             </div>
             <div id="financeList"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
           </div>
@@ -902,17 +902,21 @@
       return r.rate;
     }
 
-    // Get current user's member ID
-    var myId = '';
-    try {
-      var authStr = localStorage.getItem('sb-wsorngsyowgxikiepice-auth-token') || '';
-      if (authStr) { var authData = JSON.parse(authStr); myId = (authData.user && authData.user.id) || ''; }
-    } catch(e) {}
-    if (!myId) myId = localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '';
-    if (!myId) { document.getElementById('earnHours').textContent = '—'; document.getElementById('earnAmount').textContent = '—'; document.getElementById('earnBreakdown').innerHTML = ''; return; }
+    // Get current user's member ID (custom JWT auth — use localStorage directly)
+    var myId = localStorage.getItem('userId') ||
+               localStorage.getItem('odooMemberId') ||
+               localStorage.getItem('memberId') || '';
+    if (!myId) {
+      // Last-resort: try Supabase session token
+      try {
+        var _sessKeys = Object.keys(localStorage).filter(function(k){ return k.indexOf('auth-token') !== -1; });
+        if (_sessKeys.length) { var _sd = JSON.parse(localStorage.getItem(_sessKeys[0]) || '{}'); myId = (_sd.user && _sd.user.id) || ''; }
+      } catch(e) {}
+    }
+    if (!myId) { document.getElementById('earnHours').textContent = '—'; document.getElementById('earnAmount').textContent = '—'; document.getElementById('earnBreakdown').innerHTML = '<span style="color:var(--premium-text-muted)">กรุณาล็อกอินใหม่</span>'; return; }
 
     // Load all check-ins + leave for the date range
-    var allCheckIns = [], loadedCount = 0;
+    var allCheckIns = [];
     var leaveLoaded = false, ciLoaded = false;
     var myLeaves = [];
 
@@ -1055,19 +1059,18 @@
       }
     }
 
-    // Fetch check-ins — batch by date
-    dates.forEach(function(dateStr) {
-      apiCall('getCheckInsForDate', { bandId: bandId, date: dateStr }, function(r) {
-        if (r && r.success && r.data) allCheckIns = allCheckIns.concat(r.data);
-        if (++loadedCount >= dates.length) { ciLoaded = true; renderEarnings(); }
-      });
+    // Fetch check-ins — single range query (replaces N+1 per-date calls)
+    var rangeFrom = startDate.toISOString().split('T')[0];
+    var rangeTo   = endDate.toISOString().split('T')[0];
+    apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo }, function(r) {
+      if (r && r.success && r.data) allCheckIns = r.data;
+      ciLoaded = true; renderEarnings();
     });
 
-    // Fetch leave requests
-    apiCall('getAllLeaveRequests', { bandId: bandId }, function(r) {
+    // Fetch leave requests — single range query
+    apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo }, function(r) {
       if (r && r.success && r.data) {
-        var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
-        myLeaves = r.data.filter(function(lv) { return dSet[lv.date] && lv.memberId === myId; });
+        myLeaves = r.data.filter(function(lv) { return lv.memberId === myId; });
       }
       leaveLoaded = true; renderEarnings();
     });
