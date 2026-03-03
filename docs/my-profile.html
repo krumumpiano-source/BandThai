@@ -45,6 +45,14 @@
     .msg-box { padding: 8px 12px; border-radius: var(--radius-md); font-size: var(--text-sm); margin-top: var(--spacing-sm); display: none; }
     .msg-box.success { display: block; background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
     .msg-box.error { display: block; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    /* PIN modal */
+    #profilePinModal{display:none}
+    #profilePinModal.show{display:flex!important}
+    .ps-dot{width:13px;height:13px;border-radius:50%;border:2px solid #444;background:transparent;transition:background .12s,border-color .12s;display:inline-block}
+    .ps-dot.filled{background:#d4a843;border-color:#d4a843}
+    .ps-dot.error{background:#ef4444;border-color:#ef4444}
+    .ps-btn{height:62px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);color:#f0f0f0;font-size:1.35rem;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;transition:background .12s,transform .12s;user-select:none;-webkit-user-select:none}
+    .ps-btn:active{background:rgba(255,255,255,.22);transform:scale(.9)}
   </style>
 </head>
 <body>
@@ -317,8 +325,45 @@
           <button type="button" class="btn btn-primary" id="changePwdBtn" onclick="doChangePassword()">🔑 เปลี่ยนรหัสผ่าน</button>
         </div>
         <div id="pwdMsg" class="msg-box"></div>
+
+        <!-- PIN Login Section -->
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0">
+        <h3 style="margin-bottom:10px">🔐 ล็อกอินด้วย PIN / Face ID</h3>
+        <p id="pinStatusText" style="font-size:.85rem;color:#718096;margin-bottom:10px"></p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" class="btn btn-primary" id="setPinBtn" onclick="openProfilePinSetup()">🔐 ตั้ง / เปลี่ยน PIN</button>
+          <button type="button" class="btn" id="removePinBtn" onclick="removePin()" style="background:#fed7d7;color:#c53030;border:1px solid #feb2b2;display:none">🗑 ลบ PIN</button>
+        </div>
       </div>
 
+    </div>
+
+    <!-- ─── PIN Setup overlay (in-profile) ─── -->
+    <div id="profilePinModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:600;align-items:flex-end;justify-content:center">
+      <div style="background:#16162a;border-radius:24px 24px 0 0;padding:28px 20px calc(24px + env(safe-area-inset-bottom,0));width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center">
+        <div id="ppmTitle" style="font-size:1.05rem;font-weight:700;color:#fde68a;margin-bottom:6px"></div>
+        <div id="ppmSub" style="font-size:.78rem;color:#777;margin-bottom:20px;text-align:center"></div>
+        <div style="display:flex;gap:14px;margin-bottom:22px" id="ppmDots">
+          <div class="ps-dot" id="ppd0"></div><div class="ps-dot" id="ppd1"></div>
+          <div class="ps-dot" id="ppd2"></div><div class="ps-dot" id="ppd3"></div>
+          <div class="ps-dot" id="ppd4"></div><div class="ps-dot" id="ppd5"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:248px;margin-bottom:14px">
+          <button class="ps-btn" onclick="ppmDigit('1')">1</button>
+          <button class="ps-btn" onclick="ppmDigit('2')">2</button>
+          <button class="ps-btn" onclick="ppmDigit('3')">3</button>
+          <button class="ps-btn" onclick="ppmDigit('4')">4</button>
+          <button class="ps-btn" onclick="ppmDigit('5')">5</button>
+          <button class="ps-btn" onclick="ppmDigit('6')">6</button>
+          <button class="ps-btn" onclick="ppmDigit('7')">7</button>
+          <button class="ps-btn" onclick="ppmDigit('8')">8</button>
+          <button class="ps-btn" onclick="ppmDigit('9')">9</button>
+          <button class="ps-btn" style="visibility:hidden"></button>
+          <button class="ps-btn" onclick="ppmDigit('0')" style="grid-column:2">0</button>
+          <button class="ps-btn" onclick="ppmDel()">⌫</button>
+        </div>
+        <button style="font-size:.8rem;color:#555;background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;padding:6px 12px" onclick="closePpmModal()">ยกเลิก</button>
+      </div>
     </div>
 
     <!-- ===== Notification Settings Card ===== -->
@@ -644,6 +689,98 @@
         msgEl.textContent = (r && r.message) || 'เปลี่ยนรหัสผ่านไม่สำเร็จ';
       }
     });
+  }
+
+  /* ── PIN Management ── */
+  function xorStr(str, key) {
+    var out = '', k = (key||'000000');
+    for (var i = 0; i < str.length; i++)
+      out += String.fromCharCode(str.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    return out;
+  }
+  async function sha256hex(str) {
+    var enc = new TextEncoder().encode(str);
+    var buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+  }
+  function updatePinStatus() {
+    var hasPin = !!localStorage.getItem('sc_ql_pin');
+    document.getElementById('pinStatusText').textContent = hasPin
+      ? '✅ PIN ถูกตั้งค่าแล้ว สามารถเข้าสู่ระบบด้วย PIN / Face ID ได้'
+      : '❌ ยังไม่ได้ตั้ง PIN — กดปุ่มด้านล่างเพื่อตั้งค่า';
+    document.getElementById('removePinBtn').style.display = hasPin ? 'inline-flex' : 'none';
+    document.getElementById('setPinBtn').textContent = hasPin ? '🔐 เปลี่ยน PIN' : '🔐 ตั้ง PIN';
+  }
+  function removePin() {
+    if (!confirm('ลบ PIN ออก? คุณจะต้องใช้อีเมล+รหัสผ่านเข้าสู่ระบบแทน')) return;
+    ['sc_ql_pin','sc_ql_enc','sc_ql_email','sc_ql_name'].forEach(function(k){ localStorage.removeItem(k); });
+    updatePinStatus();
+    if (typeof showToast === 'function') showToast('ลบ PIN เรียบร้อย');
+  }
+  // Run on load
+  document.addEventListener('DOMContentLoaded', function(){ updatePinStatus(); });
+
+  /* ── In-profile PIN setup ── */
+  var _ppm = { step:1, first:'', pin:'', email: localStorage.getItem('sc_ql_email')||localStorage.getItem('userEmail')||'' };
+  function openProfilePinSetup() {
+    _ppm.step=1; _ppm.first=''; _ppm.pin='';
+    document.getElementById('ppmTitle').textContent = 'ตั้งรหัส PIN ใหม่';
+    document.getElementById('ppmSub').textContent   = 'กรอก PIN 6 หลัง ที่ต้องการใช้';
+    ppmRenderDots(); profilePinModal('show');
+  }
+  function closePpmModal() { profilePinModal('hide'); }
+  function profilePinModal(action) {
+    var m = document.getElementById('profilePinModal');
+    if (action==='show') m.classList.add('show');
+    else m.classList.remove('show');
+  }
+  function ppmDigit(v) {
+    if (_ppm.pin.length>=6) return;
+    _ppm.pin += v; ppmRenderDots(false);
+    if (_ppm.pin.length===6) setTimeout(ppmConfirm, 130);
+  }
+  function ppmDel() { if(!_ppm.pin.length) return; _ppm.pin=_ppm.pin.slice(0,-1); ppmRenderDots(false); }
+  function ppmRenderDots(isErr) {
+    for (var i=0;i<6;i++) {
+      var d=document.getElementById('ppd'+i); if(!d) continue;
+      d.className='ps-dot'+(i<_ppm.pin.length?(isErr?' error':' filled'):'');
+    }
+  }
+  function ppmConfirm() {
+    if (_ppm.step===1) {
+      _ppm.first=_ppm.pin; _ppm.pin=''; _ppm.step=2;
+      document.getElementById('ppmTitle').textContent='ยืนยัน PIN อีกครั้ง';
+      document.getElementById('ppmSub').textContent='กรอก PIN 6 หลักซ้ำอีกครั้ง';
+      ppmRenderDots(false);
+    } else {
+      if (_ppm.pin===_ppm.first) {
+        var pin=_ppm.first, email=_ppm.email;
+        // Need stored password to re-encrypt
+        var oldEnc=localStorage.getItem('sc_ql_enc');
+        var oldPin=_ppm.first; // we don't have old pin, so just store a flag without password re-enc
+        // Store with dummy enc if no stored password available — prompt user to use from login page
+        // Better: clear enc so next login via email will re-encrypt with new PIN
+        localStorage.removeItem('sc_ql_enc');
+        localStorage.removeItem('sc_ql_pin');
+        sha256hex(pin+':'+email).then(function(h){
+          localStorage.setItem('sc_ql_pin', h);
+          localStorage.setItem('sc_ql_email', email);
+          localStorage.setItem('sc_ql_name', localStorage.getItem('userName')||'');
+          // enc will be filled on next email login
+          closePpmModal(); updatePinStatus();
+          if (typeof showToast==='function') showToast('✅ ตั้ง PIN สำเร็จ! เข้าสู่ระบบด้วยอีเมล 1 ครั้งเพื่อเปิดใช้งาน PIN');
+        });
+      } else {
+        ppmRenderDots(true);
+        if (typeof showToast==='function') showToast('PIN ไม่ตรงกัน ลองใหม่', 2000);
+        setTimeout(function(){
+          _ppm.pin=''; _ppm.step=1; _ppm.first='';
+          document.getElementById('ppmTitle').textContent='ตั้งรหัส PIN ใหม่';
+          document.getElementById('ppmSub').textContent='กรอก PIN 6 หลัง ที่ต้องการใช้';
+          ppmRenderDots(false);
+        }, 750);
+      }
+    }
   }
   </script>
 </body>

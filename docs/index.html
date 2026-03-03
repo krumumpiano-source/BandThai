@@ -12,262 +12,475 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
-    .auth-wrap{width:100%;max-width:420px}
-    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
-    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
-    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
-    .auth-logo p{color:var(--premium-text-light);font-size:var(--text-sm);margin-top:4px}
-    .lang-top{position:fixed;top:16px;right:16px}
-    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
-    .btn-demo{background:#276749}
-    .btn-demo:hover{background:#1c4532}
-    .err-msg{color:#c53030;font-size:var(--text-xs);margin-top:4px;min-height:18px}
-    .divider{text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm);margin:var(--spacing-md) 0;position:relative}
-    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:42%;height:1px;background:var(--premium-light-gray)}
-    .divider::before{left:0} .divider::after{right:0}
-    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
-    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
-    .auth-footer a:hover{text-decoration:underline}
-    .forgot-link{float:right;font-size:var(--text-xs);color:var(--premium-text-light);text-decoration:none}
-    .forgot-link:hover{color:var(--premium-gold)}
-    /* Biometric button */
-    .btn-biometric{width:100%;justify-content:center;padding:13px;font-size:var(--text-base);
-      background:linear-gradient(135deg,#2b2d42,#3a3f58);color:#fff;border:none;border-radius:var(--radius-lg);
-      cursor:pointer;font-family:var(--font-family-body);font-weight:600;letter-spacing:.3px;
-      display:flex;align-items:center;gap:10px;margin-top:var(--spacing-sm);
-      box-shadow:0 2px 10px rgba(43,45,66,.25);transition:transform .15s,box-shadow .15s}
-    .btn-biometric:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(43,45,66,.35)}
-    .btn-biometric:active{transform:translateY(0)}
-    .btn-biometric .bio-icon{font-size:22px;line-height:1}
-    .bio-hint{text-align:center;font-size:11px;color:var(--premium-text-muted);margin-top:5px}
-    .btn-biometric:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;min-height:100dvh;background:linear-gradient(160deg,#1a1a2e 0%,#0d0d1a 60%,#1a0d00 100%);display:flex;align-items:center;justify-content:center;font-family:'Kanit','Sarabun',sans-serif;color:#f0f0f0;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+    #toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:9px 22px;border-radius:20px;font-size:.85rem;opacity:0;pointer-events:none;z-index:999;transition:opacity .3s;white-space:nowrap;max-width:90vw;text-align:center}
+    #toast.show{opacity:1}
+    .lang-top{position:fixed;top:14px;right:16px;z-index:10}
+
+    /* ═══ QUICK VIEW ═══ */
+    #quickView{width:100%;max-width:360px;padding:32px 20px 24px;display:flex;flex-direction:column;align-items:center}
+    .qv-logo{font-size:.95rem;color:#d4a843;font-weight:700;margin-bottom:28px;opacity:.75;letter-spacing:.3px}
+    .qv-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#d4a843,#8a5a00);display:flex;align-items:center;justify-content:center;font-size:2rem;box-shadow:0 4px 22px rgba(212,168,67,.4);margin-bottom:12px;flex-shrink:0;font-family:'Kanit',sans-serif}
+    .qv-name{font-size:1.2rem;font-weight:700;color:#fde68a;margin-bottom:3px;text-align:center;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .qv-sub{font-size:.78rem;color:#666;margin-bottom:26px;text-align:center}
+    .pin-dots{display:flex;gap:15px;margin-bottom:26px}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid #444;background:transparent;transition:background .12s,border-color .12s}
+    .pin-dot.filled{background:#d4a843;border-color:#d4a843;box-shadow:0 0 8px rgba(212,168,67,.55)}
+    .pin-dot.error{background:#ef4444;border-color:#ef4444;animation:shake .35s ease}
+    @keyframes shake{0%,100%{transform:translateX(0)}30%{transform:translateX(-6px)}70%{transform:translateX(6px)}}
+    .numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:272px;margin-bottom:18px}
+    .np-btn{height:70px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#f0f0f0;font-size:1.5rem;font-weight:600;cursor:pointer;font-family:'Kanit',sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;transition:background .12s,transform .12s;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .np-btn:active{background:rgba(255,255,255,.2);transform:scale(.91)}
+    .np-sub{font-size:.48rem;color:#666;letter-spacing:.06em;line-height:1}
+    .np-bio{background:rgba(212,168,67,.12)!important;border-color:rgba(212,168,67,.35)!important;font-size:1.8rem}
+    .np-del{font-size:1.15rem}
+    .qv-bio-hint{font-size:.73rem;color:#555;text-align:center;min-height:18px;margin-bottom:18px}
+    .qv-switch{background:none;border:none;border-bottom:1px dashed #444;padding-bottom:1px;color:#666;font-size:.82rem;font-family:inherit;cursor:pointer;transition:color .15s}
+    .qv-switch:hover{color:#d4a843}
+
+    /* ═══ FULL VIEW ═══ */
+    #fullView{width:100%;max-width:420px;display:none;padding:16px}
+    .auth-card{background:#fff;border-radius:22px;box-shadow:0 20px 60px rgba(0,0,0,.4);padding:32px 26px}
+    .auth-logo{text-align:center;margin-bottom:22px}
+    .auth-logo h1{font-size:1.35rem;font-weight:700;color:#d4a843}
+    .auth-logo p{color:#888;font-size:.8rem;margin-top:3px}
+    .form-group{margin-bottom:14px}
+    .form-group label{display:block;font-size:.83rem;font-weight:600;color:#555;margin-bottom:6px}
+    .form-group input{width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:11px 14px;font-size:1rem;font-family:inherit;background:#f8fafc;color:#2d3748;outline:none;transition:border-color .2s}
+    .form-group input:focus{border-color:#d4a843;background:#fff}
+    .err-msg{color:#c53030;font-size:.76rem;margin-top:4px;min-height:16px}
     .pw-wrap{position:relative;display:flex;align-items:center}
     .pw-wrap input{flex:1;padding-right:42px}
-    .btn-toggle-pw{position:absolute;right:10px;background:none;border:none;cursor:pointer;padding:0;color:var(--premium-text-light);font-size:18px;line-height:1;display:flex;align-items:center;opacity:.7;transition:opacity .2s}
+    .btn-toggle-pw{position:absolute;right:10px;background:none;border:none;cursor:pointer;font-size:16px;opacity:.55;padding:0;transition:opacity .2s}
     .btn-toggle-pw:hover{opacity:1}
+    .btn-primary-full{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#d4a843,#a06800);color:#fff;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-top:6px;transition:transform .12s,box-shadow .12s;box-shadow:0 4px 14px rgba(212,168,67,.35);letter-spacing:.2px}
+    .btn-primary-full:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,168,67,.45)}
+    .btn-primary-full:active{transform:scale(.97)}
+    .btn-primary-full:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .forgot-link{float:right;font-size:.76rem;color:#aaa;text-decoration:none}
+    .forgot-link:hover{color:#d4a843}
+    .auth-footer{text-align:center;margin-top:16px;font-size:.8rem;color:#888}
+    .auth-footer a{color:#d4a843;font-weight:600;text-decoration:none}
+    .auth-footer a:hover{text-decoration:underline}
+
+    /* ═══ PIN SETUP MODAL ═══ */
+    #pinSetupModal{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;display:none;align-items:flex-end;justify-content:center}
+    #pinSetupModal.show{display:flex}
+    .ps-sheet{background:#16162a;border-radius:24px 24px 0 0;padding:28px 20px calc(24px + env(safe-area-inset-bottom,0));width:100%;max-width:420px;display:flex;flex-direction:column;align-items:center}
+    .ps-title{font-size:1.05rem;font-weight:700;color:#fde68a;margin-bottom:5px;text-align:center}
+    .ps-sub{font-size:.78rem;color:#777;text-align:center;margin-bottom:20px}
+    .ps-dots{display:flex;gap:13px;margin-bottom:22px}
+    .ps-dot{width:13px;height:13px;border-radius:50%;border:2px solid #444;background:transparent;transition:background .12s,border-color .12s}
+    .ps-dot.filled{background:#d4a843;border-color:#d4a843}
+    .ps-dot.error{background:#ef4444;border-color:#ef4444}
+    .ps-numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;width:248px;margin-bottom:14px}
+    .ps-btn{height:64px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.06);color:#f0f0f0;font-size:1.4rem;font-weight:600;cursor:pointer;font-family:'Kanit',sans-serif;display:flex;align-items:center;justify-content:center;transition:background .12s,transform .12s;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+    .ps-btn:active{background:rgba(255,255,255,.2);transform:scale(.9)}
+    .ps-skip{margin-top:4px;font-size:.8rem;color:#555;background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;padding:6px 12px}
+
+    @media(max-height:650px){
+      .np-btn{height:60px}
+      .numpad{gap:7px;width:248px}
+      .qv-avatar{width:58px;height:58px;font-size:1.6rem}
+    }
   </style>
 </head>
 <body>
   <div class="lang-top"><div id="langToggle"></div></div>
   <div id="toast"></div>
-  <div class="auth-wrap">
+
+  <!-- ── QUICK VIEW (PIN + Biometric) ── -->
+  <div id="quickView">
+    <div class="qv-logo">🎵 Band Management By SoulCiety</div>
+    <div class="qv-avatar" id="qvAvatar">🎵</div>
+    <div class="qv-name" id="qvName">ยินดีต้อนรับกลับ</div>
+    <div class="qv-sub" id="qvEmail"></div>
+
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+
+    <div class="numpad">
+      <button class="np-btn" onclick="npDigit('1')">1<div class="np-sub"></div></button>
+      <button class="np-btn" onclick="npDigit('2')">2<div class="np-sub">ABC</div></button>
+      <button class="np-btn" onclick="npDigit('3')">3<div class="np-sub">DEF</div></button>
+      <button class="np-btn" onclick="npDigit('4')">4<div class="np-sub">GHI</div></button>
+      <button class="np-btn" onclick="npDigit('5')">5<div class="np-sub">JKL</div></button>
+      <button class="np-btn" onclick="npDigit('6')">6<div class="np-sub">MNO</div></button>
+      <button class="np-btn" onclick="npDigit('7')">7<div class="np-sub">PQRS</div></button>
+      <button class="np-btn" onclick="npDigit('8')">8<div class="np-sub">TUV</div></button>
+      <button class="np-btn" onclick="npDigit('9')">9<div class="np-sub">WXYZ</div></button>
+      <button class="np-btn np-bio" id="npBioBtn" onclick="doBiometric()" style="display:none">👆</button>
+      <button class="np-btn" id="npBioEmpty" style="visibility:hidden"></button>
+      <button class="np-btn" onclick="npDigit('0')" style="grid-column:2">0</button>
+      <button class="np-btn np-del" onclick="npDel()">⌫</button>
+    </div>
+
+    <div class="qv-bio-hint" id="qvBioHint"></div>
+    <button class="qv-switch" onclick="switchToFull()">ใช้อีเมล + รหัสผ่าน / เปลี่ยนบัญชี</button>
+  </div>
+
+  <!-- ── FULL VIEW (email+password) ── -->
+  <div id="fullView">
     <div class="auth-card">
       <div class="auth-logo">
         <h1>🎵 Band Management</h1>
-        <p data-i18n="appCredit">Band Management By SoulCiety</p>
+        <p>Band Management By SoulCiety</p>
       </div>
       <form id="loginForm">
         <div class="form-group">
-          <label for="email" data-i18n="email">อีเมล</label>
-          <input type="email" id="email" autocomplete="email" data-i18n-placeholder="enterEmail" placeholder="กรุณากรอกอีเมล" required>
+          <label for="email">อีเมล</label>
+          <input type="email" id="email" autocomplete="email" placeholder="กรุณากรอกอีเมล" required>
           <div class="err-msg" id="emailError"></div>
         </div>
         <div class="form-group">
           <label for="password">
-            <span data-i18n="password">รหัสผ่าน</span>
-            <a href="forgot-password.html" class="forgot-link" data-i18n="forgotPassword">ลืมรหัสผ่าน?</a>
+            <span>รหัสผ่าน</span>
+            <a href="forgot-password.html" class="forgot-link">ลืมรหัสผ่าน?</a>
           </label>
           <div class="pw-wrap">
-            <input type="password" id="password" autocomplete="current-password" data-i18n-placeholder="enterPassword" placeholder="กรุณากรอกรหัสผ่าน" required>
-            <button type="button" class="btn-toggle-pw" id="togglePassword" aria-label="แสดง/ซ่อนรหัสผ่าน">👁</button>
+            <input type="password" id="password" autocomplete="current-password" placeholder="กรุณากรอกรหัสผ่าน" required>
+            <button type="button" class="btn-toggle-pw" id="togglePassword">👁</button>
           </div>
           <div class="err-msg" id="passwordError"></div>
         </div>
-        <button type="submit" class="btn btn-primary btn-full" id="loginBtn">
-          <span data-i18n="login">เข้าสู่ระบบ</span>
-        </button>
+        <button type="submit" class="btn-primary-full" id="loginBtn">เข้าสู่ระบบ</button>
       </form>
-      <!-- Biometric / Saved-credential button (hidden until supported) -->
-      <div id="biometricSection" style="display:none;margin-top:var(--spacing-md)">
-        <div class="divider">หรือ</div>
-        <button type="button" class="btn-biometric" id="biometricBtn">
-          <span class="bio-icon" id="biometricIcon">👆</span>
-          <span id="biometricLabel">เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID</span>
-        </button>
-        <div class="bio-hint" id="biometricHint">ใช้ชีวมิติของอุปกรณ์เพื่อเข้าระบบโดยไม่ต้องพิมพ์รหัสผ่าน</div>
+      <div class="auth-footer" style="margin-top:16px">
+        <span>ยังไม่มีบัญชี?</span> <a href="register.html">สมัครสมาชิก</a>
+        &nbsp;|&nbsp;<a href="create-band.html">ขอสร้างวงใหม่</a><br>
+        <a href="forgot-password.html" style="font-size:.76rem">ลืมรหัสผ่าน?</a>
+        &nbsp;|&nbsp;<a href="forgot-email.html" style="font-size:.76rem">ลืมอีเมล?</a>
+        &nbsp;|&nbsp;<a href="terms.html" style="font-size:.76rem">ข้อกำหนดการใช้งาน</a>
       </div>
+    </div>
+  </div>
 
-      <div class="auth-footer">
-        <span data-i18n="noAccount">ยังไม่มีบัญชี?</span>
-        <a href="register.html" data-i18n="registerNew">สมัครสมาชิก</a>
-        &nbsp;|&nbsp;
-        <a href="create-band.html">ขอสร้างวงใหม่</a>
-        <br>
-        <a href="forgot-password.html" style="font-size:var(--text-xs)">ลืมรหัสผ่าน?</a>
-        &nbsp;|&nbsp;
-        <a href="forgot-email.html" style="font-size:var(--text-xs)">ลืมอีเมล?</a>
-        &nbsp;|&nbsp;
-        <a href="terms.html" data-i18n="terms_link" style="font-size:var(--text-xs)">ข้อกำหนดการใช้งาน</a>
+  <!-- ── PIN SETUP MODAL ── -->
+  <div id="pinSetupModal">
+    <div class="ps-sheet">
+      <div class="ps-title" id="psTitle">ตั้งรหัส PIN 6 หลัก</div>
+      <div class="ps-sub" id="psSub">เข้าสู่ระบบได้รวดเร็ว ไม่ต้องพิมพ์รหัสผ่านทุกครั้ง</div>
+      <div class="ps-dots">
+        <div class="ps-dot" id="psd0"></div>
+        <div class="ps-dot" id="psd1"></div>
+        <div class="ps-dot" id="psd2"></div>
+        <div class="ps-dot" id="psd3"></div>
+        <div class="ps-dot" id="psd4"></div>
+        <div class="ps-dot" id="psd5"></div>
       </div>
+      <div class="ps-numpad">
+        <button class="ps-btn" onclick="psDigit('1')">1</button>
+        <button class="ps-btn" onclick="psDigit('2')">2</button>
+        <button class="ps-btn" onclick="psDigit('3')">3</button>
+        <button class="ps-btn" onclick="psDigit('4')">4</button>
+        <button class="ps-btn" onclick="psDigit('5')">5</button>
+        <button class="ps-btn" onclick="psDigit('6')">6</button>
+        <button class="ps-btn" onclick="psDigit('7')">7</button>
+        <button class="ps-btn" onclick="psDigit('8')">8</button>
+        <button class="ps-btn" onclick="psDigit('9')">9</button>
+        <button class="ps-btn" style="visibility:hidden"></button>
+        <button class="ps-btn" onclick="psDigit('0')" style="grid-column:2">0</button>
+        <button class="ps-btn" onclick="psDel()">⌫</button>
+      </div>
+      <button class="ps-skip" onclick="skipPinSetup()">ข้ามขั้นตอนนี้ (ไม่ตั้ง PIN)</button>
     </div>
   </div>
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script>
-  /* ===== Biometric / Credential Management Helper ===== */
+  /*
+   * Quick Login: PIN 6 หลัก + Biometric
+   * localStorage keys:
+   *   sc_ql_email  — email
+   *   sc_ql_name   — display name
+   *   sc_ql_pin    — SHA-256(PIN:email) hex
+   *   sc_ql_enc    — btoa(xorStr(password, PIN))
+   */
+  var _qlEmail = localStorage.getItem('sc_ql_email') || '';
+  var _qlName  = localStorage.getItem('sc_ql_name')  || '';
+  var _qlPin   = localStorage.getItem('sc_ql_pin')   || '';
+  var _qlEnc   = localStorage.getItem('sc_ql_enc')   || '';
   var CRED_API = !!(window.PasswordCredential || window.FederatedCredential);
-  // iOS Safari handles biometric via autocomplete="current-password" natively —
-  // We still show the button on iOS for UX, powered by the credential store.
+  var IS_IOS   = /iPhone|iPad|iPod/.test(navigator.userAgent);
 
-  function bioDetectIcon() {
-    var ua = navigator.userAgent;
-    if (/iPhone|iPad/.test(ua)) return '🔒'; // FaceID / TouchID
-    if (/Android/.test(ua)) return '👆';      // Fingerprint
-    return '🔑';                               // Desktop - system keychain
+  function showToast(msg, dur) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, dur||2400);
   }
 
-  function doLoginSuccess(r, email, password, userName) {
-    // 1. Store in localStorage (existing logic)
-    localStorage.setItem('auth_token', r.token);
-    localStorage.setItem('userName', userName || r.userName || '');
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('bandName', r.bandName || '');
-    localStorage.setItem('bandId', r.bandId || '');
-    localStorage.setItem('userRole', r.role || 'member');
-    if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager', '1');
-    else localStorage.removeItem('bandManager');
+  function xorStr(str, key) {
+    var out = '', k = (key||'000000');
+    for (var i = 0; i < str.length; i++)
+      out += String.fromCharCode(str.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+    return out;
+  }
 
-    // 2. Save credentials for biometric / password-manager (async, fire-and-forget)
-    if (CRED_API && password) {
-      try {
-        var cred = new PasswordCredential({
-          id: email,
-          password: password,
-          name: userName || r.userName || email
-        });
-        navigator.credentials.store(cred).catch(function(){});
-      } catch(ex) {}
-    }
-
-    // 3. Navigate
-    window.location.href = 'dashboard.html';
+  async function sha256hex(str) {
+    var enc = new TextEncoder().encode(str);
+    var buf = await crypto.subtle.digest('SHA-256', enc);
+    return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
   }
 
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof renderLangToggle === 'function') renderLangToggle('langToggle');
     if (typeof applyTranslations === 'function') applyTranslations();
 
-    var loginForm   = document.getElementById('loginForm');
-    var togglePassword = document.getElementById('togglePassword');
-    if (togglePassword) {
-      togglePassword.addEventListener('click', function() {
-        var pw = document.getElementById('password');
-        if (pw.type === 'password') { pw.type = 'text'; togglePassword.textContent = '🙈'; }
-        else { pw.type = 'password'; togglePassword.textContent = '👁'; }
-      });
-    }
-    var bioSection  = document.getElementById('biometricSection');
-    var bioBtn      = document.getElementById('biometricBtn');
-    var bioIcon     = document.getElementById('biometricIcon');
-    var bioLabel    = document.getElementById('biometricLabel');
-    var bioHint     = document.getElementById('biometricHint');
-
-    // ----- Detect & show biometric button -----
-    // Show on supported browsers (Credential Management API present)
-    if (CRED_API || /iPhone|iPad/.test(navigator.userAgent)) {
-      bioSection.style.display = 'block';
-      bioIcon.textContent = bioDetectIcon();
-
-      // On iOS/iPad — uses native Safari behaviour; label change only
-      if (/iPhone|iPad/.test(navigator.userAgent)) {
-        bioLabel.textContent = 'เข้าสู่ระบบด้วย Face ID / Touch ID';
-        bioHint.textContent = 'Safari จะใช้ Face ID หรือ Touch ID จากรหัสผ่านที่บันทึกไว้';
-      }
-
-      // Auto-fetch saved credentials on load (silent, mediation: optional)
-      if (CRED_API) {
-        navigator.credentials.get({ password: true, mediation: 'optional' }).then(function(cred) {
-          if (cred && cred.type === 'password' && cred.id && cred.password) {
-            // Pre-fill fields quietly — user can still tap biometric button to confirm
-            document.getElementById('email').value    = cred.id;
-            document.getElementById('password').value = cred.password;
-            // Show a hint that credentials are prefilled
-            bioHint.textContent = '🔓 พบบัญชีที่บันทึกไว้สำหรับ ' + cred.id + ' — กดปุ่มด้านบนเพื่อยืนยัน';
-          }
-        }).catch(function(){});
-      }
+    if (_qlEmail && _qlPin && _qlEnc) {
+      showQuickView();
+    } else {
+      showFullView();
     }
 
-    // ----- Biometric button click -----
-    if (bioBtn) {
-      bioBtn.addEventListener('click', function() {
-        if (!CRED_API) {
-          // iOS Safari: just focus the password field so the OS shows its saved-password prompt
-          document.getElementById('password').focus();
-          return;
-        }
-        bioBtn.disabled = true;
-        bioLabel.textContent = '⏳ กำลังยืนยันตัวตน...';
+    var togglePw = document.getElementById('togglePassword');
+    if (togglePw) togglePw.addEventListener('click', function() {
+      var pw = document.getElementById('password');
+      if (pw.type === 'password') { pw.type = 'text'; togglePw.textContent = '🙈'; }
+      else { pw.type = 'password'; togglePw.textContent = '👁'; }
+    });
 
-        navigator.credentials.get({ password: true, mediation: 'required' })
-          .then(function(cred) {
-            bioBtn.disabled = false;
-            bioLabel.textContent = 'เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID';
-            if (!cred || cred.type !== 'password') return;
-
-            // Fill fields visually (for transparency)
-            document.getElementById('email').value    = cred.id;
-            document.getElementById('password').value = cred.password;
-
-            // Auto-submit
-            var btn = document.getElementById('loginBtn');
-            btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
-            clearErrors();
-
-            apiCall('login', { email: cred.id, password: cred.password }, function(r) {
-              btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
-              if (r && r.success) {
-                doLoginSuccess(r, cred.id, cred.password, cred.name);
-              } else {
-                document.getElementById('emailError').textContent = (r && r.message) || 'เข้าสู่ระบบไม่สำเร็จ';
-              }
-            });
-          })
-          .catch(function(err) {
-            bioBtn.disabled = false;
-            bioLabel.textContent = 'เข้าสู่ระบบด้วยลายนิ้วมือ / Face ID';
-            // User cancelled → just let them type manually
-            if (err && err.name !== 'NotAllowedError') {
-              console.warn('Credential get error:', err);
-            }
-          });
-      });
-    }
-
-    // ----- Normal form submit -----
-    function clearErrors() {
-      ['emailError','passwordError'].forEach(function(id) {
-        var el = document.getElementById(id); if (el) el.textContent = '';
-      });
-    }
-
-    loginForm.addEventListener('submit', function(e) {
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
       e.preventDefault();
       clearErrors();
-      var email    = document.getElementById('email').value.trim();
+      var email = document.getElementById('email').value.trim();
       var password = document.getElementById('password').value;
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        document.getElementById('emailError').textContent = (typeof t === 'function' ? t('errInvalidEmail') : 'อีเมลไม่ถูกต้อง'); return;
+        document.getElementById('emailError').textContent = 'อีเมลไม่ถูกต้อง'; return;
       }
       if (!password) {
-        document.getElementById('passwordError').textContent = (typeof t === 'function' ? t('errEnterPassword') : 'กรุณากรอกรหัสผ่าน'); return;
+        document.getElementById('passwordError').textContent = 'กรุณากรอกรหัสผ่าน'; return;
       }
       var btn = document.getElementById('loginBtn');
-      btn.disabled = true; btn.textContent = (typeof t === 'function' ? t('loading') : 'กำลังโหลด...');
-
+      btn.disabled = true; btn.textContent = 'กำลังเข้าสู่ระบบ...';
       apiCall('login', { email: email, password: password }, function(r) {
-        btn.disabled = false; btn.textContent = (typeof t === 'function' ? t('login') : 'เข้าสู่ระบบ');
+        btn.disabled = false; btn.textContent = 'เข้าสู่ระบบ';
         if (r && r.success) {
           doLoginSuccess(r, email, password, r.userName);
         } else {
-          document.getElementById('emailError').textContent = (r && r.message) || (typeof t === 'function' ? t('msg_error') : 'เกิดข้อผิดพลาด');
+          document.getElementById('emailError').textContent = (r && r.message) || 'เกิดข้อผิดพลาด';
         }
       });
     });
-
   });
+
+  function showQuickView() {
+    document.getElementById('quickView').style.display = 'flex';
+    document.getElementById('fullView').style.display  = 'none';
+    var name = _qlName || _qlEmail;
+    document.getElementById('qvName').textContent  = name;
+    document.getElementById('qvEmail').textContent = _qlEmail;
+    var initial = name ? name.trim()[0].toUpperCase() : '🎵';
+    document.getElementById('qvAvatar').textContent = initial;
+
+    var bioBtn = document.getElementById('npBioBtn');
+    var bioEmpty = document.getElementById('npBioEmpty');
+    var bioHint = document.getElementById('qvBioHint');
+    if (IS_IOS || CRED_API) {
+      bioBtn.textContent = IS_IOS ? '🔒' : '👆';
+      bioBtn.style.display = 'flex';
+      if (bioEmpty) bioEmpty.style.visibility = 'hidden';
+      bioHint.textContent = IS_IOS ? 'หรือใช้ Face ID / Touch ID' : 'หรือใช้ลายนิ้วมือ / Face ID';
+    } else {
+      bioBtn.style.display = 'none';
+    }
+  }
+
+  function showFullView() {
+    document.getElementById('quickView').style.display = 'none';
+    document.getElementById('fullView').style.display  = 'block';
+  }
+
+  function switchToFull() { showFullView(); }
+  function clearErrors() {
+    ['emailError','passwordError'].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=''; });
+  }
+
+  /* ── PIN entry ── */
+  var _pin = '', _pinBusy = false;
+
+  function setDots(pin, isErr) {
+    for (var i = 0; i < 6; i++) {
+      var d = document.getElementById('pd'+i);
+      if (!d) continue;
+      d.className = 'pin-dot' + (i < pin.length ? (isErr ? ' error' : ' filled') : '');
+    }
+  }
+
+  function npDigit(v) {
+    if (_pin.length >= 6 || _pinBusy) return;
+    _pin += v; setDots(_pin, false);
+    if (_pin.length === 6) { _pinBusy = true; setTimeout(submitPin, 120); }
+  }
+
+  function npDel() {
+    if (!_pin.length || _pinBusy) return;
+    _pin = _pin.slice(0,-1); setDots(_pin, false);
+  }
+
+  function submitPin() {
+    var pin = _pin, email = _qlEmail;
+    sha256hex(pin + ':' + email).then(function(h) {
+      if (h !== _qlPin) {
+        setDots(pin, true);
+        showToast('PIN ไม่ถูกต้อง ลองใหม่', 2000);
+        setTimeout(function(){ _pin = ''; _pinBusy = false; setDots('', false); }, 700);
+        return;
+      }
+      var pw = '';
+      try { pw = xorStr(atob(_qlEnc), pin); } catch(ex) {}
+      if (!pw) { showToast('ข้อมูลบัญชีเสียหาย กรุณาใช้รหัสผ่าน'); _pin=''; _pinBusy=false; switchToFull(); return; }
+      showToast('⏳ กำลังเข้าสู่ระบบ...');
+      apiCall('login', { email: email, password: pw }, function(r) {
+        if (r && r.success) {
+          storeSession(r, email, r.userName);
+          window.location.href = 'dashboard.html';
+        } else {
+          _pin = ''; _pinBusy = false; setDots('', false);
+          showToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 2500);
+        }
+      });
+    });
+  }
+
+  /* ── Biometric ── */
+  function doBiometric() {
+    if (IS_IOS && !CRED_API) {
+      showFullView();
+      setTimeout(function(){ document.getElementById('password').focus(); }, 300);
+      showToast('แตะช่องรหัสผ่าน → เลือก Face ID / Touch ID จาก Keychain 🔒', 3500);
+      return;
+    }
+    if (CRED_API) {
+      navigator.credentials.get({ password: true, mediation: 'required' })
+        .then(function(cred) {
+          if (!cred || cred.type !== 'password') return;
+          showToast('⏳ กำลังยืนยันตัวตน...');
+          apiCall('login', { email: cred.id, password: cred.password }, function(r) {
+            if (r && r.success) {
+              storeSession(r, cred.id, r.userName);
+              window.location.href = 'dashboard.html';
+            } else {
+              showToast((r && r.message) || 'เข้าสู่ระบบไม่สำเร็จ', 2500);
+            }
+          });
+        }).catch(function(){});
+    }
+  }
+
+  /* ── Store session ── */
+  function storeSession(r, email, userName) {
+    localStorage.setItem('auth_token', r.token);
+    localStorage.setItem('userName',   userName || r.userName || '');
+    localStorage.setItem('userEmail',  email);
+    localStorage.setItem('bandName',   r.bandName || '');
+    localStorage.setItem('bandId',     r.bandId || '');
+    localStorage.setItem('userRole',   r.role || 'member');
+    if (r.role === 'manager' || r.role === 'admin') localStorage.setItem('bandManager','1');
+    else localStorage.removeItem('bandManager');
+  }
+
+  /* ── Full login success ── */
+  function doLoginSuccess(r, email, password, userName) {
+    storeSession(r, email, userName);
+    if (CRED_API && password) {
+      try {
+        var cred = new PasswordCredential({ id: email, password: password, name: userName || email });
+        navigator.credentials.store(cred).catch(function(){});
+      } catch(ex) {}
+    }
+    // If PIN already set: update encrypted password, go to dashboard
+    if (_qlPin) {
+      _pendingEmail = email; _pendingPassword = password; _pendingName = userName || r.userName || '';
+      _psFirstPin = localStorage.getItem('sc_ql_pin_raw') || '';
+      // Re-encrypt with existing pin — need pin plaintext which we don't have
+      // So just clear and re-prompt PIN setup
+      localStorage.removeItem('sc_ql_pin');
+      localStorage.removeItem('sc_ql_enc');
+    }
+    _pendingEmail = email; _pendingPassword = password; _pendingName = userName || r.userName || '';
+    if (!localStorage.getItem('sc_ql_pin')) {
+      openPinSetup();
+    } else {
+      window.location.href = 'dashboard.html';
+    }
+  }
+
+  /* ── PIN SETUP ── */
+  var _psStep = 1, _psFirstPin = '', _psPin2 = '';
+  var _pendingEmail = '', _pendingPassword = '', _pendingName = '';
+
+  function openPinSetup() {
+    _psStep = 1; _psFirstPin = ''; _psPin2 = '';
+    document.getElementById('psTitle').textContent = 'ตั้งรหัส PIN 6 หลัก';
+    document.getElementById('psSub').textContent   = 'เข้าสู่ระบบได้รวดเร็ว ไม่ต้องพิมพ์รหัสผ่านทุกครั้ง';
+    renderPsDots();
+    document.getElementById('pinSetupModal').classList.add('show');
+  }
+
+  function skipPinSetup() {
+    document.getElementById('pinSetupModal').classList.remove('show');
+    window.location.href = 'dashboard.html';
+  }
+
+  function renderPsDots(isErr) {
+    for (var i = 0; i < 6; i++) {
+      var d = document.getElementById('psd'+i);
+      if (!d) continue;
+      d.className = 'ps-dot' + (i < _psPin2.length ? (isErr ? ' error' : ' filled') : '');
+    }
+  }
+
+  function psDigit(v) {
+    if (_psPin2.length >= 6) return;
+    _psPin2 += v; renderPsDots(false);
+    if (_psPin2.length === 6) setTimeout(psConfirm, 140);
+  }
+
+  function psDel() {
+    if (!_psPin2.length) return;
+    _psPin2 = _psPin2.slice(0,-1); renderPsDots(false);
+  }
+
+  function psConfirm() {
+    if (_psStep === 1) {
+      _psFirstPin = _psPin2; _psPin2 = '';
+      _psStep = 2;
+      document.getElementById('psTitle').textContent = 'ยืนยัน PIN อีกครั้ง';
+      document.getElementById('psSub').textContent   = 'กรอก PIN 6 หลักเดิมซ้ำอีกครั้ง';
+      renderPsDots(false);
+    } else {
+      if (_psPin2 === _psFirstPin) {
+        var pin = _psFirstPin;
+        var enc = btoa(xorStr(_pendingPassword, pin));
+        sha256hex(pin + ':' + _pendingEmail).then(function(h) {
+          localStorage.setItem('sc_ql_email', _pendingEmail);
+          localStorage.setItem('sc_ql_name',  _pendingName);
+          localStorage.setItem('sc_ql_pin',   h);
+          localStorage.setItem('sc_ql_enc',   enc);
+          document.getElementById('pinSetupModal').classList.remove('show');
+          showToast('✅ ตั้ง PIN สำเร็จ! ครั้งต่อไปใช้ PIN เข้าได้เลย', 3000);
+          setTimeout(function(){ window.location.href = 'dashboard.html'; }, 900);
+        });
+      } else {
+        renderPsDots(true);
+        showToast('PIN ไม่ตรงกัน กรุณาลองใหม่', 2000);
+        setTimeout(function() {
+          _psPin2 = ''; _psStep = 1; _psFirstPin = '';
+          document.getElementById('psTitle').textContent = 'ตั้งรหัส PIN 6 หลัก';
+          document.getElementById('psSub').textContent   = 'เข้าสู่ระบบได้รวดเร็ว ไม่ต้องพิมพ์รหัสผ่านทุกครั้ง';
+          renderPsDots(false);
+        }, 750);
+      }
+    }
+  }
   </script>
 </body>
 </html>
