@@ -623,6 +623,14 @@
   }
   function submitPin(){
     var pin=_pin, email=_ql.email;
+    /* ถ้า hash ที่เก็บไว้ไม่ใช่ SHA-256 (64 hex) = format เก่า → ล้างแล้วให้ตั้ง PIN ใหม่ */
+    if(!_ql.pin || _ql.pin.length !== 64){
+      ['sc_ql_pin','sc_ql_enc'].forEach(function(k){ localStorage.removeItem(k); });
+      pinReset();
+      showToast('PIN เก่าหมดอายุ — กรุณา Login ด้วยอีเมล 1 ครั้ง ระบบจะตั้ง PIN ใหม่ให้อัตโนมัติ', 5000);
+      setTimeout(showFullView, 1000);
+      return;
+    }
     /* hash PIN แล้วเช็ค */
     sha256hex(pin+':'+email).then(function(h){
       if(h!==_ql.pin){
