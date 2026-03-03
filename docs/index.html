@@ -284,9 +284,33 @@
       .qv-email{margin-bottom:20px}
       .numpad{gap:9px}
     }
+
+    /* ── In-App Browser Warning ── */
+    #inappBanner{
+      position:fixed;top:0;left:0;right:0;z-index:900;
+      background:linear-gradient(135deg,#92400e,#78350f);
+      color:#fef3c7;font-size:.82rem;text-align:center;
+      padding:calc(env(safe-area-inset-top,0) + 12px) 16px 12px;
+      line-height:1.55;display:none;border-bottom:1px solid rgba(255,200,0,.25);
+      box-shadow:0 4px 20px rgba(0,0,0,.4);
+    }
+    #inappBanner.show{display:block}
+    #inappBanner b{color:#fde68a}
+    #inappBanner a{
+      display:inline-block;margin-top:8px;padding:6px 16px;
+      background:#d4a843;color:#000;border-radius:20px;
+      font-weight:700;font-size:.78rem;text-decoration:none;
+    }
   </style>
 </head>
 <body>
+  <!-- In-App Browser Banner -->
+  <div id="inappBanner">
+    ⚠️ กำลังเปิดใน <b id="inappAppName">Browser ของแอป</b><br>
+    ลายนิ้วมือ / Face ID <b>ใช้ไม่ได้</b>ใน browser นี้<br>
+    กรุณาเปิดใน <b>Safari</b> หรือ <b>Chrome</b> เพื่อใช้งานได้เต็มรูปแบบ<br>
+    <a id="inappOpenLink" href="#">เปิดใน Browser &#8594;</a>
+  </div>
   <div class="lang-top"><div id="langToggle"></div></div>
   <div id="toast"></div>
 
@@ -416,6 +440,23 @@
   var HAS_WEBAUTHN = !!(window.PublicKeyCredential);
   var IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
   var HAS_CRED_MGR = !!(window.PasswordCredential);
+  /* ── In-App Browser detection ── */
+  var UA = navigator.userAgent;
+  var IS_FB      = /FBAN|FBAV/.test(UA);
+  var IS_IG      = /Instagram/.test(UA);
+  var IS_LINE    = /Line\//.test(UA);
+  var IS_WECHAT  = /MicroMessenger/.test(UA);
+  var IS_TIKTOK  = /musical_ly|TikTok/.test(UA);
+  var IS_INAPP   = IS_FB || IS_IG || IS_LINE || IS_WECHAT || IS_TIKTOK ||
+                   (IS_IOS && /Safari/.test(UA) === false && /AppleWebKit/.test(UA));
+  function getInAppName(){
+    if(IS_FB)     return 'Facebook';
+    if(IS_IG)     return 'Instagram';
+    if(IS_LINE)   return 'LINE';
+    if(IS_WECHAT) return 'WeChat';
+    if(IS_TIKTOK) return 'TikTok';
+    return 'แอปนี้';
+  }
 
   /* ── utilities ── */
   function qs(id){ return document.getElementById(id); }
@@ -446,6 +487,32 @@
   document.addEventListener('DOMContentLoaded',function(){
     if(typeof renderLangToggle==='function') renderLangToggle('langToggle');
     if(typeof applyTranslations==='function') applyTranslations();
+
+    /* Show in-app browser warning */
+    if(IS_INAPP){
+      var banner = qs('inappBanner');
+      qs('inappAppName').textContent = getInAppName();
+      var link = qs('inappOpenLink');
+      var pageUrl = location.href;
+      /* iOS: intent-style links, Android: open in Chrome or default browser */
+      if(IS_LINE){
+        link.href = pageUrl; /* LINE has openExternalBrowser param */
+        link.href = pageUrl + (pageUrl.indexOf('?')>=0?'&':'?') + 'openExternalBrowser=1';
+      } else {
+        link.href = 'googlechrome://' + pageUrl.replace(/^https?:\///,'');
+        link.addEventListener('click', function(e){
+          e.preventDefault();
+          /* Try Chrome, fallback to intent:// for Android */
+          var chrome = 'googlechrome://' + pageUrl.replace(/^https?:\/\//,'');
+          var intent = 'intent://' + pageUrl.replace(/^https?:\/\//, '') +
+                       '#Intent;scheme=https;package=com.android.chrome;end';
+          var safari = pageUrl;
+          window.location = IS_IOS ? safari : intent;
+          setTimeout(function(){ window.location = pageUrl; }, 800);
+        });
+      }
+      banner.classList.add('show');
+    }
 
     if(_ql.email && _ql.pin && _ql.enc){
       showQuickView();
@@ -503,6 +570,13 @@
     var btn=qs('npBioBtn');
     var hint=qs('bioHintRow');
     var hasCred=!!_ql.cred;
+    /* Bio doesn't work inside in-app browsers */
+    if(IS_INAPP){
+      btn.style.display='none';
+      hint.textContent='เปิดใน Safari/Chrome เพื่อใช้ Face ID / ลายนิ้วมือ';
+      hint.style.color='rgba(212,168,67,.5)';
+      return;
+    }
     var supported=HAS_WEBAUTHN||(IS_IOS&&HAS_WEBAUTHN)||HAS_CRED_MGR;
     if(supported&&hasCred){
       btn.innerHTML=IS_IOS?'&#x1F510;':'&#x1F91E;';
@@ -553,7 +627,13 @@
       try{pw=xorStr(atob(_ql.enc),pin);}catch(ex){}
       if(!pw){showToast('ข้อมูลบัญชีเสียหาย กรุณาใช้รหัสผ่าน');_pin='';_pinBusy=false;switchToFull();return;}
       setMsg('กำลังเข้าสู่ระบบ...','');
+      var _pinTimeout = setTimeout(function(){
+        _pin=''; _pinBusy=false; setDots('',false);
+        setMsg('หมดเวลา — กรุณาลองใหม่',true);
+        setTimeout(function(){ setMsg('กรอก PIN 6 หลัก',false); },2500);
+      }, 12000);
       apiCall('login',{email:email,password:pw},function(r){
+        clearTimeout(_pinTimeout);
         if(r&&r.success){
           storeSession(r,email,r.userName);
           window.location.href='dashboard.html';
@@ -687,11 +767,8 @@
         navigator.credentials.store(c).catch(function(){});
       }catch(ex){}
     }
-    /* clear old PIN so setup re-prompts */
-    if(_ql.pin){
-      localStorage.removeItem('sc_ql_pin'); localStorage.removeItem('sc_ql_enc');
-      localStorage.removeItem('sc_ql_cred'); localStorage.removeItem('sc_ql_bk');
-    }
+    /* ไม่ลบ PIN เก่าตอนนี้ — จะ overwrite ใน psConfirm() เมื่อ user ตั้ง PIN ใหม่เสร็จ
+       ถ้า user กด Skip PIN เก่าจะยังคงใช้งานได้ */
     _pendingEmail=email; _pendingPassword=password; _pendingName=userName||r.userName||'';
     openPinSetup();
   }
