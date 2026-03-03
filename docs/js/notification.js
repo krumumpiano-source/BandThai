@@ -170,7 +170,6 @@
   global.initNotifications = initNotifications;
 
   // ── showNotificationPrompt — banner ใน dashboard ──────────────
-  // เรียกจาก dashboard หลัง render เสร็จ
   function showNotificationPrompt(containerId) {
     var container = document.getElementById(containerId);
     if (!container) return;
@@ -178,7 +177,12 @@
     var status = getPermissionStatus();
     if (status === 'granted') return; // มีอยู่แล้ว ไม่แสดง
 
-    // บันทึกว่า user เคยกด "ไว้ทีหลัง"
+    /* ถ้า permission ยังเป็น 'default' (ยังไม่เคยตอบ) → รีเซ็ต dismissed
+       เพราะอาจถูก set ผิดพลาดจาก session ก่อน */
+    if (status === 'default') {
+      localStorage.removeItem('notif_dismissed');
+    }
+
     if (localStorage.getItem('notif_dismissed') === '1') return;
 
     var banner = document.createElement('div');
@@ -224,8 +228,8 @@
         if (banner) banner.style.display = 'none';
         if (typeof global.showToast === 'function') global.showToast('✅ เปิดการแจ้งเตือนแล้ว');
       } else {
+        /* ไม่ set notif_dismissed — ให้แสดง banner ใหม่ได้ครั้งหน้า */
         if (banner) {
-          /* แสดง error message โดยตรงใน banner แทนที่จะซ่อน */
           banner.innerHTML = '<div style="flex:1;font-size:13px">' +
             '<b>⚠️ เปิดการแจ้งเตือนไม่ได้</b><br>' +
             '<span style="font-size:11px;opacity:.85">' + (r && r.error ? r.error : 'ลองรีเฟรชหน้าแล้วกดใหม่') + '</span>' +
