@@ -130,6 +130,8 @@
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
         case 'getSongInsights':    return doGetSongInsights(d);
         case 'searchSongs':        return doSearchSongs(d);
+        case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
+        case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
 
         // ── Band Members ───────────────────────────────────────────
         case 'getAllBandMembers':
@@ -1101,6 +1103,75 @@
       });
       var songs = toCamelList(songsRes.data || []);
       return { success: true, data: { history: history, songs: songs } };
+    }
+
+    // ── Requested Songs from Live History ──────────────────────────────────
+    async function doGetRequestedSongsFromHistory(d) {
+      var bandId = d.bandId || getBandId();
+      // Fetch playlist_history and existing band_songs in parallel
+      var [histRes, libRes] = await Promise.all([
+        sb.from('playlist_history').select('date, playlist')
+          .eq('band_id', bandId).order('date', { ascending: false }).limit(500),
+        sb.from('band_songs').select('name').eq('band_id', bandId)
+      ]);
+      if (histRes.error) throw histRes.error;
+      var libNames = new Set(
+        (libRes.data || []).map(function(s){ return (s.name||'').trim().toLowerCase(); })
+      );
+      // Collect all requested songs from history
+      var map = {}; // key = name lowercase
+      (histRes.data || []).forEach(function(row) {
+        var playlist = row.playlist || [];
+        playlist.forEach(function(song) {
+          if (!song._isRequest || !song.name) return;
+          var k = song.name.trim().toLowerCase();
+          if (!map[k]) {
+            map[k] = {
+              name: song.name.trim(),
+              key: song.key || song._key || '',
+              bpm: song.bpm || 0,
+              artist: song.artist || '',
+              singer: song.singer || '',
+              requestCount: 0,
+              lastDate: row.date || '',
+              inLibrary: libNames.has(k)
+            };
+          }
+          map[k].requestCount++;
+          // keep most recent date and non-empty metadata
+          if (row.date > map[k].lastDate) map[k].lastDate = row.date;
+          if (!map[k].key && (song.key || song._key)) map[k].key = song.key || song._key || '';
+          if (!map[k].bpm && song.bpm) map[k].bpm = song.bpm;
+          if (!map[k].artist && song.artist) map[k].artist = song.artist;
+          if (!map[k].singer && song.singer) map[k].singer = song.singer;
+        });
+      });
+      var list = Object.values(map).sort(function(a, b) {
+        return b.requestCount - a.requestCount;
+      });
+      return { success: true, data: list };
+    }
+
+    async function doBulkAddSongsToLibrary(d) {
+      var bandId  = d.bandId  || getBandId();
+      var songs   = d.songs   || [];
+      if (!songs.length) return { success: true, added: 0 };
+      var rows = songs.map(function(s) {
+        return {
+          band_id:  bandId,
+          name:     (s.name || '').trim(),
+          key:      s.key   || '',
+          bpm:      s.bpm   ? String(s.bpm) : '',
+          artist:   s.artist || '',
+          singer:   s.singer || '',
+          source:   'live_request',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+      });
+      var { data, error } = await sb.from('band_songs').insert(rows).select('id');
+      if (error) throw error;
+      return { success: true, added: (data || []).length };
     }
 
     // ── Band Fund (กองกลาง) ──────────────────────────────────────
