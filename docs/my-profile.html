@@ -703,7 +703,20 @@
     var buf = await crypto.subtle.digest('SHA-256', enc);
     return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
   }
-  function updatePinStatus() {
+  function simpleFallbackHash(str) {
+    var h1=5381, h2=52711, i=str.length;
+    while(i--){ var c=str.charCodeAt(i); h1=Math.imul(h1^c,2654435761); h2=Math.imul(h2^c,2246822519); }
+    h1=Math.imul(h1^(h1>>>16),2246822519)^Math.imul(h2^(h2>>>13),3266489917);
+    h2=Math.imul(h2^(h2>>>16),2246822519)^Math.imul(h1^(h1>>>13),3266489917);
+    return (4294967296*(2097151&h2)+(h1>>>0)).toString(16).padStart(14,'0')+(h1^h2>>>0).toString(16).padStart(8,'0');
+  }
+  function computePinHash(pin, email) {
+    var str = pin + ':' + email;
+    if (window.crypto && window.crypto.subtle) {
+      return sha256hex(str)['catch'](function(){ return simpleFallbackHash(str); });
+    }
+    return Promise.resolve(simpleFallbackHash(str));
+  }  function updatePinStatus() {
     var hasPin = !!localStorage.getItem('sc_ql_pin');
     document.getElementById('pinStatusText').textContent = hasPin
       ? '✅ PIN ถูกตั้งค่าแล้ว สามารถเข้าสู่ระบบด้วย PIN / Face ID ได้'
@@ -762,7 +775,7 @@
         // Better: clear enc so next login via email will re-encrypt with new PIN
         localStorage.removeItem('sc_ql_enc');
         localStorage.removeItem('sc_ql_pin');
-        sha256hex(pin+':'+email).then(function(h){
+        computePinHash(pin, email).then(function(h){
           localStorage.setItem('sc_ql_pin', h);
           localStorage.setItem('sc_ql_email', email);
           localStorage.setItem('sc_ql_name', localStorage.getItem('userName')||'');

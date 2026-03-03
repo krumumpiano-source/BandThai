@@ -595,6 +595,42 @@
 
   /* ── PIN entry ── */
   var _pin='', _pinBusy=false;
+
+  /* SHA-256 ผ่าน crypto.subtle (HTTPS) หรือ fallback hash แบบง่ายกรณี WebView ไม่รองรับ */
+  function simpleFallbackHash(str) {
+    /* djb2 + xor fold — ไม่ใช่ crypto-grade แต่ใช้เป็น fallback สำหรับ comparison */
+    var h1=5381, h2=52711, i=str.length;
+    while(i--){
+      var c=str.charCodeAt(i);
+      h1=Math.imul(h1^c,2654435761);
+      h2=Math.imul(h2^c,2246822519);
+    }
+    h1=Math.imul(h1^(h1>>>16),2246822519)^Math.imul(h2^(h2>>>13),3266489917);
+    h2=Math.imul(h2^(h2>>>16),2246822519)^Math.imul(h1^(h1>>>13),3266489917);
+    return (4294967296*(2097151&h2)+(h1>>>0)).toString(16).padStart(14,'0')+
+           (h1^h2>>>0).toString(16).padStart(8,'0');
+  }
+  /* ตรวจสอบว่าค่าที่เก็บไว้เป็น SHA-256 (64 hex chars) หรือ fallback hash */
+  function pinHashOk(stored){
+    return typeof stored==='string' && stored.length>=14;
+  }
+  function computePinHash(pin, email) {
+    var str = pin + ':' + email;
+    /* ถ้า stored PIN เป็น SHA-256 (64 chars) ต้องใช้ sha256hex เสมอ
+       ถ้า stored PIN เป็น fallback hash (<64 chars) ให้ใช้ fallback */
+    var storedLen = (_ql.pin || '').length;
+    if (storedLen === 64) {
+      /* SHA-256 path — ถ้า crypto.subtle ไม่มีให้ return hash ที่จะไม่ตรงแน่ๆ
+         แล้ว submitPin จะแจ้งให้ใช้รหัสผ่านแทน */
+      if (window.crypto && window.crypto.subtle) {
+        return sha256hex(str)['catch'](function(){ return '__sha256_unavailable__'; });
+      }
+      return Promise.resolve('__sha256_unavailable__');
+    }
+    /* fallback hash path */
+    return Promise.resolve(simpleFallbackHash(str));
+  }
+
   function setDots(p,isErr){
     for(var i=0;i<6;i++){
       var d=qs('pd'+i); if(!d) continue;
@@ -605,6 +641,10 @@
     var m=qs('pinMsg');
     m.textContent=msg;
     m.className='pin-msg'+(isErr?' err':'');
+  }
+  function pinReset(msgText) {
+    _pin=''; _pinBusy=false; setDots('',false);
+    setMsg(msgText||'กรอก PIN 6 หลัก', false);
   }
   function npDigit(v){
     if(_pin.length>=6||_pinBusy) return;
@@ -617,32 +657,62 @@
   }
   function submitPin(){
     var pin=_pin, email=_ql.email;
-    sha256hex(pin+':'+email).then(function(h){
+    /* ตรวจ apiCall พร้อมใช้งานหรือยัง */
+    if(typeof apiCall !== 'function'){
+      /* รอ apiCall โหลด แล้วลองใหม่ */
+      var _waitApi=0;
+      var _waiter=setInterval(function(){
+        _waitApi++;
+        if(typeof apiCall==='function'){ clearInterval(_waiter); submitPin(); }
+        else if(_waitApi>60){ clearInterval(_waiter); pinReset(); showToast('เชื่อมต่อไม่ได้ กรุณาลองใหม่'); }
+      },100);
+      return;
+    }
+    computePinHash(pin, email).then(function(h){
+      if(h==='__sha256_unavailable__'){
+        /* crypto.subtle ไม่ทำงานใน browser นี้ (เช่น Facebook WebView) */
+        pinReset();
+        setMsg('Browser นี้ไม่รองรับ PIN', true);
+        showToast('กรุณาเปิดใน Chrome หรือ Safari เพื่อใช้ PIN', 3500);
+        setTimeout(function(){ switchToFull(); },2000);
+        return;
+      }
       if(h!==_ql.pin){
         setDots(pin,true); setMsg('PIN ไม่ถูกต้อง ลองใหม่',true);
-        setTimeout(function(){_pin='';_pinBusy=false;setDots('',false);setMsg('กรอก PIN 6 หลัก',false);},800);
+        setTimeout(function(){ pinReset('กรอก PIN 6 หลัก'); },900);
         return;
       }
       var pw='';
-      try{pw=xorStr(atob(_ql.enc),pin);}catch(ex){}
-      if(!pw){showToast('ข้อมูลบัญชีเสียหาย กรุณาใช้รหัสผ่าน');_pin='';_pinBusy=false;switchToFull();return;}
+      try{ pw=xorStr(atob(_ql.enc),pin); }catch(ex){}
+      if(!pw){ showToast('ข้อมูลบัญชีเสียหาย กรุณาใช้รหัสผ่าน'); pinReset(); switchToFull(); return; }
       setMsg('กำลังเข้าสู่ระบบ...','');
       var _pinTimeout = setTimeout(function(){
-        _pin=''; _pinBusy=false; setDots('',false);
+        pinReset();
         setMsg('หมดเวลา — กรุณาลองใหม่',true);
         setTimeout(function(){ setMsg('กรอก PIN 6 หลัก',false); },2500);
-      }, 12000);
-      apiCall('login',{email:email,password:pw},function(r){
+      }, 15000);
+      try{
+        apiCall('login',{email:email,password:pw},function(r){
+          clearTimeout(_pinTimeout);
+          if(r&&r.success){
+            storeSession(r,email,r.userName);
+            window.location.href='dashboard.html';
+          } else {
+            pinReset();
+            setMsg((r&&r.message)||'เกิดข้อผิดพลาด',true);
+            setTimeout(function(){ setMsg('กรอก PIN 6 หลัก',false); },2500);
+          }
+        });
+      } catch(ex2){
         clearTimeout(_pinTimeout);
-        if(r&&r.success){
-          storeSession(r,email,r.userName);
-          window.location.href='dashboard.html';
-        } else {
-          _pin='';_pinBusy=false;setDots('',false);
-          setMsg((r&&r.message)||'เกิดข้อผิดพลาด',true);
-          setTimeout(function(){setMsg('กรอก PIN 6 หลัก',false);},2500);
-        }
-      });
+        pinReset();
+        setMsg('เกิดข้อผิดพลาด กรุณาลองใหม่',true);
+        setTimeout(function(){ setMsg('กรอก PIN 6 หลัก',false); },2500);
+      }
+    })['catch'](function(err){
+      pinReset();
+      setMsg('เกิดข้อผิดพลาด กรุณาลองใหม่',true);
+      setTimeout(function(){ setMsg('กรอก PIN 6 หลัก',false); },2500);
     });
   }
 
@@ -812,7 +882,7 @@
     } else {
       if(_psPin===_psFirst){
         var pin=_psFirst,enc=btoa(xorStr(_pendingPassword,pin));
-        sha256hex(pin+':'+_pendingEmail).then(function(h){
+        computePinHash(pin, _pendingEmail).then(function(h){
           localStorage.setItem('sc_ql_email',_pendingEmail);
           localStorage.setItem('sc_ql_name',_pendingName);
           localStorage.setItem('sc_ql_pin',h);
