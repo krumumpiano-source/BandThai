@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>ประวัติงานนอก — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    /* ── Filter Bar ── */
+    .filter-bar{display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-bottom:var(--spacing-lg);align-items:center}
+    .filter-bar input,.filter-bar select{padding:8px 12px;border:1px solid var(--premium-border);border-radius:var(--radius-md);background:var(--premium-white);font-family:inherit;font-size:var(--text-sm);color:var(--premium-text)}
+    .filter-bar input{flex:1;min-width:180px}
+
+    /* ── Stat chips ── */
+    .stat-chips{display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-bottom:var(--spacing-lg)}
+    .stat-chip{padding:10px 18px;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;display:flex;flex-direction:column;align-items:center;min-width:110px}
+    .stat-chip .sv{font-size:var(--text-xl);font-weight:700}
+    .chip-total{background:#1a202c;color:#fff}
+    .chip-paid{background:#f0fff4;color:#276749;border:1px solid #c6f6d5}
+    .chip-partial{background:#fffbeb;color:#b7791f;border:1px solid #fef08a}
+    .chip-pending{background:#fff5f5;color:#c53030;border:1px solid #fed7d7}
+
+    /* ── Job Card ── */
+    .job-hist-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:var(--spacing-md);overflow:hidden;transition:box-shadow .2s}
+    .job-hist-card:hover{box-shadow:var(--shadow-md)}
+    .job-hist-header{display:flex;align-items:stretch;cursor:pointer;user-select:none}
+    .job-date-col{min-width:66px;background:linear-gradient(160deg,#2d3748,#4a5568);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;flex-shrink:0}
+    .job-date-col .jdd{font-size:26px;font-weight:700;line-height:1}
+    .job-date-col .jmm{font-size:11px;text-transform:uppercase;opacity:.8;margin-top:2px}
+    .job-date-col .jyy{font-size:10px;opacity:.6}
+    .job-head-body{flex:1;padding:var(--spacing-md) var(--spacing-lg);min-width:0}
+    .job-head-body h3{margin:0 0 4px;font-size:var(--text-md);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .job-head-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--text-xs);color:var(--premium-text-muted);line-height:1.8}
+    .job-head-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:var(--spacing-md) var(--spacing-lg);gap:6px;flex-shrink:0}
+    .payout-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--radius-full);white-space:nowrap}
+    .badge-paid{background:#f0fff4;color:#276749;border:1px solid #c6f6d5}
+    .badge-partial{background:#fffbeb;color:#b7791f;border:1px solid #fef08a}
+    .badge-pending{background:#fff5f5;color:#c53030;border:1px solid #fed7d7}
+    .badge-cancelled{background:#f7fafc;color:#718096;border:1px solid #e2e8f0}
+    .job-total-fee{font-size:var(--text-base);font-weight:700;color:var(--premium-gold)}
+
+    /* ── Detail Panel ── */
+    .job-hist-detail{display:none;border-top:1px solid var(--premium-border)}
+    .job-hist-detail.open{display:block}
+    .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--spacing-md);padding:var(--spacing-lg)}
+    .detail-section h4{font-size:11px;font-weight:700;color:var(--premium-text-muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px}
+    .detail-section p{font-size:var(--text-sm);margin:0 0 3px;color:var(--premium-text)}
+
+    /* ── Member Fee Table ── */
+    .member-fee-table{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+    .member-fee-table th{background:#f7fafc;font-weight:700;font-size:10px;text-transform:uppercase;color:var(--premium-text-muted);padding:6px 10px;text-align:left;border-bottom:2px solid var(--premium-border)}
+    .member-fee-table td{padding:8px 10px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
+    .member-fee-table tr:last-child td{border-bottom:none}
+    .fee-paid{color:#276749;font-weight:700}
+    .fee-pending{color:#c53030;font-weight:700}
+
+    /* ── Action row ── */
+    .job-actions{padding:var(--spacing-sm) var(--spacing-lg) var(--spacing-md);display:flex;gap:var(--spacing-sm);flex-wrap:wrap;border-top:1px solid var(--premium-light-gray)}
+
+    /* ── Empty ── */
+    .history-empty{text-align:center;padding:60px 20px;color:var(--premium-text-muted)}
+    .history-empty .big-icon{font-size:48px;margin-bottom:12px}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+
+  <main>
+    <div class="container">
+      <div class="page-header">
+        <h1 class="page-title">📁 ประวัติงานนอก</h1>
+        <a href="external-payout.html" class="btn btn-primary">💵 หน้าเบิกจ่าย</a>
+      </div>
+
+      <!-- Stat Chips -->
+      <div class="stat-chips" id="statChips">
+        <div class="stat-chip chip-total"><div class="sv" id="statTotal">—</div><div>งานทั้งหมด</div></div>
+        <div class="stat-chip chip-paid"><div class="sv" id="statPaid">—</div><div>จ่ายครบ</div></div>
+        <div class="stat-chip chip-partial"><div class="sv" id="statPartial">—</div><div>จ่ายบางส่วน</div></div>
+        <div class="stat-chip chip-pending"><div class="sv" id="statPending">—</div><div>รอเบิกจ่าย</div></div>
+      </div>
+
+      <!-- Filter Bar -->
+      <div class="filter-bar">
+        <input type="text" id="searchInput" placeholder="🔍 ค้นหา ชื่องาน / สถานที่ / ลูกค้า..." oninput="applyFilter()">
+        <select id="filterStatus" onchange="applyFilter()">
+          <option value="">ทุกสถานะ</option>
+          <option value="pending">⏸ รอเบิกจ่าย</option>
+          <option value="partial">⏳ จ่ายบางส่วน</option>
+          <option value="paid">✅ จ่ายครบ</option>
+          <option value="cancelled">❌ ยกเลิก</option>
+        </select>
+        <select id="filterYear" onchange="applyFilter()">
+          <option value="">ทุกปี</option>
+        </select>
+        <select id="filterMonth" onchange="applyFilter()">
+          <option value="">ทุกเดือน</option>
+          <option value="01">มกราคม</option><option value="02">กุมภาพันธ์</option>
+          <option value="03">มีนาคม</option><option value="04">เมษายน</option>
+          <option value="05">พฤษภาคม</option><option value="06">มิถุนายน</option>
+          <option value="07">กรกฎาคม</option><option value="08">สิงหาคม</option>
+          <option value="09">กันยายน</option><option value="10">ตุลาคม</option>
+          <option value="11">พฤศจิกายน</option><option value="12">ธันวาคม</option>
+        </select>
+      </div>
+
+      <!-- Job List -->
+      <div id="jobHistList">
+        <div class="history-empty"><div class="big-icon">⏳</div><p>กำลังโหลดข้อมูล...</p></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script src="js/supabase-api.js"></script>
+  <script>
+  var allJobs = [];
+
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+    renderMainNav('mainNav');
+    applyTranslations();
+    loadHistory();
+  });
+
+  function loadHistory() {
+    apiCall('getExternalJobs', {}, function(r) {
+      allJobs = (r && r.success && r.data) ? r.data : [];
+      buildYearFilter();
+      updateStats();
+      applyFilter();
+    });
+  }
+
+  function buildYearFilter() {
+    var years = {};
+    allJobs.forEach(function(j) {
+      var y = (j.eventDate || '').slice(0, 4);
+      if (y) years[y] = 1;
+    });
+    var sel = document.getElementById('filterYear');
+    Object.keys(years).sort().reverse().forEach(function(y) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = 'พ.ศ. ' + (parseInt(y, 10) + 543);
+      sel.appendChild(opt);
+    });
+  }
+
+  function updateStats() {
+    var total = allJobs.length;
+    var paid = 0, partial = 0, pending = 0;
+    allJobs.forEach(function(j) {
+      var ps = j.payoutStatus || j.payout_status || 'pending';
+      if (ps === 'paid') paid++;
+      else if (ps === 'partial') partial++;
+      else pending++;
+    });
+    document.getElementById('statTotal').textContent   = total;
+    document.getElementById('statPaid').textContent    = paid;
+    document.getElementById('statPartial').textContent = partial;
+    document.getElementById('statPending').textContent = pending;
+  }
+
+  function applyFilter() {
+    var q   = (document.getElementById('searchInput').value || '').toLowerCase();
+    var st  = document.getElementById('filterStatus').value;
+    var yr  = document.getElementById('filterYear').value;
+    var mo  = document.getElementById('filterMonth').value;
+
+    var filtered = allJobs.filter(function(j) {
+      var ps = j.payoutStatus || j.payout_status || 'pending';
+      var dt = j.eventDate || '';
+      if (st && ps !== st) return false;
+      if (yr && !dt.startsWith(yr)) return false;
+      if (mo && dt.slice(5, 7) !== mo) return false;
+      if (q) {
+        var hay = [j.jobName, j.venue, j.clientName, j.venueAddress].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    renderList(filtered);
+  }
+
+  var THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+  function renderList(jobs) {
+    var el = document.getElementById('jobHistList');
+    if (!jobs.length) {
+      el.innerHTML = '<div class="history-empty"><div class="big-icon">📭</div><p>ไม่พบงานนอกในเงื่อนไขนี้</p></div>';
+      return;
+    }
+    el.innerHTML = jobs.map(function(job) { return buildCard(job); }).join('');
+  }
+
+  function buildCard(job) {
+    var id  = job.id || job.jobId || '';
+    var ds  = job.eventDate || '';
+    var d   = ds ? new Date(ds + 'T00:00:00') : null;
+    var dd  = d ? String(d.getDate()).padStart(2, '0') : '--';
+    var mm  = d ? THAI_MONTHS[d.getMonth()] : '--';
+    var yy  = d ? d.getFullYear() + 543 : '';
+    var ps  = job.payoutStatus || job.payout_status || 'pending';
+    var badgeMap = { paid: '<span class="payout-badge badge-paid">✅ จ่ายครบ</span>', partial: '<span class="payout-badge badge-partial">⏳ จ่ายบางส่วน</span>', pending: '<span class="payout-badge badge-pending">⏸ รอเบิกจ่าย</span>', cancelled: '<span class="payout-badge badge-cancelled">❌ ยกเลิก</span>' };
+    var badge = badgeMap[ps] || badgeMap['pending'];
+
+    var fees = Array.isArray(job.memberFees) ? job.memberFees : [];
+    var paidCount = fees.filter(function(f) { return f.paid; }).length;
+    var totalFee = parseFloat(job.totalFee || 0);
+    var travel  = (job.travelInfo  && typeof job.travelInfo  === 'object') ? job.travelInfo  : {};
+    var accom   = (job.accommodation && typeof job.accommodation === 'object') ? job.accommodation : {};
+    var food    = (job.foodInfo && typeof job.foodInfo === 'object') ? job.foodInfo : {};
+
+    /* Member fee rows */
+    var memberRows = fees.length
+      ? fees.map(function(mf) {
+          var paidTag = mf.paid
+            ? '<span class="fee-paid">✅ จ่ายแล้ว ' + (mf.paidDate ? '(' + mf.paidDate + ')' : '') + '</span>'
+            : '<span class="fee-pending">⏸ รอ</span>';
+          return '<tr>'
+            + '<td>' + escapeHtml(mf.name || '-') + '</td>'
+            + '<td>' + escapeHtml(mf.instrument || '-') + '</td>'
+            + '<td style="text-align:right;font-weight:700">' + (mf.fee || 0).toLocaleString('th-TH') + ' ฿</td>'
+            + '<td>' + paidTag + '</td>'
+            + '<td>' + escapeHtml(mf.paymentMethod || '-') + '</td>'
+            + '</tr>';
+        }).join('')
+      : '<tr><td colspan="5" style="text-align:center;color:var(--premium-text-muted)">ไม่มีข้อมูลค่าตัวสมาชิก</td></tr>';
+
+    /* Travel section */
+    var travelHtml = (travel.destination || travel.origin)
+      ? '<div class="detail-section">'
+          + '<h4>🚗 การเดินทาง</h4>'
+          + (travel.origin ? '<p>ต้นทาง: ' + escapeHtml(travel.origin) + '</p>' : '')
+          + (travel.destination ? '<p>ปลายทาง: ' + escapeHtml(travel.destination) + '</p>' : '')
+          + (travel.distanceKm ? '<p>ระยะทาง: ' + travel.distanceKm + ' กม.</p>' : '')
+          + (travel.travelFee ? '<p>ค่าเดินทาง: ' + Number(travel.travelFee).toLocaleString('th-TH') + ' ฿</p>' : '')
+          + (travel.travelMethod ? '<p>พาหนะ: ' + escapeHtml(travel.travelMethod) + '</p>' : '')
+        + '</div>'
+      : '';
+
+    /* Accommodation section */
+    var accomHtml = accom.hasAccom
+      ? '<div class="detail-section">'
+          + '<h4>🏨 ที่พัก</h4>'
+          + (accom.hotel ? '<p>ที่พัก: ' + escapeHtml(accom.hotel) + '</p>' : '')
+          + '<p>' + (accom.rooms || 0) + ' ห้อง × ' + (accom.nights || 0) + ' คืน</p>'
+          + (accom.accomFee ? '<p>ค่าที่พัก: ' + Number(accom.accomFee).toLocaleString('th-TH') + ' ฿</p>' : '')
+        + '</div>'
+      : '<div class="detail-section"><h4>🏨 ที่พัก</h4><p style="color:var(--premium-text-muted)">ไป-กลับวันเดียว</p></div>';
+
+    /* Food section */
+    var foodHtml = food.hasFood
+      ? '<div class="detail-section">'
+          + '<h4>🍱 อาหาร</h4>'
+          + (food.meals ? '<p>' + escapeHtml(food.meals) + '</p>' : '')
+          + (food.foodFee ? '<p>ค่าอาหาร: ' + Number(food.foodFee).toLocaleString('th-TH') + ' ฿</p>' : '')
+        + '</div>'
+      : '';
+
+    /* Finance section */
+    var bandFundCut = parseFloat(job.bandFundCut || 0);
+    var otherExp    = parseFloat(job.otherExpenses || 0);
+    var memberTotal = fees.reduce(function(s, f) { return s + parseFloat(f.fee || 0); }, 0);
+    var financeHtml = '<div class="detail-section">'
+      + '<h4>💰 สรุปการเงิน</h4>'
+      + '<p>รับจากลูกค้า: <strong>' + totalFee.toLocaleString('th-TH') + ' ฿</strong></p>'
+      + (bandFundCut ? '<p>กองกลางหัก: ' + bandFundCut.toLocaleString('th-TH') + ' ฿</p>' : '')
+      + (otherExp ? '<p>ค่าใช้จ่ายอื่น: ' + otherExp.toLocaleString('th-TH') + ' ฿</p>' : '')
+      + '<p>รวมค่าตัวสมาชิก: <strong>' + memberTotal.toLocaleString('th-TH') + ' ฿</strong></p>'
+      + '</div>';
+
+    var statusStyle = job.status === 'cancelled' ? 'opacity:.6' : '';
+
+    return '<div class="job-hist-card" style="' + statusStyle + '">'
+      /* Header (clickable) */
+      + '<div class="job-hist-header" onclick="toggleDetail(\'' + id + '\')">'
+        + '<div class="job-date-col">'
+          + '<div class="jdd">' + dd + '</div>'
+          + '<div class="jmm">' + mm + '</div>'
+          + '<div class="jyy">' + yy + '</div>'
+        + '</div>'
+        + '<div class="job-head-body">'
+          + '<h3>' + escapeHtml(job.jobName || 'งานนอก') + '</h3>'
+          + '<div class="job-head-meta">'
+            + '📍 ' + escapeHtml(job.venue || 'ไม่ระบุสถานที่')
+            + (job.clientName ? '&nbsp;·&nbsp; 👤 ' + escapeHtml(job.clientName) : '')
+            + (job.startTime ? '&nbsp;·&nbsp; ⏰ ' + escapeHtml(job.startTime) + (job.endTime ? '–' + escapeHtml(job.endTime) : '') + ' น.' : '')
+            + (fees.length ? '&nbsp;·&nbsp; 🎤 สมาชิก ' + paidCount + '/' + fees.length + ' คน' : '')
+          + '</div>'
+        + '</div>'
+        + '<div class="job-head-right">'
+          + badge
+          + '<div class="job-total-fee">' + totalFee.toLocaleString('th-TH') + ' ฿</div>'
+        + '</div>'
+      + '</div>'
+      /* Detail panel */
+      + '<div class="job-hist-detail" id="detail_' + id + '">'
+        /* Member fee table */
+        + (fees.length
+            ? '<div style="overflow-x:auto;padding:var(--spacing-md) var(--spacing-lg) 0">'
+                + '<table class="member-fee-table">'
+                  + '<thead><tr><th>ชื่อ</th><th>เครื่องดนตรี</th><th>ค่าตัว</th><th>สถานะ</th><th>วิธีโอน</th></tr></thead>'
+                  + '<tbody>' + memberRows + '</tbody>'
+                + '</table>'
+              + '</div>'
+            : '')
+        /* Detail grid */
+        + '<div class="detail-grid">'
+          + '<div class="detail-section">'
+            + '<h4>📋 รายละเอียดงาน</h4>'
+            + '<p>สถานที่: ' + escapeHtml(job.venue || '-') + '</p>'
+            + (job.venueAddress ? '<p style="font-size:11px;color:var(--premium-text-muted)">' + escapeHtml(job.venueAddress) + '</p>' : '')
+            + (job.clientPhone ? '<p>โทร: ' + escapeHtml(job.clientPhone) + '</p>' : '')
+            + (job.showDuration ? '<p>ระยะเวลาแสดง: ' + escapeHtml(job.showDuration) + '</p>' : '')
+          + '</div>'
+          + travelHtml
+          + accomHtml
+          + foodHtml
+          + financeHtml
+        + '</div>'
+        /* Actions */
+        + '<div class="job-actions">'
+          + (ps !== 'paid' ? '<a href="external-payout.html?jobId=' + encodeURIComponent(id) + '" class="btn btn-primary btn-sm">💵 ไปหน้าเบิกจ่าย</a>' : '')
+          + '<button class="btn btn-ghost btn-sm" onclick="copyJobSummary(\'' + id + '\')">📋 คัดลอกสรุป</button>'
+        + '</div>'
+      + '</div>'
+    + '</div>';
+  }
+
+  function toggleDetail(id) {
+    var el = document.getElementById('detail_' + id);
+    if (!el) return;
+    el.classList.toggle('open');
+  }
+
+  function copyJobSummary(id) {
+    var job = allJobs.find(function(j) { return (j.id || j.jobId) === id; });
+    if (!job) return;
+    var fees = Array.isArray(job.memberFees) ? job.memberFees : [];
+    var lines = [
+      '🎤 ' + (job.jobName || 'งานนอก'),
+      '📅 ' + (job.eventDate || '-') + (job.startTime ? '  ⏰ ' + job.startTime + (job.endTime ? '–' + job.endTime : '') + ' น.' : ''),
+      '📍 ' + (job.venue || '-'),
+      '👤 ' + (job.clientName || '-'),
+      '─────────────────',
+      'สมาชิก:'
+    ];
+    fees.forEach(function(mf) {
+      lines.push('  • ' + (mf.name || '-') + ' (' + (mf.instrument || '-') + ')  ' + (mf.fee || 0).toLocaleString('th-TH') + ' ฿  ' + (mf.paid ? '✅' : '⏸'));
+    });
+    lines.push('─────────────────');
+    lines.push('รวมรับ: ' + Number(job.totalFee || 0).toLocaleString('th-TH') + ' ฿');
+    navigator.clipboard.writeText(lines.join('\n')).then(function() {
+      showToast('📋 คัดลอกสรุปงานแล้ว', 'success');
+    });
+  }
+  </script>
+</body>
+</html>
