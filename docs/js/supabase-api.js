@@ -111,20 +111,16 @@
         case 'getBandCode':         return doGetBandCode(d);
 
         // ── Band Requests (ขอสร้างวงใหม่) ──────────────────────────
-        case 'submitBandRequest':       return doSubmitBandRequest(d);
         case 'getPendingBandRequests':   return doGetPendingBandRequests();
         case 'approveBandRequest':       return doApproveBandRequest(d);
         case 'rejectBandRequest':        return doRejectBandRequest(d);
-        case 'getMyBandRequest':         return doGetMyBandRequest();
 
         // ── Songs ──────────────────────────────────────────────────
         case 'getAllSongs':
-        case 'getSongs':
-        case 'getAllBandSongs':    return doGetAllSongs(d);
+        case 'getSongs':           return doGetAllSongs(d);
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong':            return doInsert('band_songs', d.data || d);
         case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
-        case 'deleteSong':         return doDelete('band_songs', d.songId);
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
@@ -134,8 +130,7 @@
         case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
 
         // ── Band Members ───────────────────────────────────────────
-        case 'getAllBandMembers':
-        case 'getBandMembers':     return doGetBandMembers();
+        case 'getAllBandMembers':   return doGetBandMembers();
         case 'getBandProfiles':    return doGetBandProfiles(d);
         case 'addBandMember':      return doInsert('band_members', d.data || d);
         case 'updateBandMember':   return doUpdate('band_members', d.memberId, d.data || d);
@@ -144,7 +139,6 @@
         // ── Attendance ─────────────────────────────────────────────
         case 'addAttendancePayroll':    return doInsert('attendance_payroll', d.data || d);
         case 'getAllAttendancePayroll':  return doGetAttendance(d);
-        case 'updateAttendancePayroll': return doUpdate('attendance_payroll', d.recordId, d.data || d);
         case 'deleteAttendancePayroll': return doDelete('attendance_payroll', d.recordId);
 
         // ── Check-in ───────────────────────────────────────────────
@@ -159,7 +153,6 @@
         case 'getMyLeaveRequests': return doSelect('leave_requests', { band_id: getBandId(), member_id: d.memberId }, '-date', 100);
         case 'getAllLeaveRequests': return doSelect('leave_requests', { band_id: getBandId() }, '-date', 200);
         case 'getLeaveRequestsForRange': return doSelectRange('leave_requests', getBandId(), d.dateFrom, d.dateTo);
-        case 'updateLeaveStatus':  return doUpdate('leave_requests', d.leaveId, { status: d.status });
         case 'assignSubstitute':   return doUpdate('leave_requests', d.leaveId, { substitute_id: d.substituteId, substitute_name: d.substituteName, status: 'approved' });
         case 'rejectLeave':        return doUpdate('leave_requests', d.leaveId, { status: 'rejected' });
 
@@ -169,7 +162,6 @@
         case 'getPendingMembers':  return doGetPendingMembers(d);
         case 'approveMember':      return doApproveMember(d);
         case 'rejectMember':       return doRejectMember(d);
-        case 'updateMemberRole':   return doUpdateMemberRole(d);
         case 'removeMember':       return doRemoveMember(d);
 
         // ── Setlist ────────────────────────────────────────────────
@@ -186,9 +178,6 @@
         case 'getAllExternalPayouts':   return doSelect('external_payouts', { band_id: getBandId() }, '-date');
         case 'deleteExternalPayout':   return doDelete('external_payouts', d.payoutId);
 
-        // ── Statistics ─────────────────────────────────────────────
-        case 'getStatistics':      return doGetStatistics(d);
-
         // ── Quotation PDF ──────────────────────────────────────────
         case 'generateQuotationPdf': return doGenerateQuotationPdf(d);
 
@@ -199,9 +188,6 @@
         // ── Schedule ───────────────────────────────────────────────
         case 'saveSchedule':  return doSaveSchedule(d);
         case 'getSchedule':   return doGetSchedule(d);
-        case 'addJob':        return doInsert('schedule', Object.assign({ band_id: getBandId() }, toSnakeObj(d)));
-        case 'updateJob':     return doUpdate('schedule', d.scheduleId, d);
-        case 'deleteJob':     return doDelete('schedule', d.scheduleId);
 
         // ── Equipment ──────────────────────────────────────────────
         case 'getAllEquipment':   return doSelect('equipment', { band_id: getBandId() }, 'name');
@@ -236,12 +222,11 @@
         // ── Live Guest Tokens ──────────────────────────────────────
         case 'createGuestToken':  return doCreateGuestToken(d);
         case 'verifyGuestToken':  return doVerifyGuestToken(d);
-        case 'deleteGuestToken':  return doDelete('live_guest_tokens', d.token);
+        case 'deleteGuestToken':  return doDeleteGuestToken(d);
 
         // ── Push Subscriptions ─────────────────────────────────────
         case 'savePushSubscription':      return doSavePushSubscription(d);
         case 'deletePushSubscription':    return doDeletePushSubscription(d);
-        case 'getPushSubscription':       return doGetPushSubscription(d);
         case 'getNotifSubscribers':       return doGetNotifSubscribers(d);
         case 'sendTestNotification':      return doSendTestNotification(d);
         case 'cleanStaleSubscriptions':   return doCleanStaleSubscriptions(d);
@@ -803,10 +788,6 @@
     }
 
     // ── Band Requests (ขอสร้างวงใหม่) ─────────────────────────
-    async function doSubmitBandRequest(d) {
-      return doRegisterBandRequest(d);
-    }
-
     async function doGetPendingBandRequests() {
       var { data, error } = await sb.rpc('get_pending_band_requests');
       if (error) throw error;
@@ -830,19 +811,6 @@
       return data;
     }
 
-    async function doGetMyBandRequest() {
-      var { data: authUser } = await sb.auth.getUser();
-      if (!authUser || !authUser.user) return { success: false };
-      var { data, error } = await sb.from('band_requests')
-        .select('*')
-        .eq('requester_id', authUser.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return { success: true, data: data ? toCamel(data) : null };
-    }
-
     // ── Pending Members (อนุมัติสมาชิก) ──────────────────────────
     async function doGetPendingMembers(d) {
       var bandId = d.bandId || getBandId();
@@ -863,15 +831,6 @@
       var { data, error } = await sb.rpc('reject_member', { p_user_id: d.userId, p_band_id: bandId });
       if (error) throw error;
       return data;
-    }
-
-    async function doUpdateMemberRole(d) {
-      if (!d.userId || !d.role) return { success: false, message: 'ข้อมูลไม่ครบ' };
-      var allowed = ['member', 'manager'];
-      if (allowed.indexOf(d.role) === -1) return { success: false, message: 'บทบาทไม่ถูกต้อง' };
-      var { data, error } = await sb.from('profiles').update({ role: d.role, updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
-      if (error) throw error;
-      return { success: true, data: toCamel(data), message: 'เปลี่ยนบทบาทเรียบร้อย' };
     }
 
     async function doRemoveMember(d) {
@@ -978,8 +937,8 @@
     }
 
     async function doAdminDeleteUser(userId) {
-      // ลบ profile (cascade ลบ auth user ด้วย)
-      var { error } = await sb.from('profiles').delete().eq('id', userId);
+      // ใช้ RPC admin_delete_user ซึ่งลบ auth.users (profiles cascade ตาม)
+      var { error } = await sb.rpc('admin_delete_user', { p_user_id: userId });
       if (error) throw error;
       return { success: true };
     }
@@ -1210,91 +1169,6 @@
       return doDelete('fund_transactions', d.txId);
     }
 
-    // ── Statistics ────────────────────────────────────────────────
-    async function doGetStatistics(d) {
-      var bandId = d.bandId || getBandId();
-      var year   = d.year || new Date().getFullYear();
-      var startDate = year + '-01-01';
-      var endDate   = year + '-12-31';
-
-      // Fetch schedule + attendance + fund in parallel
-      var [jobsRes, attRes, fundRes, memberRes] = await Promise.all([
-        sb.from('schedule').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
-        sb.from('attendance_payroll').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
-        sb.from('fund_transactions').select('*').eq('band_id', bandId).gte('date', startDate).lte('date', endDate),
-        sb.from('band_members').select('id,name,position').eq('band_id', bandId)
-      ]);
-
-      var jobs = jobsRes.data || [];
-      var att  = attRes.data || [];
-      var fund = fundRes.data || [];
-
-      // Filter by month if specified
-      var filteredJobs = jobs;
-      var filteredAtt = att;
-      var filteredFund = fund;
-      if (d.month) {
-        var mStr = String(d.month).padStart(2, '0');
-        var prefix = year + '-' + mStr;
-        filteredJobs = jobs.filter(function(j) { return (j.date || '').startsWith(prefix); });
-        filteredAtt = att.filter(function(a) { return (a.date || '').startsWith(prefix); });
-        filteredFund = fund.filter(function(f) { return (f.date || '').startsWith(prefix); });
-      }
-
-      var totalIncome = 0, totalExpense = 0;
-      filteredFund.forEach(function(f) {
-        if (f.type === 'income') totalIncome += (f.amount || 0);
-        else totalExpense += (f.amount || 0);
-      });
-      // Also count payroll
-      filteredAtt.forEach(function(a) {
-        totalIncome += (a.total_amount || 0);
-      });
-
-      // By month breakdown (always full year)
-      var byMonth = [];
-      for (var m = 0; m < 12; m++) {
-        var mp = String(m + 1).padStart(2, '0');
-        var pf = year + '-' + mp;
-        var mi = 0;
-        fund.filter(function(f) { return (f.date||'').startsWith(pf) && f.type === 'income'; })
-          .forEach(function(f) { mi += (f.amount || 0); });
-        att.filter(function(a) { return (a.date||'').startsWith(pf); })
-          .forEach(function(a) { mi += (a.total_amount || 0); });
-        byMonth.push({ income: mi });
-      }
-
-      // By type
-      var typeCounts = {};
-      filteredJobs.forEach(function(j) {
-        var t = j.type || 'อื่นๆ';
-        typeCounts[t] = (typeCounts[t] || 0) + 1;
-      });
-      var byType = Object.keys(typeCounts).map(function(k) { return { type: k, count: typeCounts[k] }; });
-
-      // Top members
-      var memberEarnings = {};
-      filteredAtt.forEach(function(a) {
-        var name = a.member_name || 'ไม่ระบุ';
-        if (!memberEarnings[name]) memberEarnings[name] = { name: name, position: '', jobCount: 0, totalEarned: 0 };
-        memberEarnings[name].jobCount++;
-        memberEarnings[name].totalEarned += (a.total_amount || 0);
-      });
-      var topMembers = Object.values(memberEarnings).sort(function(a, b) { return b.totalEarned - a.totalEarned; }).slice(0, 10);
-
-      return {
-        success: true,
-        data: {
-          totalJobs:    filteredJobs.length,
-          totalIncome:  totalIncome,
-          totalExpense: totalExpense,
-          byMonth:      byMonth,
-          byType:       byType,
-          topMembers:   topMembers
-        }
-      };
-    }
-
     // ── Quotation PDF (client-side) ──────────────────────────────
     async function doGenerateQuotationPdf(d) {
       // Fetch quotation data
@@ -1349,18 +1223,6 @@
         .eq('endpoint', d.endpoint);
       if (error) throw error;
       return { success: true };
-    }
-
-    async function doGetPushSubscription(d) {
-      var { data: { user }, error: ue } = await sb.auth.getUser();
-      if (ue || !user) return { success: true, data: null };
-      var { data, error } = await sb.from('push_subscriptions')
-        .select('endpoint, p256dh, auth_key, created_at')
-        .eq('user_id', user.id)
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return { success: true, data: data || null };
     }
 
     async function doGetNotifSubscribers(d) {
@@ -1455,6 +1317,14 @@
         timeSlot: data.time_slot,
         expiresAt: data.expires_at
       }};
+    }
+
+    async function doDeleteGuestToken(d) {
+      if (!d.token) return { success: false, message: 'ไม่พบ token' };
+      // ลบโดยใช้ column 'token' โดยตรง (รองรับทั้ง schema v1 และ v2)
+      var { error } = await sb.from('live_guest_tokens').delete().eq('token', d.token);
+      if (error) throw error;
+      return { success: true };
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────

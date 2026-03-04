@@ -162,10 +162,10 @@ async function notifyExternalJobs(thai: Date) {
 
   // Fetch external-type schedule items for tomorrow
   const { data: jobs, error } = await sb
-    .from('schedules')
-    .select('id, band_id, date, venue, time_slot, notes')
+    .from('schedule')
+    .select('id, band_id, date, venue_name, time_slots, notes')
     .eq('date', targetDate)
-    .eq('job_type', 'external')
+    .eq('type', 'external')
     .not('band_id', 'is', null);
 
   if (error || !jobs || jobs.length === 0) return;
@@ -183,7 +183,10 @@ async function notifyExternalJobs(thai: Date) {
 
     if (!subs || subs.length === 0) continue;
 
-    const label = [job.venue, job.time_slot].filter(Boolean).join(' · ') || 'งานพรุ่งนี้';
+    const slotLabel = Array.isArray(job.time_slots)
+      ? job.time_slots.map((s: Record<string, string>) => s.name || s.label || '').filter(Boolean).join(', ')
+      : '';
+    const label = [job.venue_name, slotLabel].filter(Boolean).join(' · ') || 'งานพรุ่งนี้';
     const payload = {
       title: '🎵 งานพรุ่งนี้ — ' + label,
       body:  job.notes ? job.notes.slice(0, 100) : 'อย่าลืมเตรียมตัวสำหรับงานพรุ่งนี้!',
@@ -208,8 +211,8 @@ async function notifyCheckinReminder(thai: Date) {
   const hiTime = hi.toISOString().substring(11, 16);
 
   const { data: slots, error } = await sb
-    .from('schedules')
-    .select('id, band_id, date, venue, time_slot, start_time')
+    .from('schedule')
+    .select('id, band_id, date, venue_name, time_slots, start_time')
     .eq('date', todayDate)
     .gte('start_time', loTime)
     .lte('start_time', hiTime)
@@ -229,7 +232,10 @@ async function notifyCheckinReminder(thai: Date) {
 
     if (!subs || subs.length === 0) continue;
 
-    const label = [slot.venue, slot.time_slot].filter(Boolean).join(' · ') || 'รอบถัดไป';
+    const slotLabel = Array.isArray(slot.time_slots)
+      ? slot.time_slots.map((s: Record<string, string>) => s.name || s.label || '').filter(Boolean).join(', ')
+      : '';
+    const label = [slot.venue_name, slotLabel].filter(Boolean).join(' · ') || 'รอบถัดไป';
     const payload = {
       title: '⏰ เตือนเช็คอิน — อีก 1 ชั่วโมง',
       body:  label + ' · เวลา ' + (slot.start_time || ''),

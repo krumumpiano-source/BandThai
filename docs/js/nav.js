@@ -55,8 +55,9 @@ function renderMainNav(containerId) {
     navLink('dashboard',       '📊 ' + _t('nav_dashboard')) +
     navLink('songs',           '🎵 ' + _t('nav_songs')) +
     navLink('song-insights',   '🎙️ ' + _t('nav_songInsights')) +
-    navLink('leave',           '🔄 ' + _t('nav_leave')) +
     navLink('schedule',        '📅 ' + _t('nav_schedule')) +
+    navLink('check-in',        '✅ ' + _t('nav_checkIn')) +
+    navLink('setlist',         '🎼 ' + _t('nav_setlist')) +
     navLink('statistics',      '📈 ' + _t('nav_statistics')) +
     navLink('equipment',       '🎸 ' + _t('nav_equipment')) +
     navLink('band-info',       '👥 ' + _t('nav_bandInfo')) +
@@ -71,7 +72,6 @@ function renderMainNav(containerId) {
     navLink('band-fund',          '💰 ' + _t('nav_bandFund')) +
     navLink('external-payout',    '💵 ' + _t('nav_externalPayout')) +
     navLink('quotation',          '📄 ' + _t('nav_quotation')) +
-    navLink('contract',           '📜 ' + _t('nav_contract')) +
     navLink('clients',            '🤝 ' + _t('nav_clients')) +
     navLink('band-settings',      '⚙️ ' + _t('nav_settings'))
   ) : '';
