@@ -80,6 +80,7 @@
           <button class="btn btn-ghost btn-sm no-print" onclick="history.back()">🔙 กลับ</button>
           <button class="btn btn-secondary no-print" onclick="doPrint()">🖨️ พิมพ์</button>
           <button class="btn btn-primary no-print" onclick="doPrint()">📄 บันทึก PDF</button>
+          <button class="btn no-print" id="confirmContractBtn" style="background:#276749;color:#fff;border:none" onclick="confirmContract()">✅ ยืนยันสัญญา &amp; สร้างงานนอก</button>
         </div>
       </div>
 
@@ -478,6 +479,115 @@
     document.getElementById('ctDoc').style.display = 'block';
     window.print();
     setTimeout(function(){ document.getElementById('ctDoc').style.display = 'none'; }, 1000);
+  }
+
+  /* ── Confirm Contract → สร้าง External Job ── */
+  function confirmContract(){
+    var v = getContractValues();
+    if (!v.jobName || v.jobName === '___________') {
+      showToast('กรุณากรอกชื่องานก่อนยืนยันสัญญา', 'error'); return;
+    }
+    if (!v.eventDate || v.eventDate === '___________') {
+      showToast('กรุณาระบุวันที่งานก่อนยืนยัน', 'error'); return;
+    }
+
+    var btn = document.getElementById('confirmContractBtn');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+
+    // ดึง rawDate จาก input โดยตรง
+    var rawDate = document.getElementById('ctEventDate').value;
+    var rawTime = document.getElementById('ctEventTime').value || '';
+
+    // แยก start/end จาก eventTime เช่น "18:00-22:00" หรือ "18:00"
+    var startTime = '', endTime = '';
+    var timeParts = rawTime.split('-');
+    if (timeParts.length >= 2) { startTime = timeParts[0].trim(); endTime = timeParts[1].trim(); }
+    else if (timeParts.length === 1 && timeParts[0]) { startTime = timeParts[0].trim(); }
+
+    // ดึง calcData จาก contractData ใน localStorage
+    var cd = null;
+    try { var cRaw = JSON.parse(localStorage.getItem('contractData') || 'null'); if (cRaw) cd = cRaw.calcData; } catch(e){}
+
+    // สร้าง member_fees array จาก calcData.members
+    var memberFees = [];
+    if (cd && cd.members && cd.members.length) {
+      memberFees = cd.members.map(function(m) {
+        return {
+          memberId:      m.memberId || m.id || '',
+          name:          m.name || '',
+          instrument:    m.instrument || '',
+          fee:           m.fee || 0,
+          paid:          false,
+          paidDate:      '',
+          paymentMethod: ''
+        };
+      });
+    }
+
+    // travel / accommodation / food จาก calcData
+    var travelInfo = cd ? {
+      origin:      cd.origin      || '',
+      destination: cd.destination || '',
+      distanceKm:  cd.distanceKm  || 0,
+      vehicles:    cd.vehicles    || [],
+      travelCost:  cd.travelCost  || 0
+    } : {};
+
+    var accommodation = cd ? {
+      hasAccom:   !!cd.hasAccommodation,
+      hotel:      cd.hotel    || '',
+      rooms:      cd.rooms    || 0,
+      nights:     cd.nights   || 0,
+      accomCost:  cd.accomCost || 0
+    } : {};
+
+    var foodInfo = cd ? {
+      hasFood:   !!cd.hasFood,
+      people:    cd.foodPeople || 0,
+      meals:     cd.foodMeals  || 0,
+      days:      cd.foodDays   || 0,
+      foodCost:  cd.foodCost   || 0
+    } : {};
+
+    var otherExpenses = cd ? ((cd.travelCost || 0) + (cd.accomCost || 0) + (cd.foodCost || 0)) : 0;
+    var bandFundCut   = cd ? (cd.fundAmount || 0) : 0;
+
+    var payload = {
+      job_name:          document.getElementById('ctJobName').value.trim() || v.jobName,
+      client_name:       v.party1Name !== '___________' ? v.party1Name : '',
+      client_phone:      v.party1Phone !== '___________' ? v.party1Phone : '',
+      venue:             v.venue !== '___________' ? v.venue : '',
+      venue_address:     document.getElementById('ctParty1Address') ? '' : '',
+      event_date:        rawDate,
+      start_time:        startTime,
+      end_time:          endTime,
+      show_duration:     v.showDuration !== '___________' ? v.showDuration : '',
+      total_fee:         v.fee || 0,
+      band_fund_cut:     bandFundCut,
+      other_expenses:    otherExpenses,
+      member_fees:       memberFees,
+      travel_info:       travelInfo,
+      accommodation:     accommodation,
+      food_info:         foodInfo,
+      status:            'confirmed',
+      payout_status:     'pending',
+      notes:             v.special || ''
+    };
+
+    apiCall('addExternalJob', payload, function(r) {
+      btn.disabled = false;
+      btn.innerHTML = '✅ ยืนยันสัญญา &amp; สร้างงานนอก';
+      if (r && r.success) {
+        var jobId = (r.data && r.data.id) || '';
+        localStorage.setItem('lastExternalJobId', jobId);
+        showToast('✅ สร้างงานนอกสำเร็จ! สมาชิกจะเห็นงานนี้ในแดชบอร์ด', 'success');
+        setTimeout(function() {
+          window.location.href = 'external-payout.html' + (jobId ? '?jobId=' + jobId : '');
+        }, 1800);
+      } else {
+        showToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+      }
+    });
   }
   </script>
 </body>

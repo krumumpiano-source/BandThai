@@ -180,6 +180,14 @@
         case 'getAllExternalPayouts':   return doSelect('external_payouts', { band_id: getBandId() }, '-date');
         case 'deleteExternalPayout':   return doDelete('external_payouts', d.payoutId);
 
+        // ── External Jobs (งานนอก) ─────────────────────────────────
+        case 'addExternalJob':         return doInsert('external_jobs', d.data || d);
+        case 'getExternalJobs':        return doSelect('external_jobs', { band_id: getBandId() }, '-event_date');
+        case 'getUpcomingExternalJobs':return doGetUpcomingExternalJobs(d);
+        case 'updateExternalJob':      return doUpdate('external_jobs', d.jobId || d.id, d.data || d);
+        case 'deleteExternalJob':      return doDelete('external_jobs', d.jobId || d.id);
+        case 'payMemberForJob':        return doPayMemberForJob(d);
+
         // ── Quotation PDF ──────────────────────────────────────────
         case 'generateQuotationPdf': return doGenerateQuotationPdf(d);
 
@@ -274,7 +282,15 @@
         userId: 'user_id',
         songId: 'song_id', keyNote: 'key_note',
         createdAt: 'created_at', updatedAt: 'updated_at',
-        createdBy: 'created_by', sourceContractId: 'source_contract_id'
+        createdBy: 'created_by', sourceContractId: 'source_contract_id',
+        // external jobs fields
+        jobName: 'job_name', clientPhone: 'client_phone',
+        venueAddress: 'venue_address', showDuration: 'show_duration',
+        totalFee: 'total_fee', bandFundCut: 'band_fund_cut',
+        otherExpenses: 'other_expenses', memberFees: 'member_fees',
+        travelInfo: 'travel_info', foodInfo: 'food_info',
+        payoutStatus: 'payout_status', payoutDate: 'payout_date',
+        jobId: 'job_id', externalJobId: 'external_job_id'
       };
       Object.keys(obj).forEach(function (k) {
         if (k === '_token' || k === 'action') return;
@@ -1372,6 +1388,63 @@
       var { error } = await sb.from('live_guest_tokens').delete().eq('token', d.token);
       if (error) throw error;
       return { success: true };
+    }
+
+    // ── External Jobs helpers ─────────────────────────────────────
+
+    /** ดึง external_jobs ที่ event_date >= today (งานนอกที่กำลังจะมา) */
+    async function doGetUpcomingExternalJobs(d) {
+      var today = new Date().toISOString().substring(0, 10);
+      var q = sb.from('external_jobs')
+        .select('*')
+        .eq('band_id', getBandId())
+        .gte('event_date', today)
+        .order('event_date', { ascending: true })
+        .limit(50);
+      var { data, error } = await q;
+      if (error) throw error;
+      return { success: true, data: toCamelList(data) };
+    }
+
+    /** อัปเดต member_fees JSONB: mark สมาชิกคนหนึ่งว่าได้รับเงินแล้ว
+     *  d = { jobId, memberId, paidDate, paymentMethod }
+     */
+    async function doPayMemberForJob(d) {
+      if (!d.jobId) return { success: false, message: 'ไม่พบ jobId' };
+      // ดึง job ก่อน
+      var { data: job, error: fErr } = await sb.from('external_jobs').select('*').eq('id', d.jobId).single();
+      if (fErr) throw fErr;
+      if (!job) return { success: false, message: 'ไม่พบงาน' };
+
+      // อัปเดต member_fees JSONB
+      var fees = Array.isArray(job.member_fees) ? job.member_fees : [];
+      var updated = false;
+      fees = fees.map(function(mf) {
+        if ((mf.memberId || mf.member_id) === d.memberId) {
+          updated = true;
+          return Object.assign({}, mf, {
+            paid: true,
+            paidDate: d.paidDate || new Date().toISOString().substring(0, 10),
+            paymentMethod: d.paymentMethod || ''
+          });
+        }
+        return mf;
+      });
+      if (!updated) return { success: false, message: 'ไม่พบสมาชิกในงานนี้' };
+
+      // คำนวณ payout_status รวม
+      var allPaid = fees.every(function(mf) { return mf.paid; });
+      var anyPaid = fees.some(function(mf) { return mf.paid; });
+      var payoutStatus = allPaid ? 'paid' : (anyPaid ? 'partial' : 'pending');
+
+      var { error: uErr } = await sb.from('external_jobs').update({
+        member_fees:    fees,
+        payout_status:  payoutStatus,
+        payout_date:    allPaid ? (d.paidDate || new Date().toISOString().substring(0, 10)) : '',
+        updated_at:     new Date().toISOString()
+      }).eq('id', d.jobId);
+      if (uErr) throw uErr;
+      return { success: true, data: { payoutStatus: payoutStatus } };
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────

@@ -206,7 +206,16 @@
       <!-- ===== Notification Prompt ===== -->
       <div id="notifPromptWrap" style="margin-bottom:var(--spacing-md)"></div>
 
-      <!-- ===== Playlist of the Day ===== -->
+      <!-- ===== งานนอกที่กำลังจะมา ===== -->
+      <div class="card" id="extJobsCard" style="margin-bottom:var(--spacing-xl);display:none">
+        <div class="card-header" style="background:linear-gradient(135deg,#1a202c,#2d3748);flex-wrap:wrap;gap:8px">
+          <h3 class="card-title" style="color:#fff;margin:0">🎤 งานนอกที่กำลังจะมา</h3>
+          <a href="external-payout.html" class="btn btn-ghost btn-sm" style="color:#e2e8f0;border-color:#4a5568">ดูทั้งหมด</a>
+        </div>
+        <div id="extJobsList" style="padding:var(--spacing-md)">
+          <p style="text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)">⏳ กำลังโหลด...</p>
+        </div>
+      </div>
       <div class="card" id="dashPlaylistCard" style="margin-bottom:var(--spacing-xl)">
         <div class="card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);flex-wrap:wrap;gap:8px">
           <h3 class="card-title" style="margin:0">📋 ลิสเพลงวันนี้</h3>
@@ -1076,7 +1085,82 @@
     });
   }
 
+  function loadExternalJobsDash() {
+    apiCall('getUpcomingExternalJobs', {}, function(r) {
+      var jobs = (r && r.data) || [];
+      var card = document.getElementById('extJobsCard');
+      var list = document.getElementById('extJobsList');
+      if (!card || !list) return;
+      if (!jobs.length) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      var myName  = (localStorage.getItem('userName')      || '').toLowerCase();
+      var myFirst = (localStorage.getItem('userFirstName') || '').toLowerCase();
+      var myNick  = (localStorage.getItem('userNickname')  || '').toLowerCase();
+
+      function findMyFee(fees) {
+        if (!Array.isArray(fees)) return null;
+        return fees.find(function(mf) {
+          var n = (mf.name || '').toLowerCase();
+          return myName && (n === myName || n === myFirst || n === myNick);
+        }) || null;
+      }
+
+      list.innerHTML = jobs.map(function(job) {
+        var ds = job.eventDate || '';
+        var d  = ds ? new Date(ds + 'T00:00:00') : null;
+        var dateLabel = d ? d.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : 'ไม่ระบุวัน';
+        var myFee  = findMyFee(job.memberFees);
+        var travel = (job.travelInfo  && typeof job.travelInfo  === 'object') ? job.travelInfo  : {};
+        var accom  = (job.accommodation && typeof job.accommodation === 'object') ? job.accommodation : {};
+        var feeHtml = myFee
+          ? '<div style="background:#f0fff4;border-radius:var(--radius-md);padding:var(--spacing-sm) var(--spacing-md)">'
+              + '<div style="font-size:11px;color:#276749;font-weight:700;margin-bottom:2px">💰 ค่าตัวของคุณ</div>'
+              + '<div style="font-size:var(--text-xl);font-weight:700;color:#276749">'+(myFee.fee||0).toLocaleString('th-TH')+' บาท</div>'
+              + '<div style="font-size:11px;color:var(--premium-text-muted)">'+(myFee.paid?'✅ ได้รับเงินแล้ว '+(myFee.paidDate||''):'⏸ รอรับเงิน')+'</div>'
+            + '</div>'
+          : '';
+        return '<div style="border:1px solid var(--premium-border);border-radius:var(--radius-md);margin-bottom:var(--spacing-md);overflow:hidden">'
+          +'<div style="background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;padding:var(--spacing-md) var(--spacing-lg);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+            +'<div>'
+              +'<div style="font-weight:700;font-size:var(--text-md)">🎤 '+escapeHtml(job.jobName||'งานนอก')+'</div>'
+              +'<div style="font-size:var(--text-xs);color:#a0aec0;margin-top:2px">📅 '+dateLabel+'</div>'
+            +'</div>'
+            +(myFee?'<div style="background:var(--premium-gold);color:#1a1a1a;border-radius:var(--radius-full);padding:4px 16px;font-weight:700;font-size:var(--text-sm)">💰 '+(myFee.fee||0).toLocaleString('th-TH')+' ฿</div>':'')
+          +'</div>'
+          +'<div style="padding:var(--spacing-md) var(--spacing-lg);display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--spacing-sm)">'
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">📍 สถานที่</div>'
+              +'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(job.venue||'ไม่ระบุ')+'</div>'
+              +(job.venueAddress?'<div style="font-size:11px;color:var(--premium-text-muted)">'+escapeHtml(job.venueAddress)+'</div>':'')
+            +'</div>'
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">⏰ เวลาแสดง</div>'
+              +'<div style="font-size:var(--text-sm);font-weight:600">'+(job.startTime&&job.endTime?job.startTime+' – '+job.endTime+' น.':job.startTime?job.startTime+' น.':'ไม่ระบุ')+'</div>'
+              +(job.showDuration?'<div style="font-size:11px;color:var(--premium-text-muted)">'+escapeHtml(job.showDuration)+'</div>':'')
+            +'</div>'
+            +(travel.destination||travel.origin
+              ?'<div>'
+                +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">🚗 เดินทาง</div>'
+                +(travel.destination?'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(travel.destination)+'</div>':'')
+                +(travel.distanceKm?'<div style="font-size:11px;color:var(--premium-text-muted)">'+travel.distanceKm+' กม.</div>':'')
+              +'</div>':'')
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">🏨 ที่พัก</div>'
+              +(accom.hasAccom
+                ?'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(accom.hotel||'มีที่พัก')+'</div>'
+                  +'<div style="font-size:11px;color:var(--premium-text-muted)">'+(accom.rooms||0)+' ห้อง × '+(accom.nights||0)+' คืน</div>'
+                :'<div style="font-size:var(--text-sm);color:var(--premium-text-muted)">ไป-กลับวันเดียว</div>')
+            +'</div>'
+            +feeHtml
+          +'</div>'
+        +'</div>';
+      }).join('');
+    });
+  }
+
   function loadDashboard() {
+    loadExternalJobsDash();
     apiCall('getDashboardSummary', {}, function(r) {
       if (!r || !r.success) return;
       var d = r.data || {};
