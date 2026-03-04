@@ -145,8 +145,8 @@
           <div style="display:flex;gap:var(--spacing-sm)">
             <input type="text" id="memberSearch" placeholder="🔍 ค้นหาชื่อ..." oninput="filterMembers()" style="max-width:200px">
             <select id="statusFilter" onchange="filterMembers()">
-              <option value="active">ใช้งาน</option>
               <option value="">ทั้งหมด</option>
+              <option value="active">ใช้งาน</option>
               <option value="inactive">ไม่ใช้งาน</option>
             </select>
           </div>
@@ -248,10 +248,29 @@
     var prov = localStorage.getItem('bandProvince') || '';
     if (prov) { document.getElementById('bProvince').textContent = prov; document.getElementById('bProvinceChip').style.display = 'flex'; }
 
-    // Load members (band-members.js) + settings in parallel
-    loadBandMembers();
+    // Load members from profiles + settings in parallel
+    loadMembers();
     loadBandSettings();
   });
+
+  function loadMembers() {
+    apiCall('getBandProfiles', {}, function(r) {
+      var profiles = (r && r.success && r.data) ? r.data : [];
+      _allMembers = profiles.map(function(p) {
+        return {
+          id:       p.id,
+          name:     p.nickname || p.first_name || p.user_name || p.email || '?',
+          position: p.instrument || p.title || '',
+          phone:    p.phone || '',
+          email:    p.email || '',
+          status:   p.status || 'active',
+          role:     p.role || ''
+        };
+      });
+      _filteredMembers = _allMembers;
+      renderMemberCards(_allMembers);
+    });
+  }
 
   function loadBandSettings() {
     apiCall('getBandSettings', {}, function(r) {
