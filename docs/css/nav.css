@@ -190,9 +190,10 @@
 /* Nav item link */
 .nav-menu li a {
   display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 10px 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 8px 20px;
   color: #9ca3af;
   text-decoration: none;
   font-size: 14px;
@@ -200,9 +201,7 @@
   font-family: var(--font-family-body, 'Sarabun', sans-serif);
   transition: background .13s, color .13s, border-color .13s;
   border-left: 3px solid transparent;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   border-radius: 0 8px 8px 0;
   margin-right: 10px;
 }
@@ -216,6 +215,32 @@
   color: var(--premium-gold, #f6ad55);
   font-weight: 600;
   border-left-color: var(--premium-gold, #f6ad55);
+}
+
+/* label row (emoji + text) */
+.nav-menu li a > span:not(.nav-link-desc) {
+  display: inline;
+}
+
+/* Description line */
+.nav-link-desc {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 400;
+  color: #4b5563;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  padding-left: 22px;
+  transition: color .13s;
+}
+.nav-menu li a:hover .nav-link-desc {
+  color: #6b7280;
+}
+.nav-menu li a.active .nav-link-desc {
+  color: rgba(246,173,85,.65);
 }
 
 /* ── Sidebar footer: lang + logout ── */
