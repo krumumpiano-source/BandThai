@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>สัญญาจ้างวงดนตรี — Band Management By SoulCiety</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    /* ── Editor layout ── */
+    .ct-grid{display:grid;grid-template-columns:320px 1fr;gap:var(--spacing-xl);align-items:start}
+    @media(max-width:900px){.ct-grid{grid-template-columns:1fr}}
+    .ct-sticky{position:sticky;top:80px}
+
+    .form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-grid-2{grid-template-columns:1fr}}
+
+    /* ── Print / contract document ── */
+    @media print{
+      body *{visibility:hidden}
+      #ctDoc,#ctDoc *{visibility:visible}
+      #ctDoc{position:fixed;left:0;top:0;width:100%;background:#fff}
+      #mainNav,#toast,.no-print,.btn{display:none!important}
+    }
+
+    .ct-doc{
+      background:#fff;color:#111;
+      padding:40px 50px;
+      max-width:800px;margin:0 auto;
+      font-family:'Sarabun',sans-serif;font-size:14.5px;line-height:1.9;
+    }
+    .ct-doc h1{text-align:center;font-size:20px;font-weight:700;font-family:'Kanit',sans-serif;margin-bottom:4px}
+    .ct-doc .ct-subtitle{text-align:center;font-size:13px;color:#555;margin-bottom:24px}
+    .ct-doc .ct-date{text-align:right;font-size:13px;color:#555;margin-bottom:20px}
+    .ct-section-title{font-weight:700;font-size:14px;margin:20px 0 6px;border-left:4px solid #b8860b;padding-left:10px}
+    .ct-party-box{background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:14px 18px;margin-bottom:14px}
+    .ct-party-title{font-weight:700;color:#b8860b;font-size:13px;margin-bottom:4px}
+    .ct-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px;font-size:14px}
+    .ct-label{color:#555;min-width:160px;flex-shrink:0}
+    .ct-val{font-weight:600}
+    .ct-clause{margin-bottom:10px;padding-left:4px}
+    .ct-clause-num{font-weight:700;color:#333}
+    .ct-clause ul{margin:4px 0 4px 20px;padding:0}
+    .ct-clause ul li{margin-bottom:2px}
+    .ct-highlight-box{background:#fffbea;border:1px solid #f0d000;border-radius:6px;padding:10px 14px;margin:12px 0;font-weight:600;font-size:14px}
+    .ct-sig-row{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:40px}
+    .ct-sig-box{text-align:center}
+    .ct-sig-line{border-top:1px solid #333;margin:48px 0 6px;padding-top:8px}
+    .ct-sig-name{font-weight:600}
+    .ct-sig-date{font-size:12px;color:#555;margin-top:4px}
+    .ct-witness{display:grid;grid-template-columns:1fr 1fr;gap:60px;margin-top:24px}
+    .ct-witness-box{text-align:center}
+    .ct-footer{margin-top:24px;border-top:1px solid #ddd;padding-top:10px;text-align:center;font-size:11px;color:#999}
+    .ct-watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:80px;color:rgba(180,134,0,.07);font-weight:900;pointer-events:none;white-space:nowrap;font-family:'Kanit',sans-serif;user-select:none}
+
+    /* ── Preview box inside app ── */
+    .preview-card{background:#f5f5f0;border:1px solid var(--premium-light-gray);border-radius:var(--radius-lg);padding:var(--spacing-md);overflow:hidden;position:relative}
+    .preview-scale{transform-origin:top left;transform:scale(0.65);width:154%;margin-bottom:-35%}
+    @media(max-width:900px){.preview-scale{transform:scale(0.45);width:222%;margin-bottom:-55%}}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+
+  <!-- ══ Print target ══ -->
+  <div id="ctDoc" style="display:none"></div>
+
+  <main>
+    <div class="container">
+      <div class="page-header no-print">
+        <h1 class="page-title">📜 สัญญาจ้างวงดนตรี</h1>
+        <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm no-print" onclick="history.back()">🔙 กลับ</button>
+          <button class="btn btn-secondary no-print" onclick="doPrint()">🖨️ พิมพ์</button>
+          <button class="btn btn-primary no-print" onclick="doPrint()">📄 บันทึก PDF</button>
+        </div>
+      </div>
+
+      <div class="ct-grid no-print">
+
+        <!-- ═══ LEFT FORM ═══ -->
+        <div class="ct-sticky no-print">
+          <div class="card" style="max-height:88vh;overflow-y:auto">
+            <div style="font-size:var(--text-sm);color:var(--premium-gold);font-weight:700;margin-bottom:var(--spacing-md)">✏️ แก้ไขข้อมูลสัญญา</div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin-bottom:var(--spacing-xs);text-transform:uppercase">📋 ข้อมูลทั่วไป</div>
+            <div class="form-group"><label>วันที่ทำสัญญา</label><input type="date" id="ctContractDate" oninput="renderContract()"></div>
+            <div class="form-group"><label>เขต/อำเภอ (สถานที่ทำสัญญา)</label><input type="text" id="ctContractPlace" placeholder="เช่น เขตบางรัก กรุงเทพมหานคร" oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎤 ฝ่ายที่ 1 — ผู้ว่าจ้าง (เจ้าภาพ)</div>
+            <div class="form-group"><label>ชื่อ-นามสกุล / ชื่อนิติบุคคล *</label><input type="text" id="ctParty1Name" placeholder="นาย/นาง/บริษัท..." oninput="renderContract()"></div>
+            <div class="form-group"><label>ที่อยู่</label><textarea id="ctParty1Address" rows="2" placeholder="ที่อยู่ผู้ว่าจ้าง" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>เลขบัตรประชาชน / เลขนิติบุคคล</label><input type="text" id="ctParty1Id" placeholder="1-xxxx-xxxxx-xx-x" oninput="renderContract()"></div>
+            <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="ctParty1Phone" placeholder="0812345678" oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎸 ฝ่ายที่ 2 — ผู้รับจ้าง (วงดนตรี)</div>
+            <div class="form-group"><label>ชื่อวง *</label><input type="text" id="ctParty2Name" oninput="renderContract()"></div>
+            <div class="form-group"><label>ชื่อผู้แทนวง / หัวหน้าวง</label><input type="text" id="ctParty2Rep" placeholder="ชื่อ-นามสกุล หัวหน้าวง" oninput="renderContract()"></div>
+            <div class="form-group"><label>ที่อยู่</label><textarea id="ctParty2Address" rows="2" placeholder="ที่อยู่สำหรับติดต่อ" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="ctParty2Phone" oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎵 รายละเอียดงาน</div>
+            <div class="form-group"><label>ชื่องาน / อีเวนต์</label><input type="text" id="ctJobName" placeholder="เช่น งานแต่งงาน สัมมนาบริษัท" oninput="renderContract()"></div>
+            <div class="form-group"><label>วัน-เวลาแสดง</label>
+              <div class="form-grid-2">
+                <input type="date" id="ctEventDate" oninput="renderContract()">
+                <input type="time" id="ctEventTime" oninput="renderContract()">
+              </div>
+            </div>
+            <div class="form-group"><label>สถานที่แสดง (ละเอียด)</label><textarea id="ctVenue" rows="2" placeholder="ชื่อสถานที่ ที่อยู่เต็ม" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>ระยะเวลาแสดง</label><input type="text" id="ctShowDuration" placeholder="เช่น 3 ชั่วโมง 2 รอบ พัก 15 นาที" oninput="renderContract()"></div>
+            <div class="form-group"><label>จำนวนนักดนตรีที่ร่วม</label><input type="text" id="ctMembers" placeholder="เช่น 5 คน (กีตาร์ เบส กลอง คีย์บอร์ด นักร้อง)" oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">💰 ค่าจ้างและการชำระเงิน</div>
+            <div class="form-group"><label>ค่าจ้างทั้งหมด (บาท) *</label><input type="number" id="ctFee" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>เงินมัดจำ (บาท)</label><input type="number" id="ctDeposit" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>วันชำระมัดจำ</label><input type="date" id="ctDepositDate" oninput="renderContract()"></div>
+            <div class="form-group"><label>ยอดที่เหลือ (บาท)</label><input type="number" id="ctRemaining" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>วันชำระเงินส่วนที่เหลือ</label>
+              <select id="ctPayWhen" oninput="renderContract()">
+                <option value="ก่อนเริ่มแสดง 1 ชั่วโมง">ก่อนเริ่มแสดง 1 ชั่วโมง</option>
+                <option value="วันแสดง ก่อนเริ่ม">วันแสดง ก่อนเริ่ม</option>
+                <option value="หลังเสร็จงาน ทันที">หลังเสร็จงาน ทันที</option>
+                <option value="ภายใน 3 วันหลังงาน">ภายใน 3 วันหลังงาน</option>
+                <option value="ภายใน 7 วันหลังงาน">ภายใน 7 วันหลังงาน</option>
+                <option value="ชำระเต็มจำนวนล่วงหน้าก่อนงาน">ชำระเต็มจำนวนล่วงหน้าก่อนงาน</option>
+              </select>
+            </div>
+            <div class="form-group"><label>วิธีชำระเงิน</label>
+              <select id="ctPayMethod" oninput="renderContract()">
+                <option value="โอนเงินเข้าบัญชีธนาคาร">โอนเงินเข้าบัญชีธนาคาร</option>
+                <option value="เงินสด">เงินสด</option>
+                <option value="เงินสด หรือ โอนเงิน">เงินสด หรือ โอนเงิน</option>
+                <option value="พร้อมเพย์">พร้อมเพย์</option>
+              </select>
+            </div>
+            <div class="form-group"><label>ข้อมูลบัญชีรับเงิน</label><input type="text" id="ctBankInfo" placeholder="เช่น บัญชีออมทรัพย์ ธ.กสิกรไทย เลขที่ XXX-X-XXXXX-X" oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎛️ สิ่งที่ผู้ว่าจ้างต้องจัดเตรียม</div>
+            <div class="form-group"><label>เลือกสิ่งที่เจ้าภาพต้องเตรียม (หลายรายการได้)</label>
+              <div id="equipCheckboxes" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px"></div>
+            </div>
+            <div class="form-group"><label>อื่นๆ เพิ่มเติม</label><input type="text" id="ctEquipOther" placeholder="ระบุเพิ่มเติม..." oninput="renderContract()"></div>
+
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">📝 เงื่อนไขพิเศษ / หมายเหตุ</div>
+            <div class="form-group"><label>เงื่อนไขพิเศษ</label><textarea id="ctSpecial" rows="3" placeholder="เช่น วงจะไม่รับผิดชอบหากเครื่องเสียงเสียหาย, มีค่า OT หลังเที่ยงคืน..." oninput="renderContract()"></textarea></div>
+
+            <button class="btn btn-primary" style="width:100%" onclick="doPrint()">📄 พิมพ์ / บันทึก PDF</button>
+          </div>
+        </div>
+
+        <!-- ═══ RIGHT: LIVE PREVIEW ═══ -->
+        <div>
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)" class="no-print">
+            ↓ ตัวอย่างสัญญา (ขนาดย่อ) — กด "พิมพ์" เพื่อได้เอกสารเต็ม
+          </div>
+          <div class="preview-card no-print">
+            <div class="preview-scale" id="ctPreviewWrap"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js"></script>
+  <script>
+  /* ── Equipment checkboxes ── */
+  var EQUIP_LIST = [
+    'ระบบเสียง (PA System)', 'ไมโครโฟน', 'เวที (Stage)', 'ไฟเวที (Stage Lighting)',
+    'จอแสดงผล (LED Screen)', 'โต๊ะผสมเสียง (Mixer)', 'ไฟฟ้าสำรอง (Generator)',
+    'ห้องพักสำหรับวง', 'อาหารสำหรับวง', 'ที่จอดรถ'
+  ];
+
+  document.addEventListener('DOMContentLoaded', function(){
+    requireAuth();
+    renderMainNav('mainNav');
+    if (typeof applyTranslations === 'function') applyTranslations();
+
+    // Build equipment checkboxes
+    var wrap = document.getElementById('equipCheckboxes');
+    EQUIP_LIST.forEach(function(eq, i){
+      wrap.innerHTML += '<label style="display:flex;align-items:center;gap:4px;font-size:var(--text-xs);cursor:pointer">'
+        +'<input type="checkbox" id="eq_'+i+'" onchange="renderContract()" style="accent-color:var(--premium-gold)"> '+escapeHtml(eq)+'</label>';
+    });
+
+    // Set defaults
+    document.getElementById('ctContractDate').value = new Date().toISOString().substring(0,10);
+    document.getElementById('ctParty2Name').value   = localStorage.getItem('bandName') || 'วงดนตรี';
+    document.getElementById('ctParty2Phone').value  = localStorage.getItem('bandPhone') || '';
+    document.getElementById('ctParty2Address').value = localStorage.getItem('bandAddress') || '';
+
+    // Load contract data from localStorage
+    var cData = null;
+    try { cData = JSON.parse(localStorage.getItem('contractData') || 'null'); } catch(e){}
+    if (cData) applyContractData(cData);
+
+    renderContract();
+  });
+
+  function applyContractData(d){
+    if (d.client)       document.getElementById('ctParty1Name').value  = d.client;
+    if (d.clientPhone)  document.getElementById('ctParty1Phone').value = d.clientPhone;
+    if (d.jobName)      document.getElementById('ctJobName').value     = d.jobName;
+    if (d.eventDate)    document.getElementById('ctEventDate').value   = d.eventDate;
+    if (d.eventTime)    document.getElementById('ctEventTime').value   = d.eventTime;
+    if (d.venue)        document.getElementById('ctVenue').value       = d.venue;
+    if (d.members)      document.getElementById('ctMembers').value     = d.members;
+    if (d.total)        document.getElementById('ctFee').value         = d.total;
+    if (d.paymentTerm)  document.getElementById('ctPayWhen').value     = d.paymentTerm;
+    if (d.notes)        document.getElementById('ctSpecial').value     = d.notes;
+
+    // From calcData
+    var cd = d.calcData;
+    if (cd) {
+      if (cd.showHours && cd.showSessions) {
+        document.getElementById('ctShowDuration').value =
+          cd.showHours + ' ชั่วโมง ' + cd.showSessions + ' รอบ'
+          + (cd.breakMins ? ' พัก ' + cd.breakMins + ' นาที' : '');
+      }
+      if (cd.members && cd.members.length) {
+        document.getElementById('ctMembers').value = cd.members.length + ' คน ('
+          + cd.members.map(function(m){ return m.name + (m.instrument ? ' '+m.instrument : ''); }).join(', ') + ')';
+      }
+      if (cd.proposedPrice) {
+        document.getElementById('ctFee').value = cd.proposedPrice;
+        var dep = Math.round(cd.proposedPrice * 0.3 / 100) * 100;
+        document.getElementById('ctDeposit').value    = dep;
+        document.getElementById('ctRemaining').value  = cd.proposedPrice - dep;
+      }
+      if (cd.hasAccommodation) {
+        var accomIdx = EQUIP_LIST.indexOf('ห้องพักสำหรับวง');
+        if (accomIdx >= 0) { var el = document.getElementById('eq_'+accomIdx); if (el) el.checked = true; }
+      }
+      if (cd.hasFood) {
+        var foodIdx = EQUIP_LIST.indexOf('อาหารสำหรับวง');
+        if (foodIdx >= 0) { var el2 = document.getElementById('eq_'+foodIdx); if (el2) el2.checked = true; }
+      }
+    }
+    // Auto-calculate deposit if not set
+    autoCalcDeposit();
+  }
+
+  function autoCalcDeposit(){
+    var fee = parseFloat(document.getElementById('ctFee').value) || 0;
+    var dep = parseFloat(document.getElementById('ctDeposit').value) || 0;
+    if (fee > 0 && dep === 0) {
+      var newDep = Math.round(fee * 0.3 / 100) * 100;
+      document.getElementById('ctDeposit').value   = newDep;
+      document.getElementById('ctRemaining').value = fee - newDep;
+    }
+  }
+
+  /* ── Read form values ── */
+  function getContractValues(){
+    var fee       = parseFloat(document.getElementById('ctFee').value) || 0;
+    var deposit   = parseFloat(document.getElementById('ctDeposit').value) || 0;
+    var remaining = parseFloat(document.getElementById('ctRemaining').value) || (fee - deposit);
+    var equip = [];
+    EQUIP_LIST.forEach(function(eq, i){
+      var el = document.getElementById('eq_'+i);
+      if (el && el.checked) equip.push(eq);
+    });
+    var equipOther = document.getElementById('ctEquipOther').value.trim();
+    if (equipOther) equip.push(equipOther);
+
+    var eventDateVal = document.getElementById('ctEventDate').value;
+    var thEventDate  = eventDateVal ? new Date(eventDateVal).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}) : '___________';
+    var depDateVal   = document.getElementById('ctDepositDate').value;
+    var thDepDate    = depDateVal   ? new Date(depDateVal).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}) : '___________';
+    var ctDateVal    = document.getElementById('ctContractDate').value;
+    var thCtDate     = ctDateVal    ? new Date(ctDateVal).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}) : '___________';
+
+    return {
+      contractDate:   thCtDate,
+      contractPlace:  document.getElementById('ctContractPlace').value.trim() || '___________',
+      party1Name:     document.getElementById('ctParty1Name').value.trim()    || '___________',
+      party1Address:  document.getElementById('ctParty1Address').value.trim() || '___________',
+      party1Id:       document.getElementById('ctParty1Id').value.trim()      || '___________',
+      party1Phone:    document.getElementById('ctParty1Phone').value.trim()   || '___________',
+      party2Name:     document.getElementById('ctParty2Name').value.trim()    || '___________',
+      party2Rep:      document.getElementById('ctParty2Rep').value.trim()     || '___________',
+      party2Address:  document.getElementById('ctParty2Address').value.trim() || '___________',
+      party2Phone:    document.getElementById('ctParty2Phone').value.trim()   || '___________',
+      jobName:        document.getElementById('ctJobName').value.trim()       || '___________',
+      eventDate:      thEventDate,
+      eventTime:      document.getElementById('ctEventTime').value            || '___________',
+      venue:          document.getElementById('ctVenue').value.trim()         || '___________',
+      showDuration:   document.getElementById('ctShowDuration').value.trim()  || '___________',
+      members:        document.getElementById('ctMembers').value.trim()       || '___________',
+      fee:            fee,
+      deposit:        deposit,
+      depositDate:    thDepDate,
+      remaining:      remaining,
+      payWhen:        document.getElementById('ctPayWhen').value,
+      payMethod:      document.getElementById('ctPayMethod').value,
+      bankInfo:       document.getElementById('ctBankInfo').value.trim(),
+      equip:          equip,
+      special:        document.getElementById('ctSpecial').value.trim()
+    };
+  }
+
+  /* ── Build contract HTML ── */
+  function buildContractHtml(v){
+    var fmtThb = function(n){ return n.toLocaleString('th-TH') + ' บาท'; };
+    function numToThaiText(n){
+      // Simple formatter for common amounts
+      return n.toLocaleString('th-TH') + ' บาทถ้วน';
+    }
+
+    var equipHtml = v.equip.length
+      ? '<ul>'+v.equip.map(function(e){ return '<li>'+escapeHtml(e)+'</li>'; }).join('')+'</ul>'
+      : '<ul><li>ระบบเสียง (PA System) และไมโครโฟน</li></ul>';
+
+    var specialHtml = v.special
+      ? '<div class="ct-clause"><div class="ct-clause-num">เงื่อนไขพิเศษ:</div>'
+        +'<div>'+escapeHtml(v.special).replace(/\n/g,'<br>')+'</div></div>'
+      : '';
+
+    var bankHtml = v.bankInfo
+      ? '<div class="ct-row"><span class="ct-label">ข้อมูลบัญชีรับเงิน:</span><span class="ct-val">'+escapeHtml(v.bankInfo)+'</span></div>'
+      : '';
+
+    return '<div class="ct-doc" style="position:relative">'
+      + '<div class="ct-watermark">สัญญา</div>'
+      + '<h1>สัญญาจ้างวงดนตรี</h1>'
+      + '<div class="ct-subtitle">(Band Entertainment Services Agreement)</div>'
+      + '<div class="ct-date">ทำที่ '+escapeHtml(v.contractPlace)+'&nbsp;&nbsp;&nbsp;วันที่ '+escapeHtml(v.contractDate)+'</div>'
+
+      // Preamble
+      + '<p>สัญญาฉบับนี้ทำขึ้นระหว่างคู่สัญญาสองฝ่าย ดังต่อไปนี้</p>'
+
+      // Party 1
+      + '<div class="ct-party-box">'
+      + '<div class="ct-party-title">ฝ่ายที่ 1 — ผู้ว่าจ้าง</div>'
+      + '<div class="ct-row"><span class="ct-label">ชื่อ:</span><span class="ct-val">'+escapeHtml(v.party1Name)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">ที่อยู่:</span><span class="ct-val">'+escapeHtml(v.party1Address)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">เลขบัตรฯ / เลขนิติบุคคล:</span><span class="ct-val">'+escapeHtml(v.party1Id)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">โทรศัพท์:</span><span class="ct-val">'+escapeHtml(v.party1Phone)+'</span></div>'
+      + '</div>'
+
+      // Party 2
+      + '<div class="ct-party-box">'
+      + '<div class="ct-party-title">ฝ่ายที่ 2 — ผู้รับจ้าง (วงดนตรี)</div>'
+      + '<div class="ct-row"><span class="ct-label">ชื่อวง:</span><span class="ct-val">'+escapeHtml(v.party2Name)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">ผู้แทน / หัวหน้าวง:</span><span class="ct-val">'+escapeHtml(v.party2Rep)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">ที่อยู่:</span><span class="ct-val">'+escapeHtml(v.party2Address)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">โทรศัพท์:</span><span class="ct-val">'+escapeHtml(v.party2Phone)+'</span></div>'
+      + '</div>'
+
+      + '<p>คู่สัญญาทั้งสองฝ่ายได้ตกลงทำสัญญากันด้วยความสมัครใจ โดยมีข้อกำหนดและเงื่อนไขดังต่อไปนี้</p>'
+
+      // Clause 1: Job details
+      + '<div class="ct-section-title">ข้อ 1 — รายละเอียดงาน</div>'
+      + '<div class="ct-clause">'
+      + '<div class="ct-row"><span class="ct-label">ชื่องาน / อีเวนต์:</span><span class="ct-val">'+escapeHtml(v.jobName)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">วันที่แสดง:</span><span class="ct-val">'+escapeHtml(v.eventDate)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">เวลาเริ่มแสดง:</span><span class="ct-val">'+escapeHtml(v.eventTime)+' น.</span></div>'
+      + '<div class="ct-row"><span class="ct-label">สถานที่:</span><span class="ct-val">'+escapeHtml(v.venue)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">ระยะเวลาการแสดง:</span><span class="ct-val">'+escapeHtml(v.showDuration)+'</span></div>'
+      + '<div class="ct-row"><span class="ct-label">จำนวนนักดนตรี:</span><span class="ct-val">'+escapeHtml(v.members)+'</span></div>'
+      + '</div>'
+
+      // Clause 2: Fee
+      + '<div class="ct-section-title">ข้อ 2 — ค่าจ้างและการชำระเงิน</div>'
+      + '<div class="ct-clause">'
+      + '<div class="ct-highlight-box">ค่าจ้างรวมทั้งสิ้น: <span style="color:#8b6914;font-size:16px">'+fmtThb(v.fee)+' ('+numToThaiText(v.fee)+')</span></div>'
+      + (v.deposit > 0
+          ? '<p>2.1 ผู้ว่าจ้างตกลงชำระ<b>เงินมัดจำ '+fmtThb(v.deposit)+'</b> ภายในวันที่ '+escapeHtml(v.depositDate)+' เพื่อเป็นการยืนยันการจอง</p>'
+          + '<p>2.2 ยอดที่เหลือ<b> '+fmtThb(v.remaining)+'</b> ชำระ'+escapeHtml(v.payWhen)+'</p>'
+          : '<p>ผู้ว่าจ้างตกลงชำระค่าจ้างเต็มจำนวน '+fmtThb(v.fee)+' โดย'+escapeHtml(v.payWhen)+'</p>')
+      + '<p>วิธีชำระเงิน: '+escapeHtml(v.payMethod)+'</p>'
+      + bankHtml
+      + '</div>'
+
+      // Clause 3: Responsibilities of party 1
+      + '<div class="ct-section-title">ข้อ 3 — หน้าที่ผู้ว่าจ้าง (ฝ่ายที่ 1)</div>'
+      + '<div class="ct-clause">'
+      + '3.1 ผู้ว่าจ้างมีหน้าที่จัดเตรียมสิ่งต่อไปนี้ให้พร้อมก่อนเวลาแสดงอย่างน้อย 2 ชั่วโมง:'
+      + equipHtml
+      + '3.2 ผู้ว่าจ้างต้องจัดสถานที่ให้มีสภาพแวดล้อมเหมาะสมและปลอดภัยในการแสดง<br>'
+      + '3.3 ผู้ว่าจ้างยินยอมให้ผู้รับจ้างเข้าถึงสถานที่เพื่อติดตั้งอุปกรณ์ล่วงหน้าอย่างน้อย 2 ชั่วโมง<br>'
+      + '3.4 หากผู้ว่าจ้างขอยืดระยะเวลาการแสดงเกินกว่าที่ระบุไว้ ต้องแจ้งล่วงหน้าและตกลงค่าตอบแทนเพิ่มเติมกับผู้รับจ้างก่อน<br>'
+      + '</div>'
+
+      // Clause 4: Responsibilities of party 2
+      + '<div class="ct-section-title">ข้อ 4 — หน้าที่ผู้รับจ้าง (ฝ่ายที่ 2)</div>'
+      + '<div class="ct-clause">'
+      + '4.1 ผู้รับจ้างตกลงจัดส่งนักดนตรีให้ครบตามจำนวนที่ระบุในสัญญา และพร้อมแสดงตามเวลาที่กำหนด<br>'
+      + '4.2 ผู้รับจ้างจะแสดงดนตรีด้วยความเป็นมืออาชีพ สมดุลระดับเสียง และสุภาพต่อผู้ชม<br>'
+      + '4.3 ผู้รับจ้างจะรับผิดชอบอุปกรณ์ดนตรีของตนเอง แต่ไม่รับผิดชอบต่ออุปกรณ์ของผู้ว่าจ้างหรือสถานที่<br>'
+      + '4.4 ในกรณีที่นักดนตรีคนใดไม่สามารถมาได้ด้วยเหตุสุดวิสัย ผู้รับจ้างจะหานักดนตรีทดแทนในระดับเดียวกัน<br>'
+      + '</div>'
+
+      // Clause 5: Cancellation
+      + '<div class="ct-section-title">ข้อ 5 — การยกเลิกและค่าชดเชย</div>'
+      + '<div class="ct-clause">'
+      + '<p><b>5.1 กรณีผู้ว่าจ้างเป็นผู้ยกเลิก:</b></p>'
+      + '<ul>'
+      + '<li>ยกเลิกล่วงหน้า 30 วันขึ้นไป: <b>ไม่คืนเงินมัดจำ</b></li>'
+      + '<li>ยกเลิกล่วงหน้า 15–29 วัน: ผู้ว่าจ้างชำระค่าชดเชย <b>50% ของค่าจ้างทั้งหมด</b></li>'
+      + '<li>ยกเลิกล่วงหน้าน้อยกว่า 15 วัน: ผู้ว่าจ้างชำระค่าชดเชย <b>80% ของค่าจ้างทั้งหมด</b></li>'
+      + '<li>ยกเลิกในวันงาน: ผู้ว่าจ้างชำระค่าจ้าง <b>เต็มจำนวน</b></li>'
+      + '</ul>'
+      + '<p><b>5.2 กรณีผู้รับจ้างเป็นผู้ยกเลิก:</b> ผู้รับจ้างต้องคืนเงินมัดจำทั้งหมดและชำระค่าชดเชยเพิ่มเติมไม่น้อยกว่า 20% ของค่าจ้างรวม</p>'
+      + '</div>'
+
+      // Clause 6: Force majeure
+      + '<div class="ct-section-title">ข้อ 6 — เหตุสุดวิสัย</div>'
+      + '<div class="ct-clause">'
+      + '<p>หากมีเหตุสุดวิสัยซึ่งอยู่นอกเหนือการควบคุมของคู่สัญญา เช่น ภัยธรรมชาติ โรคระบาด การประกาศภาวะฉุกเฉิน หรือเหตุการณ์ที่ทำให้ไม่สามารถจัดงานได้ คู่สัญญาจะร่วมกันพิจารณาการเลื่อนวันงานหรือยกเลิกสัญญาโดยไม่ถือว่าฝ่ายใดผิดสัญญา และจะทำการคืนเงินตามที่ตกลงกัน</p>'
+      + '</div>'
+
+      // Clause 7: Dispute
+      + '<div class="ct-section-title">ข้อ 7 — การระงับข้อพิพาท</div>'
+      + '<div class="ct-clause">'
+      + '<p>ข้อพิพาทที่เกิดขึ้นจากสัญญานี้ คู่สัญญาจะพยายามระงับโดยการเจรจาก่อน หากไม่สามารถตกลงได้ภายใน 30 วัน ให้นำข้อพิพาทเสนอต่อศาลที่มีเขตอำนาจตามกฎหมายไทย</p>'
+      + '</div>'
+
+      // Special conditions
+      + (v.special ? '<div class="ct-section-title">ข้อ 8 — เงื่อนไขพิเศษ</div><div class="ct-clause">'+escapeHtml(v.special).replace(/\n/g,'<br>')+'</div>' : '')
+
+      + '<p style="margin-top:20px">สัญญาฉบับนี้ทำขึ้นสองฉบับ มีข้อความตรงกัน คู่สัญญาได้อ่านและเข้าใจข้อความในสัญญาโดยตลอดแล้ว จึงได้ลงลายมือชื่อไว้เป็นหลักฐาน</p>'
+
+      // Signatures
+      + '<div class="ct-sig-row">'
+      + '<div class="ct-sig-box">'
+        + '<div class="ct-sig-line"></div>'
+        + '<div class="ct-sig-name">('+escapeHtml(v.party1Name)+')</div>'
+        + '<div>ฝ่ายที่ 1 — ผู้ว่าจ้าง</div>'
+        + '<div class="ct-sig-date">วันที่ ___________________</div>'
+      + '</div>'
+      + '<div class="ct-sig-box">'
+        + '<div class="ct-sig-line"></div>'
+        + '<div class="ct-sig-name">('+escapeHtml(v.party2Rep||v.party2Name)+')</div>'
+        + '<div>ฝ่ายที่ 2 — ผู้รับจ้าง / หัวหน้าวง '+escapeHtml(v.party2Name)+'</div>'
+        + '<div class="ct-sig-date">วันที่ ___________________</div>'
+      + '</div>'
+      + '</div>'
+
+      // Witnesses
+      + '<div style="margin-top:20px;font-size:12px;color:#666;font-weight:700">พยาน</div>'
+      + '<div class="ct-witness">'
+      + '<div class="ct-witness-box" style="border-top:1px solid #999;padding-top:40px;margin-top:40px"><div>พยานฝ่ายที่ 1</div><div style="font-size:11px;color:#888">วันที่ ___________________</div></div>'
+      + '<div class="ct-witness-box" style="border-top:1px solid #999;padding-top:40px;margin-top:40px"><div>พยานฝ่ายที่ 2</div><div style="font-size:11px;color:#888">วันที่ ___________________</div></div>'
+      + '</div>'
+
+      + '<div class="ct-footer">สัญญาจ้างวงดนตรี '+escapeHtml(v.party2Name)+' — สร้างด้วย Band Management By SoulCiety</div>'
+      + '</div>';
+  }
+
+  /* ── Render ── */
+  function renderContract(){
+    var v = getContractValues();
+    var html = buildContractHtml(v);
+    document.getElementById('ctPreviewWrap').innerHTML = html;
+    document.getElementById('ctDoc').innerHTML = html;
+    // Auto-calc remaining
+    var fee = parseFloat(document.getElementById('ctFee').value) || 0;
+    var dep = parseFloat(document.getElementById('ctDeposit').value) || 0;
+    var remEl = document.getElementById('ctRemaining');
+    if (fee > 0 && dep >= 0) remEl.value = fee - dep;
+  }
+
+  /* ── Print ── */
+  function doPrint(){
+    var v = getContractValues();
+    document.getElementById('ctDoc').innerHTML = buildContractHtml(v);
+    document.getElementById('ctDoc').style.display = 'block';
+    window.print();
+    setTimeout(function(){ document.getElementById('ctDoc').style.display = 'none'; }, 1000);
+  }
+  </script>
+</body>
+</html>

@@ -71,6 +71,7 @@ function renderMainNav(containerId) {
     navLink('job-calculator',     '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงาน') +
     navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้บุคคลภายนอก') +
     navLink('quotation',          '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
+    navLink('contract',           '📜 สัญญาว่าจ้าง',               'สัญญาจ้างวงดนตรี') +
     navLink('clients',            '🤝 ' + _t('nav_clients'),       'ข้อมูลลูกค้าและสถานที่') +
     navLink('band-settings',      '⚙️ ' + _t('nav_settings'),     'ตั้งค่าวง ร้าน และตาราง')
   ) : '';

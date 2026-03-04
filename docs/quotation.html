@@ -13,15 +13,54 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
+    /* ── Quotation list ── */
     .q-modal-form .form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
     @media(max-width:480px){.q-modal-form .form-r{grid-template-columns:1fr}}
     .item-row{display:grid;grid-template-columns:3fr 1fr 1fr 40px;gap:var(--spacing-sm);align-items:center;margin-bottom:var(--spacing-sm)}
     .item-row input{font-size:var(--text-sm)}
-    .print-badge{cursor:pointer}
+
+    /* ── Status badges ── */
+    .badge-draft{background:rgba(156,163,175,.2);color:#9ca3af}
+    .badge-sent{background:rgba(59,130,246,.15);color:#3b82f6}
+    .badge-approved{background:rgba(34,197,94,.15);color:#16a34a}
+    .badge-cancelled{background:rgba(239,68,68,.15);color:#ef4444}
+
+    /* ── Print / PDF document styles ── */
+    #quotPreview{display:none}
     @media print{
-      .card-header .btn,.btn{display:none!important}
-      #mainNav{display:none!important}
+      body *{visibility:hidden}
+      #quotPreview,#quotPreview *{visibility:visible}
+      #quotPreview{display:block!important;position:fixed;left:0;top:0;width:100%;background:#fff}
+      #mainNav,#toast,.btn,.no-print{display:none!important}
     }
+    .quot-doc{background:#fff;color:#111;padding:40px 48px;max-width:800px;margin:0 auto;font-family:'Sarabun',sans-serif;font-size:14px;line-height:1.7}
+    .quot-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1a1a;padding-bottom:16px;margin-bottom:24px}
+    .quot-band-name{font-size:24px;font-weight:700;font-family:'Kanit',sans-serif}
+    .quot-band-sub{font-size:12px;color:#555;margin-top:2px}
+    .quot-title-block{text-align:right}
+    .quot-title{font-size:22px;font-weight:700;color:#b8860b;font-family:'Kanit',sans-serif}
+    .quot-no{font-size:13px;color:#555;margin-top:4px}
+    .quot-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .quot-info-box{background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:12px 16px}
+    .quot-info-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px}
+    .quot-info-val{font-weight:600;font-size:14px}
+    .quot-info-val-sm{font-size:13px;color:#444;margin-top:2px}
+    .quot-section-title{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#888;border-bottom:1px solid #e5e5e5;padding-bottom:4px;margin:18px 0 10px}
+    .quot-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    .quot-table th{background:#1a1a1a;color:#fff;padding:8px 10px;text-align:left;font-size:12px;font-weight:600}
+    .quot-table td{padding:8px 10px;border-bottom:1px solid #eee;font-size:13px}
+    .quot-table tr:last-child td{border-bottom:none}
+    .quot-table .text-right{text-align:right}
+    .quot-table .text-center{text-align:center}
+    .quot-total-box{background:#1a1a1a;color:#fff;border-radius:8px;padding:16px 20px;margin:16px 0}
+    .quot-total-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}
+    .quot-total-row.main{font-size:20px;font-weight:700;color:#ffd700;margin-top:8px;border-top:1px solid #444;padding-top:8px}
+    .quot-terms{font-size:12px;color:#555;margin-top:16px;padding:12px;background:#fafafa;border-left:3px solid #b8860b;border-radius:0 6px 6px 0}
+    .quot-sig{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:32px}
+    .quot-sig-box{text-align:center;padding-top:48px;border-top:1px solid #333;font-size:12px}
+    .quot-footer{margin-top:24px;border-top:1px solid #e5e5e5;padding-top:12px;text-align:center;font-size:11px;color:#999}
+    .quot-members-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+    .quot-member-chip{background:#f1f1f1;border-radius:20px;padding:2px 10px;font-size:12px}
   </style>
 </head>
 <body>
@@ -29,40 +68,71 @@
   <div id="toast"></div>
   <div id="confirmModal"></div>
 
-  <!-- Quotation Modal -->
+  <!-- ══ Print/PDF Preview (hidden) ══ -->
+  <div id="quotPreview"></div>
+
+  <!-- ══ Quotation Edit Modal ══ -->
   <div id="quotModal" class="modal-backdrop" style="display:none">
-    <div class="modal q-modal-form" style="max-width:700px;max-height:90vh;overflow-y:auto">
+    <div class="modal q-modal-form" style="max-width:740px;max-height:92vh;overflow-y:auto">
       <div class="modal-header">
-        <h3 class="modal-title" id="quotModalTitle" data-i18n="quot_new">ใบเสนอราคาใหม่</h3>
+        <h3 class="modal-title" id="quotModalTitle">ใบเสนอราคาใหม่</h3>
         <button class="modal-close" onclick="closeModal()">×</button>
       </div>
       <form id="quotForm">
         <input type="hidden" id="quotId">
         <div class="form-r">
-          <div class="form-group"><label data-i18n="client">ลูกค้า</label><input type="text" id="qClient"></div>
-          <div class="form-group"><label data-i18n="date">วันที่</label><input type="date" id="qDate"></div>
+          <div class="form-group"><label>ลูกค้า / เจ้าภาพ *</label><input type="text" id="qClient" required></div>
+          <div class="form-group"><label>เบอร์โทร</label><input type="tel" id="qClientPhone"></div>
         </div>
         <div class="form-r">
+          <div class="form-group"><label>วันที่ออกใบเสนอ</label><input type="date" id="qDate"></div>
           <div class="form-group"><label>วันที่แสดง</label><input type="date" id="qEventDate"></div>
-          <div class="form-group"><label>สถานที่</label><input type="text" id="qVenue"></div>
         </div>
-        <div class="form-group"><label>รายการ</label>
+        <div class="form-r">
+          <div class="form-group"><label>เวลาแสดง</label><input type="time" id="qEventTime"></div>
+          <div class="form-group"><label>ชื่องาน / อีเวนต์</label><input type="text" id="qJobName"></div>
+        </div>
+        <div class="form-group"><label>สถานที่</label><input type="text" id="qVenue"></div>
+        <div class="form-group"><label>สมาชิกที่ร่วมงาน</label><input type="text" id="qMembers" placeholder="เช่น พี่กล้า (มือกีตาร์), ป้อม (มือเบส)"></div>
+        <div class="form-group"><label>รายการบริการ</label>
           <div id="qItems"></div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="addItem()">+ เพิ่มรายการ</button>
         </div>
         <div class="form-r">
           <div class="form-group"><label>ส่วนลด (บาท)</label><input type="number" id="qDiscount" value="0" min="0" oninput="calcTotal()"></div>
-          <div class="form-group"><label>VAT (%)</label><input type="number" id="qVat" value="7" min="0" oninput="calcTotal()"></div>
+          <div class="form-group"><label>VAT (%)</label><input type="number" id="qVat" value="0" min="0" oninput="calcTotal()"></div>
         </div>
         <div style="text-align:right;background:var(--premium-off-white);padding:var(--spacing-md);border-radius:var(--radius-md);margin-bottom:var(--spacing-md)">
-          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">ก่อน VAT: <span id="qSubtotal">0</span></div>
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">ยอดก่อนส่วนลด: <span id="qSubtotalRaw">0</span></div>
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">หลังส่วนลด: <span id="qSubtotal">0</span></div>
           <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">VAT: <span id="qVatAmt">0</span></div>
-          <div style="font-size:var(--text-xl);font-weight:700;color:var(--premium-gold)">รวม: <span id="qTotal">0</span></div>
+          <div style="font-size:var(--text-xl);font-weight:700;color:var(--premium-gold)">รวมทั้งสิ้น: <span id="qTotal">0</span></div>
         </div>
-        <div class="form-group"><label>หมายเหตุ</label><textarea id="qNotes" rows="2"></textarea></div>
-        <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm)">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()" data-i18n="cancel">ยกเลิก</button>
-          <button type="submit" class="btn btn-primary" id="saveQuotBtn" data-i18n="save">บันทึก</button>
+        <div class="form-r">
+          <div class="form-group">
+            <label>สถานะ</label>
+            <select id="qStatus">
+              <option value="draft">ร่าง</option>
+              <option value="sent">ส่งแล้ว</option>
+              <option value="approved">อนุมัติ / ตกลง</option>
+              <option value="cancelled">ยกเลิก</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>เงื่อนไขการชำระ</label>
+            <select id="qPaymentTerm">
+              <option value="ชำระเต็มจำนวนก่อนแสดง">ชำระเต็มจำนวนก่อนแสดง</option>
+              <option value="มัดจำ 50% ส่วนที่เหลือวันแสดง">มัดจำ 50% ส่วนที่เหลือวันแสดง</option>
+              <option value="มัดจำ 30% ส่วนที่เหลือวันแสดง">มัดจำ 30% ส่วนที่เหลือวันแสดง</option>
+              <option value="ชำระหลังเสร็จงาน">ชำระหลังเสร็จงาน</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group"><label>หมายเหตุ / เงื่อนไขพิเศษ</label><textarea id="qNotes" rows="2"></textarea></div>
+        <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);flex-wrap:wrap">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
+          <button type="button" class="btn btn-ghost" onclick="previewQuot()">👁️ ดูตัวอย่าง</button>
+          <button type="submit" class="btn btn-primary" id="saveQuotBtn">บันทึก</button>
         </div>
       </form>
     </div>
@@ -71,22 +141,33 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title" data-i18n="nav_quotation">ใบเสนอราคา</h1>
-        <button class="btn btn-primary" onclick="openModal(null)">+ <span data-i18n="quot_new">ใบเสนอราคาใหม่</span></button>
+        <h1 class="page-title">📄 ใบเสนอราคา</h1>
+        <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="window.location.href='job-calculator.html'">🔙 คำนวณงาน</button>
+          <button class="btn btn-primary" onclick="openModal(null)">+ ใบเสนอราคาใหม่</button>
+        </div>
       </div>
+
+      <!-- Cal data banner -->
+      <div id="calcBanner" style="display:none;background:rgba(34,197,94,.1);border:1px solid #22c55e;border-radius:var(--radius-md);padding:var(--spacing-md);margin-bottom:var(--spacing-md);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--spacing-sm)">
+        <div>✅ <b>มีข้อมูลจากหน้าคำนวณงาน</b> — กดเพื่อสร้างใบเสนอราคาจากข้อมูลนั้น</div>
+        <button class="btn btn-primary btn-sm" onclick="openFromCalc()">📄 สร้างใหม่จากการคำนวณ</button>
+      </div>
+
       <div class="card">
         <div class="table-responsive">
           <table class="table">
             <thead><tr>
-              <th data-i18n="quot_no">เลขที่</th>
-              <th data-i18n="client">ลูกค้า</th>
-              <th data-i18n="date">วันที่</th>
-              <th data-i18n="quot_eventDate">วันแสดง</th>
-              <th data-i18n="quot_total">ยอดรวม</th>
-              <th data-i18n="status">สถานะ</th>
+              <th>เลขที่</th>
+              <th>ลูกค้า</th>
+              <th>ชื่องาน</th>
+              <th>วันที่ออก</th>
+              <th>วันแสดง</th>
+              <th>ยอดรวม</th>
+              <th>สถานะ</th>
               <th></th>
             </tr></thead>
-            <tbody id="quotBody"><tr><td colspan="7" class="text-center">กำลังโหลด...</td></tr></tbody>
+            <tbody id="quotBody"><tr><td colspan="8" class="text-center">กำลังโหลด...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -97,70 +178,162 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
-  var quotations=[];
+  var quotations = [];
+  var calcData   = null;
+
   document.addEventListener('DOMContentLoaded', function(){
-    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    requireAuth();
+    renderMainNav('mainNav');
+    if (typeof applyTranslations === 'function') applyTranslations();
+
+    // Check for calc data
+    try { calcData = JSON.parse(localStorage.getItem('jobCalcData') || 'null'); } catch(e){}
+    var fromCalc = window.location.search.indexOf('from=calc') !== -1;
+
+    if (calcData) {
+      document.getElementById('calcBanner').style.display = 'flex';
+      if (fromCalc) openFromCalc();
+    }
+
     loadQuotations();
   });
 
   function loadQuotations(){
-    apiCall('getAllQuotations',{},function(r){
-      quotations=(r&&r.data)||[];
-      var tbody=document.getElementById('quotBody');
-      if(!quotations.length){ tbody.innerHTML='<tr><td colspan="7" class="text-center">'+t('noData')+'</td></tr>'; return; }
-      tbody.innerHTML=quotations.map(function(q){
-        var badgeMap={draft:'badge-secondary',sent:'badge-info',approved:'badge-success',cancelled:'badge-danger'};
-        return '<tr>'
-          +'<td>'+escapeHtml(q.quotNo||q.quotationId||'')+'</td>'
-          +'<td>'+escapeHtml(q.client||'')+'</td>'
-          +'<td>'+formatDate(q.date)+'</td>'
-          +'<td>'+formatDate(q.eventDate)+'</td>'
-          +'<td>'+formatCurrency(q.total||0)+'</td>'
-          +'<td><span class="badge '+(badgeMap[q.status]||'')+'">'+escapeHtml(q.status||'draft')+'</span></td>'
-          +'<td style="display:flex;gap:4px">'
-          +'<button class="btn btn-ghost btn-sm print-badge" onclick="openModal(\''+escapeHtml(q.quotationId||'')+'\')">✏️</button>'
-          +'<button class="btn btn-secondary btn-sm" onclick="generatePdf(\''+escapeHtml(q.quotationId||'')+'\')">📄 PDF</button>'
-          +'<button class="btn btn-danger btn-sm" onclick="deleteQuot(\''+escapeHtml(q.quotationId||'')+'\')">🗑️</button>'
-          +'</td></tr>';
-      }).join('');
+    apiCall('getAllQuotations', {}, function(r){
+      quotations = (r && r.data) || [];
+      renderTable();
     });
   }
 
+  var statusMap = { draft:'ร่าง', sent:'ส่งแล้ว', approved:'อนุมัติ', cancelled:'ยกเลิก' };
+  var badgeMap  = { draft:'badge-draft', sent:'badge-sent', approved:'badge-approved', cancelled:'badge-cancelled' };
+
+  function renderTable(){
+    var tbody = document.getElementById('quotBody');
+    if (!quotations.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color:var(--premium-text-muted)">ยังไม่มีใบเสนอราคา — กด "+ ใบเสนอราคาใหม่" หรือใช้ข้อมูลจากหน้าคำนวณ</td></tr>';
+      return;
+    }
+    tbody.innerHTML = quotations.map(function(q){
+      var approved = q.status === 'approved';
+      return '<tr>'
+        +'<td style="font-weight:600">'+escapeHtml(q.quotNo||q.quotationId||'')+'</td>'
+        +'<td>'+escapeHtml(q.client||'')+'</td>'
+        +'<td>'+escapeHtml(q.jobName||'-')+'</td>'
+        +'<td>'+formatDate(q.date)+'</td>'
+        +'<td>'+formatDate(q.eventDate)+'</td>'
+        +'<td style="font-weight:700;color:var(--premium-gold)">'+formatCurrency(q.total||0)+'</td>'
+        +'<td><span class="badge '+(badgeMap[q.status]||'badge-draft')+'">'+escapeHtml(statusMap[q.status]||q.status||'ร่าง')+'</span></td>'
+        +'<td style="display:flex;gap:4px;flex-wrap:wrap">'
+        +'<button class="btn btn-ghost btn-sm" onclick="openModal(\''+escapeHtml(q.quotationId||'')+'\')">✏️</button>'
+        +'<button class="btn btn-secondary btn-sm" onclick="printQuot(\''+escapeHtml(q.quotationId||'')+'\')">🖨️</button>'
+        +'<button class="btn btn-secondary btn-sm" onclick="savePdf(\''+escapeHtml(q.quotationId||'')+'\')">📄 PDF</button>'
+        +(approved ? '<button class="btn btn-primary btn-sm" onclick="goToContract(\''+escapeHtml(q.quotationId||'')+'\')">📜 สัญญา</button>' : '')
+        +'<button class="btn btn-danger btn-sm" onclick="deleteQuot(\''+escapeHtml(q.quotationId||'')+'\')">🗑️</button>'
+        +'</td></tr>';
+    }).join('');
+  }
+
+  /* ── Modal open/close ── */
   function openModal(id){
-    document.getElementById('quotModal').style.display='flex';
+    document.getElementById('quotModal').style.display = 'flex';
     document.getElementById('quotForm').reset();
-    document.getElementById('quotId').value='';
-    document.getElementById('qDate').value=new Date().toISOString().substring(0,10);
-    document.getElementById('qItems').innerHTML='';
-    addItem(); addItem(); addItem();
+    document.getElementById('quotId').value = '';
+    document.getElementById('qDate').value = new Date().toISOString().substring(0,10);
+    document.getElementById('qItems').innerHTML = '';
     calcTotal();
-    document.getElementById('quotModalTitle').textContent=id?'แก้ไขใบเสนอราคา':'ใบเสนอราคาใหม่';
-    if(id){
-      var q=quotations.find(function(x){return x.quotationId===id;});
-      if(q){
-        document.getElementById('quotId').value=q.quotationId||'';
-        document.getElementById('qClient').value=q.client||'';
-        document.getElementById('qDate').value=(q.date||'').substring(0,10);
-        document.getElementById('qEventDate').value=(q.eventDate||'').substring(0,10);
-        document.getElementById('qVenue').value=q.venue||'';
-        document.getElementById('qDiscount').value=q.discount||0;
-        document.getElementById('qVat').value=q.vatRate||7;
-        document.getElementById('qNotes').value=q.notes||'';
-        document.getElementById('qItems').innerHTML='';
-        var items=[];
-        try{ items=typeof q.items==='string'?JSON.parse(q.items):q.items||[]; }catch(e){ items=[]; }
-        items.forEach(function(item){ addItem(item.desc,item.qty,item.price); });
-        if(!items.length){addItem();addItem();}
-        calcTotal();
-      }
+    document.getElementById('quotModalTitle').textContent = id ? 'แก้ไขใบเสนอราคา' : 'ใบเสนอราคาใหม่';
+
+    if (id) {
+      var q = quotations.find(function(x){ return x.quotationId === id; });
+      if (q) fillForm(q);
     }
   }
 
-  function closeModal(){ document.getElementById('quotModal').style.display='none'; }
+  function openFromCalc(){
+    if (!calcData) return;
+    document.getElementById('quotModal').style.display = 'flex';
+    document.getElementById('quotForm').reset();
+    document.getElementById('quotId').value = '';
+    document.getElementById('quotModalTitle').textContent = 'ใบเสนอราคา (จากการคำนวณ)';
+    document.getElementById('qDate').value = new Date().toISOString().substring(0,10);
+    document.getElementById('qItems').innerHTML = '';
 
-  function addItem(desc,qty,price){
-    var row=document.createElement('div'); row.className='item-row';
-    row.innerHTML='<input type="text" placeholder="รายการ" class="item-desc" value="'+(desc?escapeHtml(String(desc)):'')+'" oninput="calcTotal()">'
+    // Fill from calc data
+    document.getElementById('qClient').value     = calcData.clientName || '';
+    document.getElementById('qClientPhone').value = calcData.clientPhone || '';
+    document.getElementById('qEventDate').value  = calcData.eventDate || '';
+    document.getElementById('qEventTime').value  = calcData.eventTime || '';
+    document.getElementById('qJobName').value    = calcData.jobName || '';
+    document.getElementById('qVenue').value      = calcData.venueName || '';
+    document.getElementById('qNotes').value      = calcData.calcNotes || '';
+    if (calcData.members && calcData.members.length) {
+      document.getElementById('qMembers').value = calcData.members.map(function(m){ return m.name + (m.instrument ? ' ('+m.instrument+')' : ''); }).join(', ');
+    }
+
+    // Build items from calc breakdown
+    var items = buildItemsFromCalc(calcData);
+    items.forEach(function(it){ addItem(it.desc, it.qty, it.price); });
+    if (!items.length) { addItem('ค่าจ้างวงดนตรี', 1, calcData.proposedPrice || 0); }
+    calcTotal();
+  }
+
+  function buildItemsFromCalc(d){
+    var items = [];
+    // Musician fee
+    if (d.memberCost > 0) {
+      var memberNames = (d.members||[]).map(function(m){ return m.name; }).join(', ');
+      items.push({ desc: 'ค่าตัวนักดนตรี' + (memberNames ? ' ('+memberNames+')' : '') + ' — แสดง '+d.showHours+'ชม. '+d.showSessions+'รอบ', qty: 1, price: d.memberCost });
+    }
+    if (d.travelCost > 0) {
+      items.push({ desc: 'ค่าเดินทาง (ไป-กลับ '+d.roundTripKm+'กม.)' + (d.vehicles&&d.vehicles.length ? ' '+d.vehicles.length+'คัน' : ''), qty: 1, price: d.travelCost });
+    }
+    if (d.accomCost > 0) {
+      items.push({ desc: 'ค่าที่พัก '+d.accomRooms+'ห้อง × '+d.accomNights+'คืน' + (d.accomName ? ' ('+d.accomName+')' : ''), qty: 1, price: d.accomCost });
+    }
+    if (d.foodCost > 0) {
+      items.push({ desc: 'ค่าอาหาร '+d.foodPeople+'คน × '+d.foodMeals+'มื้อ × '+d.foodDays+'วัน', qty: 1, price: d.foodCost });
+    }
+    (d.otherExpenses||[]).forEach(function(e){
+      if (e.amount > 0) items.push({ desc: e.desc||'รายการพิเศษ', qty: 1, price: e.amount });
+    });
+    // If total differs from sum (due to fund/profit buffer)
+    var sumItems = items.reduce(function(s,i){ return s+i.price; }, 0);
+    var proposed = d.proposedPrice || d.suggestPrice || 0;
+    var diff = proposed - sumItems;
+    if (diff > 100) items.push({ desc: 'ค่าบริหารจัดการ / กำไร', qty: 1, price: diff });
+    return items;
+  }
+
+  function fillForm(q){
+    document.getElementById('quotId').value       = q.quotationId || '';
+    document.getElementById('qClient').value      = q.client || '';
+    document.getElementById('qClientPhone').value = q.clientPhone || '';
+    document.getElementById('qDate').value        = (q.date||'').substring(0,10);
+    document.getElementById('qEventDate').value   = (q.eventDate||'').substring(0,10);
+    document.getElementById('qEventTime').value   = q.eventTime || '';
+    document.getElementById('qJobName').value     = q.jobName || '';
+    document.getElementById('qVenue').value       = q.venue || '';
+    document.getElementById('qMembers').value     = q.members || '';
+    document.getElementById('qDiscount').value    = q.discount || 0;
+    document.getElementById('qVat').value         = q.vatRate || 0;
+    document.getElementById('qNotes').value       = q.notes || '';
+    document.getElementById('qStatus').value      = q.status || 'draft';
+    document.getElementById('qPaymentTerm').value = q.paymentTerm || 'ชำระเต็มจำนวนก่อนแสดง';
+    document.getElementById('qItems').innerHTML   = '';
+    var items = [];
+    try { items = typeof q.items === 'string' ? JSON.parse(q.items) : q.items || []; } catch(e){ items = []; }
+    items.forEach(function(it){ addItem(it.desc, it.qty, it.price); });
+    if (!items.length) { addItem(); addItem(); }
+    calcTotal();
+  }
+
+  function closeModal(){ document.getElementById('quotModal').style.display = 'none'; }
+
+  function addItem(desc, qty, price){
+    var row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = '<input type="text" placeholder="รายการ" class="item-desc" value="'+(desc?escapeHtml(String(desc)):'')+'" oninput="calcTotal()">'
       +'<input type="number" placeholder="จำนวน" class="item-qty" value="'+(qty||1)+'" min="0" oninput="calcTotal()">'
       +'<input type="number" placeholder="ราคา/หน่วย" class="item-price" value="'+(price||0)+'" min="0" oninput="calcTotal()">'
       +'<button type="button" class="btn btn-danger btn-sm" onclick="this.parentNode.remove();calcTotal()">×</button>';
@@ -168,60 +341,248 @@
   }
 
   function calcTotal(){
-    var items=Array.from(document.querySelectorAll('.item-row'));
-    var subtotal=items.reduce(function(s,r){
-      var qty=parseFloat(r.querySelector('.item-qty').value)||0;
-      var price=parseFloat(r.querySelector('.item-price').value)||0;
-      return s+qty*price;
-    },0);
-    var discount=parseFloat(document.getElementById('qDiscount').value)||0;
-    var vatRate=parseFloat(document.getElementById('qVat').value)||0;
-    var afterDiscount=subtotal-discount;
-    var vat=Math.round(afterDiscount*(vatRate/100));
-    var total=afterDiscount+vat;
-    document.getElementById('qSubtotal').textContent=formatCurrency(afterDiscount);
-    document.getElementById('qVatAmt').textContent=formatCurrency(vat)+(vatRate?(' ('+vatRate+'%)'):'');
-    document.getElementById('qTotal').textContent=formatCurrency(total);
+    var items    = Array.from(document.querySelectorAll('.item-row'));
+    var rawTotal = items.reduce(function(s, r){
+      return s + (parseFloat(r.querySelector('.item-qty').value)||0) * (parseFloat(r.querySelector('.item-price').value)||0);
+    }, 0);
+    var discount  = parseFloat(document.getElementById('qDiscount').value) || 0;
+    var vatRate   = parseFloat(document.getElementById('qVat').value) || 0;
+    var afterDisc = rawTotal - discount;
+    var vat       = Math.round(afterDisc * (vatRate / 100));
+    var total     = afterDisc + vat;
+    document.getElementById('qSubtotalRaw').textContent = formatCurrency(rawTotal);
+    document.getElementById('qSubtotal').textContent    = formatCurrency(afterDisc);
+    document.getElementById('qVatAmt').textContent      = formatCurrency(vat) + (vatRate ? ' ('+vatRate+'%)' : '');
+    document.getElementById('qTotal').textContent       = formatCurrency(total);
   }
 
+  /* ── Form submit ── */
   document.getElementById('quotForm').addEventListener('submit', function(e){
     e.preventDefault();
-    var btn=document.getElementById('saveQuotBtn'); btn.disabled=true; btn.textContent=t('loading');
-    var items=Array.from(document.querySelectorAll('.item-row')).map(function(r){
-      return {desc:r.querySelector('.item-desc').value,qty:r.querySelector('.item-qty').value,price:r.querySelector('.item-price').value};
-    }).filter(function(i){return i.desc||i.price;});
-    var discount=parseFloat(document.getElementById('qDiscount').value)||0;
-    var vatRate=parseFloat(document.getElementById('qVat').value)||0;
-    var id=document.getElementById('quotId').value;
-    var action=id?'updateQuotation':'addQuotation';
-    apiCall(action,{
-      quotationId:id, client:document.getElementById('qClient').value.trim(),
-      date:document.getElementById('qDate').value, eventDate:document.getElementById('qEventDate').value,
-      venue:document.getElementById('qVenue').value.trim(), items:JSON.stringify(items),
-      discount:discount, vatRate:vatRate, notes:document.getElementById('qNotes').value
-    },function(r){
-      btn.disabled=false; btn.textContent=t('save');
-      if(r&&r.success){ showToast(t('msg_saved'),'success'); closeModal(); loadQuotations(); }
-      else showToast((r&&r.message)||t('msg_error'),'error');
+    var btn = document.getElementById('saveQuotBtn');
+    btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+    var items = Array.from(document.querySelectorAll('.item-row')).map(function(r){
+      return { desc: r.querySelector('.item-desc').value, qty: r.querySelector('.item-qty').value, price: r.querySelector('.item-price').value };
+    }).filter(function(i){ return i.desc || i.price; });
+
+    var discount  = parseFloat(document.getElementById('qDiscount').value) || 0;
+    var vatRate   = parseFloat(document.getElementById('qVat').value) || 0;
+    var rawTotal  = items.reduce(function(s,i){ return s + (parseFloat(i.qty)||0)*(parseFloat(i.price)||0); }, 0);
+    var afterDisc = rawTotal - discount;
+    var total     = afterDisc + Math.round(afterDisc * vatRate / 100);
+
+    var id     = document.getElementById('quotId').value;
+    var action = id ? 'updateQuotation' : 'addQuotation';
+    apiCall(action, {
+      quotationId:  id,
+      client:       document.getElementById('qClient').value.trim(),
+      clientPhone:  document.getElementById('qClientPhone').value.trim(),
+      date:         document.getElementById('qDate').value,
+      eventDate:    document.getElementById('qEventDate').value,
+      eventTime:    document.getElementById('qEventTime').value,
+      jobName:      document.getElementById('qJobName').value.trim(),
+      venue:        document.getElementById('qVenue').value.trim(),
+      members:      document.getElementById('qMembers').value.trim(),
+      items:        JSON.stringify(items),
+      discount:     discount,
+      vatRate:      vatRate,
+      total:        total,
+      status:       document.getElementById('qStatus').value,
+      paymentTerm:  document.getElementById('qPaymentTerm').value,
+      notes:        document.getElementById('qNotes').value,
+      calcData:     calcData ? JSON.stringify(calcData) : null
+    }, function(r){
+      btn.disabled = false; btn.textContent = 'บันทึก';
+      if (r && r.success) {
+        if (typeof showToast === 'function') showToast('บันทึกเรียบร้อย', 'success');
+        closeModal();
+        loadQuotations();
+        if (document.getElementById('qStatus').value === 'approved') {
+          if (confirm('ใบเสนอราคาอนุมัติแล้ว — ต้องการสร้างสัญญาว่าจ้างเลยไหม?')) {
+            var newId = (r.data && r.data.quotationId) || id;
+            goToContract(newId);
+          }
+        }
+      } else {
+        if (typeof showToast === 'function') showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      }
     });
   });
 
-  function generatePdf(id){
-    showToast('กำลังสร้าง PDF...','info');
-    apiCall('generateQuotationPdf',{quotationId:id},function(r){
-      if(r&&r.success&&r.url){ window.open(r.url,'_blank'); showToast(t('msg_success'),'success'); }
-      else showToast((r&&r.message)||t('msg_error'),'error');
+  /* ── Preview / Print / PDF ── */
+  function previewQuot(){
+    var html = buildQuotHtml(getFormData());
+    document.getElementById('quotPreview').innerHTML = html;
+    window.print();
+  }
+
+  function printQuot(id){
+    var q = quotations.find(function(x){ return x.quotationId === id; });
+    if (!q) return;
+    var items = [];
+    try { items = typeof q.items === 'string' ? JSON.parse(q.items) : q.items || []; } catch(e){ items = []; }
+    var html = buildQuotHtml({
+      quotNo: q.quotNo || q.quotationId,
+      client: q.client, clientPhone: q.clientPhone, date: q.date,
+      eventDate: q.eventDate, eventTime: q.eventTime,
+      jobName: q.jobName, venue: q.venue, members: q.members,
+      items: items, discount: q.discount||0, vatRate: q.vatRate||0,
+      total: q.total||0, paymentTerm: q.paymentTerm, notes: q.notes, status: q.status
+    });
+    document.getElementById('quotPreview').innerHTML = html;
+    window.print();
+  }
+
+  function savePdf(id){ printQuot(id); }
+
+  function getFormData(){
+    var items = Array.from(document.querySelectorAll('.item-row')).map(function(r){
+      return { desc: r.querySelector('.item-desc').value, qty: parseFloat(r.querySelector('.item-qty').value)||0, price: parseFloat(r.querySelector('.item-price').value)||0 };
+    }).filter(function(i){ return i.desc; });
+    var discount  = parseFloat(document.getElementById('qDiscount').value) || 0;
+    var vatRate   = parseFloat(document.getElementById('qVat').value) || 0;
+    var rawTotal  = items.reduce(function(s,i){ return s + i.qty*i.price; }, 0);
+    var afterDisc = rawTotal - discount;
+    var total     = afterDisc + Math.round(afterDisc * vatRate / 100);
+    return {
+      quotNo: 'QT-' + new Date().toISOString().replace(/\D/g,'').substring(0,12),
+      client: document.getElementById('qClient').value,
+      clientPhone: document.getElementById('qClientPhone').value,
+      date: document.getElementById('qDate').value,
+      eventDate: document.getElementById('qEventDate').value,
+      eventTime: document.getElementById('qEventTime').value,
+      jobName: document.getElementById('qJobName').value,
+      venue: document.getElementById('qVenue').value,
+      members: document.getElementById('qMembers').value,
+      items: items, discount: discount, vatRate: vatRate, total: total,
+      paymentTerm: document.getElementById('qPaymentTerm').value,
+      notes: document.getElementById('qNotes').value,
+      status: document.getElementById('qStatus').value
+    };
+  }
+
+  function buildQuotHtml(d){
+    var bandName    = localStorage.getItem('bandName') || 'วงดนตรี';
+    var bandPhone   = localStorage.getItem('bandPhone') || '';
+    var items       = d.items || [];
+    var rawTotal    = items.reduce(function(s,i){ return s + (parseFloat(i.qty)||0)*(parseFloat(i.price)||0); }, 0);
+    var discount    = parseFloat(d.discount) || 0;
+    var vatRate     = parseFloat(d.vatRate) || 0;
+    var afterDisc   = rawTotal - discount;
+    var vat         = Math.round(afterDisc * vatRate / 100);
+    var total       = afterDisc + vat;
+    var paymentTerm = d.paymentTerm || 'ชำระเต็มจำนวนก่อนแสดง';
+    var notes       = d.notes || '';
+    var thDate      = d.date ? new Date(d.date).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}) : '';
+    var thEventDate = d.eventDate ? new Date(d.eventDate).toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'}) : '';
+
+    var itemsHtml = items.map(function(it, i){
+      var amt = (parseFloat(it.qty)||0) * (parseFloat(it.price)||0);
+      return '<tr>'
+        +'<td class="text-center">'+(i+1)+'</td>'
+        +'<td>'+escapeHtml(it.desc||'')+'</td>'
+        +'<td class="text-center">'+escapeHtml(String(it.qty||1))+'</td>'
+        +'<td class="text-right">'+formatCurrency(parseFloat(it.price)||0)+'</td>'
+        +'<td class="text-right" style="font-weight:600">'+formatCurrency(amt)+'</td>'
+        +'</tr>';
+    }).join('');
+
+    var membersHtml = '';
+    if (d.members) {
+      membersHtml = '<div class="quot-section-title">นักดนตรีที่ร่วมงาน</div>'
+        +'<div class="quot-members-list">'+d.members.split(',').map(function(m){
+          return '<span class="quot-member-chip">'+escapeHtml(m.trim())+'</span>';
+        }).join('')+'</div>';
+    }
+
+    return '<div class="quot-doc">'
+      +'<div class="quot-doc-header">'
+        +'<div><div class="quot-band-name">🎵 '+escapeHtml(bandName)+'</div>'
+        +(bandPhone ? '<div class="quot-band-sub">📞 '+escapeHtml(bandPhone)+'</div>' : '')+'</div>'
+        +'<div class="quot-title-block"><div class="quot-title">ใบเสนอราคา</div>'
+        +'<div class="quot-no">เลขที่: '+escapeHtml(d.quotNo||'')+'</div>'
+        +'<div class="quot-no">วันที่: '+thDate+'</div></div>'
+      +'</div>'
+      +'<div class="quot-info-grid">'
+        +'<div class="quot-info-box"><div class="quot-info-label">ลูกค้า / เจ้าภาพ</div>'
+          +'<div class="quot-info-val">'+escapeHtml(d.client||'')+'</div>'
+          +(d.clientPhone ? '<div class="quot-info-val-sm">📞 '+escapeHtml(d.clientPhone)+'</div>' : '')+'</div>'
+        +'<div class="quot-info-box"><div class="quot-info-label">รายละเอียดงาน</div>'
+          +'<div class="quot-info-val">'+escapeHtml(d.jobName||'')+'</div>'
+          +'<div class="quot-info-val-sm">📅 '+thEventDate+(d.eventTime ? ' เวลา '+escapeHtml(d.eventTime)+' น.' : '')+'</div>'
+          +(d.venue ? '<div class="quot-info-val-sm">📍 '+escapeHtml(d.venue)+'</div>' : '')+'</div>'
+      +'</div>'
+      + membersHtml
+      +'<div class="quot-section-title">รายการบริการ</div>'
+      +'<table class="quot-table"><thead><tr><th class="text-center">#</th><th>รายการ</th><th class="text-center">จำนวน</th><th class="text-right">ราคา/หน่วย</th><th class="text-right">รวม</th></tr></thead>'
+      +'<tbody>'+itemsHtml+'</tbody></table>'
+      +'<div class="quot-total-box">'
+        +(discount > 0 ? '<div class="quot-total-row"><span>ยอดก่อนส่วนลด</span><span>'+formatCurrency(rawTotal)+'</span></div><div class="quot-total-row"><span>ส่วนลด</span><span>-'+formatCurrency(discount)+'</span></div>' : '')
+        +(vatRate > 0 ? '<div class="quot-total-row"><span>ภาษีมูลค่าเพิ่ม ('+vatRate+'%)</span><span>'+formatCurrency(vat)+'</span></div>' : '')
+        +'<div class="quot-total-row main"><span>ยอดรวมทั้งสิ้น</span><span>'+formatCurrency(total)+'</span></div>'
+      +'</div>'
+      +'<div class="quot-terms">'
+        +'<div style="font-weight:700;margin-bottom:4px">เงื่อนไขการชำระเงิน</div>'
+        +'<div>'+escapeHtml(paymentTerm)+'</div>'
+        +(notes ? '<div style="margin-top:8px"><b>หมายเหตุ:</b> '+escapeHtml(notes)+'</div>' : '')
+        +'<div style="margin-top:8px">• ใบเสนอราคานี้มีอายุ 30 วันนับจากวันที่ออก</div>'
+        +'<div>• ราคาดังกล่าวรวมค่าอุปกรณ์ดนตรีและระบบเสียงของวงแล้ว</div>'
+        +'<div>• หากมีการยกเลิกหลังจากชำระมัดจำแล้ว จะไม่คืนเงินมัดจำ</div>'
+      +'</div>'
+      +'<div class="quot-sig">'
+        +'<div class="quot-sig-box">ผู้เสนอราคา<br><b>'+escapeHtml(bandName)+'</b></div>'
+        +'<div class="quot-sig-box">ผู้ว่าจ้าง / เจ้าภาพ<br><b>'+escapeHtml(d.client||'')+'</b></div>'
+      +'</div>'
+      +'<div class="quot-footer">'+escapeHtml(bandName)+' — ใบเสนอราคาเลขที่ '+escapeHtml(d.quotNo||'')+' — สร้างด้วย Band Management By SoulCiety</div>'
+    +'</div>';
+  }
+
+  /* ── Delete ── */
+  function deleteQuot(id){
+    if (typeof showConfirm === 'function') {
+      showConfirm('ลบใบเสนอราคา', 'ต้องการลบใบเสนอราคานี้?').then(function(ok){
+        if (!ok) return;
+        doDelete(id);
+      });
+    } else if (confirm('ลบใบเสนอราคานี้?')) {
+      doDelete(id);
+    }
+  }
+
+  function doDelete(id){
+    apiCall('deleteQuotation', { quotationId: id }, function(r){
+      if (r && r.success) {
+        if (typeof showToast === 'function') showToast('ลบแล้ว', 'success');
+        loadQuotations();
+      } else {
+        if (typeof showToast === 'function') showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      }
     });
   }
 
-  function deleteQuot(id){
-    showConfirm(t('confirmDeleteTitle'),t('confirmDeleteMsg')).then(function(ok){
-      if(!ok) return;
-      apiCall('deleteQuotation',{quotationId:id},function(r){
-        if(r&&r.success){ showToast(t('msg_deleted'),'success'); loadQuotations(); }
-        else showToast((r&&r.message)||t('msg_error'),'error');
-      });
-    });
+  /* ── Go to Contract ── */
+  function goToContract(id){
+    var q = quotations.find(function(x){ return x.quotationId === id; }) || {};
+    var contractData = {
+      quotationId: id,
+      quotNo:      q.quotNo || id,
+      client:      q.client || '',
+      clientPhone: q.clientPhone || '',
+      eventDate:   q.eventDate || '',
+      eventTime:   q.eventTime || '',
+      jobName:     q.jobName || '',
+      venue:       q.venue || '',
+      members:     q.members || '',
+      total:       q.total || 0,
+      paymentTerm: q.paymentTerm || '',
+      notes:       q.notes || '',
+      calcData:    null
+    };
+    // Also attach calc data if available
+    try { contractData.calcData = JSON.parse(localStorage.getItem('jobCalcData') || 'null'); } catch(e){}
+    localStorage.setItem('contractData', JSON.stringify(contractData));
+    window.location.href = 'contract.html?from=quot&id=' + encodeURIComponent(id);
   }
   </script>
 </body>
