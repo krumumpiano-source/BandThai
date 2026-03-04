@@ -31,7 +31,7 @@
       nav_songInsights: 'สถิติเพลง', nav_bandFund: 'เงินกองกลาง', nav_settings: 'ตั้งค่า',
       nav_bandInfo: 'ข้อมูลวง', nav_userManual: 'คู่มือ', nav_admin: 'แอดมิน',
       nav_equipment: 'อุปกรณ์', nav_clients: 'ลูกค้า', nav_myProfile: 'ข้อมูลส่วนตัว',
-      nav_setlist: 'ลิสเพลง',
+
       // คีย์ form fields ทั่วไป
       venue: 'สถานที่', client: 'ลูกค้า/ผู้จ้าง', date: 'วันที่',
       jobType: 'ประเภทงาน', payment: 'ค่าตัว (บาท)', status: 'สถานะ', notes: 'หมายเหตุ',
@@ -120,7 +120,7 @@
       nav_songInsights: 'Song Insights', nav_bandFund: 'Band Fund', nav_settings: 'Settings',
       nav_bandInfo: 'Band Info', nav_userManual: 'User Manual', nav_admin: 'Admin',
       nav_equipment: 'Equipment', nav_clients: 'Clients', nav_myProfile: 'My Profile',
-      nav_setlist: 'Setlist',
+
       // Common form fields
       venue: 'Venue', client: 'Client/Booker', date: 'Date',
       jobType: 'Job Type', payment: 'Pay (THB)', status: 'Status', notes: 'Notes',
