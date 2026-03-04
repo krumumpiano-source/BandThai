@@ -161,17 +161,77 @@
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
-  <script src="js/band-members.js"></script>
   <script>
   /* ════════════════════════════════════════════
      Band Info — Band Management By SoulCiety
+     (load band-members.js AFTER override is set)
   ════════════════════════════════════════════ */
   var _schedule = {};
   var _venues   = [];
-  var _allMembersList = [];
+  var DAY_TH    = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  var DAY_SHORT  = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
-  var DAY_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
-  var DAY_SHORT = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+  </script>
+  <script src="js/band-members.js"></script>
+  <script>
+  /* Override renderMemberCards — assignment after band-members.js, so it wins */
+  renderMemberCards = function(members) {
+    var container = document.getElementById('memberCards');
+    if (!container) return;
+
+    var mc = document.getElementById('bMemberCount');
+    if (mc) mc.textContent = (_allMembers||[]).filter(function(m){ return m.status==='active'; }).length;
+
+    if (!members || !members.length) {
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">ไม่พบสมาชิก</div>';
+      return;
+    }
+
+    var role = localStorage.getItem('userRole') || '';
+    var isManager = (role==='admin' || role==='manager');
+
+    container.innerHTML = members.map(function(m) {
+      var pills = [];
+      Object.keys(_schedule).sort(function(a,b){ return parseInt(a)-parseInt(b); }).forEach(function(dayIdx) {
+        (_schedule[dayIdx]||[]).forEach(function(slot) {
+          if (!(slot.members||[]).some(function(mr){ return mr.memberId===m.id; })) return;
+          var venue = _venues.find(function(v){ return v.id===slot.venueId; });
+          pills.push('<span class="sched-pill">'
+            + (DAY_SHORT[parseInt(dayIdx)]||'?') + ' ' + (slot.startTime||'?')
+            + (venue ? ' · ' + escapeHtml(venue.name) : '') + '</span>');
+        });
+      });
+      var parts = (m.name||'').trim().split(' ');
+      var initials = parts.length >= 2
+        ? (parts[0][0]||'') + (parts[parts.length-1][0]||'')
+        : (parts[0]||'').substring(0,2) || '?';
+      return '<div class="member-card">'
+        + (isManager ? '<div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">✏️</button></div>' : '')
+        + '<div class="member-avatar">' + escapeHtml(initials) + '</div>'
+        + '<div class="member-body">'
+          + '<div class="member-name">' + escapeHtml(m.name||'') + '</div>'
+          + '<div class="member-position">' + escapeHtml(m.position||'สมาชิก') + '</div>'
+          + '<div class="member-contact">'
+            + (m.phone ? '<span>📞 <a href="tel:' + escapeHtml(m.phone) + '">' + escapeHtml(m.phone) + '</a></span>' : '')
+            + (m.email ? '<span>✉️ <a href="mailto:' + escapeHtml(m.email) + '">' + escapeHtml(m.email) + '</a></span>' : '')
+            + '<span><span class="status-dot ' + (m.status==='active'?'active':'inactive') + '"></span>'
+            + (m.status==='active'?'ใช้งาน':'ไม่ใช้งาน') + '</span>'
+          + '</div>'
+          + (pills.length ? '<div class="member-sched-row"><div class="member-sched-title">📅 ตารางงาน</div><div class="sched-pills">' + pills.join('') + '</div></div>' : '')
+        + '</div>'
+        + '</div>';
+    }).join('');
+  };
+
+  filterMembers = function() {
+    var q  = (document.getElementById('memberSearch').value||'').toLowerCase();
+    var st = document.getElementById('statusFilter').value;
+    _filteredMembers = (_allMembers||[]).filter(function(m) {
+      return (!st || m.status===st)
+        && (!q || (m.name||'').toLowerCase().includes(q) || (m.position||'').toLowerCase().includes(q));
+    });
+    renderMemberCards(_filteredMembers);
+  };
 
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
@@ -182,51 +242,47 @@
     var isManager = (role === 'admin' || role === 'manager');
     if (isManager) document.getElementById('addMemberBtn').style.display = '';
 
-    // Show name from localStorage immediately
+    // Show band name from localStorage immediately
     var bName = localStorage.getItem('bandName') || '';
     if (bName) document.getElementById('bName').textContent = bName;
     var prov = localStorage.getItem('bandProvince') || '';
     if (prov) { document.getElementById('bProvince').textContent = prov; document.getElementById('bProvinceChip').style.display = 'flex'; }
 
-    loadAll();
+    // Load members (band-members.js) + settings in parallel
+    loadBandMembers();
+    loadBandSettings();
   });
 
-  function loadAll() {
+  function loadBandSettings() {
     apiCall('getBandSettings', {}, function(r) {
-      if (r && r.success && r.data) {
-        var d = r.data;
-        var bNameEl = document.getElementById('bName');
-        if (d.bandName) bNameEl.textContent = d.bandName;
-        if (d.bandManager) {
-          document.getElementById('bManager').textContent = d.bandManager;
-          document.getElementById('bManagerChip').style.display = 'flex';
-        }
-        if (d.province) {
-          document.getElementById('bProvince').textContent = d.province;
-          document.getElementById('bProvinceChip').style.display = 'flex';
-        }
-        _venues   = d.venues   || [];
-        _schedule = d.schedule || {};
-
-        // Stats
-        var slotCount = 0;
-        Object.keys(_schedule).forEach(function(day) { slotCount += (_schedule[day] || []).length; });
-        document.getElementById('bVenueCount').textContent = _venues.length;
-        document.getElementById('bSlotCount').textContent  = slotCount;
-
-        renderVenueSchedule();
+      if (!(r && r.success && r.data)) return;
+      var d = r.data;
+      if (d.bandName) document.getElementById('bName').textContent = d.bandName;
+      if (d.bandManager) {
+        document.getElementById('bManager').textContent = d.bandManager;
+        document.getElementById('bManagerChip').style.display = 'flex';
       }
-    });
+      if (d.province) {
+        document.getElementById('bProvince').textContent = d.province;
+        document.getElementById('bProvinceChip').style.display = 'flex';
+      }
+      _venues   = d.venues   || [];
+      _schedule = d.schedule || {};
 
-    apiCall('getAllBandMembers', {}, function(r) {
-      _allMembersList = (r && r.success && r.data) ? r.data : [];
-      _allMembers = _allMembersList;
-      document.getElementById('bMemberCount').textContent = _allMembersList.filter(function(m){return m.status==='active';}).length;
-      filterMembers();
+      // Stats
+      var slotCount = 0;
+      Object.keys(_schedule).forEach(function(day){ slotCount += (_schedule[day]||[]).length; });
+      document.getElementById('bVenueCount').textContent = _venues.length;
+      document.getElementById('bSlotCount').textContent  = slotCount;
+
+      renderVenueSchedule();
+      // Re-render member cards now that we have schedule data
+      if (typeof _allMembers !== 'undefined' && _allMembers.length) {
+        renderMemberCards(_filteredMembers.length ? _filteredMembers : _allMembers);
+      }
     });
   }
 
-  /* ── Venue & Schedule render ── */
   function renderVenueSchedule() {
     var grid = document.getElementById('venueGrid');
     if (!_venues.length) {
@@ -235,108 +291,41 @@
     }
 
     grid.innerHTML = _venues.map(function(venue) {
-      // หา slots ทั้งหมดของ venue นี้
       var slots = [];
       Object.keys(_schedule).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(dayIdx) {
-        (_schedule[dayIdx] || []).forEach(function(slot) {
-          if (slot.venueId === venue.id) {
-            slots.push({ day: parseInt(dayIdx), slot: slot });
-          }
+        (_schedule[dayIdx]||[]).forEach(function(slot) {
+          if (slot.venueId === venue.id) slots.push({ day: parseInt(dayIdx), slot: slot });
         });
       });
 
-      var slotsHtml = '';
-      if (slots.length) {
-        slotsHtml = slots.map(function(s) {
-          var memberNames = (s.slot.members || []).map(function(mr) {
-            var m = _allMembersList.find(function(x) { return x.id === mr.memberId; });
-            return m ? escapeHtml(m.name || '') : '';
-          }).filter(Boolean);
-          var pills = memberNames.map(function(n) { return '<span class="slot-member-pill">' + n + '</span>'; }).join('');
-          return '<div class="slot-row">'
-            + '<div class="slot-day">' + (DAY_TH[s.day] || '?') + '</div>'
-            + '<div class="slot-time">⏰ ' + (s.slot.startTime||'?') + ' – ' + (s.slot.endTime||'?') + '</div>'
-            + (pills ? '<div class="slot-members">' + pills + '</div>' : '')
-            + '</div>';
-        }).join('');
-      } else {
-        slotsHtml = '<div style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:8px 0">ยังไม่มีรอบที่จัดไว้</div>';
-      }
+      var slotsHtml = slots.length ? slots.map(function(s) {
+        var memberNames = (s.slot.members||[]).map(function(mr) {
+          var m = typeof _allMembers !== 'undefined' && _allMembers.find(function(x){ return x.id === mr.memberId; });
+          return m ? escapeHtml(m.name||'') : '';
+        }).filter(Boolean);
+        var pills = memberNames.map(function(n){ return '<span class="slot-member-pill">' + n + '</span>'; }).join('');
+        return '<div class="slot-row">'
+          + '<div class="slot-day">' + (DAY_TH[s.day]||'?') + '</div>'
+          + '<div class="slot-time">⏰ ' + (s.slot.startTime||'?') + ' – ' + (s.slot.endTime||'?') + '</div>'
+          + (pills ? '<div class="slot-members">' + pills + '</div>' : '')
+          + '</div>';
+      }).join('') : '<div style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:8px 0">ยังไม่มีรอบที่จัดไว้</div>';
 
       return '<div class="venue-card">'
-        + '<div class="venue-card-header">'
-          + '<h4>🏪 ' + escapeHtml(venue.name || '') + '</h4>'
-          + (venue.address ? '<div class="vaddr">📍 ' + escapeHtml(venue.address) + '</div>' : '')
-        + '</div>'
+        + '<div class="venue-card-header"><h4>🏪 ' + escapeHtml(venue.name||'') + '</h4>'
+          + (venue.address ? '<div class="vaddr">📍 ' + escapeHtml(venue.address) + '</div>' : '') + '</div>'
         + '<div class="venue-card-body">' + slotsHtml + '</div>'
         + '</div>';
     }).join('');
   }
 
-  /* ── Member filter + render override ── */
-  function filterMembers() {
-    var q  = (document.getElementById('memberSearch') ? document.getElementById('memberSearch').value : '').toLowerCase();
-    var st = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : 'active';
-    var filtered = _allMembersList.filter(function(m) {
-      return (!st || m.status === st)
-        && (!q || (m.name||'').toLowerCase().includes(q) || (m.position||'').toLowerCase().includes(q));
-    });
-    renderMemberCards(filtered);
-  }
-
-  renderMemberCards = function(members) {
-    var container = document.getElementById('memberCards');
-    if (!container) return;
-    if (!members.length) {
-      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">ไม่พบสมาชิก</div>';
-      return;
-    }
-
-    var role = localStorage.getItem('userRole') || '';
-    var isManager = (role === 'admin' || role === 'manager');
-
-    container.innerHTML = members.map(function(m) {
-      // schedule pills for this member
-      var pills = [];
-      Object.keys(_schedule).sort(function(a,b){return parseInt(a)-parseInt(b);}).forEach(function(dayIdx) {
-        (_schedule[dayIdx] || []).forEach(function(slot) {
-          var assigned = (slot.members || []).some(function(mr) { return mr.memberId === m.id; });
-          if (!assigned) return;
-          var venue = _venues.find(function(v) { return v.id === slot.venueId; });
-          var dayStr = DAY_SHORT[parseInt(dayIdx)] || '?';
-          var vName  = venue ? venue.name : '';
-          pills.push('<span class="sched-pill">' + dayStr + ' ' + (slot.startTime||'?') + (vName ? ' · ' + escapeHtml(vName) : '') + '</span>');
-        });
-      });
-
-      // avatar initials
-      var initials = (m.name || '🎵').split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() || '🎵';
-
-      return '<div class="member-card">'
-        + (isManager ? '<div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">✏️</button></div>' : '')
-        + '<div class="member-avatar">' + escapeHtml(initials) + '</div>'
-        + '<div class="member-body">'
-          + '<div class="member-name">' + escapeHtml(m.name || '') + '</div>'
-          + '<div class="member-position">' + escapeHtml(m.position || 'สมาชิก') + '</div>'
-          + '<div class="member-contact">'
-            + (m.phone ? '<span>📞 <a href="tel:' + encodeURIComponent(m.phone) + '">' + escapeHtml(m.phone) + '</a></span>' : '')
-            + (m.email ? '<span>✉️ <a href="mailto:' + encodeURIComponent(m.email) + '">' + escapeHtml(m.email) + '</a></span>' : '')
-            + '<span><span class="status-dot ' + (m.status==='active'?'active':'inactive') + '"></span>' + (m.status==='active'?'ใช้งาน':'ไม่ใช้งาน') + '</span>'
-          + '</div>'
-          + (pills.length ? '<div class="member-sched-row"><div class="member-sched-title">📅 ตารางงาน</div><div class="sched-pills">' + pills.join('') + '</div></div>' : '')
-        + '</div>'
-        + '</div>';
-    }).join('');
-  };
-
-  /* ── Member modal/form (re-use from band-members.js) ── */
   function deleteCurrentMember() {
     var id = document.getElementById('memberId').value;
     showConfirm('ยืนยันการลบ', 'ต้องการลบสมาชิกคนนี้?').then(function(ok) {
       if (!ok) return;
       apiCall('deleteBandMember', { memberId: id }, function(r) {
-        if (r && r.success) { showToast('ลบแล้ว', 'success'); closeMemberModal(); loadAll(); }
-        else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+        if (r && r.success) { showToast('ลบแล้ว', 'success'); closeMemberModal(); loadBandMembers(); }
+        else showToast((r && r.message)||'เกิดข้อผิดพลาด', 'error');
       });
     });
   }
