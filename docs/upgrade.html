@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google-adsense-account" content="ca-pub-6824376916256036">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>อัปเกรดแพ็กเกจ — BandFlow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <!-- Omise.js -->
+  <script src="https://cdn.omise.co/omise.js"></script>
+  <style>
+    .upgrade-wrap { max-width: 700px; margin: 0 auto; padding: 2rem 1rem; }
+    .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.5rem 0; }
+    @media(max-width:600px){ .plan-grid { grid-template-columns: 1fr; } }
+    .plan-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: border-color .2s, transform .2s;
+      position: relative;
+    }
+    .plan-card:hover { border-color: var(--gold,#fbbf24); transform: translateY(-2px); }
+    .plan-card.selected { border-color: var(--gold,#fbbf24); background: rgba(251,191,36,.06); }
+    .plan-card .badge {
+      position: absolute; top: -10px; right: 16px;
+      background: var(--gold,#fbbf24); color: #000;
+      font-size: .65rem; font-weight: 700;
+      padding: 2px 10px; border-radius: 20px;
+    }
+    .plan-name { font-size: 1.3rem; font-weight: 700; margin-bottom: 4px; }
+    .plan-price { font-size: 2rem; font-weight: 700; color: var(--gold,#fbbf24); }
+    .plan-price span { font-size: .9rem; font-weight: 400; color: var(--text-secondary); }
+    .plan-features { margin-top: 1rem; list-style: none; padding: 0; font-size: .88rem; }
+    .plan-features li { padding: 4px 0; color: var(--text-secondary); }
+    .plan-features li::before { content: '✓ '; color: var(--success,#22c55e); }
+    .current-plan-badge {
+      display: inline-block; background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 20px; padding: 3px 12px;
+      font-size: .75rem; color: var(--text-secondary);
+      margin-bottom: 1.5rem;
+    }
+    #payBtn { width: 100%; margin-top: 1rem; font-size: 1rem; padding: 14px; }
+    #payBtn:disabled { opacity: .5; cursor: not-allowed; }
+    .secure-note { text-align: center; color: var(--text-secondary); font-size: .75rem; margin-top: .5rem; }
+  </style>
+</head>
+<body>
+<div class="page-container" style="max-width:760px;margin:0 auto;padding:1.5rem 1rem">
+
+  <div style="margin-bottom:1.5rem">
+    <a href="band-settings.html" class="btn btn-ghost" style="font-size:.85rem">← กลับ</a>
+  </div>
+
+  <h1 style="margin-bottom:.25rem">🚀 อัปเกรดแพ็กเกจ</h1>
+  <p style="color:var(--text-secondary);margin-bottom:1rem">เลือกแพ็กเกจที่เหมาะกับคุณ ชำระด้วยบัตรเดบิต/เครดิต</p>
+
+  <div class="current-plan-badge" id="currentPlanBadge">แพ็กเกจปัจจุบัน: Free</div>
+
+  <!-- Plan Cards -->
+  <div class="plan-grid">
+    <div class="plan-card" id="cardLite" onclick="selectPlan('lite')">
+      <div class="plan-name">🎵 Lite</div>
+      <div class="plan-price">฿99<span>/เดือน</span></div>
+      <ul class="plan-features">
+        <li>ไม่มีโฆษณา</li>
+        <li>บันทึกเพลงได้ไม่จำกัด</li>
+        <li>สมาชิกได้ 5 คน</li>
+        <li>ทุกฟีเจอร์พื้นฐาน</li>
+      </ul>
+    </div>
+    <div class="plan-card" id="cardPro" onclick="selectPlan('pro')">
+      <div class="badge">แนะนำ</div>
+      <div class="plan-name">👑 Pro</div>
+      <div class="plan-price">฿199<span>/เดือน</span></div>
+      <ul class="plan-features">
+        <li>ไม่มีโฆษณา</li>
+        <li>บันทึกเพลงได้ไม่จำกัด</li>
+        <li>สมาชิกได้ไม่จำกัด</li>
+        <li>รายงาน & สถิติขั้นสูง</li>
+        <li>ส่งออก PDF/Excel</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Selected Plan Summary -->
+  <div id="selectedSummary" style="display:none;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:1rem;margin-bottom:1rem">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span id="summaryText" style="font-weight:600"></span>
+      <span id="summaryPrice" style="color:var(--gold,#fbbf24);font-weight:700;font-size:1.1rem"></span>
+    </div>
+  </div>
+
+  <!-- Pay Button -->
+  <button class="btn btn-primary" id="payBtn" disabled onclick="startPayment()">
+    💳 ชำระเงิน
+  </button>
+  <p class="secure-note">🔒 ปลอดภัยด้วย Omise — ข้อมูลบัตรไม่ผ่านเซิร์ฟเวอร์ของเรา</p>
+
+  <!-- Status -->
+  <div id="statusMsg" style="display:none;margin-top:1rem;padding:1rem;border-radius:10px;text-align:center"></div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!localStorage.getItem('auth_token')) {
+      window.location.replace('index.html');
+      return;
+    }
+    var plan = localStorage.getItem('band_plan') || 'free';
+    var names = { free: 'Free', lite: 'Lite', pro: 'Pro' };
+    document.getElementById('currentPlanBadge').textContent =
+      'แพ็กเกจปัจจุบัน: ' + (names[plan] || plan);
+    if (plan === 'pro') {
+      showStatus('คุณใช้แพ็กเกจ Pro อยู่แล้ว — ขอบคุณที่สนับสนุน! 🎉', 'success');
+    }
+  });
+
+  // ── Plan Selection ────────────────────────────────────────────────────────
+  var selectedPlan = null;
+  var prices = { lite: 99, pro: 199 };
+
+  window.selectPlan = function (plan) {
+    selectedPlan = plan;
+    document.getElementById('cardLite').classList.toggle('selected', plan === 'lite');
+    document.getElementById('cardPro').classList.toggle('selected', plan === 'pro');
+
+    var labels = { lite: 'Lite Plan', pro: 'Pro Plan' };
+    document.getElementById('summaryText').textContent = labels[plan];
+    document.getElementById('summaryPrice').textContent = '฿' + prices[plan] + '/เดือน';
+    document.getElementById('selectedSummary').style.display = '';
+    document.getElementById('payBtn').disabled = false;
+    document.getElementById('payBtn').textContent = '💳 ชำระ ฿' + prices[plan];
+  };
+
+  // ── Payment ───────────────────────────────────────────────────────────────
+  var cfg = window._AD_CONFIG || {};
+  var omisePKey = (window._SB_CONFIG && window._SB_CONFIG.omisePKey) || '';
+
+  window.startPayment = function () {
+    if (!selectedPlan) return;
+    var btn = document.getElementById('payBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังโหลด...';
+
+    // โหลด Omise config
+    OmiseCard.configure({
+      publicKey: omisePKey,
+      image: '',
+      locale: 'th',
+      currency: 'THB',
+      frameLabel: 'BandFlow',
+    });
+
+    OmiseCard.open({
+      amount: prices[selectedPlan] * 100,
+      currency: 'THB',
+      defaultPaymentMethod: 'credit_card',
+      onCreateTokenSuccess: function (token) {
+        processPayment(token);
+      },
+      onFormClosed: function () {
+        btn.disabled = false;
+        btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+      },
+    });
+  };
+
+  function processPayment(token) {
+    var btn = document.getElementById('payBtn');
+    btn.textContent = '⏳ กำลังประมวลผล...';
+
+    var sbUrl  = (window._SB_CONFIG && window._SB_CONFIG.url) || '';
+    var authToken = localStorage.getItem('auth_token') || '';
+
+    fetch(sbUrl + '/functions/v1/omise-charge', {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + authToken,
+      },
+      body: JSON.stringify({ token: token, plan: selectedPlan }),
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      if (data.success) {
+        localStorage.setItem('band_plan', data.plan);
+        localStorage.removeItem('ad_gate_ts'); // reset timer
+        showStatus('✅ ' + data.message + ' กำลังพาไปยัง Dashboard...', 'success');
+        setTimeout(function () {
+          window.location.replace('dashboard.html');
+        }, 2000);
+      } else {
+        showStatus('❌ ' + data.message, 'error');
+        btn.disabled = false;
+        btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+      }
+    })
+    .catch(function (e) {
+      showStatus('❌ เกิดข้อผิดพลาด: ' + e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+    });
+  }
+
+  function showStatus(msg, type) {
+    var el = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.style.display = '';
+    el.style.background = type === 'success'
+      ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)';
+    el.style.border = type === 'success'
+      ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(239,68,68,.4)';
+    el.style.color = type === 'success' ? '#22c55e' : '#ef4444';
+  }
+  window.showStatus = showStatus;
+
+})();
+</script>
+</body>
+</html>

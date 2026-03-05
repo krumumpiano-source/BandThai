@@ -122,6 +122,18 @@
         <button id="saveBtn" class="btn btn-primary">💾 บันทึกทั้งหมด</button>
       </div>
 
+      <!-- Plan Status -->
+      <div class="card" id="planCard">
+        <div class="card-header" style="justify-content:space-between;align-items:center">
+          <h3 class="card-title">⭐ แพ็กเกจปัจจุบัน</h3>
+          <span id="planBadge" style="font-size:var(--text-sm);font-weight:700;padding:4px 12px;border-radius:20px;background:#1f2937;color:#9ca3af">กำลังโหลด…</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--spacing-md);margin-top:var(--spacing-sm)">
+          <div id="planDesc" style="font-size:var(--text-sm);color:var(--premium-text-muted);flex:1"></div>
+          <a href="upgrade.html" id="upgradeBtn" class="btn btn-primary" style="display:none;white-space:nowrap">🚀 อัปเกรดแผน</a>
+        </div>
+      </div>
+
       <!-- Band Info -->
       <div class="card">
         <div class="card-header" style="justify-content:space-between">
@@ -321,6 +333,27 @@
       if (typeof requireAuth === 'function') requireAuth();
       checkAdGate();
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+      // Plan badge
+      (function() {
+        var plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
+        var badge = document.getElementById('planBadge');
+        var desc  = document.getElementById('planDesc');
+        var btn   = document.getElementById('upgradeBtn');
+        if (!badge) return;
+        var labels = { free: 'ฟรี', lite: 'Lite', pro: 'Pro' };
+        var colors  = { free: '#4b5563', lite: '#2563eb', pro: '#d97706' };
+        var descs   = {
+          free: 'ใช้งานได้ 75 นาที/เซสชัน — อัปเกรดเพื่อใช้งานไม่จำกัด',
+          lite: 'Lite — ใช้งานได้ไม่จำกัดเวลา สำหรับวงขนาดเล็ก',
+          pro:  'Pro — ฟีเจอร์ครบครัน สำหรับวงมืออาชีพ'
+        };
+        badge.textContent = labels[plan] || plan;
+        badge.style.background = colors[plan] || '#4b5563';
+        badge.style.color = '#fff';
+        if (desc) desc.textContent = descs[plan] || '';
+        if (btn && plan === 'free') btn.style.display = '';
+        if (btn && plan === 'lite') { btn.style.display = ''; btn.textContent = '⬆️ อัปเกรดเป็น Pro'; }
+      })();
       if (typeof applyTranslations === 'function') applyTranslations();
       // Show notification admin panel for admin/manager
       var _role = localStorage.getItem('userRole') || '';

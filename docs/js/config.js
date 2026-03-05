@@ -11,7 +11,8 @@
 window._SB_CONFIG = {
   url:  'https://wsorngsyowgxikiepice.supabase.co',
   anon: 'sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm',
-  vapidPublicKey: 'BLTV9C7RV2nVM9R-yQXtbfy_SfX7QmNSsA4XPZ_d3Q68ELssl0SioBz8RHjp1FxuAA_Zm2_ZcJ_tjEaRonDHEzA'
+  vapidPublicKey: 'BLTV9C7RV2nVM9R-yQXtbfy_SfX7QmNSsA4XPZ_d3Q68ELssl0SioBz8RHjp1FxuAA_Zm2_ZcJ_tjEaRonDHEzA',
+  omisePKey: 'pkey_test_66wwyu1mpk1t5j3y8a0'   // Omise Public Key (test mode)
 };
 
 // ── AdSense Configuration ───────────────────────────────
