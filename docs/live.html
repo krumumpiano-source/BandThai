@@ -251,8 +251,8 @@
 
     /* ─── NUDGE POPUP ─── */
     #nudgePopup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:3001;pointer-events:none;opacity:0;display:none;text-align:center;background:rgba(30,30,30,.95);border:2px solid var(--gold);border-radius:var(--radius-lg);padding:24px 40px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 12px 40px rgba(0,0,0,.8)}
-    #nudgePopup.active{display:block;animation:nudgePopAnim 2.5s ease-out forwards}
-    @keyframes nudgePopAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}8%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}15%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+    #nudgePopup.active{display:block;animation:nudgePopAnim 4.5s ease-out forwards}
+    @keyframes nudgePopAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}5%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}10%{transform:translate(-50%,-50%) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
     #nudgePopup .np-icon{font-size:2.5rem;margin-bottom:6px}
     #nudgePopup .np-from{font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:4px}
     #nudgePopup .np-msg{font-size:1rem;color:var(--text2)}
