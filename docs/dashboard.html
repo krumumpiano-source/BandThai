@@ -90,6 +90,26 @@
     .earn-tab{padding:6px 16px;border-radius:var(--radius-full);border:1px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-xs);font-weight:600;font-family:var(--font-family-body);color:var(--premium-text-muted);transition:all .2s}
     .earn-tab.active{background:#276749;color:#fff;border-color:#276749}
     .earn-tab:hover:not(.active){background:var(--premium-off-white)}
+    /* === Onboarding Card === */
+    .ob-card{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:2px solid #93c5fd;border-radius:var(--radius-xl);padding:var(--spacing-xl);margin-bottom:var(--spacing-xl);position:relative;animation:obFadeIn .4s ease}
+    @keyframes obFadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    .ob-card h3{font-size:var(--text-lg);font-weight:700;color:#1e3a5f;margin:0 0 4px}
+    .ob-card .ob-subtitle{font-size:var(--text-sm);color:#3b6ea8;margin:0 0 var(--spacing-lg)}
+    .ob-progress-bar{height:6px;background:#bfdbfe;border-radius:999px;margin-bottom:var(--spacing-lg);overflow:hidden}
+    .ob-progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#1d4ed8);border-radius:999px;transition:width .4s ease}
+    .ob-steps{display:flex;flex-direction:column;gap:10px}
+    .ob-step{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius-lg);background:#fff;border:1.5px solid #bfdbfe;text-decoration:none;color:var(--premium-text);transition:all .2s;font-size:var(--text-sm);font-weight:600}
+    .ob-step:hover{border-color:#3b82f6;background:#eff6ff;transform:translateX(2px)}
+    .ob-step.done{background:#f0fdf4;border-color:#86efac;color:#166534;pointer-events:none}
+    .ob-step .ob-step-icon{font-size:20px;flex-shrink:0;width:28px;text-align:center}
+    .ob-step .ob-step-text{flex:1}
+    .ob-step .ob-step-text small{display:block;font-size:var(--text-xs);font-weight:400;color:var(--premium-text-muted);margin-top:1px}
+    .ob-step.done .ob-step-text small{color:#4ade80}
+    .ob-step .ob-check{width:22px;height:22px;border-radius:50%;border:2px solid #93c5fd;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .2s}
+    .ob-step.done .ob-check{background:#22c55e;border-color:#22c55e;color:#fff}
+    .ob-dismiss{position:absolute;top:var(--spacing-md);right:var(--spacing-md);background:none;border:none;cursor:pointer;font-size:var(--text-xs);color:#6b9fd4;padding:4px 10px;border-radius:var(--radius-full);transition:all .2s;font-family:var(--font-family-body)}
+    .ob-dismiss:hover{background:#dbeafe;color:#1e40af}
+    @media(max-width:600px){.ob-step{padding:10px 12px;gap:8px}}
   </style>
 </head>
 <body>
@@ -103,6 +123,15 @@
           <p id="welcomeBand"></p>
         </div>
         <div style="font-size:32px">🥁</div>
+      </div>
+
+      <!-- ===== Onboarding Card ===== -->
+      <div class="ob-card" id="obCard" style="display:none">
+        <button class="ob-dismiss" id="obDismiss">ไม่ต้องแสดงอีก ✕</button>
+        <h3 id="obTitle">🚀 เริ่มต้นใช้งาน BandFlow</h3>
+        <p class="ob-subtitle" id="obSubtitle">ทำตามขั้นตอนเหล่านี้เพื่อเริ่มต้นได้เลย</p>
+        <div class="ob-progress-bar"><div class="ob-progress-fill" id="obProgressFill" style="width:0%"></div></div>
+        <div class="ob-steps" id="obSteps"></div>
       </div>
 
       <!-- ===== Pending Band Approval (for manager who just created band) ===== -->
@@ -748,6 +777,8 @@
     if (_role === 'manager' && !_bandId) {
       document.getElementById('dashPendingBandCard').style.display = '';
     }
+    // Onboarding
+    initOnboarding();
   });
 
   function loadDashPendingMembers() {
@@ -1166,6 +1197,90 @@
         +'</div>';
       }).join('');
     });
+  }
+
+  // ===== Onboarding =====
+  var OB_KEY = 'ob_dismissed_v1';
+  var OB_DONE_KEY = 'ob_steps_done';
+
+  var OB_MANAGER_STEPS = [
+    { key: 'settings',   icon: '⚙️', label: 'ตั้งค่าวง',        desc: 'ตั้งชื่อวง จังหวัด และตารางงาน',       href: 'band-settings.html' },
+    { key: 'members',    icon: '👥', label: 'เชิญสมาชิก',       desc: 'แชร์รหัสวงให้สมาชิกกดเข้าร่วม',        href: 'band-info.html' },
+    { key: 'schedule',   icon: '📅', label: 'กำหนดตารางงาน',    desc: 'ร้านที่เล่นและรอบเวลาประจำสัปดาห์',    href: 'schedule.html' },
+    { key: 'songs',      icon: '🎵', label: 'เพิ่มเพลงคลัง',    desc: 'สร้างเซ็ตลิสต์สำหรับการแสดง',          href: 'add-song.html' },
+    { key: 'calculator', icon: '🧮', label: 'คำนวณราคางาน',     desc: 'ประเมินราคารับงานครั้งแรก',             href: 'job-calculator.html' },
+  ];
+  var OB_MEMBER_STEPS = [
+    { key: 'profile',   icon: '👤', label: 'ตั้งค่าโปรไฟล์',    desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
+    { key: 'bandinfo',  icon: '🎸', label: 'ดูข้อมูลวง',         desc: 'รายชื่อสมาชิกและช่องทางติดต่อ',         href: 'band-info.html' },
+    { key: 'schedule',  icon: '📅', label: 'ดูตารางงาน',         desc: 'ตรวจสอบงานและวันซ้อมที่กำลังจะมา',     href: 'schedule.html' },
+    { key: 'checkin',   icon: '⏰', label: 'ลงเวลาประจำวัน',     desc: 'กดลงเวลาที่กล่องด้านล่างนี้ทุกวัน',     href: '#qciCard' },
+    { key: 'earnings',  icon: '📊', label: 'ดูรายได้ของฉัน',     desc: 'สรุปรายได้รายสัปดาห์ รายเดือน รายปี',  href: 'statistics.html' },
+  ];
+
+  function initOnboarding() {
+    if (localStorage.getItem(OB_KEY)) return; // dismissed before
+    var role = localStorage.getItem('userRole') || 'member';
+    var isManager = role === 'manager' || role === 'admin';
+    var steps = isManager ? OB_MANAGER_STEPS : OB_MEMBER_STEPS;
+    var doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(OB_DONE_KEY) || '{}'); } catch(e) {}
+
+    var doneCount = steps.filter(function(s){ return doneMap[s.key]; }).length;
+    var pct = Math.round(doneCount / steps.length * 100);
+
+    if (doneCount === steps.length) { localStorage.setItem(OB_KEY, '1'); return; }
+
+    var card = document.getElementById('obCard');
+    var fill = document.getElementById('obProgressFill');
+    var cont = document.getElementById('obSteps');
+    if (!card || !cont) return;
+
+    document.getElementById('obTitle').textContent = isManager ? '🚀 เริ่มต้นสร้างวงของคุณ' : '🎸 เริ่มต้นใช้งาน BandFlow';
+    document.getElementById('obSubtitle').textContent = 'ทำตาม ' + steps.length + ' ขั้นตอนนี้เพื่อเริ่มต้นได้สมบูรณ์ (' + doneCount + '/' + steps.length + ' เสร็จแล้ว)';
+    fill.style.width = pct + '%';
+
+    cont.innerHTML = steps.map(function(s) {
+      var done = doneMap[s.key] ? ' done' : '';
+      var check = doneMap[s.key] ? '✓' : '';
+      var isAnchor = s.href.charAt(0) === '#';
+      var clickAttr = isAnchor
+        ? 'onclick="return obScrollTo(\'' + s.href.slice(1) + '\',\'' + s.key + '\')"'
+        : 'onclick="obMarkDone(\'' + s.key + '\')"';
+      return '<a class="ob-step' + done + '" href="' + s.href + '" ' + clickAttr + '>'
+        + '<span class="ob-step-icon">' + s.icon + '</span>'
+        + '<span class="ob-step-text">' + s.label + '<small>' + s.desc + '</small></span>'
+        + '<span class="ob-check">' + check + '</span>'
+        + '</a>';
+    }).join('');
+
+    card.style.display = 'block';
+
+    var dismissBtn = document.getElementById('obDismiss');
+    if (dismissBtn && !dismissBtn._bound) {
+      dismissBtn._bound = true;
+      dismissBtn.addEventListener('click', function() {
+        localStorage.setItem(OB_KEY, '1');
+        card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
+        card.style.transition = 'all .3s';
+        setTimeout(function(){ card.style.display = 'none'; }, 300);
+      });
+    }
+  }
+
+  function obMarkDone(key) {
+    var doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(OB_DONE_KEY) || '{}'); } catch(e) {}
+    doneMap[key] = 1;
+    localStorage.setItem(OB_DONE_KEY, JSON.stringify(doneMap));
+  }
+
+  function obScrollTo(id, key) {
+    obMarkDone(key);
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(initOnboarding, 400);
+    return false;
   }
 
   function loadDashboard() {
