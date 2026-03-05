@@ -171,8 +171,9 @@
         case 'removeMember':       return doRemoveMember(d);
 
         // ── Setlist ────────────────────────────────────────────────
-        case 'getSetlist':         return doGetSetlist(d);
-        case 'saveSetlist':        return doSaveSetlist(d);
+        case 'getSetlist':          return doGetSetlist(d);
+        case 'saveSetlist':         return doSaveSetlist(d);
+        case 'getScheduleForDate':  return doGetScheduleForDate(d);
 
         // ── Band Fund (กองกลาง) ────────────────────────────────────
         case 'getFundTransactions':    return doGetFundTransactions(d);
@@ -1097,26 +1098,50 @@
       }};
     }
 
-    // ── Setlist ─────────────────────────────────────────────────
+    // ── Setlist (v2 — per date) ──────────────────────────────────
     async function doGetSetlist(d) {
-      var bandId = d.bandId || getBandId();
+      var bandId  = d.bandId || getBandId();
+      var date    = d.date  || new Date().toISOString().substring(0, 10);
       var { data, error } = await sb.from('setlists')
-        .select('*').eq('band_id', bandId)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        .select('*').eq('band_id', bandId).eq('date', date)
+        .maybeSingle();
       if (error) throw error;
-      return { success: true, data: (data && data.sets_data) || null };
+      return { success: true, data: (data && data.sets_data) || {} };
     }
 
     async function doSaveSetlist(d) {
-      var bandId = d.bandId || getBandId();
-      // upsert: one active setlist per band
+      var bandId  = d.bandId || getBandId();
+      var date    = d.date   || new Date().toISOString().substring(0, 10);
       var { error } = await sb.from('setlists').upsert({
         band_id:    bandId,
+        date:       date,
         sets_data:  d.sets || {},
         updated_at: new Date().toISOString()
-      }, { onConflict: 'band_id' });
+      }, { onConflict: 'band_id,date' });
       if (error) throw error;
       return { success: true, message: 'บันทึก Setlist เรียบร้อย' };
+    }
+
+    async function doGetScheduleForDate(d) {
+      var bandId = d.bandId || getBandId();
+      var date   = d.date   || new Date().toISOString().substring(0, 10);
+      // ดึงรายการงานทั้งหมดของวงในวันนี้
+      var { data, error } = await sb.from('schedule')
+        .select('id, venue_name, venue, type, time_slots, start_time, end_time, date')
+        .eq('band_id', bandId).eq('date', date);
+      if (error) throw error;
+      // รวม time_slots จากทุก entry ของวันนั้น
+      var slots = [];
+      (data || []).forEach(function(row) {
+        var ts = row.time_slots;
+        if (Array.isArray(ts) && ts.length > 0) {
+          ts.forEach(function(s){ slots.push(s); });
+        } else if (row.start_time || row.end_time) {
+          // external gig — นับเป็น 1 slot
+          slots.push((row.start_time || '') + (row.end_time ? '-'+row.end_time : ''));
+        }
+      });
+      return { success: true, slots: slots, schedules: toCamelList(data || []) };
     }
 
     // ── Playlist History ─────────────────────────────────────────

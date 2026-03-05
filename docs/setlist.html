@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -15,125 +15,506 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .setlist-layout{display:grid;grid-template-columns:1fr 2fr;gap:var(--spacing-xl)}
-    @media(max-width:768px){.setlist-layout{grid-template-columns:1fr}}
-    .setlist-slot{display:flex;align-items:center;gap:var(--spacing-sm);padding:var(--spacing-sm) 0;border-bottom:1px dashed var(--premium-light-gray)}
-    .slot-num{width:28px;height:28px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
-    .slot-title{flex:1;font-size:var(--text-sm)}
-    .song-pill{display:flex;align-items:center;justify-content:space-between;padding:var(--spacing-xs) var(--spacing-sm);background:var(--premium-off-white);border-radius:var(--radius-md);margin-bottom:6px;cursor:pointer;font-size:var(--text-sm)}
-    .song-pill:hover{background:var(--premium-light-gray)}
-    .duration-bar{height:4px;background:var(--premium-light-gray);border-radius:var(--radius-full);margin-top:var(--spacing-sm)}
-    .duration-fill{height:100%;background:var(--premium-gold);border-radius:var(--radius-full);transition:width .5s}
+    .sl-layout{display:grid;grid-template-columns:260px 1fr;gap:var(--spacing-lg);align-items:start}
+    @media(max-width:860px){.sl-layout{grid-template-columns:1fr}}
+    .sl-controls{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--spacing-lg);background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:14px 16px}
+    .sl-ctrl-group{display:flex;flex-direction:column;gap:3px}
+    .sl-ctrl-group label{font-size:.75rem;color:var(--premium-text-muted);font-weight:600}
+    .sl-controls select,.sl-controls input[type="date"]{padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-size:.85rem}
+    .set-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+    .set-tab{padding:7px 18px;border:2px solid var(--border-color);border-radius:20px;background:transparent;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--premium-text-muted);transition:all .15s;position:relative}
+    .set-tab:hover:not(.active){background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.4)}
+    .set-tab.active{background:var(--premium-gold);border-color:var(--premium-gold);color:#fff}
+    .set-tab .tab-badge{position:absolute;top:-7px;right:-7px;background:#3b82f6;color:#fff;font-size:.6rem;padding:1px 5px;border-radius:10px;font-weight:700;min-width:16px;text-align:center}
+    .add-set-btn{padding:7px 14px;border:2px dashed var(--border-color);border-radius:20px;background:transparent;cursor:pointer;font-size:.82rem;color:var(--premium-text-muted);transition:all .15s}
+    .add-set-btn:hover{border-color:var(--premium-gold);color:var(--premium-gold)}
+    .quota-bar{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--premium-text-muted)}
+    .quota-dots{display:flex;gap:4px;flex-wrap:wrap}
+    .q-dot{width:10px;height:10px;border-radius:50%;background:var(--premium-light-gray)}
+    .q-dot.used{background:var(--premium-gold)}
+    .q-dot.sched{background:rgba(251,191,36,.35)}
+    .song-pool-wrap{max-height:520px;overflow-y:auto}
+    .song-pill{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:5px;font-size:var(--text-sm);transition:all .12s;user-select:none}
+    .song-pill.clickable{cursor:pointer}
+    .song-pill.clickable:hover{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.4)}
+    .song-pill.disabled{opacity:.4;cursor:not-allowed}
+    .song-pill .song-dur{font-size:.7rem;color:var(--premium-text-muted);flex-shrink:0;margin-left:6px}
+    .setlist-slot{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--premium-light-gray)}
+    .setlist-slot:last-child{border-bottom:none}
+    .slot-num{width:26px;height:26px;border-radius:50%;background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+    .slot-info{flex:1;min-width:0}
+    .slot-title{font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .slot-artist{font-size:.72rem;color:var(--premium-text-muted)}
+    .slot-dur{font-size:.72rem;color:var(--premium-text-muted);flex-shrink:0}
+    .slot-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:4px;opacity:.7;flex-shrink:0}
+    .slot-del:hover{opacity:1;background:rgba(239,68,68,.1)}
+    .dur-bar{height:4px;background:var(--premium-light-gray);border-radius:99px;overflow:hidden;margin-top:10px}
+    .dur-fill{height:100%;background:var(--premium-gold);border-radius:99px;transition:width .4s}
+    .sl-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted)}
+    .sl-empty .big-icon{font-size:2.5rem;margin-bottom:8px}
+    .save-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px}
+    #adGateModal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:24px}
+    #adGateModal.hidden{display:none}
+    .ad-box{background:var(--bg-card);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center}
+    .ad-box h3{font-size:1.1rem;margin-bottom:8px}
+    .ad-box p{font-size:.85rem;color:var(--premium-text-muted);margin-bottom:16px}
+    #adCountdown{font-size:2rem;font-weight:700;color:var(--premium-gold);margin:10px 0}
+    .ad-placeholder{width:100%;height:90px;background:var(--bg-secondary);border:1px dashed var(--border-color);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--premium-text-muted);font-size:.8rem;margin-bottom:14px}
   </style>
 </head>
 <body>
   <div id="mainNav"></div>
   <div id="toast"></div>
+
+  <!-- Ad Gate Modal -->
+  <div id="adGateModal" class="hidden">
+    <div class="ad-box">
+      <div style="font-size:2rem;margin-bottom:6px">📺</div>
+      <h3>ปลดล็อคเซ็ตเพิ่ม</h3>
+      <p>คุณเล่นเกินจำนวนสล็อตในตารางงานวันนี้<br>ดูโฆษณาเพื่อเพิ่มอีก 1 เซ็ต</p>
+      <div class="ad-placeholder">[ โฆษณา AdSense ]</div>
+      <div id="adCountdown">5</div>
+      <button id="adDoneBtn" class="btn btn-primary" style="width:100%;display:none" onclick="onAdDone()">✅ ดูแล้ว — เปิดเซ็ต</button>
+      <button class="btn btn-secondary" style="width:100%;margin-top:8px" onclick="closeAdGate()">ยกเลิก</button>
+    </div>
+  </div>
+
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title" data-i18n="setlist">เซ็ตลิสต์</h1>
-        <div style="display:flex;gap:var(--spacing-sm)">
-          <button class="btn btn-secondary" onclick="window.print()">🖨️ <span data-i18n="print">พิมพ์</span></button>
-          <button class="btn btn-primary" onclick="saveSetlist()" data-i18n="save">บันทึก</button>
+        <h1 class="page-title">🎵 เซ็ตลิสต์</h1>
+        <button class="btn btn-secondary" onclick="window.print()">🖨️ พิมพ์</button>
+      </div>
+
+      <!-- Required controls -->
+      <div class="sl-controls">
+        <div class="sl-ctrl-group">
+          <label>📅 วันที่ <span style="color:#ef4444">*</span></label>
+          <input type="date" id="datePickerEl" onchange="onDateChange()">
+        </div>
+        <div class="sl-ctrl-group" style="flex:1;min-width:160px">
+          <label>📋 ตารางงานวันนี้</label>
+          <div id="scheduleInfoEl" style="font-size:.82rem;color:var(--premium-text-muted);padding:5px 0">—</div>
+        </div>
+        <div class="sl-ctrl-group" style="margin-left:auto">
+          <label>แพ็กเกจของคุณ</label>
+          <div id="planBadgeEl" style="font-size:.88rem;font-weight:700;color:var(--premium-gold);padding:5px 0">...</div>
         </div>
       </div>
-      <div class="setlist-layout">
+
+      <!-- Quota + set tabs card -->
+      <div class="card" style="margin-bottom:var(--spacing-lg)">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <div class="quota-bar">
+            <span>เซ็ตที่ใช้วันนี้:</span>
+            <div class="quota-dots" id="quotaDots"></div>
+            <span id="quotaText"></span>
+          </div>
+          <button class="add-set-btn" onclick="tryAddSet()">＋ เพิ่มเซ็ต</button>
+        </div>
+        <div id="setTabs" class="set-tabs">
+          <div style="color:var(--premium-text-muted);font-size:.82rem">เลือกวันที่เพื่อเริ่ม...</div>
+        </div>
+        <div id="setRequiredHint" style="font-size:.78rem;color:#ef4444;margin-top:4px;display:none">
+          ⚠️ กรุณาเลือกวันที่และกดแท็บเซ็ตก่อนเพิ่มเพลง
+        </div>
+      </div>
+
+      <!-- Main layout -->
+      <div class="sl-layout">
         <!-- Song pool -->
         <div class="card">
-          <div class="card-header"><h3 class="card-title" data-i18n="bandSongs">เพลงของวง</h3></div>
-          <input type="text" id="songSearch" oninput="filterPool()" data-i18n-placeholder="searchSong" placeholder="ค้นหา..." style="margin-bottom:var(--spacing-sm)">
-          <div id="songPool" style="max-height:400px;overflow-y:auto"></div>
+          <div class="card-header"><h3 class="card-title" style="font-size:.95rem">🎵 คลังเพลง</h3></div>
+          <input type="text" id="songSearch" oninput="filterPool()" placeholder="🔍 ค้นหาเพลง..." style="margin-bottom:10px;font-size:.85rem">
+          <div class="song-pool-wrap" id="songPool">
+            <div class="sl-empty"><div class="big-icon">🎵</div>กำลังโหลด...</div>
+          </div>
         </div>
-        <!-- Setlist builder -->
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title" id="setlistTitle">เซ็ตที่ 1</h3>
-            <div>
-              <button class="btn btn-ghost btn-sm" onclick="clearSetlist()">🗑 ล้าง</button>
-              <select id="setlistPick" onchange="changeSet(this.value)" style="margin-left:8px;font-size:var(--text-sm)">
-                <option value="1">เซ็ต 1</option>
-                <option value="2">เซ็ต 2</option>
-                <option value="3">เซ็ต 3</option>
-              </select>
+
+        <!-- Builder -->
+        <div>
+          <div id="setBuilderPlaceholder" class="card">
+            <div class="sl-empty">
+              <div class="big-icon">☝️</div>
+              <div style="line-height:1.7">
+                กรุณา <b>เลือกวันที่</b> แล้ว<br>
+                <b>แตะแท็บเซ็ต</b> ด้านบนเพื่อเริ่มลิสเพลง
+              </div>
             </div>
           </div>
-          <div id="setlistSlots"></div>
-          <div style="margin-top:var(--spacing-md)">
-            <div style="display:flex;justify-content:space-between;font-size:var(--text-sm);color:var(--premium-text-muted)">
-              <span>ความยาวรวม</span>
-              <span id="totalDuration">0 นาที</span>
+          <div id="setBuilder" style="display:none">
+            <div class="card">
+              <div class="card-header" style="justify-content:space-between">
+                <h3 class="card-title" id="builderTitle">เซ็ตที่ 1</h3>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <span id="builderTimeSlot" style="font-size:.75rem;color:var(--premium-text-muted)"></span>
+                  <button class="btn btn-ghost btn-sm" onclick="clearCurrentSet()">🗑 ล้าง</button>
+                </div>
+              </div>
+              <div id="setlistSlots"></div>
+              <div class="dur-bar"><div class="dur-fill" id="durationFill" style="width:0%"></div></div>
+              <div class="save-row">
+                <span id="totalDuration" style="font-size:.8rem;color:var(--premium-text-muted)">0 นาที</span>
+                <button class="btn btn-primary" onclick="saveCurrentSet()">💾 บันทึกเซ็ตนี้</button>
+              </div>
             </div>
-            <div class="duration-bar"><div class="duration-fill" id="durationFill" style="width:0%"></div></div>
           </div>
         </div>
       </div>
     </div>
   </main>
+
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
-  var allSongs = [], currentSet = 1;
-  var sets = {1:[], 2:[], 3:[]};
+  // ── State ────────────────────────────────────────────────────────────────
+  var allSongs     = [];
+  var setsData     = {};      // { "1":[...], "2":[...] }
+  var currentSetIdx= null;   // active set key (string '1','2',...)
+  var todaySlots   = [];     // raw schedule time_slots for selected date
+  var adUnlocked   = 0;      // extra sets unlocked via ad this session
+  var adPendingSet = null;   // set index awaiting ad completion
+  var adTimer      = null;
 
+  var PLAN_LIMIT = { free: 0, lite: 4, pro: 8 }; // 0 = follow schedule
+
+  function getPlan() {
+    return localStorage.getItem('plan_override') || localStorage.getItem('band_plan') || 'free';
+  }
+
+  function getMaxSets() {
+    var plan  = getPlan();
+    var cap   = PLAN_LIMIT[plan] || 0;
+    if (cap > 0) return cap;
+    // free: schedule count + ad unlocks
+    return Math.max(1, todaySlots.length) + adUnlocked;
+  }
+
+  function getSelectedDate() {
+    return document.getElementById('datePickerEl').value || '';
+  }
+
+  // ── Init ────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
-      checkAdGate(); renderMainNav('mainNav'); applyTranslations();
+    checkAdGate();
+    renderMainNav('mainNav');
+    applyTranslations();
+
+    // Default date = today
+    var t = new Date();
+    document.getElementById('datePickerEl').value =
+      t.getFullYear() + '-' + String(t.getMonth()+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+
+    // Plan badge
+    var plan = getPlan();
+    var planLabel = { free:'🆓 Free', lite:'🎵 Lite', pro:'👑 Pro' };
+    document.getElementById('planBadgeEl').textContent = planLabel[plan] || plan.toUpperCase();
+
+    // Load songs pool
     apiCall('getAllSongs', {}, function(r) {
       allSongs = (r && r.success && r.data) ? r.data : [];
-      renderPool(allSongs);
+      renderPool();
     });
-    apiCall('getSetlist', {}, function(r) {
-      if (r && r.success && r.data) { sets = r.data; renderSlots(); }
-    });
+
+    onDateChange();
   });
 
-  function filterPool() {
-    var q = document.getElementById('songSearch').value.toLowerCase();
-    renderPool(allSongs.filter(function(s){ return !q || (s.title||'').toLowerCase().includes(q); }));
-  }
+  // ── Date change ─────────────────────────────────────────────────────────
+  function onDateChange() {
+    var date = getSelectedDate();
+    if (!date) return;
+    currentSetIdx = null;
+    setsData      = {};
+    todaySlots    = [];
+    adUnlocked    = 0;
 
-  function renderPool(songs) {
-    document.getElementById('songPool').innerHTML = songs.map(function(s) {
-      return '<div class="song-pill" onclick="addToSet(\''+escapeHtml(s.songId||'')+'\',\''+escapeHtml(s.title||'')+'\',\''+escapeHtml(s.artist||'')+'\','+parseFloat(s.duration||0)+')">'
-        +'<span>'+escapeHtml(s.title||'')+'</span>'
-        +'<span style="color:var(--premium-text-muted);font-size:11px">'+escapeHtml(s.artist||'')+'</span></div>';
-    }).join('') || '<p class="text-muted">' + t('noData') + '</p>';
-  }
+    document.getElementById('setBuilder').style.display = 'none';
+    document.getElementById('setBuilderPlaceholder').style.display = '';
+    document.getElementById('setTabs').innerHTML = '<div style="color:var(--premium-text-muted);font-size:.82rem">กำลังโหลด...</div>';
+    document.getElementById('scheduleInfoEl').textContent = 'กำลังโหลด...';
 
-  function addToSet(id, title, artist, dur) {
-    var sl = sets[currentSet]; if (!sl) return;
-    if (sl.find(function(x){return x.id===id;})) { showToast('เพลงนี้อยู่ในเซ็ตแล้ว','info'); return; }
-    sl.push({id:id, title:title, artist:artist, duration:dur||4});
-    renderSlots();
-  }
+    var schedDone = false, setsDone = false;
+    function tryBuild() { if (schedDone && setsDone) buildUI(); }
 
-  function removeFromSet(idx) { sets[currentSet].splice(idx,1); renderSlots(); }
-
-  function renderSlots() {
-    var sl = sets[currentSet] || [];
-    var total = sl.reduce(function(a,s){return a+(parseFloat(s.duration)||0);},0);
-    document.getElementById('totalDuration').textContent = total.toFixed(1) + ' นาที';
-    document.getElementById('durationFill').style.width = Math.min(100, total/60*100) + '%';
-    document.getElementById('setlistSlots').innerHTML = sl.length ? sl.map(function(s,i){
-      return '<div class="setlist-slot"><div class="slot-num">'+(i+1)+'</div>'
-        +'<div class="slot-title"><strong>'+escapeHtml(s.title)+'</strong>'
-        +'<span style="color:var(--premium-text-muted);font-size:11px;margin-left:8px">'+escapeHtml(s.artist||'')+'</span></div>'
-        +'<span style="font-size:11px;color:var(--premium-text-muted)">'+(s.duration||'?')+'m</span>'
-        +'<button class="btn btn-danger btn-sm" onclick="removeFromSet('+i+')">×</button></div>';
-    }).join('') : '<p style="color:var(--premium-text-muted);text-align:center;padding:var(--spacing-lg)">คลิกเพลงด้านซ้ายเพื่อเพิ่ม</p>';
-  }
-
-  function clearSetlist() { sets[currentSet] = []; renderSlots(); }
-
-  function changeSet(v) { currentSet = parseInt(v); renderSlots(); }
-
-  function saveSetlist() {
-    apiCall('saveSetlist', { sets: sets }, function(r) {
-      if (r && r.success) showToast(t('msg_saved'),'success');
-      else showToast((r&&r.message)||t('msg_error'),'error');
+    apiCall('getScheduleForDate', { date: date }, function(r) {
+      todaySlots  = (r && r.slots)     || [];
+      var scheds  = (r && r.schedules) || [];
+      var infoEl  = document.getElementById('scheduleInfoEl');
+      if (!scheds.length) {
+        infoEl.innerHTML = '<span style="opacity:.6">ไม่มีตารางงานในวันนี้</span>';
+      } else {
+        var venues = scheds.map(function(s){ return escapeHtml(s.venueName || s.venue || ''); }).filter(Boolean);
+        infoEl.innerHTML = venues.join(' · ') +
+          ' <span style="opacity:.6">(' + todaySlots.length + ' สล็อต)</span>';
+      }
+      schedDone = true;
+      tryBuild();
     });
+
+    apiCall('getSetlist', { date: date }, function(r) {
+      setsData = (r && r.data) || {};
+      setsDone = true;
+      tryBuild();
+    });
+  }
+
+  // ── Build UI ────────────────────────────────────────────────────────────
+  function buildUI() {
+    renderSetTabs();
+    renderQuota();
+    renderPool();
+  }
+
+  function renderSetTabs() {
+    var max    = getMaxSets();
+    // Existing saved sets count
+    var savedKeys = Object.keys(setsData).map(Number).filter(function(n){ return !isNaN(n) && n > 0; });
+    var maxKey = savedKeys.length ? Math.max.apply(null, savedKeys) : 0;
+    var count  = Math.max(max, maxKey, todaySlots.length || 1);
+
+    var html = '';
+    for (var i = 1; i <= count; i++) {
+      var si     = String(i);
+      var songs  = setsData[si] || [];
+      var tooMany= i > getMaxSets();
+      var label  = 'เซ็ต ' + i;
+      var ts     = todaySlots[i - 1];
+      if (ts) label += ' · ' + (typeof ts === 'string' ? ts : (ts.label || ''));
+      var badge  = songs.length ? '<span class="tab-badge">' + songs.length + '</span>' : '';
+      var cls    = 'set-tab' + (currentSetIdx === si ? ' active' : '') + (tooMany ? ' locked' : '');
+      html += '<button class="' + cls + '" onclick="selectSet(\'' + si + '\')">' + escapeHtml(label) + badge + '</button>';
+    }
+
+    document.getElementById('setTabs').innerHTML = html || '<div style="color:var(--premium-text-muted);font-size:.82rem">—</div>';
+  }
+
+  function renderQuota() {
+    var plan   = getPlan();
+    var cap    = PLAN_LIMIT[plan] || 0;
+    var base   = Math.max(todaySlots.length, 1);
+    var max    = cap > 0 ? cap : base + adUnlocked;
+    var used   = Object.keys(setsData).filter(function(k){ return (setsData[k]||[]).length > 0; }).length;
+    var dots   = '';
+    for (var i = 1; i <= max && i <= 12; i++) {
+      var cls = i <= used ? 'used' : (i <= base ? 'sched' : '');
+      dots += '<div class="q-dot ' + cls + '"></div>';
+    }
+    document.getElementById('quotaDots').innerHTML = dots;
+    var txt = used + '/' + max;
+    if (cap === 0 && adUnlocked > 0) txt += ' (+' + adUnlocked + ' โฆษณา)';
+    document.getElementById('quotaText').textContent = txt;
+  }
+
+  // ── Select set ──────────────────────────────────────────────────────────
+  function selectSet(si) {
+    var idx    = parseInt(si, 10);
+    var plan   = getPlan();
+    var cap    = PLAN_LIMIT[plan] || 0;
+
+    // Hard plan cap
+    if (cap > 0 && idx > cap) {
+      var planLabel = plan === 'lite' ? '🎵 Lite (4 เซ็ต/วัน)' : '👑 Pro (8 เซ็ต/วัน)';
+      showToast('ครบลิมิต ' + planLabel + ' แล้ว — ไม่สามารถเพิ่มได้อีก', 'error');
+      return;
+    }
+    // Free: beyond schedule+unlocked → need ad
+    if (cap === 0 && idx > Math.max(todaySlots.length, 1) + adUnlocked) {
+      adPendingSet = si;
+      showAdGate();
+      return;
+    }
+
+    currentSetIdx = si;
+    if (!setsData[si]) setsData[si] = [];
+    document.getElementById('setRequiredHint').style.display = 'none';
+    renderSetTabs();
+    renderSetBuilder();
+    renderPool();
+  }
+
+  // ── Add set ─────────────────────────────────────────────────────────────
+  function tryAddSet() {
+    var plan   = getPlan();
+    var cap    = PLAN_LIMIT[plan] || 0;
+    // find current max tab
+    var tabs   = document.querySelectorAll('.set-tab');
+    var cur    = tabs.length ? Math.max.apply(null, Array.from(tabs).map(function(b){ return parseInt(b.textContent) || 1; })) : 0;
+    var nextIdx= cur + 1;
+
+    if (cap > 0 && nextIdx > cap) {
+      showToast('ครบลิมิตแพ็กเกจแล้ว (' + cap + ' เซ็ต/วัน)', 'error'); return;
+    }
+    if (cap === 0 && nextIdx > Math.max(todaySlots.length, 1) + adUnlocked) {
+      adPendingSet = String(nextIdx);
+      showAdGate();
+      return;
+    }
+    var si = String(nextIdx);
+    if (!setsData[si]) setsData[si] = [];
+    renderSetTabs();
+    selectSet(si);
+  }
+
+  // ── Song pool ────────────────────────────────────────────────────────────
+  function filterPool() { renderPool(); }
+
+  function renderPool() {
+    var poolEl  = document.getElementById('songPool');
+    var q       = (document.getElementById('songSearch').value || '').toLowerCase();
+    var songs   = allSongs.filter(function(s){
+      return !q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q);
+    });
+    var canAdd  = !!currentSetIdx;
+    var curSongs= currentSetIdx ? (setsData[currentSetIdx] || []) : [];
+
+    if (!songs.length) {
+      poolEl.innerHTML = '<div class="sl-empty"><div class="big-icon">🎵</div>ไม่พบเพลง</div>';
+      return;
+    }
+    poolEl.innerHTML = songs.map(function(s) {
+      var sid     = s.songId || s.id || '';
+      var already = curSongs.find(function(x){ return x.id === sid; });
+      var click   = canAdd && !already ? ' clickable" onclick="addSong(\'' + escapeHtml(sid) + '\')' : ' disabled';
+      var check   = already ? '<span style="color:var(--premium-gold);margin-right:4px">✓</span>' : '';
+      var key     = s.key ? ('<span style="font-size:.68rem;color:var(--premium-text-muted);margin-left:3px">(' + escapeHtml(s.key) + ')</span>') : '';
+      var dur     = s.duration ? ('<span class="song-dur">' + parseFloat(s.duration).toFixed(1) + 'm</span>') : '';
+      return '<div class="song-pill' + click + '">'
+        + '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
+        + check + escapeHtml(s.title || '—') + key + '</span>' + dur + '</div>';
+    }).join('');
+  }
+
+  // ── Set builder ──────────────────────────────────────────────────────────
+  function renderSetBuilder() {
+    var si = currentSetIdx;
+    if (!si) return;
+    document.getElementById('setBuilderPlaceholder').style.display = 'none';
+    document.getElementById('setBuilder').style.display = '';
+
+    var ts  = todaySlots[parseInt(si) - 1];
+    var tsLabel = ts ? (typeof ts === 'string' ? ts : (ts.label || '')) : '';
+    document.getElementById('builderTitle').textContent   = 'เซ็ตที่ ' + si;
+    document.getElementById('builderTimeSlot').textContent = tsLabel ? ('⏰ ' + tsLabel) : '';
+
+    var songs = setsData[si] || [];
+    var total = songs.reduce(function(a, s){ return a + (parseFloat(s.duration) || 0); }, 0);
+    document.getElementById('totalDuration').textContent = total.toFixed(1) + ' นาที';
+    document.getElementById('durationFill').style.width = Math.min(100, total / 60 * 100) + '%';
+
+    if (!songs.length) {
+      document.getElementById('setlistSlots').innerHTML =
+        '<div class="sl-empty" style="padding:20px"><div class="big-icon">➕</div>คลิกเพลงทางซ้ายเพื่อเพิ่ม</div>';
+      return;
+    }
+    document.getElementById('setlistSlots').innerHTML = songs.map(function(s, i) {
+      return '<div class="setlist-slot">'
+        + '<div class="slot-num">' + (i + 1) + '</div>'
+        + '<div class="slot-info"><div class="slot-title">' + escapeHtml(s.title || '—') + '</div>'
+        + '<div class="slot-artist">' + escapeHtml(s.artist || '') + '</div></div>'
+        + '<span class="slot-dur">' + (parseFloat(s.duration) || 0).toFixed(1) + 'm</span>'
+        + '<button class="slot-del" onclick="removeSong(' + i + ')" title="ลบออก">×</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function addSong(songId) {
+    if (!currentSetIdx) {
+      document.getElementById('setRequiredHint').style.display = '';
+      showToast('กรุณาเลือกเซ็ตก่อนเพิ่มเพลง', 'error'); return;
+    }
+    var song = allSongs.find(function(s){ return (s.songId || s.id) === songId; });
+    if (!song) return;
+    var si = currentSetIdx;
+    if (!setsData[si]) setsData[si] = [];
+    if (setsData[si].find(function(x){ return x.id === songId; })) {
+      showToast('เพลงนี้อยู่ในเซ็ตแล้ว', 'info'); return;
+    }
+    setsData[si].push({ id: songId, title: song.title, artist: song.artist || '', duration: parseFloat(song.duration) || 4 });
+    renderSetBuilder();
+    renderPool();
+    renderSetTabs();
+    renderQuota();
+  }
+
+  function removeSong(idx) {
+    if (!currentSetIdx) return;
+    setsData[currentSetIdx].splice(idx, 1);
+    renderSetBuilder();
+    renderPool();
+    renderSetTabs();
+  }
+
+  function clearCurrentSet() {
+    if (!currentSetIdx || !confirm('ล้างเซ็ตที่ ' + currentSetIdx + '?')) return;
+    setsData[currentSetIdx] = [];
+    renderSetBuilder();
+    renderPool();
+    renderSetTabs();
+    renderQuota();
+  }
+
+  function saveCurrentSet() {
+    var date = getSelectedDate();
+    if (!date) { showToast('กรุณาเลือกวันที่ก่อน', 'error'); return; }
+    if (!currentSetIdx) {
+      document.getElementById('setRequiredHint').style.display = '';
+      showToast('กรุณาเลือกเซ็ตก่อนบันทึก', 'error'); return;
+    }
+    apiCall('saveSetlist', { date: date, sets: setsData }, function(r) {
+      if (r && r.success) showToast('✅ บันทึกเซ็ตที่ ' + currentSetIdx + ' สำเร็จ', 'success');
+      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
+
+  // ── Ad gate ──────────────────────────────────────────────────────────────
+  function showAdGate() {
+    var modal = document.getElementById('adGateModal');
+    modal.classList.remove('hidden');
+    document.getElementById('adDoneBtn').style.display = 'none';
+    var secs = 5;
+    document.getElementById('adCountdown').textContent = secs;
+    clearInterval(adTimer);
+    adTimer = setInterval(function() {
+      secs--;
+      document.getElementById('adCountdown').textContent = secs > 0 ? secs : '—';
+      if (secs <= 0) {
+        clearInterval(adTimer);
+        document.getElementById('adDoneBtn').style.display = '';
+        document.getElementById('adCountdown').style.display = 'none';
+      }
+    }, 1000);
+    // Trigger AdSense
+    try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+  }
+
+  function closeAdGate() {
+    clearInterval(adTimer);
+    document.getElementById('adGateModal').classList.add('hidden');
+    document.getElementById('adCountdown').style.display = '';
+    adPendingSet = null;
+  }
+
+  function onAdDone() {
+    clearInterval(adTimer);
+    document.getElementById('adGateModal').classList.add('hidden');
+    document.getElementById('adCountdown').style.display = '';
+    if (!adPendingSet) return;
+    adUnlocked++;
+    var si = adPendingSet;
+    adPendingSet = null;
+    if (!setsData[si]) setsData[si] = [];
+    renderSetTabs();
+    renderQuota();
+    selectSet(si);
+    showToast('🔓 ปลดล็อคเซ็ตที่ ' + si + ' เรียบร้อย!', 'success');
+  }
+
+  // ── Helper ───────────────────────────────────────────────────────────────
+  function escapeHtml(t) {
+    if (!t) return '';
+    var d = document.createElement('div'); d.textContent = String(t); return d.innerHTML;
   }
   </script>
 </body>
