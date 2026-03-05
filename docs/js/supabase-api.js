@@ -340,6 +340,7 @@
     async function doInsert(table, payload) {
       var row = toSnakeObj(Object.assign({ band_id: getBandId() }, payload));
       delete row.action; delete row._token;
+      delete row.band_name; delete row.bandName;
       var { data, error } = await sb.from(table).insert(row).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
