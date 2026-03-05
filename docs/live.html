@@ -123,7 +123,7 @@
     .ctx-cancel{grid-column:1/-1;background:none;border:1px solid #444;color:var(--text2);justify-content:center;margin-top:4px}
 
     /* ─── GESTURE HINTS OVERLAY ─── */
-    #gestureHints{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;text-align:center;backdrop-filter:blur(4px)}
+    #gestureHints{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;text-align:center;-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
     #gestureHints.hidden{display:none}
     .hint-item{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border-radius:12px;padding:14px 18px;width:100%;max-width:340px}
     .hint-icon{font-size:1.6rem;width:40px;flex-shrink:0;text-align:center}
@@ -200,7 +200,7 @@
     #dragGhost{position:fixed;z-index:1500;pointer-events:none;background:var(--bg3);border:1.5px solid var(--gold);border-radius:10px;padding:10px 16px;font-size:.95rem;font-weight:600;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,.7);max-width:75vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none}
 
     /* ─── BREAK WARNING ─── */
-    #breakWarning{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(185,28,28,.93);color:#fff;padding:18px 38px;border-radius:18px;font-size:1.35rem;font-weight:700;z-index:2000;pointer-events:none;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.7);backdrop-filter:blur(6px);display:none}
+    #breakWarning{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(185,28,28,.93);color:#fff;padding:18px 38px;border-radius:18px;font-size:1.35rem;font-weight:700;z-index:2000;pointer-events:none;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.7);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:none}
     #breakWarning.show{display:block;animation:bwAnim 3.2s ease-in-out forwards}
     @keyframes bwAnim{0%{opacity:0;transform:translate(-50%,-56%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 
@@ -245,7 +245,7 @@
     @keyframes nudgeFlashAnim{0%{opacity:1}30%{opacity:0}40%{opacity:.9}60%{opacity:0}70%{opacity:.7}100%{opacity:0}}
 
     /* ─── NUDGE POPUP ─── */
-    #nudgePopup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:3001;pointer-events:none;opacity:0;display:none;text-align:center;background:rgba(30,30,30,.95);border:2px solid var(--gold);border-radius:var(--radius-lg);padding:24px 40px;backdrop-filter:blur(8px);box-shadow:0 12px 40px rgba(0,0,0,.8)}
+    #nudgePopup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:3001;pointer-events:none;opacity:0;display:none;text-align:center;background:rgba(30,30,30,.95);border:2px solid var(--gold);border-radius:var(--radius-lg);padding:24px 40px;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);box-shadow:0 12px 40px rgba(0,0,0,.8)}
     #nudgePopup.active{display:block;animation:nudgePopAnim 2.5s ease-out forwards}
     @keyframes nudgePopAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}8%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}15%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
     #nudgePopup .np-icon{font-size:2.5rem;margin-bottom:6px}
@@ -603,6 +603,10 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.remove('show');
       }
     });
+  });
+  // nudgeModal uses style.display instead of .show class
+  document.getElementById('nudgeModal').addEventListener('click', function(e) {
+    if (e.target === this) closeNudge();
   });
 });
 
@@ -1126,9 +1130,13 @@ function triggerEnding(nextIdx) {
   if (typeof nextIdx === 'undefined') nextIdx = -1;
   var np = document.getElementById('nowPlaying');
   np.classList.add('pulsing');
-  np.addEventListener('animationend', function handler() {
+
+  var _endingDone = false;
+  function finishEnding() {
+    if (_endingDone) return;
+    _endingDone = true;
+    if (_endingTimer) { clearTimeout(_endingTimer); _endingTimer = null; }
     np.classList.remove('pulsing');
-    np.removeEventListener('animationend', handler);
     _isEnding = false;
     if (nextIdx >= 0 && nextIdx < _playlist.length) {
       _current  = nextIdx;
@@ -1140,7 +1148,11 @@ function triggerEnding(nextIdx) {
     } else {
       showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
     }
-  }, { once: true });
+  }
+
+  np.addEventListener('animationend', finishEnding, { once: true });
+  // Safety timeout: if animationend never fires (prefers-reduced-motion, etc.), advance anyway
+  _endingTimer = setTimeout(finishEnding, 3500);
 }
 
 // advanceSong ใช้โดย skipSong เท่านั้น — broadcast current_changed ด้วย
@@ -1439,6 +1451,7 @@ function submitRequest() {
 //  TRANSPOSE MODAL
 // ─────────────────────────────────────────────────────────────────
 function openTranspose() {
+  if (_isGuest) return;
   var s = _playlist[_current];
   if (!s) return;
   _trStep = 0;
@@ -1690,6 +1703,7 @@ function initRealtime() {
       var d = payload.payload || {};
       if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
         _current = d.idx;
+        _modified = true;
         renderNowPlaying();
         renderSongList();
         // sync beat dot ด้วย
@@ -1701,7 +1715,7 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'transpose' }, function(payload) {
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._key = d.key; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._key = d.key; _modified = true; }
       if (d.idx === _current) {
         document.getElementById('nowKey').textContent = d.key || '—';
         document.getElementById('trDisplay').textContent = d.key || '—';
@@ -1710,7 +1724,7 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'note_update' }, function(payload) {
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; _modified = true; }
       if (d.idx === _current) document.getElementById('nowNote').textContent = d.note || '';
       renderSongList();
     })
@@ -1720,17 +1734,18 @@ function initRealtime() {
         // ใช้ typeof เพื่อป้องกัน insertAfter=0 ถูกมองเป็น falsy
         var insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
         _playlist.splice(insertPos, 0, d.song);
+        _modified = true;
       }
       renderSongList();
     })
     .on('broadcast', { event: 'skip_song' }, function(payload) {
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; _modified = true; }
       renderSongList();
     })
     .on('broadcast', { event: 'unskip_song' }, function(payload) {
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; _modified = true; }
       renderSongList();
     })
     .on('broadcast', { event: 'remove' }, function(payload) {
@@ -1738,6 +1753,7 @@ function initRealtime() {
       if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
         _playlist.splice(d.idx, 1);
         if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
+        _modified = true;
         renderNowPlaying();
         renderSongList();
       }
@@ -1752,6 +1768,7 @@ function initRealtime() {
         if (_current === from) _current = to;
         else if (from < to && _current > from && _current <= to) _current--;
         else if (from > to && _current < from && _current >= to) _current++;
+        _modified = true;
         renderNowPlaying();
         renderSongList();
       }
@@ -1771,6 +1788,7 @@ function initRealtime() {
       var insertAt = _current + 1;
       if (idx < _current) { _current--; insertAt = _current + 1; }
       _playlist.splice(insertAt, 0, song);
+      _modified = true;
       renderNowPlaying();
       renderSongList();
     })
