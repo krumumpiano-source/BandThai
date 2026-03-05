@@ -101,7 +101,6 @@ function renderMainNav(containerId) {
       '</button>' +
       '<a href="' + dashHref() + '" class="nav-topbar-brand">🎵 ' + _escHtml(bandName) + '</a>' +
       '<div class="nav-topbar-right">' +
-        '<div id="navLangSwitcherTop"></div>' +
         '<span class="nav-user-name">' + _escHtml(userName) + '</span>' +
       '</div>' +
     '</header>' +
@@ -132,7 +131,6 @@ function renderMainNav(containerId) {
         '</ul>' +
       '</nav>' +
       '<div class="sidebar-footer">' +
-        '<div id="navLangSwitcher"></div>' +
         '<a href="' + indexHref() + '" class="nav-logout" onclick="if(typeof doLogout===\'function\')doLogout();return true;">' + _t('logout') + '</a>' +
       '</div>' +
     '</aside>';
@@ -177,15 +175,6 @@ function renderMainNav(containerId) {
     if (e.key === 'Escape') { navClose(); document.removeEventListener('keydown', kh); }
   });
 
-  // ── Lang switchers ────────────────────────────────────
-  if (typeof renderLangSwitcher === 'function') {
-    renderLangSwitcher('navLangSwitcher');
-    renderLangSwitcher('navLangSwitcherTop');
-  } else {
-    _renderNavLang('navLangSwitcher');
-    _renderNavLang('navLangSwitcherTop');
-  }
-
   // Remove old bottom tab bar if exists
   var oldBar = document.getElementById('_bottomTabBar');
   if (oldBar) oldBar.parentNode.removeChild(oldBar);
@@ -198,26 +187,6 @@ function renderMainNav(containerId) {
   // ── FAQ Chatbot ───────────────────────────────────────────────────
   renderFaqBot();
 }
-
-function _renderNavLang(containerId) {
-  var el = document.getElementById(containerId);
-  if (!el) return;
-  var lang = typeof getLang === 'function' ? getLang() : 'th';
-  el.innerHTML =
-    '<div class="lang-switcher">' +
-      '<button type="button" class="lang-btn ' + (lang==='th'?'active':'') + '" data-lang="th">TH</button>' +
-      '<button type="button" class="lang-btn ' + (lang==='en'?'active':'') + '" data-lang="en">EN</button>' +
-    '</div>';
-  el.querySelectorAll('[data-lang]').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (typeof setLang === 'function') setLang(btn.dataset.lang);
-      renderMainNav('mainNav');
-      if (typeof applyTranslations === 'function') applyTranslations();
-    });
-  });
-}
-
-function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
 // ── Ad Countdown Timer ──────────────────────────────────────────────
 function startAdCountdown() {

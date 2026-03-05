@@ -163,28 +163,6 @@
   global.showConfirm = showConfirm;
 
   // ======================================================
-  // Lang Toggle (auth pages)
-  // ======================================================
-  function renderLangToggle(containerId) {
-    var el = document.getElementById(containerId || 'langToggle');
-    if (!el) return;
-    var lang = typeof getLang === 'function' ? getLang() : 'th';
-    el.innerHTML =
-      '<div class="lang-switcher">' +
-        '<button type="button" class="lang-btn' + (lang==='th'?' active':'') + '" data-lang="th">TH</button>' +
-        '<button type="button" class="lang-btn' + (lang==='en'?' active':'') + '" data-lang="en">EN</button>' +
-      '</div>';
-    el.querySelectorAll('[data-lang]').forEach(function(btn) {
-      btn.addEventListener('click', function() {
-        if (typeof setLang === 'function') setLang(btn.dataset.lang);
-        renderLangToggle(containerId);
-        if (typeof applyTranslations === 'function') applyTranslations();
-      });
-    });
-  }
-  global.renderLangToggle = renderLangToggle;
-
-  // ======================================================
   // Helpers
   // ======================================================
   function escapeHtml(text) {

@@ -177,8 +177,6 @@
     });
   }
   document.addEventListener('DOMContentLoaded', function(){
-    if(typeof renderLangToggle === 'function') renderLangToggle('langToggle');
-    if(typeof applyTranslations === 'function') applyTranslations();
     if(IS_INAPP){
       var banner = document.getElementById('inappBanner');
       document.getElementById('inappAppName').textContent = getInAppName();
