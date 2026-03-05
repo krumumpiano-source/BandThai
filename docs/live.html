@@ -39,9 +39,6 @@
     #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
     .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
     .font-btn:active{background:var(--bg4)}
-    #beatToggleBtn{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;cursor:pointer;border-radius:6px;min-width:28px;height:28px;font-size:0.78rem;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:0 6px;white-space:nowrap}
-    #beatToggleBtn:active{background:rgba(34,197,94,.3)}
-    #beatToggleBtn.off{background:var(--bg3);border-color:#444;color:var(--text3)}
     #metSoundBtn{background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.4);color:#22c55e;cursor:pointer;border-radius:6px;min-width:28px;height:28px;font-size:0.78rem;font-family:inherit;transition:background .15s,border-color .15s,color .15s;display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:0 6px;white-space:nowrap}
     #metSoundBtn:active{background:rgba(34,197,94,.3)}
     #metSoundBtn.off{background:var(--bg3);border-color:#444;color:var(--text3)}
@@ -270,7 +267,6 @@
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
-      <button id="beatToggleBtn" onclick="toggleBeatDot()" title="เปิด/ปิดไฟจังหวะ">💡ไฟ</button>
       <button id="metSoundBtn" onclick="toggleMetAudio()" title="เปิด/ปิดเสียงเมโทรนอม">🔇เสียง</button>
       <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
@@ -935,7 +931,7 @@ var _metInterval    = 0;     // seconds between beats
 var _metNextTime    = 0;     // audioCtx time of next scheduled beat
 var _metBeatCount   = 0;     // running beat counter (for time signature)
 var _metTimeSig     = 4;     // beats per bar (4/4 default)
-var _metEnabled     = true;  // beat dot (light) toggle
+var _metEnabled     = true;  // beat dot (light) — always ON
 var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';  // sound OFF by default (opt-in)
 var _metVolume      = 0.3;   // click volume (0-1)
 var _beatOffTimer   = null;
@@ -957,20 +953,6 @@ function resumeAudio() {
   if (_audioCtx && _audioCtx.state === 'suspended') {
     _audioCtx.resume();
   }
-}
-
-function toggleBeatDot() {
-  _metEnabled = !_metEnabled;
-  var btn = document.getElementById('beatToggleBtn');
-  if (btn) {
-    btn.classList.toggle('off', !_metEnabled);
-    btn.textContent = _metEnabled ? '💡ไฟ' : '💡ไฟ';
-  }
-  if (!_metEnabled) {
-    var bd = document.getElementById('beatDot');
-    if (bd) bd.style.opacity = '0';
-  }
-  showToast(_metEnabled ? '💡 ไฟจังหวะ: เปิด' : '💡 ไฟจังหวะ: ปิด');
 }
 
 // Toggle audio click on/off
@@ -1006,8 +988,6 @@ function startBeatDot(bpm) {
   _metInterval  = 60.0 / bpm;  // seconds
   _metBeatCount = 0;
   bd.style.display = 'block';
-  var btn = document.getElementById('beatToggleBtn');
-  if (btn) btn.classList.toggle('off', !_metEnabled);
 
   var ctx = ensureAudioCtx();
   if (ctx) resumeAudio();
@@ -1824,10 +1804,8 @@ function initRealtime() {
       _metBpm      = d.bpm || 0;
       _metInterval = _metBpm ? 60.0 / _metBpm : 0;
       var bd = document.getElementById('beatDot');
-      var btn = document.getElementById('beatToggleBtn');
       if (!_metBpm || !bd) { if (bd) bd.style.display = 'none'; return; }
       bd.style.display = 'block';
-      if (btn) btn.classList.toggle('off', !_metEnabled);
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
       // RECEIVER: Start local Web Audio metronome, phase-locked to broadcast
