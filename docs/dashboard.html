@@ -313,11 +313,16 @@
 
   function qciEsc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
 
+  // แปลง Date เป็น 'YYYY-MM-DD' แบบ local timezone (ไม่ใช้ UTC)
+  function qciLocalDateStr(d) {
+    return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  }
+
   function qciUpdateDateBadge() {
     var dateBadge = document.getElementById('qciDateBadge');
     if (dateBadge) dateBadge.textContent = QCI_DAY_NAMES_TH[qciSelectedDate.getDay()] + ' ' + formatThaiDateFull(qciSelectedDate);
     var dp = document.getElementById('qciDatePicker');
-    if (dp) dp.value = qciSelectedDate.toISOString().split('T')[0];
+    if (dp) dp.value = qciLocalDateStr(qciSelectedDate);
   }
   function qciNavDate(offset) {
     qciSelectedDate = new Date(qciSelectedDate.getTime() + offset * 86400000);
@@ -504,7 +509,7 @@
 
   function qciCheckExisting() {
     if (!qciBandId || typeof apiCall !== 'function') return;
-    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    var dateStr = qciLocalDateStr(qciSelectedDate);
     apiCall('getMyCheckIn', { date: dateStr, venue: '', bandId: qciBandId }, function(r) {
       if (r && r.success && r.checkIn) {
         qciExistingCheckIn = r.checkIn;
@@ -526,7 +531,7 @@
     if (!qciSelectedSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
     var btn = document.getElementById('qciConfirmBtn');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
-    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    var dateStr = qciLocalDateStr(qciSelectedDate);
     apiCall('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
       btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
       if (r && r.success) {
@@ -565,7 +570,7 @@
     if (!noSub && !subName) { showDashToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
     if (noSub) subName = '';
 
-    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    var dateStr = qciLocalDateStr(qciSelectedDate);
     var venue = qciSelectedVenue || '';
     // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
     var slots = noSub ? [] : (qciSelectedSlots.length ? qciSelectedSlots : []);
@@ -705,7 +710,7 @@
       if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
       var btn = document.getElementById('qciCancelBtn');
       if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังยกเลิก...'; }
-      var dateStr = qciSelectedDate.toISOString().split('T')[0];
+      var dateStr = qciLocalDateStr(qciSelectedDate);
       apiCall('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
         if (btn) { btn.disabled = false; btn.textContent = '❌ ยกเลิกลงเวลา'; }
         if (r && r.success) {
@@ -795,7 +800,7 @@
       badge.textContent = '';
       return;
     }
-    var dateStr = qciSelectedDate.toISOString().split('T')[0];
+    var dateStr = qciLocalDateStr(qciSelectedDate);
     body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>';
     badge.textContent = '';
     apiCall('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
@@ -1068,18 +1073,19 @@
       }
     }
 
-    // Fetch check-ins — single range query (replaces N+1 per-date calls)
-    var rangeFrom = startDate.toISOString().split('T')[0];
-    var rangeTo   = endDate.toISOString().split('T')[0];
-    apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo }, function(r) {
+    // Fetch check-ins — single range query filtered by current user
+    function toLocalStr(d) { return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'); }
+    var rangeFrom = toLocalStr(startDate);
+    var rangeTo   = toLocalStr(endDate);
+    apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo, memberId: myId }, function(r) {
       if (r && r.success && r.data) allCheckIns = r.data;
       ciLoaded = true; renderEarnings();
     });
 
-    // Fetch leave requests — single range query
-    apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo }, function(r) {
+    // Fetch leave requests — single range query filtered by current user
+    apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo, memberId: myId }, function(r) {
       if (r && r.success && r.data) {
-        myLeaves = r.data.filter(function(lv) { return lv.memberId === myId; });
+        myLeaves = r.data; // already filtered server-side by memberId
       }
       leaveLoaded = true; renderEarnings();
     });

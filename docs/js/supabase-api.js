@@ -39,6 +39,8 @@
 
     function saveSession(session, profile) {
       localStorage.setItem('auth_token',    session.access_token);
+      // เก็บ userId (Supabase auth UUID) ไว้ใช้ match check-in/leave records
+      localStorage.setItem('userId', (session.user && session.user.id) || '');
       // ข้อมูลส่วนตัว
       localStorage.setItem('userTitle',     profile.title      || '');
       localStorage.setItem('userFirstName', profile.first_name || '');
@@ -56,7 +58,7 @@
     }
 
     function clearSession() {
-      ['auth_token','bandId','bandName','bandManager','userRole','userName',
+      ['auth_token','userId','bandId','bandName','bandManager','userRole','userName',
        'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
        'bandProvince'].forEach(function (k) {
         localStorage.removeItem(k);
