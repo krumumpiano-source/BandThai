@@ -572,6 +572,15 @@ html{scroll-behavior:smooth}
 
 <script>
 
+function showSongsAlert(msg) {
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.style.display='none'; t.textContent='📋 คัดลอก & บันทึกลิสสำเร็จ!'; }, 300); }, 3000);
+}
+
 let allResults = [];
 let filteredResults = [];
 let currentPage = 1;
@@ -1260,7 +1269,7 @@ function formatThaiDate(dateStr){
 function copyPlaylist(){
   try {
     if(playlistData.length === 0){
-      alert("ไม่มีเพลงในลิส");
+      showSongsAlert('⚠️ ไม่มีเพลงในลิส');
       return;
     }
 
@@ -1340,7 +1349,7 @@ function copyPlaylist(){
     }
 
   } catch (err) {
-    alert("คัดลอกไม่สำเร็จ: " + err.message);
+    showSongsAlert('❌ คัดลอกไม่สำเร็จ: ' + err.message);
   }
 }
 
@@ -1356,7 +1365,7 @@ function goLiveMode() {
 }
 
 function saveHistoryManual() {
-  if (playlistData.length === 0) { alert('ยังไม่มีเพลงในลิส'); return; }
+  if (playlistData.length === 0) { showSongsAlert('⚠️ ยังไม่มีเพลงในลิส'); return; }
   saveHistory();
   var toast = document.getElementById('toast');
   if (toast) {
@@ -1655,7 +1664,7 @@ function doAddLiveReqToLibrary() {
         }, 3000);
       }
     } else {
-      alert('เกิดข้อผิดพลาด: ' + ((r && r.message) || 'ลองใหม่อีกครั้ง'));
+      showSongsAlert('❌ เกิดข้อผิดพลาด: ' + ((r && r.message) || 'ลองใหม่อีกครั้ง'));
       updateLrAddBtn();
     }
   });

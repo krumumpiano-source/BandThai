@@ -295,7 +295,7 @@
     _payTarget = { jobId: jobId, memberId: memberId };
     document.getElementById('payModalName').textContent = name;
     document.getElementById('payModalFee').textContent  = (fee||0).toLocaleString('th-TH') + ' บาท';
-    document.getElementById('payModalDate').value = new Date().toISOString().substring(0,10);
+    document.getElementById('payModalDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
     document.getElementById('payModal').style.display = 'flex';
   }
   function closePayModal() { document.getElementById('payModal').style.display='none'; _payTarget=null; }
@@ -328,7 +328,7 @@
       notes:     document.getElementById('epNotes').value
     }, function(r){
       btn.disabled=false; btn.textContent='บันทึก';
-      if(r&&r.success){showToast('บันทึกสำเร็จ','success');document.getElementById('payoutForm').reset();document.getElementById('epDate').value=new Date().toISOString().substring(0,10);loadPayouts();}
+      if(r&&r.success){showToast('บันทึกสำเร็จ','success');document.getElementById('payoutForm').reset();document.getElementById('epDate').value=(function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());loadPayouts();}
       else showToast((r&&r.message)||'เกิดข้อผิดพลาด','error');
     });
   });
@@ -363,7 +363,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth(); renderMainNav('mainNav');
     if(typeof applyTranslations==='function') applyTranslations();
-    document.getElementById('epDate').value = new Date().toISOString().substring(0,10);
+    document.getElementById('epDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
     loadJobs();
   });
   </script>

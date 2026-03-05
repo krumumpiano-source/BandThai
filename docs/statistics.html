@@ -300,7 +300,7 @@
       // Build date strings
       var dates = [];
       for (var dd = new Date(start); dd <= end; dd.setDate(dd.getDate() + 1)) {
-        dates.push(new Date(dd).toISOString().split('T')[0]);
+        var _dd = new Date(dd); dates.push(_dd.getFullYear() + '-' + String(_dd.getMonth()+1).padStart(2,'0') + '-' + String(_dd.getDate()).padStart(2,'0'));
       }
       return { start: start, end: end, dates: dates, label: label };
     }

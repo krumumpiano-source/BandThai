@@ -263,9 +263,7 @@
       document.getElementById('saveTxBtn').textContent = '💾 บันทึก';
     }
 
-    document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
-
-    // โหลด venues จาก band settings
+    document.getElementById('txDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
     apiCall('getBandSettings', {}, function(r) {
       if (r && r.success && r.data && r.data.venues) {
         _venues = r.data.venues;
@@ -519,7 +517,7 @@
         var msg = r.autoApproved ? 'บันทึกแล้ว ✅' : 'ส่งคำขอแล้ว ⏳ รอผู้จัดการอนุมัติ';
         showToast(msg, 'success');
         document.getElementById('fundForm').reset();
-        document.getElementById('txDate').value = new Date().toISOString().substring(0, 10);
+        document.getElementById('txDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
         onTypeChange(); // reset dynamic fields
         loadFund();
         if (!r.autoApproved) {

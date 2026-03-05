@@ -18,6 +18,7 @@ var filters = {
 };
 
 function getEl(id) { return document.getElementById(id); }
+function schLocalDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 
 function escapeHtml(text) {
   if (!text) return '';
@@ -307,7 +308,7 @@ function openAddExternalGigModal() {
   var form = getEl('externalGigForm');
   if (form) { form.reset(); form.onsubmit = saveExternalGig; }
   var gigDate = getEl('gigDate');
-  if (gigDate) gigDate.value = new Date().toISOString().split('T')[0];
+  if (gigDate) gigDate.value = schLocalDate(new Date());
   renderMemberCheckboxes();
   modal.style.display = 'flex';
 }
@@ -342,7 +343,7 @@ function saveExternalGig(event) {
   var gigContact = getEl('gigContact')?.value;
   var selectedMembers = Array.from(form.querySelectorAll('input[name="gigMembers"]:checked')).map(function(cb){ return cb.value; });
   if (!gigDate || !gigStartTime || !gigEndTime || !gigVenue || !gigPrice) {
-    alert('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
+    showToast('กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน');
     return false;
   }
   var newGig = {
@@ -507,7 +508,7 @@ function renderWeeklyTimetable() {
 /* ===== INIT ===== */
 document.addEventListener('DOMContentLoaded', function() {
   var today = new Date();
-  var todayStr = today.toISOString().split('T')[0];
+  var todayStr = schLocalDate(today);
 
   var dateFilter = getEl('dateFilter');
   if (dateFilter) { dateFilter.value = todayStr; filters.date = todayStr; }
@@ -523,8 +524,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (hs && he) {
     var end = new Date(), start = new Date();
     start.setDate(start.getDate() - 30);
-    hs.value = start.toISOString().split('T')[0];
-    he.value = end.toISOString().split('T')[0];
+    hs.value = schLocalDate(start);
+    he.value = schLocalDate(end);
     filters.startDate = hs.value; filters.endDate = he.value;
   }
 

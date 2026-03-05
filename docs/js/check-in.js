@@ -14,6 +14,7 @@ var ciExistingCheckIn = null;
 var ciIsSubstitute = false;
 
 function ciGetEl(id) { return document.getElementById(id); }
+function ciLocalDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 
 function ciEscHtml(text) {
   if (!text) return '';
@@ -308,7 +309,7 @@ function ciSubmitLeaveSimple() {
 
   var payload = {
     bandId: ciCurrentBandId,
-    memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
+    memberId: localStorage.getItem('userId') || localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
     memberName: ciMemberName,
     date: date,
     venue: venue,
@@ -345,7 +346,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ciUserRole = localStorage.getItem('userRole') || 'member';
 
   // Set today's date
-  var today = new Date().toISOString().split('T')[0];
+  var today = ciLocalDate(new Date());
   ciSelectedDate = today;
   var dateInput = ciGetEl('ciDate');
   if (dateInput) { dateInput.value = today; }

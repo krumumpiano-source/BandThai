@@ -6,6 +6,7 @@
  */
 
 /* ── State ─────────────────────────────────────────── */
+function apLocalDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
 var apBandId      = null;
 var apBandName    = '';
 var apBandManager = '';
@@ -210,14 +211,14 @@ function apUpdateDateRange() {
     var v = (apEl('workDate')||{}).value; if (v) apDateRange = [v];
   } else if (apRecordType === 'weekly') {
     var sv = (apEl('startDate')||{}).value, ev = (apEl('endDate')||{}).value;
-    if (sv && ev) { for (var d = new Date(sv); d <= new Date(ev); d.setDate(d.getDate()+1)) apDateRange.push(new Date(d).toISOString().split('T')[0]); }
+    if (sv && ev) { for (var d = new Date(sv); d <= new Date(ev); d.setDate(d.getDate()+1)) apDateRange.push(apLocalDate(new Date(d))); }
   } else if (apRecordType === 'monthly') {
     var mv = (apEl('monthYear')||{}).value;
     if (mv) { var p = mv.split('-'), ms = new Date(+p[0],+p[1]-1,1), me = new Date(+p[0],+p[1],0);
-      for (var d2 = new Date(ms); d2 <= me; d2.setDate(d2.getDate()+1)) apDateRange.push(new Date(d2).toISOString().split('T')[0]);
+      for (var d2 = new Date(ms); d2 <= me; d2.setDate(d2.getDate()+1)) apDateRange.push(apLocalDate(new Date(d2)));
     }
   }
-  if (!apDateRange.length) apDateRange = [new Date().toISOString().split('T')[0]];
+  if (!apDateRange.length) apDateRange = [apLocalDate(new Date())];
 }
 
 /* ═══ LOAD CHECK-INS ════════════════════════════════ */
@@ -237,7 +238,8 @@ function apLoadCheckIns(cb) {
   apLeaveData     = [];
   apLeaveSlots    = {};
   if (!apBandId || typeof apiCall !== 'function' || !apDateRange.length) { if (cb) cb(); return; }
-  var dates = apDateRange.slice(), total = dates.length, done = 0, all = [];
+  var dates = apDateRange.slice(), all = [];
+  var dateFrom = dates[0] || '', dateTo = dates[dates.length - 1] || '';
   var leaveDone = false, ciDone = false;
   function tryFinish() {
     if (!ciDone || !leaveDone) return;
@@ -302,15 +304,13 @@ function apLoadCheckIns(cb) {
     });
     if (cb) cb();
   }
-  // Load check-ins
-  dates.forEach(function(d) {
-    apiCall('getCheckInsForDate', { bandId: apBandId, date: d }, function(r) {
-      if (r && r.success && r.data) all = all.concat(r.data);
-      if (++done >= total) { ciDone = true; tryFinish(); }
-    });
+  // Load check-ins for full date range in one request
+  apiCall('getCheckInsForRange', { bandId: apBandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
+    if (r && r.success && r.data) all = r.data;
+    ciDone = true; tryFinish();
   });
   // Load leave requests for the date range
-  apiCall('getAllLeaveRequests', { bandId: apBandId }, function(r) {
+  apiCall('getLeaveRequestsForRange', { bandId: apBandId, dateFrom: dateFrom, dateTo: dateTo }, function(r) {
     if (r && r.success && r.data) {
       var dSet = {}; dates.forEach(function(d) { dSet[d] = true; });
       apLeaveData = r.data.filter(function(lv) { return dSet[lv.date]; });
