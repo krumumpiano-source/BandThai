@@ -837,31 +837,48 @@ function haptic(ms) {
 function endSong() {
   if (_isEnding) return;
   haptic(200);
-  broadcastEvent('song_ending', { from: _current });
-  triggerEnding();
+  // คำนวณ nextIdx ก่อน broadcast เพื่อให้ทุกเครื่องได้รับ index เดียวกัน
+  var next = _current + 1;
+  while (next < _playlist.length && _playlist[next]._skipped) next++;
+  var nextIdx = (next < _playlist.length) ? next : -1;
+  broadcastEvent('song_ending', { from: _current, next: nextIdx });
+  triggerEnding(nextIdx);
 }
 
-function triggerEnding() {
+// nextIdx: index ที่จะไป (-1 = เพลงสุดท้าย)
+function triggerEnding(nextIdx) {
   if (_isEnding) return;
   _isEnding = true;
+  if (typeof nextIdx === 'undefined') nextIdx = -1;
   var np = document.getElementById('nowPlaying');
   np.classList.add('pulsing');
   np.addEventListener('animationend', function handler() {
     np.classList.remove('pulsing');
     np.removeEventListener('animationend', handler);
     _isEnding = false;
-    advanceSong();
+    if (nextIdx >= 0 && nextIdx < _playlist.length) {
+      _current  = nextIdx;
+      _modified = true;
+      haptic(100);
+      startBeatDot((_playlist[_current] || {}).bpm || 0);
+      renderNowPlaying();
+      renderSongList();
+    } else {
+      showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+    }
   }, { once: true });
 }
 
+// advanceSong ใช้โดย skipSong เท่านั้น — broadcast current_changed ด้วย
 function advanceSong() {
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
-    _current = next;
+    _current  = next;
     _modified = true;
     haptic(100);
-    broadcastEvent('beat_ref', { bpm: _playlist[_current].bpm || 0 });
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    startBeatDot((_playlist[_current] || {}).bpm || 0);
     renderNowPlaying();
     renderSongList();
   } else {
@@ -875,7 +892,8 @@ function playNow(idx) {
   _current = idx;
   _modified = true;
   haptic(80);
-  broadcastEvent('beat_ref', { bpm: _playlist[_current].bpm || 0 });
+  // broadcast ให้ทุกเครื่องเปลี่ยนเพลงพร้อมกัน
+  broadcastEvent('current_changed', { idx: idx, bpm: (_playlist[idx] || {}).bpm || 0 });
   renderNowPlaying();
   renderSongList();
   showToast('▶ เล่น: ' + (_playlist[idx] ? _playlist[idx].name : ''));
@@ -1212,7 +1230,18 @@ function endBreak() {
     doExit();
     return;
   }
-  // Save playlist history in background
+
+  // ตรวจว่ามีข้อมูลพอสำหรับ save
+  if (!_bandId || !_date) {
+    showToast('⚠️ ไม่พบ bandId หรือ date — ไม่สามารถบันทึกได้');
+    _showClipModal();
+    return;
+  }
+
+  // Disable button ระหว่าง save
+  var btn = document.getElementById('endBreakBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+
   var songs = _playlist.map(function(s) {
     return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
   });
@@ -1221,8 +1250,16 @@ function endBreak() {
     bandName: localStorage.getItem('bandName') || '',
     date: _date, venue: _venue, timeSlot: _timeSlot,
     songs: songs
-  }, function() {});
-  // Show clipboard modal with the final playlist
+  }, function(r) {
+    if (btn) { btn.disabled = false; btn.textContent = 'จบเบรค'; }
+    if (!r || !r.success) {
+      showToast('⚠️ บันทึกไม่สำเร็จ — คัดลอกรายการแทนได้');
+    }
+    _showClipModal();
+  });
+}
+
+function _showClipModal() {
   var lines = _playlist.filter(function(s){ return !s._skipped; }).map(function(s, i) {
     var parts = [(i + 1) + '.', s.name];
     if (s._key && s._key !== s.key) parts.push('[คีย์ ' + s._key + ']');
@@ -1280,7 +1317,25 @@ function initRealtime() {
 
   _channel
     .on('broadcast', { event: 'song_ending' }, function(payload) {
-      if (!_isEnding) triggerEnding();
+      var d = payload.payload || {};
+      // sync _current ให้ตรงกับผู้กดก่อน จากนั้น advance ไป next เดียวกัน
+      if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
+        _current = d.from;
+      }
+      if (!_isEnding) triggerEnding(typeof d.next === 'number' ? d.next : -1);
+    })
+    .on('broadcast', { event: 'current_changed' }, function(payload) {
+      var d = payload.payload || {};
+      if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
+        _current = d.idx;
+        renderNowPlaying();
+        renderSongList();
+        // sync beat dot ด้วย
+        if (d.bpm) {
+          var bd = document.getElementById('beatDot');
+          if (bd) bd.style.display = 'block';
+        }
+      }
     })
     .on('broadcast', { event: 'transpose' }, function(payload) {
       var d = payload.payload || {};
@@ -1299,7 +1354,11 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'request_song' }, function(payload) {
       var d = payload.payload || {};
-      if (d.song) { _playlist.splice((d.insertAfter || _current) + 1, 0, d.song); }
+      if (d.song) {
+        // ใช้ typeof เพื่อป้องกัน insertAfter=0 ถูกมองเป็น falsy
+        var insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
+        _playlist.splice(insertPos, 0, d.song);
+      }
       renderSongList();
     })
     .on('broadcast', { event: 'skip_song' }, function(payload) {
