@@ -964,10 +964,9 @@ function scheduleClick(time) {
   osc.connect(gain);
   gain.connect(ctx.destination);
 
-  // Accent on beat 1 of each bar (higher pitch + louder)
-  var isAccent = (_metBeatCount % _metTimeSig === 0);
-  osc.frequency.value = isAccent ? 1200 : 800;
-  gain.gain.value = _metVolume * (isAccent ? 1.0 : 0.6);
+  // Uniform click — same pitch & volume every beat
+  osc.frequency.value = 1000;
+  gain.gain.value = _metVolume;
 
   // Very short click: 30ms attack → quick decay
   osc.start(time);
