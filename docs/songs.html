@@ -516,7 +516,7 @@ html{scroll-behavior:smooth}
   <h3>📋 ลิสเพลงที่เลือก</h3>
 
   <!-- Badge: existing playlists for selected date -->
-  <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:10px;border-radius:var(--radius-md);background:#f0fff4;border:1.5px solid #c6f6d5;display:none"></div>
+  <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:10px;border-radius:var(--radius-md);background:#f0fff4;border:1.5px solid #c6f6d5"></div>
 
   <div class="filters" style="margin-bottom:10px">
     <input type="date" id="useDate" onchange="onPlaylistDateChange()">
@@ -1064,6 +1064,17 @@ window.onload = function() {
       checkAdGate();
   if (typeof renderMainNav === 'function') renderMainNav('mainNav');
   if (typeof applyTranslations === 'function') applyTranslations();
+
+  // ตั้ง date ก่อนเสมอ เพื่อให้ loadBandSettings → onPlaylistDateChange เห็น date ถูกต้อง
+  var dateInput = document.getElementById('useDate');
+  if (dateInput) {
+    var today = new Date();
+    var yyyy = today.getFullYear();
+    var mm = String(today.getMonth() + 1).padStart(2, '0');
+    var dd = String(today.getDate()).padStart(2, '0');
+    dateInput.value = yyyy + '-' + mm + '-' + dd;
+  }
+
   loadInitial();
   loadBandSettings();
 };
@@ -1292,17 +1303,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-window.addEventListener("load", () => {
-  const dateInput = getPlaylistEl("useDate");
-  if(!dateInput) return;
-
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-
-  dateInput.value = `${yyyy}-${mm}-${dd}`;
-});
+// date input is now set in window.onload before loadBandSettings()
 </script>
 
 <script>
