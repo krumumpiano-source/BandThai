@@ -946,7 +946,6 @@ var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';  // sound 
 var _metVolume      = 0.3;   // click volume (0-1)
 var _beatOffTimer   = null;
 var _metWallOrigin  = 0;     // Date.now() at beat 0 (for wall-clock sync)
-var _metDeviceId    = Math.random().toString(36).slice(2,10); // unique per tab
 
 // Lookahead config
 var MET_LOOKAHEAD   = 0.1;  // seconds to look ahead
@@ -991,18 +990,8 @@ function toggleMetAudio() {
     btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
   resumeAudio();
-  if (_metAudioOn) {
-    // Claim audio — tell all other devices to turn off their sound
-    broadcastEvent('met_audio_claim', { deviceId: _metDeviceId });
-  }
-  showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด (เครื่องอื่นจะปิดเสียงอัตโนมัติ)' : '🔇 เสียงเมโทรนอม: ปิด');
+  showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
 }
-function _updateSoundBtn() {
-  var btn = document.getElementById('metSoundBtn');
-  if (btn) {
-    btn.classList.toggle('on', _metAudioOn);
-    btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
-  }
 }
 
 // Init beat/sound button states on load
@@ -1853,16 +1842,6 @@ function initRealtime() {
       if (!_metBpm || !bd) { if (bd) bd.style.display = 'none'; return; }
       bd.style.display = 'block';
       if (btn) btn.classList.toggle('off', !_metEnabled);
-    })
-    .on('broadcast', { event: 'met_audio_claim' }, function(payload) {
-      // Another device claimed audio — disable ours
-      var d = payload.payload || {};
-      if (d.deviceId !== _metDeviceId && _metAudioOn) {
-        _metAudioOn = false;
-        localStorage.setItem('liveMetAudioOn', '0');
-        _updateSoundBtn();
-        showToast('🔇 เครื่องอื่นเปิดเสียง — ปิดเสียงเครื่องนี้อัตโนมัติ');
-      }
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
       // RECEIVER: Wall-clock phase-locked metronome
