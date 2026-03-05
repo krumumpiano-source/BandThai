@@ -276,14 +276,16 @@
 
     var html = '';
     for (var i = 1; i <= count; i++) {
-      var si     = String(i);
-      var songs  = setsData[si] || [];
-      var tooMany= i > getMaxSets();
-      var label  = 'เซ็ต ' + i;
-      var ts     = todaySlots[i - 1];
+      var si      = String(i);
+      var songs   = setsData[si] || [];
+      var hasData = songs.length > 0;
+      // locked เฉพาะเซ็ตว่างที่เกินโควตา — ถ้ามีข้อมูลแล้วให้แก้ไขได้เสมอ
+      var tooMany = !hasData && (i > getMaxSets());
+      var label   = 'เซ็ต ' + i;
+      var ts      = todaySlots[i - 1];
       if (ts) label += ' · ' + (typeof ts === 'string' ? ts : (ts.label || ''));
-      var badge  = songs.length ? '<span class="tab-badge">' + songs.length + '</span>' : '';
-      var cls    = 'set-tab' + (currentSetIdx === si ? ' active' : '') + (tooMany ? ' locked' : '');
+      var badge   = songs.length ? '<span class="tab-badge">' + songs.length + '</span>' : '';
+      var cls     = 'set-tab' + (currentSetIdx === si ? ' active' : '') + (tooMany ? ' locked' : '');
       html += '<button class="' + cls + '" onclick="selectSet(\'' + si + '\')">' + escapeHtml(label) + badge + '</button>';
     }
 
@@ -313,17 +315,21 @@
     var plan   = getPlan();
     var cap    = PLAN_LIMIT[plan] || 0;
 
-    // Hard plan cap
-    if (cap > 0 && idx > cap) {
-      var planLabel = plan === 'lite' ? '🎵 Lite (4 เซ็ต/วัน)' : '👑 Pro (8 เซ็ต/วัน)';
-      showToast('ครบลิมิต ' + planLabel + ' แล้ว — ไม่สามารถเพิ่มได้อีก', 'error');
-      return;
-    }
-    // Free: beyond schedule+unlocked → need ad
-    if (cap === 0 && idx > Math.max(todaySlots.length, 1) + adUnlocked) {
-      adPendingSet = si;
-      showAdGate();
-      return;
+    // ถ้าเซ็ตนี้มีข้อมูลที่บันทึกไว้แล้ว → อนุญาตให้เข้าแก้ไข/ลบได้เสมอ
+    var hasExistingData = setsData[si] && setsData[si].length > 0;
+    if (!hasExistingData) {
+      // Hard plan cap (เฉพาะตอนสร้างเซ็ตใหม่)
+      if (cap > 0 && idx > cap) {
+        var planLabel = plan === 'lite' ? '🎵 Lite (4 เซ็ต/วัน)' : '👑 Pro (8 เซ็ต/วัน)';
+        showToast('ครบลิมิต ' + planLabel + ' แล้ว — ไม่สามารถเพิ่มได้อีก', 'error');
+        return;
+      }
+      // Free: beyond schedule+unlocked → need ad (เฉพาะตอนสร้างเซ็ตใหม่)
+      if (cap === 0 && idx > Math.max(todaySlots.length, 1) + adUnlocked) {
+        adPendingSet = si;
+        showAdGate();
+        return;
+      }
     }
 
     currentSetIdx = si;
