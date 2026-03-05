@@ -232,7 +232,7 @@
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
-      <button id="beatToggleBtn" onclick="toggleBeatDot()" title="เปิด/ปิดไฟ BPM">💡</button>
+      <button id="beatToggleBtn" title="กด=เปิด/ปิดไฟ BPM | กดค้าง=เปิด/ปิดเสียง">💡</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
       <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
@@ -800,75 +800,206 @@ function startClock() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  BEAT DOT
-//  BEAT DOT — Local Phase Re-sync
-//  Manager = master metronome (setInterval), broadcasts beat_sync every tick.
-//  Receiver = on beat_sync: flash immediately + restart local setInterval
-//    → Beat 1: small network delay (~5-20ms WiFi), imperceptible
-//    → Beat 2+: driven by local timer, ZERO network delay
-//    → Each received signal resets phase → no accumulated drift
+//  METRONOME — Web Audio API (hardware-precision scheduler)
+//
+//  ใช้ AudioContext.currentTime (hardware clock ±0.01ms)
+//  แทน setTimeout (±4-16ms jitter) เพื่อให้จังหวะนิ่ง
+//
+//  หลักการ "Lookahead Scheduler" (Chris Wilson):
+//    1. setTimeout วน loop ทุก ~25ms (ไม่ต้องแม่น)
+//    2. ในแต่ละ loop: ดูว่า beat ถัดไปอยู่ใน scheduleAhead window ไหม
+//    3. ถ้าใช่ → scheduleNote() ด้วย audioCtx time (แม่นมาก)
+//    4. Visual dot ถูก trigger จาก scheduler เดียวกัน
 // ─────────────────────────────────────────────────────────────────
-var _beatTimer      = null;  // manager's master setTimeout id
-var _beatOffTimer   = null;  // setTimeout to turn dot OFF
-var _beatLocalTimer = null;  // receiver's local phase-locked setTimeout id
-var _beatBpm        = 0;
-var _beatInterval   = 0;
-var _beatDotEnabled = true;  // user toggle
-var _beatNextTime      = 0; // manager absolute reference (performance.now)
-var _beatLocalNextTime = 0; // receiver absolute reference
+var _audioCtx       = null;  // AudioContext (lazy init on user gesture)
+var _metTimer       = null;  // setTimeout id for lookahead loop
+var _metBpm         = 0;
+var _metInterval    = 0;     // seconds between beats
+var _metNextTime    = 0;     // audioCtx time of next scheduled beat
+var _metBeatCount   = 0;     // running beat counter (for time signature)
+var _metTimeSig     = 4;     // beats per bar (4/4 default)
+var _metEnabled     = true;  // user toggle
+var _metAudioOn     = true;  // sound on/off (separate from dot)
+var _metVolume      = 0.3;   // click volume (0-1)
+var _beatOffTimer   = null;
+
+// Lookahead config
+var MET_LOOKAHEAD   = 0.1;  // seconds to look ahead
+var MET_INTERVAL    = 25;   // ms between scheduler calls
+
+function ensureAudioCtx() {
+  if (_audioCtx) return _audioCtx;
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) { /* fallback: no audio, visual only */ }
+  return _audioCtx;
+}
+
+// Resume AudioContext (required after user gesture on mobile)
+function resumeAudio() {
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
+}
 
 function toggleBeatDot() {
-  _beatDotEnabled = !_beatDotEnabled;
+  _metEnabled = !_metEnabled;
   var btn = document.getElementById('beatToggleBtn');
-  if (btn) btn.classList.toggle('off', !_beatDotEnabled);
-  if (!_beatDotEnabled) {
-    // pause only visual — keep timers running so sync is alive
+  if (btn) btn.classList.toggle('off', !_metEnabled);
+  if (!_metEnabled) {
     var bd = document.getElementById('beatDot');
     if (bd) bd.style.opacity = '0';
   }
 }
 
+// Toggle audio click on/off (long-press on beat button)
+function toggleMetAudio() {
+  _metAudioOn = !_metAudioOn;
+  var btn = document.getElementById('beatToggleBtn');
+  if (btn) btn.textContent = _metAudioOn ? '💡' : '🔇';
+  showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
+}
+
+// Long-press detection for beat button
+(function() {
+  var _lpTimer = null;
+  var _lpFired = false;
+  document.addEventListener('DOMContentLoaded', function() {
+    var btn = document.getElementById('beatToggleBtn');
+    if (!btn) return;
+    btn.addEventListener('pointerdown', function(e) {
+      _lpFired = false;
+      _lpTimer = setTimeout(function() {
+        _lpFired = true;
+        toggleMetAudio();
+        // Also resume audio context on long-press (user gesture)
+        resumeAudio();
+      }, 600);
+    });
+    btn.addEventListener('pointerup', function(e) {
+      if (_lpTimer) clearTimeout(_lpTimer);
+      if (_lpFired) {
+        // Prevent the onclick from firing after long-press
+        _lpFired = false;
+        e.preventDefault();
+      }
+    });
+    btn.addEventListener('pointerleave', function() {
+      if (_lpTimer) clearTimeout(_lpTimer);
+    });
+    // Override onclick to also resume AudioContext
+    btn.removeAttribute('onclick');
+    btn.addEventListener('click', function(e) {
+      if (_lpFired) { _lpFired = false; return; }
+      resumeAudio();
+      toggleBeatDot();
+    });
+  });
+})();
+
 function startBeatDot(bpm) {
   stopBeatDot();
   var bd = document.getElementById('beatDot');
   if (!bpm || !bd) return;
-  _beatBpm      = bpm;
-  _beatInterval = 60000 / bpm;
+  _metBpm       = bpm;
+  _metInterval  = 60.0 / bpm;  // seconds
+  _metBeatCount = 0;
   bd.style.display = 'block';
   var btn = document.getElementById('beatToggleBtn');
-  if (btn) btn.classList.toggle('off', !_beatDotEnabled);
+  if (btn) btn.classList.toggle('off', !_metEnabled);
+
+  var ctx = ensureAudioCtx();
+  if (ctx) resumeAudio();
 
   if (!_isGuest) {
-    // MANAGER: self-correcting setTimeout — eliminates accumulated drift
-    _beatNextTime = performance.now();
-    function tick() {
-      flashBeatDot();
-      broadcastEvent('beat_sync', { bpm: bpm });
-      _beatNextTime += _beatInterval;
-      var delay = _beatNextTime - performance.now();
-      _beatTimer = setTimeout(tick, Math.max(0, delay));
-    }
-    tick();
+    // MANAGER: start the lookahead scheduler
+    _metNextTime = ctx ? ctx.currentTime + 0.05 : performance.now() / 1000;
+    metScheduler();
   }
-  // Receiver: waits for first beat_sync, then locks local phase
+  // Receiver: waits for beat_sync, then starts local scheduler
+}
+
+function metScheduler() {
+  var ctx = _audioCtx;
+  if (!ctx) {
+    // Fallback: no Web Audio → use performance.now based scheduler
+    metSchedulerFallback();
+    return;
+  }
+  // Schedule all beats that fall within the lookahead window
+  while (_metNextTime < ctx.currentTime + MET_LOOKAHEAD) {
+    scheduleClick(_metNextTime);
+    scheduleDotFlash(_metNextTime - ctx.currentTime);
+    // Broadcast sync (only every 4th beat to reduce network traffic)
+    if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
+      broadcastEvent('beat_sync', { bpm: _metBpm, t: _metNextTime, beat: _metBeatCount });
+    }
+    _metNextTime += _metInterval;
+    _metBeatCount++;
+  }
+  _metTimer = setTimeout(metScheduler, MET_INTERVAL);
+}
+
+// Fallback scheduler for browsers without Web Audio
+function metSchedulerFallback() {
+  var now = performance.now() / 1000;
+  while (_metNextTime < now + MET_LOOKAHEAD) {
+    var delay = Math.max(0, (_metNextTime - now) * 1000);
+    scheduleDotFlash(delay / 1000);
+    if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
+      broadcastEvent('beat_sync', { bpm: _metBpm, beat: _metBeatCount });
+    }
+    _metNextTime += _metInterval;
+    _metBeatCount++;
+  }
+  _metTimer = setTimeout(metSchedulerFallback, MET_INTERVAL);
+}
+
+function scheduleClick(time) {
+  if (!_metAudioOn || !_audioCtx) return;
+  var ctx = _audioCtx;
+  // Create a short click: oscillator → gain envelope
+  var osc  = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  // Accent on beat 1 of each bar (higher pitch + louder)
+  var isAccent = (_metBeatCount % _metTimeSig === 0);
+  osc.frequency.value = isAccent ? 1200 : 800;
+  gain.gain.value = _metVolume * (isAccent ? 1.0 : 0.6);
+
+  // Very short click: 30ms attack → quick decay
+  osc.start(time);
+  gain.gain.setValueAtTime(gain.gain.value, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.03);
+  osc.stop(time + 0.04);
+}
+
+function scheduleDotFlash(delaySeconds) {
+  var delayMs = Math.max(0, delaySeconds * 1000);
+  setTimeout(function() {
+    flashBeatDot();
+  }, delayMs);
 }
 
 function flashBeatDot() {
   var bd = document.getElementById('beatDot');
   if (!bd || bd.style.display === 'none') return;
   if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
-  if (!_beatDotEnabled) return;   // timers run but dot stays invisible
+  if (!_metEnabled) return;
   bd.style.opacity = '1';
+  var offDelay = (_metInterval * 1000) * 0.4;
   _beatOffTimer = setTimeout(function() {
     bd.style.opacity = '0';
     _beatOffTimer = null;
-  }, _beatInterval * 0.45);
+  }, offDelay);
 }
 
 function stopBeatDot() {
-  if (_beatTimer)      { clearTimeout(_beatTimer);      _beatTimer      = null; }
-  if (_beatOffTimer)   { clearTimeout(_beatOffTimer);   _beatOffTimer   = null; }
-  if (_beatLocalTimer) { clearTimeout(_beatLocalTimer); _beatLocalTimer = null; }
+  if (_metTimer)     { clearTimeout(_metTimer);     _metTimer     = null; }
+  if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
+  _metBeatCount = 0;
   var bd = document.getElementById('beatDot');
   if (bd) { bd.style.display = 'none'; bd.style.opacity = '0'; }
 }
@@ -1479,39 +1610,63 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'beat_ref' }, function(payload) {
       var d = payload.payload || {};
-      // New song — start showing dot for guest/viewer too
-      _beatBpm = d.bpm || 0;
-      _beatInterval = _beatBpm ? 60000 / _beatBpm : 0;
+      // New song — show dot for guest/viewer, prepare metronome
+      _metBpm      = d.bpm || 0;
+      _metInterval = _metBpm ? 60.0 / _metBpm : 0;
       var bd = document.getElementById('beatDot');
       var btn = document.getElementById('beatToggleBtn');
-      if (!_beatBpm || !bd) { if (bd) bd.style.display = 'none'; return; }
+      if (!_metBpm || !bd) { if (bd) bd.style.display = 'none'; return; }
       bd.style.display = 'block';
-      if (btn) btn.classList.toggle('off', !_beatDotEnabled);
+      if (btn) btn.classList.toggle('off', !_metEnabled);
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
-      // LOCAL PHASE RE-SYNC:
-      // 1) Flash immediately for this beat (only network latency as error)
-      // 2) Restart local phase-locked timer so next beats have ZERO network delay
+      // RECEIVER: Start local Web Audio metronome, phase-locked to broadcast
+      // On each beat_sync (every 4 beats from manager):
+      //   1) Flash + click immediately for this beat
+      //   2) Start/restart local AudioContext scheduler at received BPM
+      //   → Local scheduler runs precisely between sync signals
       var d = payload.payload || {};
-      if (d.bpm) {
-        _beatBpm      = d.bpm;
-        _beatInterval = 60000 / d.bpm;
-        var bd = document.getElementById('beatDot');
-        if (bd) bd.style.display = 'block';
+      if (d.bpm && d.bpm !== _metBpm) {
+        _metBpm      = d.bpm;
+        _metInterval = 60.0 / d.bpm;
       }
-      if (!_beatBpm) return;
-      // Flash now (current beat) — reset phase reference to NOW
+      if (!_metBpm) return;
+      var bd = document.getElementById('beatDot');
+      if (bd) bd.style.display = 'block';
+
+      // Stop existing local scheduler
+      if (_metTimer) { clearTimeout(_metTimer); _metTimer = null; }
+
+      // Ensure AudioContext for receiver too
+      var ctx = ensureAudioCtx();
+      if (ctx) resumeAudio();
+
+      // Flash immediately for this beat (absorbs network latency)
       flashBeatDot();
-      // Restart self-correcting local timer locked to this phase
-      if (_beatLocalTimer) { clearTimeout(_beatLocalTimer); _beatLocalTimer = null; }
-      _beatLocalNextTime = performance.now() + _beatInterval;
-      function localTick() {
-        flashBeatDot();
-        _beatLocalNextTime += _beatInterval;
-        var delay = _beatLocalNextTime - performance.now();
-        _beatLocalTimer = setTimeout(localTick, Math.max(0, delay));
+      if (_metAudioOn && ctx) {
+        scheduleClick(ctx.currentTime);
       }
-      _beatLocalTimer = setTimeout(localTick, Math.max(0, _beatLocalNextTime - performance.now()));
+
+      // Restart local scheduler, phased from NOW
+      _metBeatCount = (d.beat || 0) + 1;
+      if (ctx) {
+        _metNextTime = ctx.currentTime + _metInterval;
+        // Local scheduler (receiver mode — no broadcast)
+        function receiverScheduler() {
+          while (_metNextTime < ctx.currentTime + MET_LOOKAHEAD) {
+            scheduleClick(_metNextTime);
+            scheduleDotFlash(_metNextTime - ctx.currentTime);
+            _metNextTime += _metInterval;
+            _metBeatCount++;
+          }
+          _metTimer = setTimeout(receiverScheduler, MET_INTERVAL);
+        }
+        receiverScheduler();
+      } else {
+        // Fallback: performance.now scheduler
+        _metNextTime = performance.now() / 1000 + _metInterval;
+        metSchedulerFallback();
+      }
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       var d = payload.payload || {};
