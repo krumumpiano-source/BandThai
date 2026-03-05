@@ -357,8 +357,12 @@
     var plan   = getPlan();
     var cap    = PLAN_LIMIT[plan] || 0;
     // find current max tab
+    // นับจาก setsData key แทน ไม่งั้น parseInt บน label ภาษาไทยได้ NaN
+    var usedKeys = Object.keys(setsData).map(Number).filter(function(n){ return !isNaN(n) && n > 0; });
+    var cur    = usedKeys.length ? Math.max.apply(null, usedKeys) : 0;
     var tabs   = document.querySelectorAll('.set-tab');
-    var cur    = tabs.length ? Math.max.apply(null, Array.from(tabs).map(function(b){ return parseInt(b.textContent) || 1; })) : 0;
+    var tabMax = tabs.length ? tabs.length : 0;
+    cur        = Math.max(cur, tabMax);
     var nextIdx= cur + 1;
 
     if (cap > 0 && nextIdx > cap) {
@@ -382,7 +386,7 @@
     var poolEl  = document.getElementById('songPool');
     var q       = (document.getElementById('songSearch').value || '').toLowerCase();
     var songs   = allSongs.filter(function(s){
-      return !q || (s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q);
+      return !q || (s.name||s.title||'').toLowerCase().includes(q) || (s.artist||'').toLowerCase().includes(q);
     });
     var canAdd  = !!currentSetIdx;
     var curSongs= currentSetIdx ? (setsData[currentSetIdx] || []) : [];
@@ -394,13 +398,15 @@
     poolEl.innerHTML = songs.map(function(s) {
       var sid     = s.songId || s.id || '';
       var already = curSongs.find(function(x){ return x.id === sid; });
-      var click   = canAdd && !already ? ' clickable" onclick="addSong(\'' + escapeHtml(sid) + '\')' : ' disabled';
+      var isClickable = canAdd && !already;
+      var extraClass  = isClickable ? ' clickable' : ' disabled';
+      var onclickAttr = isClickable ? ' onclick="addSong(\'' + escapeHtml(sid) + '\')"' : '';
       var check   = already ? '<span style="color:var(--premium-gold);margin-right:4px">✓</span>' : '';
       var key     = s.key ? ('<span style="font-size:.68rem;color:var(--premium-text-muted);margin-left:3px">(' + escapeHtml(s.key) + ')</span>') : '';
       var dur     = s.duration ? ('<span class="song-dur">' + parseFloat(s.duration).toFixed(1) + 'm</span>') : '';
-      return '<div class="song-pill' + click + '">'
+      return '<div class="song-pill' + extraClass + '"' + onclickAttr + '>'
         + '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
-        + check + escapeHtml(s.title || '—') + key + '</span>' + dur + '</div>';
+        + check + escapeHtml(s.name || s.title || '—') + key + '</span>' + dur + '</div>';
     }).join('');
   }
 
@@ -427,10 +433,14 @@
       return;
     }
     document.getElementById('setlistSlots').innerHTML = songs.map(function(s, i) {
+      // ดึงชื่อจาก allSongs ด้วย เผื่อ title ใน DB ไม่มี (เซ็ตเก่าที่บันทึกก่อน fix)
+      var fullSong  = allSongs.find(function(x){ return (x.songId || x.id) === s.id; });
+      var titleShow = (fullSong && (fullSong.name || fullSong.title)) || s.title || s.name || '—';
+      var artShow   = (fullSong && fullSong.artist) || s.artist || '';
       return '<div class="setlist-slot">'
         + '<div class="slot-num">' + (i + 1) + '</div>'
-        + '<div class="slot-info"><div class="slot-title">' + escapeHtml(s.title || '—') + '</div>'
-        + '<div class="slot-artist">' + escapeHtml(s.artist || '') + '</div></div>'
+        + '<div class="slot-info"><div class="slot-title">' + escapeHtml(titleShow) + '</div>'
+        + '<div class="slot-artist">' + escapeHtml(artShow) + '</div></div>'
         + '<span class="slot-dur">' + (parseFloat(s.duration) || 0).toFixed(1) + 'm</span>'
         + '<button class="slot-del" onclick="removeSong(' + i + ')" title="ลบออก">×</button>'
         + '</div>';
@@ -449,7 +459,7 @@
     if (setsData[si].find(function(x){ return x.id === songId; })) {
       showToast('เพลงนี้อยู่ในเซ็ตแล้ว', 'info'); return;
     }
-    setsData[si].push({ id: songId, title: song.title, artist: song.artist || '', duration: parseFloat(song.duration) || 4 });
+    setsData[si].push({ id: songId, title: song.name || song.title || '', artist: song.artist || '', duration: parseFloat(song.duration) || 4 });
     renderSetBuilder();
     renderPool();
     renderSetTabs();
