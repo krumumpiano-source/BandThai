@@ -1,0 +1,1 @@
+CREATE POLICY "band members view own subscriptions" ON subscriptions FOR SELECT USING (band_id IN (SELECT band_id::uuid FROM profiles WHERE id = auth.uid()));
