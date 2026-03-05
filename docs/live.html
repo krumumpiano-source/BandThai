@@ -2137,21 +2137,30 @@ function openCtx(idx) {
   var btns = [];
 
   if (idx !== _current) {
-    btns.push({ icon: '▶', label: 'เล่นตอนนี้', fn: 'ctxAction("play")' });
-    btns.push({ icon: '⏭', label: 'ตั้งเป็นถัดไป', fn: 'ctxAction("next")' });
+    btns.push({ icon: '▶', label: 'เล่นตอนนี้', action: 'play' });
+    btns.push({ icon: '⏭', label: 'ตั้งเป็นถัดไป', action: 'next' });
   }
   if (!s._skipped) {
-    btns.push({ icon: '⏩', label: 'Skip', fn: 'ctxAction("skip")' });
+    btns.push({ icon: '⏩', label: 'Skip', action: 'skip' });
   } else {
-    btns.push({ icon: '↩', label: 'ยกเลิก Skip', fn: 'ctxAction("unskip")' });
+    btns.push({ icon: '↩', label: 'ยกเลิก Skip', action: 'unskip' });
   }
-  btns.push({ icon: '📝', label: 'เพิ่มโน้ต', fn: 'ctxAction("note")' });
-  btns.push({ icon: '🔁', label: 'Encore', fn: 'ctxAction("encore")' });
-  btns.push({ icon: '', label: 'ลบ', fn: 'ctxAction("remove")' });
+  btns.push({ icon: '📝', label: 'เพิ่มโน้ต', action: 'note' });
+  btns.push({ icon: '🔁', label: 'Encore', action: 'encore' });
+  btns.push({ icon: '', label: 'ลบ', action: 'remove' });
 
   grid.innerHTML = btns.map(function(b) {
-    return '<button class="ctx-btn" onclick="' + b.fn + '"><span class="ctx-icon">' + b.icon + '</span>' + b.label + '</button>';
-  }).join('') + '<button class="ctx-btn ctx-cancel" onclick="closeCtx()">ปิด</button>';
+    return '<button class="ctx-btn" data-action="' + b.action + '"><span class="ctx-icon">' + b.icon + '</span>' + b.label + '</button>';
+  }).join('') + '<button class="ctx-btn ctx-cancel" data-action="close">ปิด</button>';
+
+  // Attach click handlers via event delegation
+  grid.onclick = function(e) {
+    var btn = e.target.closest('.ctx-btn');
+    if (!btn) return;
+    var action = btn.getAttribute('data-action');
+    if (action === 'close') { closeCtx(); return; }
+    ctxAction(action);
+  };
 
   document.getElementById('ctxMenu').classList.add('show');
 }
