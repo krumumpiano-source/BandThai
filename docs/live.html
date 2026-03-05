@@ -267,7 +267,7 @@
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
-      <button id="beatToggleBtn" title="กด=เปิด/ปิดไฟ BPM | กดค้าง=เปิด/ปิดเสียง">💡</button>
+      <button id="beatToggleBtn" title="กด=เปิด/ปิดเสียง | กดค้าง=เปิด/ปิดไฟ">🔇</button>
       <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
@@ -542,6 +542,9 @@ document.addEventListener('DOMContentLoaded', function() {
   startClock();
   acquireWakeLock();
   document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+  // Set initial beat button icon based on saved preference
+  var _initBeatBtn = document.getElementById('beatToggleBtn');
+  if (_initBeatBtn) _initBeatBtn.textContent = _metAudioOn ? '💡' : '🔇';
 
   // ── Tap realtime indicator = manual resync ──
   document.getElementById('realtimeIndicator').addEventListener('click', function() {
@@ -926,7 +929,7 @@ var _metNextTime    = 0;     // audioCtx time of next scheduled beat
 var _metBeatCount   = 0;     // running beat counter (for time signature)
 var _metTimeSig     = 4;     // beats per bar (4/4 default)
 var _metEnabled     = true;  // user toggle
-var _metAudioOn     = true;  // sound on/off (separate from dot)
+var _metAudioOn     = localStorage.getItem('liveMetAudioOn') !== '1';  // sound OFF by default (opt-in)
 var _metVolume      = 0.3;   // click volume (0-1)
 var _beatOffTimer   = null;
 
@@ -962,6 +965,7 @@ function toggleBeatDot() {
 // Toggle audio click on/off (long-press on beat button)
 function toggleMetAudio() {
   _metAudioOn = !_metAudioOn;
+  localStorage.setItem('liveMetAudioOn', _metAudioOn ? '1' : '0');
   var btn = document.getElementById('beatToggleBtn');
   if (btn) btn.textContent = _metAudioOn ? '💡' : '🔇';
   showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
@@ -978,7 +982,8 @@ function toggleMetAudio() {
       _lpFired = false;
       _lpTimer = setTimeout(function() {
         _lpFired = true;
-        toggleMetAudio();
+        toggleBeatDot();
+        showToast(_metEnabled ? '💡 ไฟ BPM: เปิด' : '💡 ไฟ BPM: ปิด');
         // Also resume audio context on long-press (user gesture)
         resumeAudio();
       }, 600);
@@ -994,12 +999,12 @@ function toggleMetAudio() {
     btn.addEventListener('pointerleave', function() {
       if (_lpTimer) clearTimeout(_lpTimer);
     });
-    // Override onclick to also resume AudioContext
+    // Override onclick: single tap = toggle SOUND (primary action)
     btn.removeAttribute('onclick');
     btn.addEventListener('click', function(e) {
       if (_lpFired) { _lpFired = false; return; }
       resumeAudio();
-      toggleBeatDot();
+      toggleMetAudio();
     });
   });
 })();
