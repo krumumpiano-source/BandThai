@@ -76,6 +76,22 @@
     .dur-price-final { font-size: 1.15rem; font-weight: 700; color: var(--gold,#fbbf24); }
     .dur-price-monthly { font-size: .65rem; color: var(--text-secondary); }
     .dur-save { font-size: .63rem; color: #22c55e; font-weight: 600; height: .85rem; }
+    /* Scope selector */
+    .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+    @media(max-width:500px){ .scope-grid { grid-template-columns: 1fr; } }
+    .scope-card {
+      background: var(--bg-card); border: 2px solid var(--border-color);
+      border-radius: 14px; padding: 1.2rem 1rem; cursor: pointer;
+      text-align: center; transition: border-color .2s, transform .15s;
+    }
+    .scope-card:hover { border-color: var(--gold,#fbbf24); transform: translateY(-2px); }
+    .scope-card.selected { border-color: var(--gold,#fbbf24); background: rgba(251,191,36,.07); }
+    .scope-card .scope-icon { font-size: 2rem; margin-bottom: .4rem; }
+    .scope-card .scope-title { font-size: 1rem; font-weight: 700; margin-bottom: .3rem; }
+    .scope-card .scope-desc { font-size: .78rem; color: var(--text-secondary); line-height: 1.4; }
+    .step-label { font-size: .7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-secondary); margin-bottom: .4rem; }
+    .step-block { margin-bottom: 1.5rem; }
   </style>
 </head>
 <body>
@@ -90,9 +106,27 @@
   <p style="color:var(--text-secondary);margin-bottom:1rem">เลือกแพ็กเกจที่เหมาะกับคุณ ชำระด้วยบัตรเดบิต/เครดิต</p>
 
   <div class="current-plan-badge" id="currentPlanBadge">แพ็กเกจปัจจุบัน: Free</div>
-  <div id="scopeNotice" style="display:none;margin-bottom:1rem;padding:10px 16px;border-radius:10px;border:1px solid;font-size:.85rem"></div>
 
-  <!-- Plan Cards -->
+  <!-- Step 1: Scope -->
+  <div class="step-block">
+    <div class="step-label">ขั้นที่ 1 — ซื้อให้ใคร?</div>
+    <div class="scope-grid">
+      <div class="scope-card" id="scopeCardBand" onclick="selectScope('band')">
+        <div class="scope-icon">🏷️</div>
+        <div class="scope-title">ทั้งวง</div>
+        <div class="scope-desc">สมาชิกทุกคนในวงได้ใช้พร้อมกัน<br>คนเดียวจ่าย ทุกคนได้</div>
+      </div>
+      <div class="scope-card" id="scopeCardUser" onclick="selectScope('user')">
+        <div class="scope-icon">👤</div>
+        <div class="scope-title">รายคน</div>
+        <div class="scope-desc">อัปเกรดเฉพาะบัญชีของคุณ<br>คนอื่นในวงไม่ได้รับผลกระทบ</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2: Plan Cards -->
+  <div class="step-block" id="planStep" style="display:none">
+    <div class="step-label">ขั้นที่ 2 — เลือกแพ็กเกจ</div>
   <div class="plan-grid">
     <div class="plan-card" id="cardLite" onclick="selectPlan('lite')">
       <div class="plan-name">🎵 Lite</div>
@@ -119,9 +153,11 @@
     </div>
   </div>
 
-  <!-- Duration Picker (shows after plan selected) -->
-  <div id="durationSection" style="display:none" class="duration-picker">
-    <h3>⏱️ เลือกระยะเวลา</h3>
+  </div><!-- /planStep -->
+
+  <!-- Step 3: Duration Picker -->
+  <div class="step-block" id="durationSection" style="display:none">
+    <div class="step-label">ขั้นที่ 3 — เลือกระยะเวลา</div>
     <div class="duration-grid" id="durationGrid"></div>
   </div>
 
@@ -154,28 +190,18 @@
       window.location.replace('index.html');
       return;
     }
-    var plan = localStorage.getItem('band_plan') || 'free';
+    var plan  = localStorage.getItem('band_plan')  || 'free';
     var scope = localStorage.getItem('plan_scope') || 'free';
     var names = { free: 'Free', lite: 'Lite', pro: 'Pro' };
     document.getElementById('currentPlanBadge').textContent =
       'แพ็กเกจปัจจุบัน: ' + (names[plan] || plan) + (scope === 'band' ? ' (วง)' : scope === 'user' ? ' (รายคน)' : '');
-    var noticeEl = document.getElementById('scopeNotice');
-    if (noticeEl) {
-      if (plan === 'free') {
-        noticeEl.textContent = '🏷️ วงของคุณยังไม่มีแผน — ถ้าคุณซื้อตอนนี้จะ upgrade ทั้งวง ทุกสมาชิกได้ใช้พร้อมกัน';
-        noticeEl.style.background = 'rgba(34,197,94,.10)'; noticeEl.style.borderColor = 'rgba(34,197,94,.3)';
-      } else {
-        noticeEl.textContent = '👤 วงของคุณมีแผน ' + plan.toUpperCase() + ' อยู่แล้ว — การซื้อครั้งนี้จะ upgrade เฉพาะบัญชีของคุณ (รายบุคคล)';
-        noticeEl.style.background = 'rgba(37,99,235,.10)'; noticeEl.style.borderColor = 'rgba(37,99,235,.3)';
-      }
-      noticeEl.style.display = '';
-    }
     if (plan === 'pro' && scope === 'band') {
       showStatus('วงของคุณใช้แพ็กเกจ Pro อยู่แล้ว — ขอบคุณที่สนับสนุน! 🎉', 'success');
     }
   });
 
   // ── State ─────────────────────────────────────────────────────────────────
+  var selectedScope  = null;     // 'band' | 'user'
   var selectedPlan   = null;
   var selectedMonths = 1;
   var selectedAmount = 0;        // satang
@@ -216,8 +242,27 @@
   }
   setTimeout(loadDynamicPrices, 500);
 
+  // ── Scope Selection ───────────────────────────────────────────────────────
+  window.selectScope = function (scope) {
+    selectedScope = scope;
+    selectedPlan  = null;
+    selectedMonths = 1;
+    selectedAmount = 0;
+    document.getElementById('scopeCardBand').classList.toggle('selected', scope === 'band');
+    document.getElementById('scopeCardUser').classList.toggle('selected', scope === 'user');
+    document.getElementById('planStep').style.display = '';
+    // reset downstream
+    document.getElementById('durationSection').style.display = 'none';
+    document.getElementById('selectedSummary').style.display = 'none';
+    document.getElementById('payBtn').disabled = true;
+    document.getElementById('payBtn').textContent = '💳 ชำระเงิน';
+    document.getElementById('cardLite').classList.remove('selected');
+    document.getElementById('cardPro').classList.remove('selected');
+  };
+
   // ── Plan Selection ────────────────────────────────────────────────────────
   window.selectPlan = function (plan) {
+    if (!selectedScope) { showStatus('กรุณาเลือกประเภทก่อน (ทั้งวง หรือ รายคน)', 'error'); return; }
     selectedPlan = plan;
     selectedMonths = 1;
     document.getElementById('cardLite').classList.toggle('selected', plan === 'lite');
@@ -273,9 +318,10 @@
       c.classList.toggle('selected', !!match);
     });
 
-    var labels   = { lite: '🎵 Lite', pro: '👑 Pro' };
-    var durLabel = months === 1 ? 'รายเดือน' : months === 12 ? 'รายปี' : months + ' เดือน';
-    document.getElementById('summaryText').textContent = (labels[selectedPlan] || selectedPlan) + ' — ' + durLabel;
+    var labels     = { lite: '🎵 Lite', pro: '👑 Pro' };
+    var scopeLabel = selectedScope === 'band' ? ' (ทั้งวง)' : ' (รายคน)';
+    var durLabel   = months === 1 ? 'รายเดือน' : months === 12 ? 'รายปี' : months + ' เดือน';
+    document.getElementById('summaryText').textContent = (labels[selectedPlan] || selectedPlan) + scopeLabel + ' — ' + durLabel;
     var amtThb = Math.round(amountSatang / 100);
     document.getElementById('summaryPrice').textContent = '฿' + amtThb.toLocaleString('th-TH');
     document.getElementById('selectedSummary').style.display = '';
@@ -315,7 +361,7 @@
     fetch(sbUrl + '/functions/v1/omise-charge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
-      body: JSON.stringify({ token: token, plan: selectedPlan, months: selectedMonths }),
+      body: JSON.stringify({ token: token, plan: selectedPlan, months: selectedMonths, scope: selectedScope }),
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {

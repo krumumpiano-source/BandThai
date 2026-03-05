@@ -31,11 +31,12 @@ Deno.serve(async (req) => {
 
     // ── 2. Parse body ───────────────────────────────────────────────────────
     const body = await req.json();
-    const { token, plan, months: rawMonths } = body;  // token = Omise token ID, plan = 'lite' | 'pro', months = 1|3|6|12
+    const { token, plan, months: rawMonths, scope: bodyScope } = body;
     const months = Number(rawMonths) || 1;
 
     if (!token || !['lite','pro'].includes(plan)) return err('Invalid token or plan');
     if (![1,3,6,12].includes(months)) return err('Invalid months value');
+    if (!['band','user'].includes(bodyScope || '')) return err('Invalid scope — must be band or user');
 
     // ── 3. ดึงราคาจาก plan_config (dynamic pricing) ─────────────────────────
     const { data: planRow } = await sb
@@ -66,11 +67,8 @@ Deno.serve(async (req) => {
 
     const bandId = profile.band_id;
 
-    // ── 5. ตัดสินใจ scope ───────────────────────────────────────────────
-    // วงยัง free → ชำระทั้งวง | วงมีแผนอยู่แล้ว → ชำระเฉพาะรายบุคคล
-    const { data: bandRow } = await sb.from('bands').select('band_plan').eq('id', bandId).single();
-    const bandCurrentPlan = bandRow?.band_plan || 'free';
-    const scope = bandCurrentPlan === 'free' ? 'band' : 'user';
+    // ── 5. ใช้ scope ที่ผู้ใช้เลือกเอง ──────────────────────────────────────
+    const scope = bodyScope as 'band' | 'user';
 
     // ── 6. สร้าง Charge ผ่าน Omise API ─────────────────────────────────────
     const omiseRes = await fetch('https://api.omise.co/charges', {
