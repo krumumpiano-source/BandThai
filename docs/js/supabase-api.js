@@ -57,12 +57,13 @@
       localStorage.setItem('bandProvince',  profile.province   || '');
       // ระดับแผน: 'free' | 'lite' | 'pro'
       localStorage.setItem('band_plan', profile.band_plan || 'free');
+      localStorage.setItem('plan_scope', profile.plan_scope || 'free');  // 'band'|'user'|'free'
     }
 
     function clearSession() {
       ['auth_token','userId','bandId','bandName','bandManager','userRole','userName',
        'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
-       'bandProvince','band_plan','ad_gate_ts'].forEach(function (k) {
+       'bandProvince','band_plan','plan_scope','ad_gate_ts'].forEach(function (k) {
         localStorage.removeItem(k);
       });
     }

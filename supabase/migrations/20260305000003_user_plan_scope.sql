@@ -1,0 +1,2 @@
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS user_plan TEXT NOT NULL DEFAULT 'free';
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'band' CHECK (scope IN ('band','user'));

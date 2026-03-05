@@ -54,7 +54,13 @@ Deno.serve(async (req) => {
 
     const bandId = profile.band_id;
 
-    // ── 4. สร้าง Charge ผ่าน Omise API ─────────────────────────────────────
+    // ── 5. ตัดสินใจ scope ───────────────────────────────────────────────
+    // วงยัง free → ชำระทั้งวง | วงมีแผนอยู่แล้ว → ชำระเฉพาะรายบุคคล
+    const { data: bandRow } = await sb.from('bands').select('band_plan').eq('id', bandId).single();
+    const bandCurrentPlan = bandRow?.band_plan || 'free';
+    const scope = bandCurrentPlan === 'free' ? 'band' : 'user';
+
+    // ── 6. สร้าง Charge ผ่าน Omise API ─────────────────────────────────────
     const omiseRes = await fetch('https://api.omise.co/charges', {
       method: 'POST',
       headers: {
@@ -81,10 +87,14 @@ Deno.serve(async (req) => {
       return err('Payment not successful: ' + charge.status);
     }
 
-    // ── 5. อัปเดต band_plan ────────────────────────────────────────────────
-    await sb.from('bands').update({ band_plan: plan }).eq('id', bandId);
+    // ── 7. อัปเดต plan ตาม scope ────────────────────────────────────────────
+    if (scope === 'band') {
+      await sb.from('bands').update({ band_plan: plan }).eq('id', bandId);
+    } else {
+      await sb.from('profiles').update({ user_plan: plan }).eq('id', user.id);
+    }
 
-    // ── 6. บันทึก subscription record ─────────────────────────────────────
+    // ── 8. บันทึก subscription record ─────────────────────────────────────
     const now     = new Date();
     const expires = new Date(now);
     expires.setMonth(expires.getMonth() + 1);
@@ -96,16 +106,19 @@ Deno.serve(async (req) => {
       amount:      amount,
       currency:    'thb',
       omise_charge_id: charge.id,
+      scope:       scope,
       status:      'active',
       started_at:  now.toISOString(),
       expires_at:  expires.toISOString(),
     });
 
+    const scopeLabel = scope === 'band' ? 'ทั้งวง' : 'รายบุคคล';
     return new Response(JSON.stringify({
       success:   true,
       plan,
+      scope,
       charge_id: charge.id,
-      message:   `อัปเกรดเป็น ${plan.toUpperCase()} สำเร็จ`,
+      message:   `อัปเกรดเป็น ${plan.toUpperCase()} (ชำระ${scopeLabel}) สำเร็จ`,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {
