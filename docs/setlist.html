@@ -155,7 +155,10 @@
               <div class="dur-bar"><div class="dur-fill" id="durationFill" style="width:0%"></div></div>
               <div class="save-row">
                 <span id="totalDuration" style="font-size:.8rem;color:var(--premium-text-muted)">0 นาที</span>
-                <button class="btn btn-primary" onclick="saveCurrentSet()">💾 บันทึกเซ็ตนี้</button>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <span id="autoSaveInd" style="font-size:.75rem;color:#22c55e;opacity:.8"></span>
+                  <button class="btn btn-primary" onclick="saveCurrentSet()">💾 บันทึก</button>
+                </div>
               </div>
             </div>
           </div>
@@ -176,6 +179,8 @@
   var adUnlocked   = 0;      // extra sets unlocked via ad this session
   var adPendingSet = null;   // set index awaiting ad completion
   var adTimer      = null;
+  var autoSaveTimer = null;   // debounce handle
+  var lastSavedHash = '';     // detect real changes
 
   var PLAN_LIMIT = { free: 0, lite: 4, pro: 8 }; // 0 = follow schedule
 
@@ -219,6 +224,14 @@
     });
 
     onDateChange();
+
+    // Auto-save on tab/window close
+    window.addEventListener('beforeunload', function() {
+      var date = getSelectedDate();
+      if (date && Object.keys(setsData).length) {
+        apiCall('saveSetlist', { date: date, sets: setsData }, function(){});
+      }
+    });
   });
 
   // ── Date change ─────────────────────────────────────────────────────────
@@ -229,6 +242,7 @@
     setsData      = {};
     todaySlots    = [];
     adUnlocked    = 0;
+    lastSavedHash = '';
 
     document.getElementById('setBuilder').style.display = 'none';
     document.getElementById('setBuilderPlaceholder').style.display = '';
@@ -262,6 +276,8 @@
 
   // ── Build UI ────────────────────────────────────────────────────────────
   function buildUI() {
+    // Mark current DB state as "already saved" so autoSave doesn't fire on load
+    lastSavedHash = JSON.stringify(setsData);
     renderSetTabs();
     renderQuota();
     renderPool();
@@ -319,6 +335,30 @@
     var txt = used + '/' + max;
     if (cap === 0 && adUnlocked > 0) txt += ' (+' + adUnlocked + ' โฆษณา)';
     document.getElementById('quotaText').textContent = txt;
+  }
+
+  // ── Auto-save (debounced 1.2s) ─────────────────────────────────────────
+  function autoSave() {
+    var date = getSelectedDate();
+    if (!date) return;
+    // Only save if data changed
+    var hash = JSON.stringify(setsData);
+    if (hash === lastSavedHash) return;
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(function() {
+      var h2 = JSON.stringify(setsData);
+      if (h2 === lastSavedHash) return;
+      apiCall('saveSetlist', { date: date, sets: setsData }, function(r) {
+        if (r && r.success) {
+          lastSavedHash = h2;
+          // แสดงสถานะ saved เบาๆ โดยไม่ขัดจังหวะ
+          var ind = document.getElementById('autoSaveInd');
+          if (ind) { ind.textContent = '✓ บันทึกอัตโนมัติ'; setTimeout(function(){ ind.textContent=''; }, 2000); }
+        } else {
+          showToast('❌ บันทึกไม่สำเร็จ: ' + ((r && r.message) || 'ลองใหม่'), 'error');
+        }
+      });
+    }, 1200);
   }
 
   // ── Select set ──────────────────────────────────────────────────────────
@@ -464,6 +504,7 @@
     renderPool();
     renderSetTabs();
     renderQuota();
+    autoSave();
   }
 
   function removeSong(idx) {
@@ -472,6 +513,7 @@
     renderSetBuilder();
     renderPool();
     renderSetTabs();
+    autoSave();
   }
 
   function clearCurrentSet() {
@@ -481,6 +523,7 @@
     renderPool();
     renderSetTabs();
     renderQuota();
+    autoSave();
   }
 
   function saveCurrentSet() {
@@ -491,8 +534,10 @@
       showToast('กรุณาเลือกเซ็ตก่อนบันทึก', 'error'); return;
     }
     apiCall('saveSetlist', { date: date, sets: setsData }, function(r) {
-      if (r && r.success) showToast('✅ บันทึกเซ็ตที่ ' + currentSetIdx + ' สำเร็จ', 'success');
-      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      if (r && r.success) {
+        lastSavedHash = JSON.stringify(setsData);
+        showToast('✅ บันทึกเซ็ตที่ ' + currentSetIdx + ' สำเร็จ', 'success');
+      } else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     });
   }
 
