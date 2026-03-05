@@ -466,14 +466,17 @@ function renderFaqBot() {
   }
   function closePanel() { panel.classList.remove('open'); }
 
-  btn.addEventListener('click', function() {
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
     panel.classList.contains('open') ? closePanel() : openPanel();
   });
   document.getElementById('faqBotClose').addEventListener('click', closePanel);
   backBtn.addEventListener('click', showCategories);
 
-  // Close on outside click
+  // Close on outside click — stopPropagation inside panel prevents
+  // removed-DOM-node from falsely triggering close
+  panel.addEventListener('click', function(e) { e.stopPropagation(); });
   document.addEventListener('click', function(e) {
-    if (!panel.contains(e.target) && e.target !== btn) closePanel();
+    if (panel.classList.contains('open')) closePanel();
   });
 }
