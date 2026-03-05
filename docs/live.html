@@ -208,6 +208,19 @@
     #clipModal .modal-sheet{padding-bottom:40px}
     #clipContent{background:var(--bg3);border:1px solid #444;border-radius:var(--radius-sm);padding:12px;font-size:.8rem;color:var(--text2);font-family:monospace;white-space:pre-wrap;max-height:38vh;overflow-y:auto;margin-top:8px;line-height:1.8}
 
+    /* ─── REQUEST SONGS → LIBRARY ─── */
+    #reqToLibrarySection{margin-top:14px;display:none}
+    #reqToLibrarySection h4{font-size:.9rem;font-weight:700;color:var(--gold);margin-bottom:8px}
+    .req-lib-list{display:flex;flex-direction:column;gap:6px;max-height:28vh;overflow-y:auto}
+    .req-lib-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid #444;border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:border-color .15s}
+    .req-lib-item.checked{border-color:var(--gold);background:rgba(212,168,67,.08)}
+    .req-lib-item input[type=checkbox]{accent-color:var(--gold);width:18px;height:18px;flex-shrink:0;cursor:pointer}
+    .req-lib-item .rli-info{flex:1;min-width:0}
+    .req-lib-item .rli-name{font-size:.92rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .req-lib-item .rli-meta{font-size:.75rem;color:var(--text2)}
+    #reqSelectAll{font-size:.78rem;color:var(--text2);cursor:pointer;text-decoration:underline;margin-bottom:6px;display:inline-block}
+    #saveToLibBtn{margin-top:10px}
+
     /* ─── EXIT BUTTON ─── */
     #exitLiveBtn{background:none;border:1px solid #333;color:#555;cursor:pointer;border-radius:8px;padding:5px 9px;font-size:.75rem;font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
     #exitLiveBtn:active{color:var(--red);border-color:var(--red)}
@@ -332,6 +345,15 @@
     <h3>📋 รายการเพลงในเบรคนี้</h3>
     <p style="font-size:.8rem;color:var(--text2);margin-bottom:4px">สามารถคัดลอกรายการนี้ได้</p>
     <div id="clipContent"></div>
+
+    <!-- Request Songs → Library (admin/manager only) -->
+    <div id="reqToLibrarySection">
+      <h4>🎵 เพลงขอ → เพิ่มลงคลังเพลง</h4>
+      <span id="reqSelectAll" onclick="toggleSelectAllReq()">เลือกทั้งหมด</span>
+      <div class="req-lib-list" id="reqLibList"></div>
+      <button class="modal-btn primary" id="saveToLibBtn" onclick="saveRequestsToLibrary()">📥 เพิ่มลงคลังเพลง</button>
+    </div>
+
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn secondary" onclick="closeClipAndExit()">ปิด & ออก</button>
       <button class="modal-btn primary" onclick="copyClip()">📋 คัดลอก</button>
@@ -1525,7 +1547,95 @@ function _showClipModal() {
   var header = ['📋 รายการเพลง' + (_venue ? ' — ' + _venue : '') + (_timeSlot ? ' ' + _timeSlot : ''),
                 'วันที่: ' + (_date || '—'), ''].join('\n');
   document.getElementById('clipContent').textContent = header + lines.join('\n');
+
+  // Show request songs → library section (admin/manager only)
+  var role = localStorage.getItem('userRole') || 'member';
+  var isAdmin = (role === 'admin' || role === 'manager');
+  var reqSongs = _playlist.filter(function(s) { return s._isRequest && !s._skipped; });
+  var section = document.getElementById('reqToLibrarySection');
+
+  if (isAdmin && reqSongs.length > 0) {
+    // Check which ones are already in library
+    var libNames = {};
+    _allSongs.forEach(function(s) { libNames[(s.name || '').trim().toLowerCase()] = true; });
+
+    var listEl = document.getElementById('reqLibList');
+    listEl.innerHTML = '';
+    var hasNew = false;
+    reqSongs.forEach(function(s, i) {
+      var nameKey = (s.name || '').trim().toLowerCase();
+      var alreadyInLib = libNames[nameKey];
+      var item = document.createElement('label');
+      item.className = 'req-lib-item' + (alreadyInLib ? '' : ' checked');
+      item.innerHTML =
+        '<input type="checkbox" data-req-idx="' + i + '"' + (alreadyInLib ? '' : ' checked') + (alreadyInLib ? ' disabled' : '') + '>' +
+        '<div class="rli-info">' +
+          '<div class="rli-name">' + escHtml(s.name) + '</div>' +
+          '<div class="rli-meta">' +
+            (s._key || s.key ? 'คีย์ ' + (s._key || s.key) : '') +
+            (s.bpm ? ' · ' + s.bpm + ' BPM' : '') +
+            (s.artist ? ' · ' + s.artist : '') +
+            (alreadyInLib ? ' · <span style="color:var(--green)">มีในคลังแล้ว ✓</span>' : '') +
+          '</div>' +
+        '</div>';
+      var cb = item.querySelector('input');
+      cb.addEventListener('change', function() {
+        item.classList.toggle('checked', this.checked);
+      });
+      listEl.appendChild(item);
+      if (!alreadyInLib) hasNew = true;
+    });
+    section.style.display = 'block';
+    document.getElementById('saveToLibBtn').style.display = hasNew ? 'block' : 'none';
+  } else {
+    section.style.display = 'none';
+  }
+
   document.getElementById('clipModal').classList.add('show');
+}
+
+function toggleSelectAllReq() {
+  var cbs = document.querySelectorAll('#reqLibList input[type=checkbox]:not(:disabled)');
+  var allChecked = true;
+  cbs.forEach(function(cb) { if (!cb.checked) allChecked = false; });
+  cbs.forEach(function(cb) {
+    cb.checked = !allChecked;
+    cb.closest('.req-lib-item').classList.toggle('checked', cb.checked);
+  });
+}
+
+function saveRequestsToLibrary() {
+  var reqSongs = _playlist.filter(function(s) { return s._isRequest && !s._skipped; });
+  var cbs = document.querySelectorAll('#reqLibList input[type=checkbox]:checked:not(:disabled)');
+  var toSave = [];
+  cbs.forEach(function(cb) {
+    var idx = parseInt(cb.getAttribute('data-req-idx'), 10);
+    var s = reqSongs[idx];
+    if (s) toSave.push({ name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0, singer: s.singer || '', artist: s.artist || '' });
+  });
+  if (!toSave.length) { showToast('ไม่ได้เลือกเพลง'); return; }
+
+  var btn = document.getElementById('saveToLibBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
+
+  apiCall('bulkAddSongsToLibrary', { songs: toSave }, function(r) {
+    if (btn) { btn.disabled = false; btn.textContent = '📥 เพิ่มลงคลังเพลง'; }
+    if (r && r.success) {
+      showToast('✅ เพิ่ม ' + (r.added || toSave.length) + ' เพลงลงคลังแล้ว!');
+      // Mark saved items
+      cbs.forEach(function(cb) {
+        cb.checked = false;
+        cb.disabled = true;
+        var item = cb.closest('.req-lib-item');
+        item.classList.remove('checked');
+        var meta = item.querySelector('.rli-meta');
+        if (meta) meta.innerHTML += ' · <span style="color:var(--green)">เพิ่มแล้ว ✓</span>';
+      });
+      btn.style.display = 'none';
+    } else {
+      showToast('⚠️ บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง');
+    }
+  });
 }
 
 function copyClip() {
@@ -1910,7 +2020,7 @@ function openCtx(idx) {
   }
   btns.push({ icon: '📝', label: 'เพิ่มโน้ต', fn: 'ctxAction("note")' });
   btns.push({ icon: '🔁', label: 'Encore', fn: 'ctxAction("encore")' });
-  btns.push({ icon: '🗑', label: 'ลบ', fn: 'ctxAction("remove")' });
+  btns.push({ icon: '', label: 'ลบ', fn: 'ctxAction("remove")' });
 
   grid.innerHTML = btns.map(function(b) {
     return '<button class="ctx-btn" onclick="' + b.fn + '"><span class="ctx-icon">' + b.icon + '</span>' + b.label + '</button>';
