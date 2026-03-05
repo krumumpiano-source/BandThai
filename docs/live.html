@@ -97,12 +97,39 @@
     .song-item.swipe-left{background:rgba(239,68,68,0.12)!important}
     .song-item.swipe-right{background:rgba(16,185,129,0.12)!important}
 
+    /* ─── NEXT SONG PREVIEW ─── */
+    #nextPreview{display:flex;align-items:center;gap:8px;margin-top:10px;padding:7px 14px;background:rgba(134,239,172,0.08);border:1px solid rgba(134,239,172,0.18);border-radius:10px;font-size:.82rem;color:#86efac;max-width:95%;text-align:left}
+    #nextPreview .np-label{font-size:.68rem;font-weight:700;color:#4ade80;letter-spacing:.06em;white-space:nowrap}
+    #nextPreview .np-name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #nextPreview .np-key{font-size:.78rem;color:var(--gold);background:rgba(212,168,67,.12);padding:1px 7px;border-radius:5px;white-space:nowrap}
+    #nextPreview.hidden{display:none}
+
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:8px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));background:linear-gradient(transparent,var(--bg2) 40%);pointer-events:none}
-    #actionBar button{pointer-events:auto;flex:1;border:none;border-radius:10px;padding:12px 8px;font-family:inherit;font-size:0.92rem;font-weight:700;cursor:pointer;transition:transform .1s,opacity .15s}
+    #actionBar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:10px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));background:linear-gradient(transparent,var(--bg2) 40%);pointer-events:none}
+    #actionBar button{pointer-events:auto;border:none;border-radius:12px;font-family:inherit;font-weight:700;cursor:pointer;transition:transform .1s,opacity .15s}
     #actionBar button:active{transform:scale(.96)}
-    #endSongBtn{background:var(--gold);color:#000}
-    #requestBtn{background:var(--bg3);border:1px solid #444;color:var(--text)}
+    #endSongBtn{flex:2.5;background:var(--gold);color:#000;padding:16px 8px;font-size:1.1rem;min-height:54px}
+    #requestBtn{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);padding:12px 8px;font-size:.85rem}
+
+    /* ─── CONTEXT MENU ─── */
+    #ctxMenu{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end}
+    #ctxMenu.show{display:flex}
+    #ctxMenu .ctx-sheet{width:100%;background:var(--bg2);border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:16px 12px calc(16px + env(safe-area-inset-bottom,0))}
+    #ctxMenu .ctx-title{font-size:.95rem;font-weight:700;color:var(--gold);margin-bottom:12px;padding:0 4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    #ctxMenu .ctx-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .ctx-btn{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid #333;color:var(--text);border-radius:10px;padding:14px 12px;font-family:inherit;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .12s}
+    .ctx-btn:active{background:var(--bg4)}
+    .ctx-btn .ctx-icon{font-size:1.15rem;width:24px;text-align:center;flex-shrink:0}
+    .ctx-cancel{grid-column:1/-1;background:none;border:1px solid #444;color:var(--text2);justify-content:center;margin-top:4px}
+
+    /* ─── GESTURE HINTS OVERLAY ─── */
+    #gestureHints{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px;text-align:center;backdrop-filter:blur(4px)}
+    #gestureHints.hidden{display:none}
+    .hint-item{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border-radius:12px;padding:14px 18px;width:100%;max-width:340px}
+    .hint-icon{font-size:1.6rem;width:40px;flex-shrink:0;text-align:center}
+    .hint-text{text-align:left;font-size:.88rem;color:var(--text);line-height:1.4}
+    .hint-text strong{color:var(--gold)}
+    #gestureHints .hint-dismiss{background:var(--gold);color:#000;border:none;border-radius:10px;padding:14px 40px;font-size:1rem;font-weight:700;font-family:inherit;cursor:pointer;margin-top:8px}
 
     /* ─── LOADING / EMPTY ─── */
     #loadingState,#emptyState{display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;gap:12px;color:var(--text2)}
@@ -224,6 +251,11 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
+    <div id="nextPreview" class="hidden">
+      <span class="np-label">NEXT ▸</span>
+      <span class="np-name" id="nextName">—</span>
+      <span class="np-key" id="nextKey"></span>
+    </div>
   </div>
 
   <!-- ── SONG LIST ── -->
@@ -241,6 +273,24 @@
 <div id="actionBar">
   <button id="endSongBtn" onclick="endSong()">⏭ จบเพลง</button>
   <button id="requestBtn" onclick="openRequest()">➕ เพลงขอ</button>
+</div>
+
+<!-- ── CONTEXT MENU ── -->
+<div id="ctxMenu" onclick="if(event.target===this)closeCtx()">
+  <div class="ctx-sheet">
+    <div class="ctx-title" id="ctxTitle">เพลง</div>
+    <div class="ctx-grid" id="ctxGrid"></div>
+  </div>
+</div>
+
+<!-- ── GESTURE HINTS ── -->
+<div id="gestureHints" class="hidden">
+  <div style="font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:4px">🎤 วิธีใช้ Live Mode</div>
+  <div class="hint-item"><div class="hint-icon">⏭</div><div class="hint-text"><strong>จบเพลง</strong> — กดปุ่มใหญ่ด้านล่าง</div></div>
+  <div class="hint-item"><div class="hint-icon">👆</div><div class="hint-text"><strong>กดค้างเพลง</strong> — เมนูลัด (เล่นตอนนี้ / ถัดไป / skip / โน้ต)</div></div>
+  <div class="hint-item"><div class="hint-icon">👈</div><div class="hint-text"><strong>ปัดซ้าย</strong> — skip เพลง</div></div>
+  <div class="hint-item"><div class="hint-icon">🎵</div><div class="hint-text"><strong>แตะคีย์</strong> — transpose ขึ้น/ลง</div></div>
+  <button class="hint-dismiss" onclick="dismissHints()">เข้าใจแล้ว ✓</button>
 </div>
 
 <!-- ── TOAST ── -->
@@ -378,6 +428,7 @@ var _allSongs  = [];   // preloaded band song library for autocomplete
 var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
+var _ctxIdx = -1; // context menu target song index
 
 // ── Drag-reorder state ────────────────────────────────────────────
 var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
@@ -442,6 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadPlaylist();
         preGenerateToken();
         setupBreakWarning();
+        showHintsIfFirstTime();
       } else {
         // guest จริง — read-only
         loadPlaylist();
@@ -453,6 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPlaylist();
     preGenerateToken();
     setupBreakWarning();
+    showHintsIfFirstTime();
   }
 
   // global drag events
@@ -551,6 +604,24 @@ function renderNowPlaying() {
   document.getElementById('songCounter').textContent =
     (visIdx + 1) + ' / ' + visible.length;
   startBeatDot(s.bpm);
+  // ── Next song preview ──
+  renderNextPreview();
+}
+
+function renderNextPreview() {
+  var preview = document.getElementById('nextPreview');
+  if (!preview) return;
+  var next = -1;
+  for (var j = _current + 1; j < _playlist.length; j++) {
+    if (!_playlist[j]._skipped) { next = j; break; }
+  }
+  if (next < 0) { preview.classList.add('hidden'); return; }
+  var ns = _playlist[next];
+  document.getElementById('nextName').textContent = ns.name;
+  var nk = document.getElementById('nextKey');
+  nk.textContent = ns._key || ns.key || '';
+  nk.style.display = (ns._key || ns.key) ? '' : 'none';
+  preview.classList.remove('hidden');
 }
 
 function renderSongList() {
@@ -615,17 +686,8 @@ function renderSongList() {
         _dragTimer = setTimeout(function() {
           _dragTimer = null;
           _didDrag = true;
-          _drag.active  = true;
-          _drag.fromIdx = idx;
-          _drag.toIdx   = idx;
           haptic(40);
-          item.classList.add('drag-source');
-          var ghost = document.getElementById('dragGhost');
-          ghost.textContent = _playlist[idx] ? _playlist[idx].name : '';
-          ghost.style.display = 'block';
-          ghost.style.left = (_sx - 80) + 'px';
-          ghost.style.top  = (_sy + 14) + 'px';
-          _drag.ghostEl = ghost;
+          openCtx(idx);
         }, 450);
       }
     }, { passive: true });
@@ -675,7 +737,8 @@ function renderSongList() {
       _lastTapIdx = idx;
       _tapTimer = setTimeout(function() {
         _tapTimer = null; _lastTapIdx = -1;
-        // single tap — no action
+        // single tap → open context menu (members only)
+        if (!_isGuest) openCtx(idx);
       }, 260);
     });
   });
@@ -1526,6 +1589,85 @@ function closeQR() {
 // ─────────────────────────────────────────────────────────────────
 //  TOAST
 // ─────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+//  CONTEXT MENU (long-press / single-tap on song)
+// ─────────────────────────────────────────────────────────────────
+function openCtx(idx) {
+  if (_isGuest) return;
+  _ctxIdx = idx;
+  var s = _playlist[idx];
+  if (!s) return;
+  document.getElementById('ctxTitle').textContent = '🎵 ' + s.name;
+  var grid = document.getElementById('ctxGrid');
+  var btns = [];
+
+  if (idx !== _current) {
+    btns.push({ icon: '▶', label: 'เล่นตอนนี้', fn: 'ctxAction("play")' });
+    btns.push({ icon: '⏭', label: 'ตั้งเป็นถัดไป', fn: 'ctxAction("next")' });
+  }
+  if (!s._skipped) {
+    btns.push({ icon: '⏩', label: 'Skip', fn: 'ctxAction("skip")' });
+  } else {
+    btns.push({ icon: '↩', label: 'ยกเลิก Skip', fn: 'ctxAction("unskip")' });
+  }
+  btns.push({ icon: '📝', label: 'เพิ่มโน้ต', fn: 'ctxAction("note")' });
+  btns.push({ icon: '🔁', label: 'Encore', fn: 'ctxAction("encore")' });
+  btns.push({ icon: '🗑', label: 'ลบ', fn: 'ctxAction("remove")' });
+
+  grid.innerHTML = btns.map(function(b) {
+    return '<button class="ctx-btn" onclick="' + b.fn + '"><span class="ctx-icon">' + b.icon + '</span>' + b.label + '</button>';
+  }).join('') + '<button class="ctx-btn ctx-cancel" onclick="closeCtx()">ปิด</button>';
+
+  document.getElementById('ctxMenu').classList.add('show');
+}
+
+function closeCtx() {
+  document.getElementById('ctxMenu').classList.remove('show');
+  _ctxIdx = -1;
+}
+
+function ctxAction(action) {
+  var idx = _ctxIdx;
+  closeCtx();
+  if (idx < 0 || idx >= _playlist.length) return;
+  switch(action) {
+    case 'play':   playNow(idx);      break;
+    case 'next':   setAsNext(idx);    break;
+    case 'skip':   skipSong(idx);     break;
+    case 'unskip': _playlist[idx]._skipped = false; _modified = true; broadcastEvent('unskip_song', { idx: idx }); renderSongList(); break;
+    case 'note':   openNote(idx);     break;
+    case 'encore': addEncore(idx);    break;
+    case 'remove': removeSongDirect(idx); break;
+  }
+}
+
+function removeSongDirect(idx) {
+  if (_isGuest) return;
+  var name = _playlist[idx] ? _playlist[idx].name : '';
+  if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
+  _playlist.splice(idx, 1);
+  if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
+  renderNowPlaying();
+  renderSongList();
+  broadcastEvent('remove', { idx: idx });
+  showToast('ลบ "' + name + '" แล้ว');
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  GESTURE HINTS (first visit only)
+// ─────────────────────────────────────────────────────────────────
+function showHintsIfFirstTime() {
+  if (localStorage.getItem('liveHintsSeen') === '1') return;
+  var el = document.getElementById('gestureHints');
+  if (el) el.classList.remove('hidden');
+}
+
+function dismissHints() {
+  localStorage.setItem('liveHintsSeen', '1');
+  var el = document.getElementById('gestureHints');
+  if (el) el.classList.add('hidden');
+}
+
 var _toastTimer = null;
 function showToast(msg) {
   var el = document.getElementById('toast');
