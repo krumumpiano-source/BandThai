@@ -31,9 +31,11 @@ Deno.serve(async (req) => {
 
     // ── 2. Parse body ───────────────────────────────────────────────────────
     const body = await req.json();
-    const { token, plan } = body;  // token = Omise token ID, plan = 'lite' | 'pro'
+    const { token, plan, months: rawMonths } = body;  // token = Omise token ID, plan = 'lite' | 'pro', months = 1|3|6|12
+    const months = Number(rawMonths) || 1;
 
     if (!token || !['lite','pro'].includes(plan)) return err('Invalid token or plan');
+    if (![1,3,6,12].includes(months)) return err('Invalid months value');
 
     // ── 3. ดึงราคาจาก plan_config (dynamic pricing) ─────────────────────────
     const { data: planRow } = await sb
@@ -42,7 +44,17 @@ Deno.serve(async (req) => {
       .eq('id', plan)
       .single();
     if (!planRow || !planRow.active) return err('Plan not available');
-    const amount = planRow.price;
+
+    // ดึง discount จาก plan_durations ตาม months
+    const { data: durRow } = await sb
+      .from('plan_durations')
+      .select('discount_percent, active')
+      .eq('plan_id', plan)
+      .eq('months', months)
+      .single();
+    const discount = (durRow && durRow.active) ? (durRow.discount_percent || 0) : 0;
+    // คำนวณราคารวม: base * months * (1 - discount/100), ปัดเป็นจำนวนเต็ม satang
+    const amount = Math.round(planRow.price * months * (1 - discount / 100));
 
     // ── 4. ดึง band_id จาก profile ─────────────────────────────────────────
     const { data: profile } = await sb
@@ -71,8 +83,8 @@ Deno.serve(async (req) => {
         amount:      amount,
         currency:    'thb',
         card:        token,
-        description: `BandFlow ${plan.toUpperCase()} Plan - Band ${bandId}`,
-        metadata: { band_id: bandId, plan, user_id: user.id },
+        description: `BandFlow ${plan.toUpperCase()} Plan x${months}mo${discount>0?' (-'+discount+'%)':''} - Band ${bandId}`,
+        metadata: { band_id: bandId, plan, months, discount_percent: discount, user_id: user.id },
       }),
     });
 
@@ -97,7 +109,7 @@ Deno.serve(async (req) => {
     // ── 8. บันทึก subscription record ─────────────────────────────────────
     const now     = new Date();
     const expires = new Date(now);
-    expires.setMonth(expires.getMonth() + 1);
+    expires.setMonth(expires.getMonth() + months);
 
     await sb.from('subscriptions').insert({
       band_id:     bandId,
@@ -113,12 +125,16 @@ Deno.serve(async (req) => {
     });
 
     const scopeLabel = scope === 'band' ? 'ทั้งวง' : 'รายบุคคล';
+    const durLabel   = durRow?.label || (months + ' เดือน');
     return new Response(JSON.stringify({
-      success:   true,
+      success:          true,
       plan,
       scope,
-      charge_id: charge.id,
-      message:   `อัปเกรดเป็น ${plan.toUpperCase()} (ชำระ${scopeLabel}) สำเร็จ`,
+      charge_id:        charge.id,
+      months,
+      discount_percent: discount,
+      amount_thb:       Math.round(amount / 100),
+      message:   `อัปเกรดเป็น ${plan.toUpperCase()} ${durLabel} (ชำระ${scopeLabel}) สำเร็จ`,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (e) {

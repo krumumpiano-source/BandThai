@@ -54,6 +54,28 @@
     #payBtn { width: 100%; margin-top: 1rem; font-size: 1rem; padding: 14px; }
     #payBtn:disabled { opacity: .5; cursor: not-allowed; }
     .secure-note { text-align: center; color: var(--text-secondary); font-size: .75rem; margin-top: .5rem; }
+    /* Duration picker */
+    .duration-picker { margin: 0 0 1rem; }
+    .duration-picker h3 { font-size: .95rem; font-weight: 700; margin-bottom: .6rem; }
+    .duration-grid { display: grid; grid-template-columns: repeat(4,1fr); gap:.6rem; }
+    @media(max-width:560px){ .duration-grid { grid-template-columns:1fr 1fr; } }
+    .dur-card {
+      background: var(--bg-card); border: 2px solid var(--border-color);
+      border-radius: 12px; padding: .85rem .5rem; cursor: pointer;
+      text-align: center; transition: border-color .2s, transform .15s; position: relative;
+    }
+    .dur-card:hover { border-color: var(--gold,#fbbf24); transform: translateY(-2px); }
+    .dur-card.selected { border-color: var(--gold,#fbbf24); background: rgba(251,191,36,.07); }
+    .dur-card .dur-badge {
+      position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+      background: #22c55e; color: #fff; font-size: .58rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+    }
+    .dur-months { font-size: .82rem; font-weight: 700; margin-bottom: 3px; }
+    .dur-price-orig { font-size: .68rem; color: var(--text-secondary); text-decoration: line-through; height: .9rem; }
+    .dur-price-final { font-size: 1.15rem; font-weight: 700; color: var(--gold,#fbbf24); }
+    .dur-price-monthly { font-size: .65rem; color: var(--text-secondary); }
+    .dur-save { font-size: .63rem; color: #22c55e; font-weight: 600; height: .85rem; }
   </style>
 </head>
 <body>
@@ -97,6 +119,12 @@
     </div>
   </div>
 
+  <!-- Duration Picker (shows after plan selected) -->
+  <div id="durationSection" style="display:none" class="duration-picker">
+    <h3>⏱️ เลือกระยะเวลา</h3>
+    <div class="duration-grid" id="durationGrid"></div>
+  </div>
+
   <!-- Selected Plan Summary -->
   <div id="selectedSummary" style="display:none;background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:1rem;margin-bottom:1rem">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -131,7 +159,6 @@
     var names = { free: 'Free', lite: 'Lite', pro: 'Pro' };
     document.getElementById('currentPlanBadge').textContent =
       'แพ็กเกจปัจจุบัน: ' + (names[plan] || plan) + (scope === 'band' ? ' (วง)' : scope === 'user' ? ' (รายคน)' : '');
-    // แสดง notice scope
     var noticeEl = document.getElementById('scopeNotice');
     if (noticeEl) {
       if (plan === 'free') {
@@ -148,18 +175,22 @@
     }
   });
 
-  // ── Plan Selection ────────────────────────────────────────────────────────
-  var selectedPlan = null;
-  var prices = { lite: 99, pro: 199 };
+  // ── State ─────────────────────────────────────────────────────────────────
+  var selectedPlan   = null;
+  var selectedMonths = 1;
+  var selectedAmount = 0;        // satang
+  var basePrices     = { lite: 9900, pro: 19900 };  // satang/month
+  var allDurations   = {};       // { lite: [...], pro: [...] }
 
-  // โหลดราคาไดนามิกจาก plan_config
+  // ── โหลดราคา + durations จาก DB ─────────────────────────────────────────
   function loadDynamicPrices() {
     var sb = window._sb;
     if (!sb) { setTimeout(loadDynamicPrices, 300); return; }
+
     sb.from('plan_config').select('id, price, features, active').then(function(res) {
       if (!res.data) return;
       res.data.forEach(function(p) {
-        prices[p.id] = Math.round(p.price / 100);
+        basePrices[p.id] = p.price;
         var priceEl = document.getElementById('price_display_' + p.id);
         if (priceEl) priceEl.innerHTML = '฿' + Math.round(p.price / 100) + '<span>/เดือน</span>';
         var featsEl = document.getElementById('feats_' + p.id);
@@ -172,51 +203,105 @@
         }
       });
     });
+
+    sb.from('plan_durations').select('plan_id, months, discount_percent, label, active')
+      .eq('active', true).order('months').then(function(res) {
+      if (!res.data) return;
+      res.data.forEach(function(d) {
+        if (!allDurations[d.plan_id]) allDurations[d.plan_id] = [];
+        allDurations[d.plan_id].push(d);
+      });
+      if (selectedPlan) renderDurationGrid(selectedPlan);
+    });
   }
   setTimeout(loadDynamicPrices, 500);
 
+  // ── Plan Selection ────────────────────────────────────────────────────────
   window.selectPlan = function (plan) {
     selectedPlan = plan;
+    selectedMonths = 1;
     document.getElementById('cardLite').classList.toggle('selected', plan === 'lite');
     document.getElementById('cardPro').classList.toggle('selected', plan === 'pro');
+    document.getElementById('durationSection').style.display = '';
+    renderDurationGrid(plan);
+  };
 
-    var labels = { lite: 'Lite Plan', pro: 'Pro Plan' };
-    document.getElementById('summaryText').textContent = labels[plan];
-    document.getElementById('summaryPrice').textContent = '฿' + prices[plan] + '/เดือน';
+  function renderDurationGrid(plan) {
+    var grid      = document.getElementById('durationGrid');
+    var durs      = allDurations[plan];
+    var basePrice = basePrices[plan] || 9900;
+
+    if (!durs || !durs.length) {
+      durs = [{ plan_id: plan, months: 1, discount_percent: 0, label: 'รายเดือน', active: true }];
+    }
+
+    grid.innerHTML = durs.map(function(d) {
+      var orig     = basePrice * d.months;
+      var disc     = d.discount_percent || 0;
+      var total    = Math.round(orig * (1 - disc / 100));
+      var saved    = orig - total;
+      var perMonth = Math.round(total / d.months);
+      var isBest   = d.months === 12;
+      var label    = d.months === 12 ? '12 เดือน (รายปี)' : d.months === 1 ? 'รายเดือน' : d.months + ' เดือน';
+
+      return '<div class="dur-card" onclick="selectDuration(' + d.months + ',' + total + ')">'
+        + (isBest ? '<div class="dur-badge">🔥 ประหยัดสุด</div>' : disc > 0 ? '<div class="dur-badge">-' + disc + '%</div>' : '')
+        + '<div class="dur-months">' + label + '</div>'
+        + '<div class="dur-price-orig">' + (disc > 0 ? '฿' + Math.round(orig / 100) : '') + '</div>'
+        + '<div class="dur-price-final">฿' + Math.round(total / 100) + '</div>'
+        + '<div class="dur-price-monthly">' + (d.months > 1 ? '≈ ฿' + Math.round(perMonth / 100) + '/เดือน' : '&nbsp;') + '</div>'
+        + '<div class="dur-save">' + (saved > 0 ? 'ประหยัด ฿' + Math.round(saved / 100) : '') + '</div>'
+        + '</div>';
+    }).join('');
+
+    // auto-select first
+    if (durs.length) {
+      var f     = durs[0];
+      var orig  = basePrice * f.months;
+      var disc  = f.discount_percent || 0;
+      var total = Math.round(orig * (1 - disc / 100));
+      selectDuration(f.months, total);
+    }
+  }
+
+  window.selectDuration = function (months, amountSatang) {
+    selectedMonths = months;
+    selectedAmount = amountSatang;
+
+    document.querySelectorAll('.dur-card').forEach(function(c) {
+      var match = c.getAttribute('onclick') && c.getAttribute('onclick').indexOf('selectDuration(' + months + ',') !== -1;
+      c.classList.toggle('selected', !!match);
+    });
+
+    var labels   = { lite: '🎵 Lite', pro: '👑 Pro' };
+    var durLabel = months === 1 ? 'รายเดือน' : months === 12 ? 'รายปี' : months + ' เดือน';
+    document.getElementById('summaryText').textContent = (labels[selectedPlan] || selectedPlan) + ' — ' + durLabel;
+    var amtThb = Math.round(amountSatang / 100);
+    document.getElementById('summaryPrice').textContent = '฿' + amtThb.toLocaleString('th-TH');
     document.getElementById('selectedSummary').style.display = '';
-    document.getElementById('payBtn').disabled = false;
-    document.getElementById('payBtn').textContent = '💳 ชำระ ฿' + prices[plan];
+    var btn = document.getElementById('payBtn');
+    btn.disabled = false;
+    btn.textContent = '💳 ชำระ ฿' + amtThb.toLocaleString('th-TH');
   };
 
   // ── Payment ───────────────────────────────────────────────────────────────
-  var cfg = window._AD_CONFIG || {};
   var omisePKey = (window._SB_CONFIG && window._SB_CONFIG.omisePKey) || '';
 
   window.startPayment = function () {
-    if (!selectedPlan) return;
+    if (!selectedPlan || !selectedAmount) return;
     var btn = document.getElementById('payBtn');
     btn.disabled = true;
     btn.textContent = '⏳ กำลังโหลด...';
 
-    // โหลด Omise config
-    OmiseCard.configure({
-      publicKey: omisePKey,
-      image: '',
-      locale: 'th',
-      currency: 'THB',
-      frameLabel: 'BandFlow',
-    });
-
+    OmiseCard.configure({ publicKey: omisePKey, locale: 'th', currency: 'THB', frameLabel: 'BandFlow' });
     OmiseCard.open({
-      amount: prices[selectedPlan] * 100,
+      amount: selectedAmount,
       currency: 'THB',
       defaultPaymentMethod: 'credit_card',
-      onCreateTokenSuccess: function (token) {
-        processPayment(token);
-      },
+      onCreateTokenSuccess: function (token) { processPayment(token); },
       onFormClosed: function () {
         btn.disabled = false;
-        btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+        btn.textContent = '💳 ชำระ ฿' + Math.round(selectedAmount / 100).toLocaleString('th-TH');
       },
     });
   };
@@ -224,39 +309,33 @@
   function processPayment(token) {
     var btn = document.getElementById('payBtn');
     btn.textContent = '⏳ กำลังประมวลผล...';
-
-    var sbUrl  = (window._SB_CONFIG && window._SB_CONFIG.url) || '';
+    var sbUrl     = (window._SB_CONFIG && window._SB_CONFIG.url) || '';
     var authToken = localStorage.getItem('auth_token') || '';
 
     fetch(sbUrl + '/functions/v1/omise-charge', {
       method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': 'Bearer ' + authToken,
-      },
-      body: JSON.stringify({ token: token, plan: selectedPlan }),
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + authToken },
+      body: JSON.stringify({ token: token, plan: selectedPlan, months: selectedMonths }),
     })
     .then(function (r) { return r.json(); })
     .then(function (data) {
       if (data.success) {
         localStorage.setItem('band_plan', data.plan);
         localStorage.setItem('plan_scope', data.scope || (data.plan !== 'free' ? 'user' : 'free'));
-        localStorage.removeItem('ad_gate_ts'); // reset timer
+        localStorage.removeItem('ad_gate_ts');
         var scopeMsg = data.scope === 'band' ? ' (อัปเกรดทั้งวง)' : ' (อัปเกรดเฉพาะคุณ)';
         showStatus('✅ ' + data.message + scopeMsg + ' กำลังพาไปยัง Dashboard...', 'success');
-        setTimeout(function () {
-          window.location.replace('dashboard.html');
-        }, 2000);
+        setTimeout(function () { window.location.replace('dashboard.html'); }, 2000);
       } else {
         showStatus('❌ ' + data.message, 'error');
         btn.disabled = false;
-        btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+        btn.textContent = '💳 ชำระ ฿' + Math.round(selectedAmount / 100).toLocaleString('th-TH');
       }
     })
     .catch(function (e) {
       showStatus('❌ เกิดข้อผิดพลาด: ' + e.message, 'error');
       btn.disabled = false;
-      btn.textContent = '💳 ชำระ ฿' + prices[selectedPlan];
+      btn.textContent = '💳 ชำระ ฿' + Math.round(selectedAmount / 100).toLocaleString('th-TH');
     });
   }
 
@@ -264,17 +343,14 @@
     var el = document.getElementById('statusMsg');
     el.textContent = msg;
     el.style.display = '';
-    el.style.background = type === 'success'
-      ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)';
-    el.style.border = type === 'success'
-      ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(239,68,68,.4)';
-    el.style.color = type === 'success' ? '#22c55e' : '#ef4444';
+    el.style.background = type === 'success' ? 'rgba(34,197,94,.15)' : 'rgba(239,68,68,.15)';
+    el.style.border     = type === 'success' ? '1px solid rgba(34,197,94,.4)' : '1px solid rgba(239,68,68,.4)';
+    el.style.color      = type === 'success' ? '#22c55e' : '#ef4444';
   }
   window.showStatus = showStatus;
 
-  // ── init nav + auth ──────────────────────────────────
-  if (typeof requireAuth === 'function') requireAuth();
-  if (typeof renderMainNav === 'function') renderMainNav('mainNav');
+  if (typeof requireAuth       === 'function') requireAuth();
+  if (typeof renderMainNav     === 'function') renderMainNav('mainNav');
   if (typeof applyTranslations === 'function') applyTranslations();
 })();
 </script>

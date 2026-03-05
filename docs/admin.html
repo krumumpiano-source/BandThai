@@ -391,33 +391,118 @@
   }
 
   // ── Pricing Panel ─────────────────────────────────────────────────────────
+  var ALL_PAGES = [
+    { key:'dashboard',         label:'🏠 Dashboard' },
+    { key:'songs',             label:'🎵 เพลง' },
+    { key:'song-insights',     label:'📊 วิเคราะห์เพลง' },
+    { key:'setlist',           label:'📋 Setlist' },
+    { key:'schedule',          label:'📅 ตารางงาน' },
+    { key:'check-in',          label:'✅ เช็คอิน' },
+    { key:'attendance-payroll',label:'💵 เงินเดือน/เข้างาน' },
+    { key:'job-calculator',    label:'🧮 คิดเงินงาน' },
+    { key:'job-history',       label:'📜 ประวัติงาน' },
+    { key:'quotation',         label:'📝 ใบเสนอราคา' },
+    { key:'contract',          label:'📄 สัญญา' },
+    { key:'clients',           label:'🤝 ลูกค้า' },
+    { key:'external-payout',   label:'💸 จ่ายเงินภายนอก' },
+    { key:'statistics',        label:'📈 สถิติ' },
+    { key:'equipment',         label:'🎸 อุปกรณ์' },
+    { key:'band-fund',         label:'💰 กองทุนวง' },
+    { key:'band-info',         label:'🎼 ข้อมูลวง' },
+    { key:'band-settings',     label:'⚙️ ตั้งค่า' },
+    { key:'my-profile',        label:'👤 โปรไฟล์' },
+    { key:'live',              label:'🔴 Live Mode' },
+  ];
+
   async function loadPricing() {
     var el = document.getElementById('pricingCards');
     el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
     var sb = window._sb;
     if (!sb) { el.innerHTML = '<div style="color:#ef4444">กรุณารอให้โหลดเสร็จแล้วลองใหม่</div>'; return; }
-    var { data, error } = await sb.from('plan_config').select('*').order('price');
-    if (error || !data) { el.innerHTML = '<div style="color:#ef4444">Error: ' + escapeHtml((error && error.message) || 'unknown') + '</div>'; return; }
-    el.innerHTML = data.map(function(plan) {
-      var feats = Array.isArray(plan.features) ? plan.features.join('\n') : '';
-      return '<div style="background:var(--bg-card);border:2px solid var(--border-color);border-radius:12px;padding:20px">'
+
+    var [planRes, durRes] = await Promise.all([
+      sb.from('plan_config').select('*').order('price'),
+      sb.from('plan_durations').select('*').order('months'),
+    ]);
+    if (planRes.error || !planRes.data) { el.innerHTML = '<div style="color:#ef4444">Error: ' + escapeHtml((planRes.error && planRes.error.message) || 'unknown') + '</div>'; return; }
+
+    var dursByPlan = {};
+    (durRes.data || []).forEach(function(d) {
+      if (!dursByPlan[d.plan_id]) dursByPlan[d.plan_id] = [];
+      dursByPlan[d.plan_id].push(d);
+    });
+
+    el.innerHTML = planRes.data.map(function(plan) {
+      var feats        = Array.isArray(plan.features) ? plan.features.join('\n') : '';
+      var allowedPages = Array.isArray(plan.allowed_pages) ? plan.allowed_pages : [];
+      var maxMembers   = (plan.max_members == null || plan.max_members === -1) ? -1 : plan.max_members;
+      var durs         = dursByPlan[plan.id] || [];
+
+      // Page access checkboxes grid
+      var pageChecks = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px;margin-top:6px">'
+        + ALL_PAGES.map(function(pg) {
+          var checked = allowedPages.length === 0 || allowedPages.indexOf(pg.key) !== -1;
+          return '<label style="display:flex;align-items:center;gap:6px;font-size:.78rem;cursor:pointer;padding:3px 6px;border-radius:6px;background:var(--bg-secondary)">'
+            + '<input type="checkbox" id="page_' + plan.id + '_' + pg.key + '"' + (checked ? ' checked' : '') + '> ' + pg.label + '</label>';
+        }).join('')
+        + '</div>';
+
+      // Duration rows
+      var durRows = durs.map(function(d) {
+        return '<tr id="durrow_' + d.id + '">'
+          + '<td><input type="number" value="' + d.months + '" min="1" max="24" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'months\',this.value)"></td>'
+          + '<td><input type="number" value="' + (d.discount_percent || 0) + '" min="0" max="90" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'discount_percent\',this.value)">%</td>'
+          + '<td><input type="text" value="' + escapeHtml(d.label || '') + '" style="width:130px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + d.id + ',\'label\',this.value)"></td>'
+          + '<td><input type="checkbox"' + (d.active ? ' checked' : '') + ' onchange="patchDurField(' + d.id + ',\'active\',this.checked)"></td>'
+          + '<td><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="deleteDurRow(' + d.id + ')">🗑️</button></td>'
+          + '</tr>';
+      }).join('');
+
+      return '<div style="background:var(--bg-card);border:2px solid var(--border-color);border-radius:12px;padding:20px;margin-bottom:16px">'
         + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
         + '<h4 style="margin:0;font-size:1.15rem">⭐ ' + escapeHtml(plan.label || plan.id) + '</h4>'
         + '<label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer">'
         + '<input type="checkbox" id="active_' + plan.id + '"' + (plan.active ? ' checked' : '') + '> เปิดใช้งาน</label>'
         + '</div>'
-        + '<div style="margin-bottom:10px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคา (satang) — 9900 = 99฿, 19900 = 199฿</label>'
+
+        // Price
+        + '<div style="margin-bottom:12px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ราคาต่อเดือน (satang) — 9900 = 99฿</label>'
         + '<div style="display:flex;align-items:center;gap:8px">'
         + '<input id="price_' + plan.id + '" type="number" min="0" step="100" value="' + plan.price + '" style="flex:1;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-base)">'
         + '<span id="priceDisplay_' + plan.id + '" style="font-size:.85rem;color:var(--premium-gold);font-weight:700;min-width:60px">' + Math.round(plan.price / 100) + '฿</span>'
         + '</div>'
         + '<input type="range" min="0" max="99900" step="100" value="' + plan.price + '" oninput="document.getElementById(\'price_' + plan.id + '\').value=this.value;document.getElementById(\'priceDisplay_' + plan.id + '\').textContent=Math.round(this.value/100)+\'฿\'" style="width:100%;margin-top:6px;accent-color:var(--premium-gold)">'
         + '</div>'
-        + '<div style="margin-bottom:14px">'
-        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ฟีเจอร์แต่ละแพ็ก (แต่ละบรรทัด = 1 รายการ)</label>'
-        + '<textarea id="feats_' + plan.id + '" rows="5" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-sm);resize:vertical;box-sizing:border-box">' + escapeHtml(feats) + '</textarea>'
+
+        // Max members
+        + '<div style="margin-bottom:12px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">จำนวนสมาชิกสูงสุด (−1 = ไม่จำกัด)</label>'
+        + '<input id="maxmem_' + plan.id + '" type="number" min="-1" step="1" value="' + maxMembers + '" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary)">'
         + '</div>'
+
+        // Features
+        + '<div style="margin-bottom:12px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">ฟีเจอร์แต่ละแพ็ก (แต่ละบรรทัด = 1 รายการ)</label>'
+        + '<textarea id="feats_' + plan.id + '" rows="4" style="width:100%;padding:8px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:var(--text-sm);resize:vertical;box-sizing:border-box">' + escapeHtml(feats) + '</textarea>'
+        + '</div>'
+
+        // Page access
+        + '<div style="margin-bottom:16px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:4px">🔒 หน้าที่เข้าถึงได้ (ติ๊กทั้งหมด = เข้าได้ทุกหน้า)</label>'
+        + pageChecks
+        + '</div>'
+
+        // Duration packages
+        + '<div style="margin-bottom:14px">'
+        + '<label style="font-size:var(--text-xs);color:var(--premium-text-muted);display:block;margin-bottom:6px">⏱️ แพ็กเกจระยะเวลา</label>'
+        + '<div class="table-responsive" style="margin-bottom:8px"><table class="table" style="font-size:.82rem">'
+        + '<thead><tr><th>เดือน</th><th>ส่วนลด%</th><th>ชื่อแสดง</th><th>เปิด</th><th></th></tr></thead>'
+        + '<tbody id="durTbody_' + plan.id + '">' + durRows + '</tbody>'
+        + '</table></div>'
+        + '<button class="btn btn-secondary btn-sm" style="font-size:.78rem" onclick="addDurationRow(\'' + plan.id + '\')">➕ เพิ่มแพ็กเกจ</button>'
+        + '</div>'
+
         + '<button class="btn btn-primary" style="width:100%" onclick="savePlan(\'' + plan.id + '\')">💾 บันทึก ' + escapeHtml(plan.label || plan.id) + '</button>'
         + '</div>';
     }).join('');
@@ -426,21 +511,86 @@
   async function savePlan(planId) {
     var sb = window._sb;
     if (!sb) { showToast('ยังโหลด Supabase ไม่สำเร็จ', 'error'); return; }
-    var priceEl  = document.getElementById('price_' + planId);
-    var featsEl  = document.getElementById('feats_' + planId);
-    var activeEl = document.getElementById('active_' + planId);
+    var priceEl    = document.getElementById('price_' + planId);
+    var featsEl    = document.getElementById('feats_' + planId);
+    var activeEl   = document.getElementById('active_' + planId);
+    var maxmemEl   = document.getElementById('maxmem_' + planId);
     if (!priceEl || !featsEl) return;
+
     var price    = parseInt(priceEl.value);
     var features = featsEl.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
     var active   = activeEl ? activeEl.checked : true;
+    var maxMembers = maxmemEl ? parseInt(maxmemEl.value) : -1;
+    if (isNaN(maxMembers)) maxMembers = -1;
+
+    // collect page access
+    var allowedPages = [];
+    var allChecked = true;
+    ALL_PAGES.forEach(function(pg) {
+      var cb = document.getElementById('page_' + planId + '_' + pg.key);
+      if (cb && cb.checked) { allowedPages.push(pg.key); }
+      else if (cb) { allChecked = false; }
+    });
+    if (allChecked) allowedPages = [];  // empty = all pages allowed
+
     if (isNaN(price) || price < 0) { showToast('ราคาไม่ถูกต้อง', 'error'); return; }
     var { error } = await sb.from('plan_config')
-      .update({ price: price, features: features, active: active, updated_at: new Date().toISOString() })
+      .update({
+        price: price,
+        features: features,
+        active: active,
+        max_members: maxMembers,
+        allowed_pages: allowedPages,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', planId);
     if (error) { showToast('บันทึกไม่สำเร็จ: ' + error.message, 'error'); }
     else {
       showToast('✅ บันทึก ' + planId.toUpperCase() + ' = ' + Math.round(price/100) + '฿ สำเร็จ', 'success');
       document.getElementById('priceDisplay_' + planId).textContent = Math.round(price / 100) + '฿';
+    }
+  }
+
+  async function patchDurField(durId, field, value) {
+    var sb = window._sb;
+    if (!sb) return;
+    var update = {};
+    if (field === 'months' || field === 'discount_percent') update[field] = parseInt(value) || 0;
+    else if (field === 'active') update[field] = !!value;
+    else update[field] = value;
+    var { error } = await sb.from('plan_durations').update(update).eq('id', durId);
+    if (error) showToast('บันทึกไม่สำเร็จ: ' + error.message, 'error');
+  }
+
+  async function deleteDurRow(durId) {
+    if (!confirm('ลบแพ็กเกจนี้?')) return;
+    var sb = window._sb;
+    if (!sb) return;
+    var { error } = await sb.from('plan_durations').delete().eq('id', durId);
+    if (error) { showToast('ลบไม่สำเร็จ: ' + error.message, 'error'); return; }
+    var row = document.getElementById('durrow_' + durId);
+    if (row) row.remove();
+    showToast('ลบสำเร็จ', 'success');
+  }
+
+  async function addDurationRow(planId) {
+    var sb = window._sb;
+    if (!sb) return;
+    var { data, error } = await sb.from('plan_durations')
+      .insert({ plan_id: planId, months: 1, discount_percent: 0, label: 'รายเดือน', active: true })
+      .select().single();
+    if (error) { showToast('เพิ่มไม่สำเร็จ: ' + error.message, 'error'); return; }
+    var tbody = document.getElementById('durTbody_' + planId);
+    if (tbody && data) {
+      var tr = document.createElement('tr');
+      tr.id = 'durrow_' + data.id;
+      tr.innerHTML = '<td><input type="number" value="' + data.months + '" min="1" max="24" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + data.id + ',\'months\',this.value)"></td>'
+        + '<td><input type="number" value="0" min="0" max="90" style="width:55px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + data.id + ',\'discount_percent\',this.value)">%</td>'
+        + '<td><input type="text" value="รายเดือน" style="width:130px;padding:3px 6px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)" onchange="patchDurField(' + data.id + ',\'label\',this.value)"></td>'
+        + '<td><input type="checkbox" checked onchange="patchDurField(' + data.id + ',\'active\',this.checked)"></td>'
+        + '<td><button class="btn btn-danger btn-sm" style="padding:2px 8px;font-size:.72rem" onclick="deleteDurRow(' + data.id + ')">🗑️</button></td>';
+      tbody.appendChild(tr);
+      showToast('เพิ่มแพ็กเกจใหม่แล้ว — แก้ไขค่าได้เลย', 'success');
     }
   }
   </script>
