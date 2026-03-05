@@ -400,6 +400,7 @@
 
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof requireAuth === 'function') requireAuth();
+      checkAdGate();
     renderMainNav('mainNav');
 
     // การแจ้งเตือน — init หลังจาก app.js โหลด (ใช้ setTimeout เผื่อ SW ลงทะเบียน)

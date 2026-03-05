@@ -1019,6 +1019,7 @@ function renderExistingPlaylistsBadge() {
 
 window.onload = function() {
   if (typeof requireAuth === 'function') requireAuth();
+      checkAdGate();
   if (typeof renderMainNav === 'function') renderMainNav('mainNav');
   if (typeof applyTranslations === 'function') applyTranslations();
   loadInitial();

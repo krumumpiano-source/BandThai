@@ -178,6 +178,11 @@ function renderMainNav(containerId) {
   // Remove old bottom tab bar if exists
   var oldBar = document.getElementById('_bottomTabBar');
   if (oldBar) oldBar.parentNode.removeChild(oldBar);
+
+  // ── Ad Countdown Timer (Free tier เท่านั้น) ──────────────────────
+  if (typeof getAdTimeRemaining === 'function') {
+    startAdCountdown();
+  }
 }
 
 function _renderNavLang(containerId) {
@@ -200,13 +205,60 @@ function _renderNavLang(containerId) {
 
 function renderLangSwitcher(containerId) { _renderNavLang(containerId); }
 
+// ── Ad Countdown Timer ──────────────────────────────────────────────
+function startAdCountdown() {
+  var remaining = typeof getAdTimeRemaining === 'function' ? getAdTimeRemaining() : -1;
+  if (remaining < 0) return; // Lite/Pro ไม่แสดง
+
+  // สร้าง / reset element
+  var el = document.getElementById('_adCountdown');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_adCountdown';
+    document.body.appendChild(el);
+  }
+  if (el._adTimer) clearInterval(el._adTimer);
+
+  function update() {
+    var rem = typeof getAdTimeRemaining === 'function' ? getAdTimeRemaining() : 0;
+    if (rem <= 0) {
+      clearInterval(el._adTimer);
+      el.style.display = 'none';
+      showAdExpiredModal();
+      return;
+    }
+    var h = Math.floor(rem / 3600000);
+    var m = Math.floor((rem % 3600000) / 60000);
+    var s = Math.floor((rem % 60000) / 1000);
+    el.textContent = '⏱ ' + (h ? h + ':' : '') + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+  update();
+  el._adTimer = setInterval(update, 1000);
+}
+
+function showAdExpiredModal() {
+  if (document.getElementById('_adExpiredOverlay')) return;
+  var ov = document.createElement('div');
+  ov.id = '_adExpiredOverlay';
+  ov.className = 'ad-expired-overlay';
+  ov.innerHTML =
+    '<div class="ad-expired-card">' +
+      '<div style="font-size:2.5rem">⏰</div>' +
+      '<h3 style="margin:12px 0 8px">หมดเวลาใช้งาน</h3>' +
+      '<p style="color:var(--text-secondary);margin-bottom:20px">กรุณาดูโฆษณาสั้นๆ 30 วินาที เพื่อใช้งานต่ออีก 75 นาที</p>' +
+      '<button class="btn btn-primary" onclick="location.replace(\'ad-gate.html\')">▶ ดูโฆษณา</button>' +
+    '</div>';
+  document.body.appendChild(ov);
+}
+
 function doLogout() {
   var token = typeof getAuthToken === 'function' ? getAuthToken() : (localStorage.getItem('auth_token') || '');
   if (token && token.indexOf('demo_') !== 0 && typeof apiCall === 'function') {
     apiCall('logout', { _token: token }, function() {});
   }
   ['auth_token','bandId','bandName','bandManager','userRole','userName','bandSettings',
-   'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail'].forEach(function(k) {
+   'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
+   'band_plan','ad_gate_ts'].forEach(function(k) {
     localStorage.removeItem(k);
     sessionStorage.removeItem(k);
   });

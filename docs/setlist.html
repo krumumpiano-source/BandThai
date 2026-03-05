@@ -78,7 +78,8 @@
   var sets = {1:[], 2:[], 3:[]};
 
   document.addEventListener('DOMContentLoaded', function() {
-    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    requireAuth();
+      checkAdGate(); renderMainNav('mainNav'); applyTranslations();
     apiCall('getAllSongs', {}, function(r) {
       allSongs = (r && r.success && r.data) ? r.data : [];
       renderPool(allSongs);

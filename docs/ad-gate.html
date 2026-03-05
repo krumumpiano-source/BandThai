@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google-adsense-account" content="ca-pub-6824376916256036">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>ดูโฆษณา — Band Management App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+</head>
+<body>
+<div class="ad-gate-wrap">
+
+  <!-- Logo -->
+  <div class="ad-gate-logo">🎵 Band App</div>
+
+  <!-- Headline -->
+  <div>
+    <h2 style="margin:0 0 6px;font-size:1.1rem">ดูโฆษณาสั้นๆ เพื่อใช้งาน 75 นาที</h2>
+    <p class="ad-gate-subtitle">
+      แอปนี้ให้บริการฟรีสำหรับสมาชิก Free tier<br>
+      กรุณาดูโฆษณาสั้น 30 วินาที เพื่อสนับสนุนเรา
+    </p>
+  </div>
+
+  <!-- Video / Ad Box -->
+  <div class="ad-gate-video-box" id="adBox">
+    <div id="adPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:12px;color:#555">
+      <div style="font-size:2rem">📺</div>
+      <div style="font-size:0.85rem">กดปุ่มด้านล่างเพื่อเริ่มดูโฆษณา</div>
+    </div>
+    <!-- AdSense Rewarded unit จะวางตรงนี้หลัง approve -->
+  </div>
+
+  <!-- Countdown -->
+  <div id="adCountdownWrap" style="display:none">
+    <div class="ad-gate-countdown" id="adCountdown">0:30</div>
+    <div class="ad-gate-note">กรุณารอจนกว่าจะครบ 30 วินาที</div>
+  </div>
+
+  <!-- Buttons -->
+  <button class="btn btn-primary" id="startAdBtn" style="min-width:200px;font-size:1rem;padding:14px 24px">
+    ▶ เริ่มดูโฆษณา
+  </button>
+
+  <button class="btn btn-primary" id="enterBtn"
+    style="min-width:200px;font-size:1rem;padding:14px 24px;display:none;background:var(--success,#22c55e);border-color:var(--success,#22c55e)">
+    ✅ เข้าใช้งานได้เลย
+  </button>
+
+  <div class="ad-gate-note" style="margin-top:-4px">
+    หากต้องการข้ามโฆษณา
+    <a href="band-settings.html" style="color:var(--gold,#fbbf24)">อัปเกรดเป็น Lite / Pro</a>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── 1. Auth guard ─────────────────────────────────────────────────
+  function waitAndCheck(tries) {
+    tries = tries || 0;
+    if (localStorage.getItem('auth_token')) {
+      init();
+    } else if (tries > 20) {
+      window.location.replace('index.html');
+    } else {
+      setTimeout(function () { waitAndCheck(tries + 1); }, 100);
+    }
+  }
+  waitAndCheck();
+
+  function init() {
+    // ── 2. ถ้าไม่ใช่ free หรือ session ยังไม่หมด → ไป dashboard ──
+    var plan  = localStorage.getItem('band_plan') || 'free';
+    if (plan !== 'free') {
+      window.location.replace('dashboard.html');
+      return;
+    }
+    var ts    = parseInt(localStorage.getItem('ad_gate_ts') || '0');
+    var limit = 75 * 60 * 1000;
+    if (ts && (Date.now() - ts) < limit) {
+      window.location.replace('dashboard.html');
+      return;
+    }
+
+    // ── 3. Placeholder mode (รอ AdSense approve) ──────────────────
+    var startBtn  = document.getElementById('startAdBtn');
+    var enterBtn  = document.getElementById('enterBtn');
+    var countWrap = document.getElementById('adCountdownWrap');
+    var countEl   = document.getElementById('adCountdown');
+    var seconds   = 30;
+    var timer     = null;
+
+    startBtn.addEventListener('click', function () {
+      startBtn.disabled = true;
+      startBtn.textContent = '⏳ กำลังดูโฆษณา...';
+      countWrap.style.display = 'block';
+      updateCountdown();
+      timer = setInterval(function () {
+        seconds--;
+        updateCountdown();
+        if (seconds <= 0) {
+          clearInterval(timer);
+          onAdGranted();
+        }
+      }, 1000);
+    });
+
+    function updateCountdown() {
+      var m = Math.floor(seconds / 60);
+      var s = seconds % 60;
+      countEl.textContent = m + ':' + String(s).padStart(2, '0');
+    }
+
+    function onAdGranted() {
+      localStorage.setItem('ad_gate_ts', String(Date.now()));
+      startBtn.style.display = 'none';
+      countWrap.style.display = 'none';
+      enterBtn.style.display  = '';
+    }
+
+    enterBtn.addEventListener('click', function () {
+      window.location.replace('dashboard.html');
+    });
+  }
+
+})();
+</script>
+</body>
+</html>

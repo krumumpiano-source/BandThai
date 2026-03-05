@@ -186,6 +186,7 @@
 
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth();
+      checkAdGate();
     renderMainNav('mainNav');
     if (typeof applyTranslations === 'function') applyTranslations();
 

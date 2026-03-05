@@ -87,7 +87,8 @@
   <script>
   var allClients = [];
   document.addEventListener('DOMContentLoaded', function() {
-    requireAuth(); renderMainNav('mainNav'); applyTranslations();
+    requireAuth();
+      checkAdGate(); renderMainNav('mainNav'); applyTranslations();
     loadClients();
   });
 

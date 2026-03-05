@@ -317,6 +317,7 @@
   /* ── Init ── */
   document.addEventListener('DOMContentLoaded', function(){
     requireAuth();
+      checkAdGate();
     renderMainNav('mainNav');
     if (typeof applyTranslations === 'function') applyTranslations();
     document.getElementById('eventDate').value = new Date().toISOString().substring(0,10);

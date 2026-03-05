@@ -234,3 +234,89 @@ tbody td{padding:10px var(--spacing-md);color:var(--premium-text);font-size:var(
   /* Bigger touch areas for tab buttons */
   .tab-btn { padding: var(--spacing-sm) var(--spacing-md); min-height: 44px; }
 }
+
+/* ── Ad Countdown Timer ─────────────────────────────────────── */
+#_adCountdown {
+  position: fixed;
+  top: 14px;
+  right: 16px;
+  z-index: 400;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  letter-spacing: 0.03em;
+}
+@media (max-width:1023px) {
+  #_adCountdown { top: 66px; right: 10px; }
+}
+
+/* ── Ad Expired Overlay ─────────────────────────────────────── */
+.ad-expired-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ad-expired-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+}
+
+/* ── Ad Gate Page ───────────────────────────────────────────── */
+.ad-gate-wrap {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  gap: 1.25rem;
+  background: var(--bg-primary, #0a0a15);
+  text-align: center;
+}
+.ad-gate-logo {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--gold, #fbbf24);
+}
+.ad-gate-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  max-width: 300px;
+  line-height: 1.6;
+}
+.ad-gate-video-box {
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 16/9;
+  background: #111;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+}
+.ad-gate-countdown {
+  font-size: 1.8rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--gold, #fbbf24);
+}
+.ad-gate-note {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}

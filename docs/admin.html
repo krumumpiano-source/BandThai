@@ -127,6 +127,7 @@
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
+      checkAdGate();
     var role = localStorage.getItem('userRole') || '';
     if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error'); setTimeout(function(){ window.location.href='dashboard.html'; },1500); return; }
     renderMainNav('mainNav'); applyTranslations();

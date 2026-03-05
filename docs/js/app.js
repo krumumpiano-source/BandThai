@@ -46,6 +46,31 @@
   }
   global.requireAuth = requireAuth;
 
+  // ── Ad Gate ─────────────────────────────────────────────────────────
+  function checkAdGate() {
+    var cfg = global._AD_CONFIG || {};
+    if (cfg.enabled === false) return;                 // ปิดระบบโฆษณาแบบ explicit เท่านั้น
+    var plan = localStorage.getItem('band_plan') || 'free';
+    if (plan !== 'free') return;                       // Lite/Pro ข้ามได้เลย
+    var ts    = parseInt(localStorage.getItem('ad_gate_ts') || '0');
+    var limit = (cfg.sessionMin || 75) * 60 * 1000;   // default 75 นาที
+    if (!ts || (Date.now() - ts) >= limit) {
+      window.location.replace('ad-gate.html');
+    }
+  }
+  global.checkAdGate = checkAdGate;
+
+  function getAdTimeRemaining() {
+    var cfg  = global._AD_CONFIG || {};
+    var plan = localStorage.getItem('band_plan') || 'free';
+    if (plan !== 'free') return -1;                    // -1 = ไม่ใช่ free
+    var ts    = parseInt(localStorage.getItem('ad_gate_ts') || '0');
+    if (!ts) return 0;
+    var limit = (cfg.sessionMin || 75) * 60 * 1000;
+    return Math.max(0, limit - (Date.now() - ts));
+  }
+  global.getAdTimeRemaining = getAdTimeRemaining;
+
   function ensureDemoSession() {
     if (localStorage.getItem('auth_token')) return;
     localStorage.setItem('auth_token', 'demo_' + Date.now());

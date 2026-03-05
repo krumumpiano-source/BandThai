@@ -363,7 +363,8 @@
   function fmt(n){ return (n||0).toLocaleString('th-TH')+' ฿'; }
 
   document.addEventListener('DOMContentLoaded', function(){
-    requireAuth(); renderMainNav('mainNav');
+    requireAuth();
+      checkAdGate(); renderMainNav('mainNav');
     if(typeof applyTranslations==='function') applyTranslations();
     document.getElementById('epDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
     loadJobs();

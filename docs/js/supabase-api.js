@@ -55,12 +55,14 @@
       localStorage.setItem('bandName',   profile.band_name  || '');
       localStorage.setItem('userRole',     profile.role       || 'member');
       localStorage.setItem('bandProvince',  profile.province   || '');
+      // ระดับแผน: 'free' | 'lite' | 'pro'
+      localStorage.setItem('band_plan', profile.band_plan || 'free');
     }
 
     function clearSession() {
       ['auth_token','userId','bandId','bandName','bandManager','userRole','userName',
        'userTitle','userFirstName','userLastName','userNickname','userInstrument','userEmail',
-       'bandProvince'].forEach(function (k) {
+       'bandProvince','band_plan','ad_gate_ts'].forEach(function (k) {
         localStorage.removeItem(k);
       });
     }
