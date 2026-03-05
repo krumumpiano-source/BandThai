@@ -215,6 +215,29 @@
     /* autocomplete add option */
     .ac-add{border-top:1px solid #3a3a3a!important;background:rgba(212,168,67,.06)}
     .ac-add strong{color:var(--gold)}
+
+    /* ─── NUDGE ─── */
+    #nudgeBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #nudgeBtn:active{background:var(--bg4)}
+    #nudgeModal .modal-sheet{padding-bottom:28px}
+    .nudge-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+    .nudge-preset{background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:12px 10px;font-size:0.92rem;cursor:pointer;text-align:center;font-family:inherit;transition:background .15s,border-color .15s}
+    .nudge-preset:active{background:var(--bg4);border-color:var(--gold)}
+    .nudge-all{grid-column:1/-1;background:rgba(212,168,67,.1);border-color:rgba(212,168,67,.3);color:var(--gold);font-weight:600}
+    .nudge-all:active{background:rgba(212,168,67,.25)}
+
+    /* ─── NUDGE FLASH OVERLAY ─── */
+    #nudgeFlash{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:3000;pointer-events:none;opacity:0;display:none}
+    #nudgeFlash.active{display:block;animation:nudgeFlashAnim .6s ease-out forwards}
+    @keyframes nudgeFlashAnim{0%{opacity:1}30%{opacity:0}40%{opacity:.9}60%{opacity:0}70%{opacity:.7}100%{opacity:0}}
+
+    /* ─── NUDGE POPUP ─── */
+    #nudgePopup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(.8);z-index:3001;pointer-events:none;opacity:0;display:none;text-align:center;background:rgba(30,30,30,.95);border:2px solid var(--gold);border-radius:var(--radius-lg);padding:24px 40px;backdrop-filter:blur(8px);box-shadow:0 12px 40px rgba(0,0,0,.8)}
+    #nudgePopup.active{display:block;animation:nudgePopAnim 2.5s ease-out forwards}
+    @keyframes nudgePopAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}8%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}15%{transform:translate(-50%,-50%) scale(1)}75%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+    #nudgePopup .np-icon{font-size:2.5rem;margin-bottom:6px}
+    #nudgePopup .np-from{font-size:1.1rem;font-weight:700;color:var(--gold);margin-bottom:4px}
+    #nudgePopup .np-msg{font-size:1rem;color:var(--text2)}
   </style>
 </head>
 <body>
@@ -232,6 +255,7 @@
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
       <button id="beatToggleBtn" title="กด=เปิด/ปิดไฟ BPM | กดค้าง=เปิด/ปิดเสียง">💡</button>
+      <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
       <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
@@ -357,6 +381,37 @@
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="closeNote()">ยกเลิก</button>
       <button class="modal-btn primary" onclick="submitNote()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NUDGE FLASH + POPUP ── -->
+<div id="nudgeFlash"></div>
+<div id="nudgePopup">
+  <div class="np-icon">👋</div>
+  <div class="np-from" id="nudgeFrom"></div>
+  <div class="np-msg" id="nudgeMsg"></div>
+</div>
+
+<!-- ── NUDGE MODAL ── -->
+<div class="modal-backdrop" id="nudgeModal">
+  <div class="modal-sheet">
+    <h3>👋 สะกิดสมาชิก</h3>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:6px">เลือกข้อความแล้วส่งให้ทุกคนในวง</p>
+    <div class="nudge-presets">
+      <button class="nudge-preset nudge-all" onclick="sendNudge('👋 สะกิด!')">👋 สะกิดทุกคน!</button>
+      <button class="nudge-preset" onclick="sendNudge('พร้อมยัง?')">🎤 พร้อมยัง?</button>
+      <button class="nudge-preset" onclick="sendNudge('เร็วขึ้น')">⏩ เร็วขึ้น</button>
+      <button class="nudge-preset" onclick="sendNudge('ช้าลง')">⏪ ช้าลง</button>
+      <button class="nudge-preset" onclick="sendNudge('เบาลง')">🔉 เบาลง</button>
+      <button class="nudge-preset" onclick="sendNudge('ดังขึ้น')">🔊 ดังขึ้น</button>
+      <button class="nudge-preset" onclick="sendNudge('โซโล่เลย!')">🎸 โซโล่เลย!</button>
+      <button class="nudge-preset" onclick="sendNudge('จบเพลงนะ')">⏭ จบเพลงนะ</button>
+      <button class="nudge-preset" onclick="sendNudge('เบรคเลย')">☕ เบรคเลย</button>
+      <button class="nudge-preset" onclick="sendNudge('ดีมาก!')">👏 ดีมาก!</button>
+    </div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn secondary" onclick="closeNudge()">ปิด</button>
     </div>
   </div>
 </div>
@@ -489,6 +544,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('endBreakBtn').style.display = 'inline-block';
         document.getElementById('exitLiveBtn').style.display = 'inline-block';
         document.getElementById('shareBtn').style.display = 'inline-block';
+        document.getElementById('nudgeBtn').style.display = 'inline-block';
         document.getElementById('requestBtn').style.display = 'inline-block';
         loadPlaylist();
         preGenerateToken();
@@ -502,6 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
   } else {
     // member mode
     document.getElementById('shareBtn').style.display = 'inline-block';
+    document.getElementById('nudgeBtn').style.display = 'inline-block';
     loadPlaylist();
     preGenerateToken();
     setupBreakWarning();
@@ -1677,6 +1734,10 @@ function initRealtime() {
         renderSongList();
       }
     })
+    .on('broadcast', { event: 'nudge' }, function(payload) {
+      var d = payload.payload || {};
+      if (d.from && d.msg) receiveNudge(d.from, d.msg);
+    })
     .subscribe(function(status) {
       var ind = document.getElementById('realtimeIndicator');
       if (status === 'SUBSCRIBED') {
@@ -1698,6 +1759,89 @@ function getState() {
 function broadcastEvent(event, data) {
   if (!_channel) return;
   _channel.send({ type: 'broadcast', event: event, payload: data });
+}
+
+// ─── NUDGE (สะกิด) ────────────────────────────────────────────────
+var _nudgeAudioCtx = null;
+var _lastNudgeTime = 0;
+
+function openNudge() {
+  if (_isGuest) return;
+  document.getElementById('nudgeModal').style.display = 'flex';
+}
+function closeNudge() {
+  document.getElementById('nudgeModal').style.display = 'none';
+}
+
+function sendNudge(msg) {
+  var myName = localStorage.getItem('userName') || 'สมาชิก';
+  broadcastEvent('nudge', { from: myName, msg: msg });
+  closeNudge();
+  showToast('👋 ส่งสะกิดแล้ว: ' + msg);
+}
+
+function receiveNudge(from, msg) {
+  // Throttle: ignore if nudge received within 1s
+  var now = Date.now();
+  if (now - _lastNudgeTime < 1000) return;
+  _lastNudgeTime = now;
+
+  // 1) Screen flash (white strobe)
+  var flash = document.getElementById('nudgeFlash');
+  if (flash) {
+    flash.classList.remove('active');
+    void flash.offsetWidth; // force reflow
+    flash.classList.add('active');
+    setTimeout(function() { flash.classList.remove('active'); }, 700);
+  }
+
+  // 2) Popup message
+  var popup = document.getElementById('nudgePopup');
+  var fromEl = document.getElementById('nudgeFrom');
+  var msgEl = document.getElementById('nudgeMsg');
+  if (popup && fromEl && msgEl) {
+    fromEl.textContent = from + ' สะกิดคุณ!';
+    msgEl.textContent = msg;
+    popup.classList.remove('active');
+    void popup.offsetWidth;
+    popup.classList.add('active');
+    setTimeout(function() { popup.classList.remove('active'); }, 2600);
+  }
+
+  // 3) Vibration (pattern: short-pause-short-pause-long)
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100, 50, 200]);
+  }
+
+  // 4) Audio ping
+  playNudgeSound();
+}
+
+function playNudgeSound() {
+  try {
+    if (!_nudgeAudioCtx) {
+      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    var ctx = _nudgeAudioCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    var t = ctx.currentTime;
+    // Two-tone ping: C6 then E6
+    var osc1 = ctx.createOscillator();
+    var gain1 = ctx.createGain();
+    osc1.connect(gain1); gain1.connect(ctx.destination);
+    osc1.frequency.value = 1047; // C6
+    gain1.gain.setValueAtTime(0.25, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    osc1.start(t); osc1.stop(t + 0.15);
+
+    var osc2 = ctx.createOscillator();
+    var gain2 = ctx.createGain();
+    osc2.connect(gain2); gain2.connect(ctx.destination);
+    osc2.frequency.value = 1319; // E6
+    gain2.gain.setValueAtTime(0.25, t + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc2.start(t + 0.12); osc2.stop(t + 0.3);
+  } catch(e) { /* no audio support */ }
 }
 
 function showInvalidToken() {
