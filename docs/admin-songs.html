@@ -465,8 +465,7 @@ function changePage(dir) {
 }
 
 // ─── Render Table (Inline Edit) ──────────────────────────────────
-var _KEY_OPTS   = ['','C','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
-var _KEY_LABELS = {'':'—','C':'C / Am'};
+var _KEY_OPTS   = ['','C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
 var _ERA_OPTS   = ['','80s','90s','2000s','2010s','2020s'];
 var _ERA_LABELS = {'':'—','80s':'2523-2532 (80s)','90s':'2533-2542 (90s)','2000s':'2543-2553 (00s)','2010s':'2554-2562 (10s)','2020s':'2563-ปัจจุบัน (20s)'};
 var _MOOD_OPTS  = ['','มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
@@ -536,7 +535,7 @@ function renderTable() {
     html += '<tr data-id="' + id + '"' + (isDirty ? ' class="row-dirty"' : '') + '>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
-      '<td>' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   _KEY_LABELS, false) + '</td>' +
+      '<td>' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
       '<td><input class="il-input il-bpm" type="number" data-field="bpm" value="' + esc(dBpm) + '" min="0" max="300" oninput="markDirty(this)"></td>' +
       '<td>' + singerSel + '</td>' +
       '<td>' + _buildSel('era',  _ERA_OPTS,   dEra,  'il-era',   _ERA_LABELS, true)  + '</td>' +
