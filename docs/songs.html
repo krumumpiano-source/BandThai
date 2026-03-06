@@ -483,11 +483,11 @@ html{scroll-behavior:smooth}
 
     <select id="era" onchange="onFilterChange()">
       <option value="">ยุคเพลง</option>
-      <option value="80s">80s</option>
-      <option value="90s">90s</option>
-      <option value="2000s">2000s</option>
-      <option value="2010s">2010s</option>
-      <option value="2020s">2020s</option>
+      <option value="80s">2523-2532 (80s)</option>
+      <option value="90s">2533-2542 (90s)</option>
+      <option value="2000s">2543-2553 (00s)</option>
+      <option value="2010s">2554-2562 (10s)</option>
+      <option value="2020s">2563-ปัจจุบัน (20s)</option>
     </select>
 
     <select id="genre" onchange="onFilterChange()">
@@ -692,10 +692,8 @@ function getDropdownFiltered() {
     if (f.era && (!s.era || (s.era !== f.era && s.era.indexOf(f.era) < 0))) return false;
     // Genre (tags column) — exact match
     if (f.genre && (!s.tags || s.tags !== f.genre)) return false;
-    // Mood — normalize old values before compare (backward compat)
-    var MOOD_COMPAT = {'สุข / สนุก':'มัน / สนุก','เศร้า / เหงา':'เศร้า / อกหัก','หวาน / อบอุ่น':'หวาน / โรแมนติก','มัน / ฮึกเหิม':'ฮึกเหิม / ยิ่งใหญ่'};
-    var normalizedMood = MOOD_COMPAT[s.mood] || s.mood || '';
-    if (f.mood && (!normalizedMood || normalizedMood.indexOf(f.mood) < 0)) return false;
+    // Mood — indexOf สำหรับ partial match เช่น "สุข / สนุก" ตรงกับ "สุข / สนุก (Happy)"
+    if (f.mood && (!s.mood || s.mood.indexOf(f.mood) < 0)) return false;
     return true;
   });
 }

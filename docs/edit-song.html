@@ -71,7 +71,7 @@
             <div class="form-group"><label>ความเร็ว (BPM)</label><input type="number" id="bpm" min="0" max="300" placeholder="0"></div>
           </div>
           <div class="form-r">
-            <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option value="80s">ยุค 80s (พ.ศ. 2523-2532)</option><option value="90s">ยุค 90s (พ.ศ. 2533-2542)</option><option value="2000s">ยุค 2000s (พ.ศ. 2543-2553)</option><option value="2010s">ยุค 2010s (พ.ศ. 2554-2562)</option><option value="2020s">ยุค 2020s (พ.ศ. 2563-ปัจจุบัน)</option></select></div>
+            <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option value="80s">2523-2532 (80s)</option><option value="90s">2533-2542 (90s)</option><option value="2000s">2543-2553 (00s)</option><option value="2010s">2554-2562 (10s)</option><option value="2020s">2563-ปัจจุบัน (20s)</option></select></div>
             <div class="form-group">
               <label>อารมณ์เพลง</label>
               <select id="mood" onchange="updateMoodHint('mood','moodHint')"><option value="">— เลือกอารมณ์ —</option><option value="มัน / สนุก">มัน / สนุก</option><option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option><option value="เศร้า / อกหัก">เศร้า / อกหัก</option><option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option><option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option></select>
@@ -137,9 +137,7 @@
           if (s.era) Array.from(eraEl.options).forEach(function(o){ if (o.value && s.era.indexOf(o.value) >= 0) eraEl.value = o.value; });
           var moodEl = document.getElementById('mood');
           moodEl.value = '';
-          var MOOD_COMPAT = {'สุข / สนุก':'มัน / สนุก','เศร้า / เหงา':'เศร้า / อกหัก','หวาน / อบอุ่น':'หวาน / โรแมนติก','มัน / ฮึกเหิม':'ฮึกเหิม / ยิ่งใหญ่'};
-          var moodVal = MOOD_COMPAT[s.mood] || s.mood || '';
-          if (moodVal) Array.from(moodEl.options).forEach(function(o){ if (o.value && moodVal.indexOf(o.value) >= 0) moodEl.value = o.value; });
+          if (s.mood) Array.from(moodEl.options).forEach(function(o){ if (o.value && s.mood.indexOf(o.value) >= 0) moodEl.value = o.value; });
           updateMoodHint('mood','moodHint');
           // genre (tags column)
           var genreEl = document.getElementById('genre');
