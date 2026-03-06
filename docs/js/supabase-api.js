@@ -534,8 +534,12 @@
     async function doGetAllSongs(d) {
       var source = d.source || 'global';
       var q = sb.from('band_songs').select('*').order('name');
-      if (source === 'band') q = q.eq('band_id', getBandId());
-      var { data, error } = await q.limit(500);
+      if (source === 'band') {
+        q = q.eq('band_id', getBandId());
+      } else {
+        q = q.is('band_id', null);
+      }
+      var { data, error } = await q.limit(5000);
       if (error) throw error;
       return { success: true, data: toCamelList(data) };
     }
