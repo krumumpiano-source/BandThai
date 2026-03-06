@@ -533,15 +533,24 @@
     // ── Songs ─────────────────────────────────────────────────────
     async function doGetAllSongs(d) {
       var source = d.source || 'global';
-      var q = sb.from('band_songs').select('*').order('name');
-      if (source === 'band') {
-        q = q.eq('band_id', getBandId());
-      } else {
-        q = q.is('band_id', null);
+      var PAGE = 1000;
+      var all = [];
+      var from = 0;
+      while (true) {
+        var q = sb.from('band_songs').select('*').order('name').range(from, from + PAGE - 1);
+        if (source === 'band') {
+          q = q.eq('band_id', getBandId());
+        } else {
+          q = q.is('band_id', null);
+        }
+        var { data, error } = await q;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
       }
-      var { data, error } = await q.limit(5000);
-      if (error) throw error;
-      return { success: true, data: toCamelList(data) };
+      return { success: true, data: toCamelList(all) };
     }
 
     async function doSearchSongs(d) {
