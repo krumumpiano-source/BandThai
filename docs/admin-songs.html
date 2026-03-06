@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>จัดการคลังเพลง — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    /* ── Layout ── */
+    .as-wrap{max-width:1100px;margin:0 auto}
+    .as-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+    .as-search{flex:1;min-width:200px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--premium-border);font-size:15px;font-family:inherit;background:var(--premium-white);color:var(--premium-text)}
+    .as-search:focus{outline:none;border-color:var(--premium-gold);box-shadow:0 0 0 3px rgba(246,173,85,.15)}
+    .as-filter{padding:9px 12px;border-radius:10px;border:1.5px solid var(--premium-border);font-size:14px;font-family:inherit;background:var(--premium-white);color:var(--premium-text)}
+    .as-filter:focus{outline:none;border-color:var(--premium-gold)}
+    .btn-add{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;background:var(--premium-gold);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:background .15s}
+    .btn-add:hover{background:var(--premium-gold-dark)}
+    .btn-sm{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 12px;border-radius:7px;border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s;min-height:unset}
+    .btn-edit{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}
+    .btn-edit:hover{background:#DBEAFE}
+    .btn-del{background:#FEF2F2;color:#DC2626;border:1px solid #FECACA}
+    .btn-del:hover{background:#FEE2E2}
+
+    /* ── Table ── */
+    .song-table{width:100%;border-collapse:collapse;font-size:14px}
+    .song-table th{position:sticky;top:0;background:var(--premium-white);padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--premium-text-muted);border-bottom:2px solid var(--premium-border);white-space:nowrap;z-index:2}
+    .song-table td{padding:9px 12px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
+    .song-table tr:hover td{background:var(--premium-off-white)}
+    .td-name{font-weight:700;color:var(--premium-text);max-width:200px}
+    .td-artist{color:var(--premium-text-muted);font-size:13px;max-width:150px}
+    .td-name,.td-artist{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+    .pill-key{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
+    .pill-male{background:#DBEAFE;color:#1E3A8A}
+    .pill-female{background:#FCE7F3;color:#9D174D}
+    .pill-duet{background:#D1FAE5;color:#065F46}
+    .pill-mood{background:#EDE9FE;color:#4C1D95}
+    .pill-era{background:#F1F5F9;color:#475569;border:1px solid #E2E8F0}
+    .td-actions{white-space:nowrap;display:flex;gap:6px;align-items:center}
+
+    /* ── Stats bar ── */
+    .stats-bar{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px}
+    .stat-box{background:var(--premium-white);border:1.5px solid var(--premium-border);border-radius:10px;padding:10px 18px;text-align:center;min-width:80px}
+    .stat-num{font-size:1.4rem;font-weight:700;color:var(--premium-gold-dark)}
+    .stat-lbl{font-size:11px;color:var(--premium-text-muted);margin-top:2px}
+
+    /* ── Inline edit row ── */
+    .edit-row td{background:#FFFBEB !important;border-top:2px solid var(--premium-gold);border-bottom:2px solid var(--premium-gold)}
+    .ed-input{padding:6px 10px;border-radius:7px;border:1.5px solid var(--premium-border);font-size:13px;font-family:inherit;width:100%;box-sizing:border-box;background:#fff}
+    .ed-input:focus{outline:none;border-color:var(--premium-gold)}
+    .ed-select{padding:6px 8px;border-radius:7px;border:1.5px solid var(--premium-border);font-size:13px;font-family:inherit;background:#fff}
+    .ed-select:focus{outline:none;border-color:var(--premium-gold)}
+    .btn-save{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
+    .btn-save:hover{background:#A7F3D0}
+    .btn-cancel{background:#F1F5F9;color:#475569;border:1px solid #CBD5E1}
+
+    /* ── Modal: Add Song ── */
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal-box{background:var(--premium-white);border-radius:16px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    .modal-box h3{margin:0 0 18px;font-size:1.1rem}
+    .m-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media(max-width:500px){.m-row{grid-template-columns:1fr}}
+    .m-group{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+    .m-group label{font-size:12px;font-weight:700;color:var(--premium-text-muted)}
+    .m-input,.m-select{padding:9px 12px;border-radius:9px;border:1.5px solid var(--premium-border);font-size:14px;font-family:inherit;background:#fff;color:var(--premium-text)}
+    .m-input:focus,.m-select:focus{outline:none;border-color:var(--premium-gold);box-shadow:0 0 0 3px rgba(246,173,85,.15)}
+    .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+    .btn-primary{background:var(--premium-gold);color:#fff;border:none;border-radius:9px;padding:10px 22px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;transition:background .15s}
+    .btn-primary:hover{background:var(--premium-gold-dark)}
+    .btn-secondary{background:var(--premium-off-white);color:var(--premium-text);border:1.5px solid var(--premium-border);border-radius:9px;padding:10px 18px;font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;transition:background .15s}
+    .btn-secondary:hover{background:var(--premium-light-gray)}
+
+    /* ── Singer pills (modal) ── */
+    .singer-pills{display:flex;gap:8px;flex-wrap:wrap}
+    .singer-pill{position:relative}
+    .singer-pill input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+    .singer-pill label{display:flex;align-items:center;gap:5px;padding:7px 16px;border:2px solid #e2e8f0;border-radius:999px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;background:#f9f9f9;color:#333;transition:all .15s;user-select:none}
+    #ms-male:checked + label{background:#dbeafe;color:#1e3a8a;border-color:#93c5fd}
+    #ms-female:checked + label{background:#fce7f3;color:#9d174d;border-color:#f9a8d4}
+    #ms-duet:checked + label{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+    /* edit */
+    #es-male:checked + label{background:#dbeafe;color:#1e3a8a;border-color:#93c5fd}
+    #es-female:checked + label{background:#fce7f3;color:#9d174d;border-color:#f9a8d4}
+    #es-duet:checked + label{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+
+    /* ── Loading / Empty ── */
+    .as-loading{text-align:center;padding:40px;color:var(--premium-text-muted)}
+    .as-spinner{width:36px;height:36px;border:3px solid var(--premium-light-gray);border-top-color:var(--premium-gold);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ── Table scrollable wrapper ── */
+    .table-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid var(--premium-border)}
+    .table-wrap .song-table th:first-child,.table-wrap .song-table td:first-child{padding-left:16px}
+  </style>
+</head>
+<body>
+<div id="mainNav"></div>
+<div id="toast"></div>
+
+<main>
+<div class="container as-wrap">
+
+  <div class="page-header">
+    <h1 class="page-title">🎵 จัดการคลังเพลง</h1>
+    <span class="badge badge-danger" style="font-size:12px">Admin</span>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-lbl">เพลงทั้งหมด</div></div>
+    <div class="stat-box"><div class="stat-num" id="statFiltered">—</div><div class="stat-lbl">กรองแล้ว</div></div>
+    <div class="stat-box"><div class="stat-num" id="statMale">—</div><div class="stat-lbl">ชาย</div></div>
+    <div class="stat-box"><div class="stat-num" id="statFemale">—</div><div class="stat-lbl">หญิง</div></div>
+    <div class="stat-box"><div class="stat-num" id="statDuet">—</div><div class="stat-lbl">คู่</div></div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="as-toolbar">
+    <input type="text" id="asSearch" class="as-search" placeholder="🔍 ค้นหาชื่อเพลง ศิลปิน คีย์..." oninput="filterTable()">
+    <select id="asSinger" class="as-filter" onchange="filterTable()">
+      <option value="">นักร้องทั้งหมด</option>
+      <option value="ชาย">🎤 ชาย</option>
+      <option value="หญิง">🎤 หญิง</option>
+      <option value="คู่">🎤 คู่</option>
+    </select>
+    <select id="asEra" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกยุค</option>
+      <option>2523-2532</option>
+      <option>2533-2542</option>
+      <option>2543-2553</option>
+      <option>2554-ปัจจุบัน</option>
+      <option>สากล</option>
+      <option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option>
+    </select>
+    <select id="asMood" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกอารมณ์</option>
+      <option>สุข / สนุก</option>
+      <option>เศร้า / เหงา</option>
+      <option>นิ่ง / ผ่อนคลาย</option>
+      <option>หวาน / อบอุ่น</option>
+      <option>มัน / ฮึกเหิม</option>
+    </select>
+    <button class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="padding:0">
+    <div class="table-wrap">
+      <table class="song-table">
+        <thead>
+          <tr>
+            <th onclick="sortBy('name')" style="cursor:pointer" title="คลิกเพื่อเรียง">ชื่อเพลง ↕</th>
+            <th onclick="sortBy('artist')" style="cursor:pointer" title="คลิกเพื่อเรียง">ศิลปิน ↕</th>
+            <th>คีย์</th>
+            <th onclick="sortBy('bpm')" style="cursor:pointer" title="คลิกเพื่อเรียง">BPM ↕</th>
+            <th>นักร้อง</th>
+            <th>ยุค</th>
+            <th>อารมณ์</th>
+            <th style="text-align:center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="songTbody">
+          <tr><td colspan="8"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Pagination -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--premium-light-gray);flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;color:var(--premium-text-muted)" id="pageInfo">—</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm btn-cancel" id="prevBtn" onclick="changePage(-1)">← ก่อนหน้า</button>
+        <button class="btn-sm btn-cancel" id="nextBtn" onclick="changePage(1)">ถัดไป →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<!-- ── Add Song Modal ── -->
+<div class="modal-bg" id="addModal" style="display:none" onclick="if(event.target===this)closeAddModal()">
+  <div class="modal-box">
+    <h3>➕ เพิ่มเพลงใหม่</h3>
+    <div class="m-group"><label>ชื่อเพลง *</label><input id="mName" class="m-input" placeholder="ชื่อเพลง" required></div>
+    <div class="m-group"><label>ศิลปิน / วงต้นฉบับ</label><input id="mArtist" class="m-input" placeholder="ชื่อศิลปิน"></div>
+    <div class="m-row">
+      <div class="m-group">
+        <label>คีย์</label>
+        <select id="mKey" class="m-select"><option value="">—</option><option>C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+      </div>
+      <div class="m-group"><label>BPM</label><input id="mBpm" class="m-input" type="number" min="0" max="300" placeholder="0"></div>
+    </div>
+    <div class="m-group">
+      <label>นักร้อง</label>
+      <div class="singer-pills">
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-male" value="ชาย"><label for="ms-male">🎤 ชาย</label></div>
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-female" value="หญิง"><label for="ms-female">🎤 หญิง</label></div>
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-duet" value="ชาย/หญิง"><label for="ms-duet">🎤🎤 คู่</label></div>
+      </div>
+    </div>
+    <div class="m-row">
+      <div class="m-group">
+        <label>ยุคเพลง</label>
+        <select id="mEra" class="m-select"><option value="">—</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select>
+      </div>
+      <div class="m-group">
+        <label>อารมณ์</label>
+        <select id="mMood" class="m-select"><option value="">—</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
+      <button class="btn-primary" id="addSaveBtn" onclick="submitAddSong()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Edit Song Modal ── -->
+<div class="modal-bg" id="editModal" style="display:none" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal-box">
+    <h3>✏️ แก้ไขเพลง</h3>
+    <input type="hidden" id="eSongId">
+    <div class="m-group"><label>ชื่อเพลง *</label><input id="eName" class="m-input" placeholder="ชื่อเพลง" required></div>
+    <div class="m-group"><label>ศิลปิน / วงต้นฉบับ</label><input id="eArtist" class="m-input" placeholder="ชื่อศิลปิน"></div>
+    <div class="m-row">
+      <div class="m-group">
+        <label>คีย์</label>
+        <select id="eKey" class="m-select"><option value="">—</option><option>C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+      </div>
+      <div class="m-group"><label>BPM</label><input id="eBpm" class="m-input" type="number" min="0" max="300" placeholder="0"></div>
+    </div>
+    <div class="m-group">
+      <label>นักร้อง</label>
+      <div class="singer-pills">
+        <div class="singer-pill"><input type="radio" name="es" id="es-male" value="ชาย"><label for="es-male">🎤 ชาย</label></div>
+        <div class="singer-pill"><input type="radio" name="es" id="es-female" value="หญิง"><label for="es-female">🎤 หญิง</label></div>
+        <div class="singer-pill"><input type="radio" name="es" id="es-duet" value="ชาย/หญิง"><label for="es-duet">🎤🎤 คู่</label></div>
+      </div>
+    </div>
+    <div class="m-row">
+      <div class="m-group">
+        <label>ยุคเพลง</label>
+        <select id="eEra" class="m-select"><option value="">—</option><option>2523-2532</option><option>2533-2542</option><option>2543-2553</option><option>2554-ปัจจุบัน</option><option>สากล</option><option>ลูกทุ่ง/อีสาน/เพื่อชีวิต</option></select>
+      </div>
+      <div class="m-group">
+        <label>อารมณ์</label>
+        <select id="eMood" class="m-select"><option value="">—</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeEditModal()">ยกเลิก</button>
+      <button class="btn-primary" id="editSaveBtn" onclick="submitEditSong()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/i18n.js"></script>
+<script src="js/app.js"></script>
+<script src="js/nav.js"></script>
+<script>
+// ─── State ───────────────────────────────────────────────────────
+var _allSongs     = [];
+var _filtered     = [];
+var _sortKey      = 'name';
+var _sortAsc      = true;
+var _page         = 1;
+var _perPage      = 30;
+var _editingId    = null;
+
+// ─── Init ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  requireAuth();
+  // admin-only guard
+  var role = localStorage.getItem('userRole') || '';
+  if (role !== 'admin') {
+    document.querySelector('main').innerHTML = '<div style="text-align:center;padding:60px;color:#888"><div style="font-size:3rem">🔒</div><div style="margin-top:12px;font-size:1.1rem;font-weight:600">เฉพาะ Admin เท่านั้น</div></div>';
+    return;
+  }
+  checkAdGate();
+  renderMainNav('mainNav');
+  applyTranslations();
+  loadSongs();
+});
+
+// ─── Load ─────────────────────────────────────────────────────────
+function loadSongs() {
+  setBodyLoading(true);
+  apiCall('getAllSongs', { source: 'band' }, function(r) {
+    setBodyLoading(false);
+    if (!r || !r.success) { showToast('โหลดข้อมูลล้มเหลว', 'error'); return; }
+    _allSongs = (r.data || []).slice().sort(function(a,b){ return (a.name||'').localeCompare(b.name||'','th'); });
+    filterTable();
+  });
+}
+
+function setBodyLoading(on) {
+  var tb = document.getElementById('songTbody');
+  if (!tb) return;
+  if (on) tb.innerHTML = '<tr><td colspan="8"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>';
+}
+
+// ─── Filter + Sort + Paginate ─────────────────────────────────────
+function filterTable() {
+  var q       = (document.getElementById('asSearch').value || '').toLowerCase().trim();
+  var singer  = document.getElementById('asSinger').value;
+  var era     = document.getElementById('asEra').value;
+  var mood    = document.getElementById('asMood').value;
+
+  _filtered = _allSongs.filter(function(s) {
+    if (q) {
+      var haystack = (s.name + ' ' + (s.artist||'') + ' ' + (s.key||'')).toLowerCase();
+      if (haystack.indexOf(q) < 0) return false;
+    }
+    if (singer) {
+      var sv = s.singer || '';
+      var ok = (sv === singer) || (singer === 'คู่' && (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง'));
+      if (!ok) return false;
+    }
+    if (era && s.era !== era) return false;
+    if (mood && (s.mood || '').indexOf(mood) < 0) return false;
+    return true;
+  });
+
+  applySortToFiltered();
+  _page = 1;
+  updateStats();
+  renderTable();
+}
+
+function applySortToFiltered() {
+  var k = _sortKey;
+  var asc = _sortAsc;
+  _filtered.sort(function(a, b) {
+    var av = (a[k] !== undefined && a[k] !== null) ? String(a[k]) : '';
+    var bv = (b[k] !== undefined && b[k] !== null) ? String(b[k]) : '';
+    if (k === 'bpm') {
+      av = parseFloat(av) || 0;
+      bv = parseFloat(bv) || 0;
+      return asc ? av - bv : bv - av;
+    }
+    return asc ? av.localeCompare(bv, 'th') : bv.localeCompare(av, 'th');
+  });
+}
+
+function sortBy(key) {
+  if (_sortKey === key) _sortAsc = !_sortAsc;
+  else { _sortKey = key; _sortAsc = true; }
+  applySortToFiltered();
+  _page = 1;
+  renderTable();
+}
+
+function changePage(dir) {
+  var maxPage = Math.ceil(_filtered.length / _perPage) || 1;
+  _page = Math.max(1, Math.min(_page + dir, maxPage));
+  renderTable();
+}
+
+// ─── Render Table ─────────────────────────────────────────────────
+function renderTable() {
+  var tb   = document.getElementById('songTbody');
+  if (!tb) return;
+  var maxPage = Math.ceil(_filtered.length / _perPage) || 1;
+  var start   = (_page - 1) * _perPage;
+  var pageRows = _filtered.slice(start, start + _perPage);
+
+  document.getElementById('pageInfo').textContent =
+    'หน้า ' + _page + ' / ' + maxPage + '   (' + _filtered.length + ' เพลง)';
+  document.getElementById('prevBtn').disabled = _page <= 1;
+  document.getElementById('nextBtn').disabled = _page >= maxPage;
+
+  if (pageRows.length === 0) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
+    return;
+  }
+
+  var html = '';
+  pageRows.forEach(function(s) {
+    var singerPill = '';
+    var sv = (s.singer || '').toLowerCase();
+    if (sv === 'ชาย'   || sv === 'male')                      singerPill = '<span class="pill pill-male">🎤 ชาย</span>';
+    else if (sv === 'หญิง' || sv === 'female')                singerPill = '<span class="pill pill-female">🎤 หญิง</span>';
+    else if (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง') singerPill = '<span class="pill pill-duet">🎤 คู่</span>';
+
+    html += '<tr data-id="' + esc(s.id) + '">' +
+      '<td class="td-name" title="' + esc(s.name) + '">' + esc(s.name) + '</td>' +
+      '<td class="td-artist" title="' + esc(s.artist||'') + '">' + esc(s.artist||'—') + '</td>' +
+      '<td>' + (s.key ? '<span class="pill pill-key">' + esc(s.key) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
+      '<td style="text-align:center;color:' + (s.bpm ? '#374151' : '#ccc') + '">' + (s.bpm || '—') + '</td>' +
+      '<td>' + (singerPill || '<span style="color:#ccc">—</span>') + '</td>' +
+      '<td>' + (s.era ? '<span class="pill pill-era">' + esc(s.era) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
+      '<td>' + (s.mood ? '<span class="pill pill-mood" style="font-size:10px">' + esc(s.mood) + '</span>' : '<span style="color:#ccc">—</span>') + '</td>' +
+      '<td><div class="td-actions">' +
+        '<button class="btn-sm btn-edit" onclick="openEditModal(\'' + esc(s.id) + '\')">✏️ แก้ไข</button>' +
+        '<button class="btn-sm btn-del"  onclick="deleteSong(\'' + esc(s.id) + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
+      '</div></td>' +
+    '</tr>';
+  });
+  tb.innerHTML = html;
+}
+
+function updateStats() {
+  var all = _allSongs;
+  var flt = _filtered;
+  document.getElementById('statTotal').textContent    = all.length;
+  document.getElementById('statFiltered').textContent = flt.length;
+  var male = 0, female = 0, duet = 0;
+  all.forEach(function(s) {
+    var sv = (s.singer||'').toLowerCase();
+    if (sv === 'ชาย'||sv === 'male') male++;
+    else if (sv === 'หญิง'||sv === 'female') female++;
+    else if (sv === 'คู่'||sv === 'duet'||sv === 'ชาย/หญิง') duet++;
+  });
+  document.getElementById('statMale').textContent   = male;
+  document.getElementById('statFemale').textContent = female;
+  document.getElementById('statDuet').textContent   = duet;
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Add Song ─────────────────────────────────────────────────────
+function openAddModal() {
+  document.getElementById('mName').value   = '';
+  document.getElementById('mArtist').value = '';
+  document.getElementById('mKey').value    = '';
+  document.getElementById('mBpm').value    = '';
+  document.getElementById('mEra').value    = '';
+  document.getElementById('mMood').value   = '';
+  document.querySelectorAll('input[name="ms"]').forEach(function(r){ r.checked = false; });
+  document.getElementById('addModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
+}
+function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+function submitAddSong() {
+  var name = document.getElementById('mName').value.trim();
+  if (!name) { document.getElementById('mName').focus(); showToast('กรุณาใส่ชื่อเพลง', 'error'); return; }
+  var singerRadio = document.querySelector('input[name="ms"]:checked');
+  var btn = document.getElementById('addSaveBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  apiCall('addSong', {
+    name:    name,
+    artist:  document.getElementById('mArtist').value.trim(),
+    key:     document.getElementById('mKey').value,
+    bpm:     parseInt(document.getElementById('mBpm').value) || 0,
+    era:     document.getElementById('mEra').value,
+    mood:    document.getElementById('mMood').value,
+    singer:  singerRadio ? singerRadio.value : '',
+    bandId:  localStorage.getItem('bandId') || ''
+  }, function(r) {
+    btn.disabled = false; btn.textContent = '💾 บันทึก';
+    if (r && r.success) {
+      closeAddModal();
+      showToast('✅ เพิ่มเพลง "' + name + '" แล้ว', 'success');
+      clearSongsCache();
+      loadSongs();
+    } else {
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    }
+  });
+}
+
+// ─── Edit Song ────────────────────────────────────────────────────
+function openEditModal(songId) {
+  var song = _allSongs.find(function(s){ return s.id === songId; });
+  if (!song) { showToast('ไม่พบข้อมูลเพลง', 'error'); return; }
+
+  document.getElementById('eSongId').value  = song.id;
+  document.getElementById('eName').value    = song.name   || '';
+  document.getElementById('eArtist').value  = song.artist || '';
+  document.getElementById('eBpm').value     = song.bpm    || '';
+  document.getElementById('eEra').value     = song.era    || '';
+  document.getElementById('eMood').value    = song.mood   || '';
+
+  // Key select
+  var keyEl = document.getElementById('eKey');
+  setSelectValue(keyEl, song.key || '');
+
+  // Singer radio
+  document.querySelectorAll('input[name="es"]').forEach(function(r){ r.checked = false; });
+  var sv = song.singer || '';
+  if (sv === 'ชาย' || sv === 'male')    document.getElementById('es-male').checked   = true;
+  else if (sv === 'หญิง' || sv === 'female') document.getElementById('es-female').checked = true;
+  else if (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง') document.getElementById('es-duet').checked  = true;
+
+  document.getElementById('editModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('eName').focus(); }, 100);
+}
+function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+function setSelectValue(el, val) {
+  for (var i = 0; i < el.options.length; i++) {
+    if (el.options[i].value === val || el.options[i].text === val) {
+      el.selectedIndex = i; return;
+    }
+  }
+  el.selectedIndex = 0;
+}
+
+function submitEditSong() {
+  var songId = document.getElementById('eSongId').value;
+  var name   = document.getElementById('eName').value.trim();
+  if (!name) { document.getElementById('eName').focus(); showToast('กรุณาใส่ชื่อเพลง', 'error'); return; }
+  var singerRadio = document.querySelector('input[name="es"]:checked');
+  var btn = document.getElementById('editSaveBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  apiCall('updateSong', {
+    songId: songId,
+    name:   name,
+    artist: document.getElementById('eArtist').value.trim(),
+    key:    document.getElementById('eKey').value,
+    bpm:    parseInt(document.getElementById('eBpm').value) || 0,
+    era:    document.getElementById('eEra').value,
+    mood:   document.getElementById('eMood').value,
+    singer: singerRadio ? singerRadio.value : ''
+  }, function(r) {
+    btn.disabled = false; btn.textContent = '💾 บันทึก';
+    if (r && r.success) {
+      closeEditModal();
+      showToast('✅ บันทึกเพลง "' + name + '" แล้ว', 'success');
+      clearSongsCache();
+      // อัปเดต local state ทันทีโดยไม่ต้อง reload ทั้งหมด
+      var idx = _allSongs.findIndex(function(s){ return s.id === songId; });
+      if (idx >= 0) {
+        _allSongs[idx] = Object.assign(_allSongs[idx], {
+          name:   name,
+          artist: document.getElementById('eArtist').value.trim(),
+          key:    document.getElementById('eKey').value,
+          bpm:    parseInt(document.getElementById('eBpm').value) || 0,
+          era:    document.getElementById('eEra').value,
+          mood:   document.getElementById('eMood').value,
+          singer: singerRadio ? singerRadio.value : ''
+        });
+        filterTable();
+      } else {
+        loadSongs();
+      }
+    } else {
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    }
+  });
+}
+
+// ─── Delete Song ──────────────────────────────────────────────────
+function deleteSong(songId, songName) {
+  if (!confirm('ลบเพลง "' + songName + '" ออกจากคลัง?\n\nการลบจะไม่กระทบลิสที่บันทึกแล้ว')) return;
+  apiCall('deleteSong', { songId: songId }, function(r) {
+    if (r && r.success) {
+      showToast('🗑️ ลบเพลง "' + songName + '" แล้ว', 'success');
+      clearSongsCache();
+      _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
+      filterTable();
+    } else {
+      showToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
+    }
+  });
+}
+
+function clearSongsCache() {
+  var bandId   = localStorage.getItem('bandId')   || '';
+  var bandName = localStorage.getItem('bandName') || '';
+  try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(e) {}
+}
+
+// ─── Keyboard shortcuts ───────────────────────────────────────────
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeAddModal();
+    closeEditModal();
+  }
+  // Ctrl+Shift+A = เปิด add modal อย่างเร็ว
+  if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+    e.preventDefault();
+    openAddModal();
+  }
+});
+</script>
+</body>
+</html>

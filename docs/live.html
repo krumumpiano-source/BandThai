@@ -243,6 +243,24 @@
     .nudge-preset:active{background:var(--bg4);border-color:var(--gold)}
     .nudge-all{grid-column:1/-1;background:rgba(212,168,67,.1);border-color:rgba(212,168,67,.3);color:var(--gold);font-weight:600}
     .nudge-all:active{background:rgba(212,168,67,.25)}
+    /* ─── NUDGE SETTINGS ─── */
+    #nudgeSettingsModal .modal-sheet{max-height:82vh;display:flex;flex-direction:column}
+    #nudgeSettingsModal h3{flex-shrink:0}
+    #nudgeSettingsList{flex:1;overflow-y:auto;padding:2px 0 8px;display:flex;flex-direction:column;gap:8px;margin-top:10px}
+    .nse-row{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:var(--radius-sm);padding:8px 10px;border:1px solid #383838}
+    .nse-row.nse-first{border-color:rgba(212,168,67,.35);background:rgba(212,168,67,.08)}
+    .nse-emoji{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit;flex-shrink:0}
+    .nse-text{flex:1;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.9rem;font-family:inherit}
+    .nse-emoji:focus,.nse-text:focus{outline:none;border-color:var(--gold)}
+    .nse-del{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#ef4444;border-radius:6px;width:34px;height:34px;font-size:1rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:background .15s}
+    .nse-del:active{background:rgba(239,68,68,.35)}
+    #nudgeAddRow{display:flex;gap:8px;margin-top:4px;flex-shrink:0}
+    #nudgeAddEmojiInput{width:52px;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:6px 4px;font-size:1.15rem;text-align:center;font-family:inherit}
+    #nudgeAddTextInput{flex:1;background:var(--bg4);border:1px solid #555;color:var(--text);border-radius:6px;padding:7px 10px;font-size:0.9rem;font-family:inherit}
+    #nudgeAddEmojiInput:focus,#nudgeAddTextInput:focus{outline:none;border-color:var(--gold)}
+    #nudgeAddBtn{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#10b981;border-radius:6px;padding:0 14px;font-size:1.1rem;cursor:pointer;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #nudgeAddBtn:active{background:rgba(16,185,129,.35)}
+    .nudge-settings-hint{font-size:.78rem;color:var(--text3);margin-top:6px;flex-shrink:0}
 
     /* ─── NUDGE FLASH OVERLAY ─── */
     #nudgeFlash{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:3000;pointer-events:none;opacity:0;display:none}
@@ -429,21 +447,32 @@
   <div class="modal-sheet">
     <h3>👋 สะกิดสมาชิก</h3>
     <p style="font-size:.82rem;color:var(--text2);margin-bottom:6px">เลือกข้อความแล้วส่งให้ทุกคนในวง</p>
-    <div class="nudge-presets">
-      <button class="nudge-preset nudge-all" onclick="sendNudge('👋 สะกิด!')">👋 สะกิดทุกคน!</button>
-      <button class="nudge-preset" onclick="sendNudge('พร้อมยัง?')">🎤 พร้อมยัง?</button>
-      <button class="nudge-preset" onclick="sendNudge('เร็วขึ้น')">⏩ เร็วขึ้น</button>
-      <button class="nudge-preset" onclick="sendNudge('ช้าลง')">⏪ ช้าลง</button>
-      <button class="nudge-preset" onclick="sendNudge('เบาลง')">🔉 เบาลง</button>
-      <button class="nudge-preset" onclick="sendNudge('ดังขึ้น')">🔊 ดังขึ้น</button>
-      <button class="nudge-preset" onclick="sendNudge('โซโล่เลย!')">🎸 โซโล่เลย!</button>
-      <button class="nudge-preset" onclick="sendNudge('จบเพลงนะ')">⏭ จบเพลงนะ</button>
-      <button class="nudge-preset" onclick="sendNudge('เบรคเลย')">☕ เบรคเลย</button>
-      <button class="nudge-preset" onclick="sendNudge('ดีมาก!')">👏 ดีมาก!</button>
-      <button class="nudge-preset" onclick="sendNudge('สาวอย่างแจ่มหวะ!')">💃 สาวอย่างแจ่มหวะ!</button>
-    </div>
-    <div class="modal-actions" style="margin-top:14px">
+    <div class="nudge-presets" id="nudgePresetsGrid"></div>
+    <div class="modal-actions" style="margin-top:14px;justify-content:space-between">
+      <button class="modal-btn secondary" style="min-width:0;padding:0 14px;font-size:.85rem" onclick="openNudgeSettings()">✏️ ปรับแต่ง</button>
       <button class="modal-btn secondary" onclick="closeNudge()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── NUDGE SETTINGS MODAL ── -->
+<div class="modal-backdrop" id="nudgeSettingsModal" style="display:none">
+  <div class="modal-sheet">
+    <h3>✏️ ปรับแต่งข้อความสะกิด</h3>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:2px;flex-shrink:0">แก้ไขอีโมจิและข้อความของแต่ละปุ่มได้ตามต้องการ</p>
+    <div id="nudgeSettingsList"></div>
+    <div id="nudgeAddRow">
+      <input id="nudgeAddEmojiInput" type="text" placeholder="😊" maxlength="4">
+      <input id="nudgeAddTextInput" type="text" placeholder="พิมพ์ข้อความใหม่..." maxlength="30">
+      <button id="nudgeAddBtn" onclick="addNudgePresetRow()">+</button>
+    </div>
+    <p class="nudge-settings-hint">* แถวแรก (สีทอง) คือปุ่ม "สะกิดทุกคน" — แก้ข้อความได้แต่ไม่สามารถลบได้</p>
+    <div class="modal-actions" style="margin-top:12px;justify-content:space-between">
+      <button class="modal-btn secondary" style="min-width:0;padding:0 14px;font-size:.85rem;color:#ef4444;border-color:#7f1d1d" onclick="resetNudgePresets()">รีเซ็ต</button>
+      <div style="display:flex;gap:8px">
+        <button class="modal-btn secondary" onclick="closeNudgeSettings()">ยกเลิก</button>
+        <button class="modal-btn primary" onclick="saveNudgeSettings()">บันทึก</button>
+      </div>
     </div>
   </div>
 </div>
@@ -647,6 +676,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // nudgeModal uses style.display instead of .show class
   document.getElementById('nudgeModal').addEventListener('click', function(e) {
     if (e.target === this) closeNudge();
+  });
+  document.getElementById('nudgeSettingsModal').addEventListener('click', function(e) {
+    if (e.target === this) closeNudgeSettings();
   });
 });
 
@@ -2003,12 +2035,187 @@ function startPeriodicSync() {
 var _nudgeAudioCtx = null;
 var _lastNudgeTime = 0;
 
+// Default presets — emoji and message text stored separately
+var NUDGE_DEFAULTS = [
+  { emoji: '👋', text: 'สะกิด!', isAll: true },
+  { emoji: '🎤', text: 'พร้อมยัง?' },
+  { emoji: '⏩', text: 'เร็วขึ้น' },
+  { emoji: '⏪', text: 'ช้าลง' },
+  { emoji: '🔉', text: 'เบาลง' },
+  { emoji: '🔊', text: 'ดังขึ้น' },
+  { emoji: '🎸', text: 'โซโล่เลย!' },
+  { emoji: '⏭', text: 'จบเพลงนะ' },
+  { emoji: '☕', text: 'เบรคเลย' },
+  { emoji: '👏', text: 'ดีมาก!' },
+  { emoji: '💃', text: 'สาวอย่างแจ่มหวะ!' }
+];
+
+var _nudgePresets = null; // loaded lazily
+
+function _loadNudgePresets() {
+  if (_nudgePresets) return _nudgePresets;
+  try {
+    var raw = localStorage.getItem('liveNudgePresets');
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        _nudgePresets = parsed;
+        return _nudgePresets;
+      }
+    }
+  } catch(e) {}
+  _nudgePresets = NUDGE_DEFAULTS.map(function(p) { return Object.assign({}, p); });
+  return _nudgePresets;
+}
+
+function _saveNudgePresetsToStorage() {
+  localStorage.setItem('liveNudgePresets', JSON.stringify(_nudgePresets));
+}
+
+function renderNudgePresets() {
+  var presets = _loadNudgePresets();
+  var grid = document.getElementById('nudgePresetsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  presets.forEach(function(p, i) {
+    var btn = document.createElement('button');
+    btn.className = 'nudge-preset' + (p.isAll ? ' nudge-all' : '');
+    btn.textContent = p.emoji + ' ' + p.text;
+    btn.onclick = function() { sendNudge(p.emoji + ' ' + p.text); };
+    grid.appendChild(btn);
+  });
+}
+
 function openNudge() {
   if (_isGuest) return;
+  renderNudgePresets();
   document.getElementById('nudgeModal').style.display = 'flex';
 }
 function closeNudge() {
   document.getElementById('nudgeModal').style.display = 'none';
+}
+
+// ── Nudge Settings ──────────────────────────────────────────────
+function openNudgeSettings() {
+  closeNudge();
+  renderNudgeSettingsEditor();
+  document.getElementById('nudgeSettingsModal').style.display = 'flex';
+}
+function closeNudgeSettings() {
+  document.getElementById('nudgeSettingsModal').style.display = 'none';
+  // re-open nudge modal
+  renderNudgePresets();
+  document.getElementById('nudgeModal').style.display = 'flex';
+}
+
+function renderNudgeSettingsEditor() {
+  var presets = _loadNudgePresets();
+  var list = document.getElementById('nudgeSettingsList');
+  if (!list) return;
+  list.innerHTML = '';
+  presets.forEach(function(p, i) {
+    var row = document.createElement('div');
+    row.className = 'nse-row' + (p.isAll ? ' nse-first' : '');
+    row.dataset.index = i;
+
+    var emojiInput = document.createElement('input');
+    emojiInput.type = 'text';
+    emojiInput.className = 'nse-emoji';
+    emojiInput.value = p.emoji;
+    emojiInput.maxLength = 4;
+    emojiInput.placeholder = '😊';
+
+    var textInput = document.createElement('input');
+    textInput.type = 'text';
+    textInput.className = 'nse-text';
+    textInput.value = p.text;
+    textInput.maxLength = 30;
+    textInput.placeholder = 'ข้อความ...';
+
+    row.appendChild(emojiInput);
+    row.appendChild(textInput);
+
+    if (!p.isAll) {
+      var delBtn = document.createElement('button');
+      delBtn.className = 'nse-del';
+      delBtn.innerHTML = '✕';
+      delBtn.title = 'ลบ';
+      delBtn.onclick = (function(r) { return function() { r.remove(); }; })(row);
+      row.appendChild(delBtn);
+    }
+
+    list.appendChild(row);
+  });
+  // Clear add-row inputs
+  var addEmoji = document.getElementById('nudgeAddEmojiInput');
+  var addText  = document.getElementById('nudgeAddTextInput');
+  if (addEmoji) addEmoji.value = '';
+  if (addText)  addText.value  = '';
+}
+
+function addNudgePresetRow() {
+  var emoji = (document.getElementById('nudgeAddEmojiInput').value.trim()) || '✨';
+  var text  = document.getElementById('nudgeAddTextInput').value.trim();
+  if (!text) { showToast('กรุณาพิมพ์ข้อความ'); return; }
+
+  var list = document.getElementById('nudgeSettingsList');
+  var row = document.createElement('div');
+  row.className = 'nse-row';
+
+  var emojiInput = document.createElement('input');
+  emojiInput.type = 'text';
+  emojiInput.className = 'nse-emoji';
+  emojiInput.value = emoji;
+  emojiInput.maxLength = 4;
+
+  var textInput = document.createElement('input');
+  textInput.type = 'text';
+  textInput.className = 'nse-text';
+  textInput.value = text;
+  textInput.maxLength = 30;
+
+  var delBtn = document.createElement('button');
+  delBtn.className = 'nse-del';
+  delBtn.innerHTML = '✕';
+  delBtn.title = 'ลบ';
+  delBtn.onclick = (function(r) { return function() { r.remove(); }; })(row);
+
+  row.appendChild(emojiInput);
+  row.appendChild(textInput);
+  row.appendChild(delBtn);
+  list.appendChild(row);
+
+  document.getElementById('nudgeAddEmojiInput').value = '';
+  document.getElementById('nudgeAddTextInput').value  = '';
+  document.getElementById('nudgeAddTextInput').focus();
+}
+
+function saveNudgeSettings() {
+  var rows = document.querySelectorAll('#nudgeSettingsList .nse-row');
+  var newPresets = [];
+  rows.forEach(function(row, i) {
+    var emoji = row.querySelector('.nse-emoji').value.trim() || '👋';
+    var text  = row.querySelector('.nse-text').value.trim();
+    if (!text) return;
+    var p = { emoji: emoji, text: text };
+    if (i === 0) p.isAll = true; // first row always isAll
+    newPresets.push(p);
+  });
+  if (newPresets.length === 0) { showToast('ต้องมีอย่างน้อย 1 ข้อความ'); return; }
+  _nudgePresets = newPresets;
+  _saveNudgePresetsToStorage();
+  showToast('✅ บันทึกข้อความสะกิดแล้ว');
+  document.getElementById('nudgeSettingsModal').style.display = 'none';
+  renderNudgePresets();
+  document.getElementById('nudgeModal').style.display = 'flex';
+}
+
+function resetNudgePresets() {
+  if (!confirm('รีเซ็ตข้อความสะกิดกลับเป็นค่าเดิม?')) return;
+  _nudgePresets = NUDGE_DEFAULTS.map(function(p) { return Object.assign({}, p); });
+  _saveNudgePresetsToStorage();
+  renderNudgeSettingsEditor();
+  showToast('รีเซ็ตแล้ว');
 }
 
 function sendNudge(msg) {

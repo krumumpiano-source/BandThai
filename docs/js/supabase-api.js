@@ -127,6 +127,7 @@
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong':            return doInsert('band_songs', d.data || d);
         case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
+        case 'deleteSong':         return doDelete('band_songs', d.songId);
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);

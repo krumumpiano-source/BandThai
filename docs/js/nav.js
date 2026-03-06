@@ -90,7 +90,8 @@ function renderMainNav(containerId) {
   // ── เมนูแอดมิน ────────────────────────────────────────
   var adminLinks = isAdmin ? (
     navSection('🔧 แอดมิน') +
-    navLink('admin', '🔧 ' + _t('nav_admin'), 'จัดการผู้ใช้และระบบ')
+    navLink('admin',       '🔧 ' + _t('nav_admin'),    'จัดการผู้ใช้และระบบ') +
+    navLink('admin-songs', '🎵 คลังเพลง Admin',        'เพิ่ม แก้ไข ลบเพลงในคลัง')
   ) : '';
 
   container.innerHTML =
