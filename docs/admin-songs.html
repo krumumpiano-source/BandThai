@@ -97,6 +97,28 @@
     /* ── Table scrollable wrapper ── */
     .table-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid var(--premium-border)}
     .table-wrap .song-table th:first-child,.table-wrap .song-table td:first-child{padding-left:16px}
+
+    /* ── Import/Export Buttons ── */
+    .btn-export{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;border-radius:10px;border:1.5px solid var(--premium-border);background:var(--premium-white);color:var(--premium-text);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+    .btn-export:hover{background:var(--premium-off-white)}
+    .btn-import-main{display:inline-flex;align-items:center;gap:5px;padding:9px 15px;border-radius:10px;border:1.5px solid #BFDBFE;background:#EFF6FF;color:#1D4ED8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
+    .btn-import-main:hover{background:#DBEAFE}
+
+    /* ── Import Modal ── */
+    .drop-zone{border:2.5px dashed var(--premium-border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#FAFAFA}
+    .drop-zone.drag-over{border-color:var(--premium-gold);background:#FFFBEB}
+    .drop-zone input[type=file]{display:none}
+    .import-preview{margin-top:16px;max-height:280px;overflow-y:auto;border:1.5px solid var(--premium-border);border-radius:10px;font-size:13px}
+    .import-preview table{width:100%;border-collapse:collapse}
+    .import-preview th{background:#F8F9FA;padding:7px 10px;font-size:11px;font-weight:700;color:#6B7280;border-bottom:1.5px solid #E5E7EB;position:sticky;top:0}
+    .import-preview td{padding:6px 10px;border-bottom:1px solid #F3F4F6}
+    .import-preview tr:last-child td{border-bottom:none}
+    .import-row-ok td{background:#F0FDF4}
+    .import-row-dup td{background:#FFFBEB}
+    .badge-new{background:#D1FAE5;color:#065F46;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700}
+    .badge-dup{background:#FEF9C3;color:#854D0E;padding:1px 7px;border-radius:99px;font-size:10px;font-weight:700}
+    .import-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:13px}
+    .import-summary span{padding:4px 12px;border-radius:99px;font-weight:600}
   </style>
 </head>
 <body>
@@ -148,6 +170,9 @@
       <option>มัน / ฮึกเหิม</option>
     </select>
     <button class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
+    <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
+    <button class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
+    <button class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
   </div>
 
   <!-- Table -->
@@ -183,6 +208,30 @@
 
 </div>
 </main>
+
+<!-- ─── Import Modal ─────────────────────────────────────────────── -->
+<div id="importModal" class="modal-bg" style="display:none">
+  <div class="modal-box" style="max-width:700px">
+    <h3>📥 นำเข้าเพลง</h3>
+
+    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">รองรับไฟล์ <strong>CSV</strong> และ <strong>JSON</strong> — คอลัมน์ที่รู้จัก: <code>name, artist, key, bpm, singer, era, mood</code></p>
+
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFile').click()">
+      <input type="file" id="importFile" accept=".csv,.json" onchange="handleImportFile(this.files[0])">
+      <div style="font-size:2rem">📂</div>
+      <div style="margin-top:8px;font-weight:700">คลิกเพื่อเลือกไฟล์ หรือ ลากวางที่นี่</div>
+      <div style="font-size:12px;color:#9CA3AF;margin-top:4px">CSV / JSON (ไม่เกิน 5 MB)</div>
+    </div>
+
+    <div id="importSummary" class="import-summary" style="display:none"></div>
+    <div id="importPreview" class="import-preview" style="display:none"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeImportModal()">ยกเลิก</button>
+      <button id="importSaveBtn" class="btn-primary" onclick="submitImport()" style="display:none">💾 บันทึกเพลงใหม่</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Add Song Modal ── -->
 <div class="modal-bg" id="addModal" style="display:none" onclick="if(event.target===this)closeAddModal()">
@@ -651,11 +700,238 @@ function clearSongsCache() {
   try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(e) {}
 }
 
+// ─── Export ───────────────────────────────────────────────────────
+function exportSongs(format) {
+  var libSongs = _allSongs.filter(function(s){ return !s._fromHistory; });
+  if (!libSongs.length) { showToast('ไม่มีเพลงในคลัง', 'error'); return; }
+
+  var timestamp = new Date().toISOString().slice(0,10);
+  var filename  = 'songs-export-' + timestamp;
+
+  if (format === 'json') {
+    var json = JSON.stringify(libSongs.map(function(s){ return {
+      name: s.name, artist: s.artist||'', key: s.key||'', bpm: s.bpm||0,
+      singer: s.singer||'', era: s.era||'', mood: s.mood||''
+    }; }), null, 2);
+    _downloadFile(filename + '.json', json, 'application/json');
+    showToast('📤 Export JSON สำเร็จ (' + libSongs.length + ' เพลง)', 'success');
+    return;
+  }
+
+  // CSV
+  var rows = [['name','artist','key','bpm','singer','era','mood']];
+  libSongs.forEach(function(s){
+    rows.push([s.name, s.artist||'', s.key||'', s.bpm||'', s.singer||'', s.era||'', s.mood||'']);
+  });
+  var csv = rows.map(function(r){
+    return r.map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+  }).join('\n');
+  _downloadFile(filename + '.csv', '\uFEFF' + csv, 'text/csv;charset=utf-8');
+  showToast('📤 Export CSV สำเร็จ (' + libSongs.length + ' เพลง)', 'success');
+}
+
+function _downloadFile(name, content, mime) {
+  var blob = new Blob([content], { type: mime });
+  var url  = URL.createObjectURL(blob);
+  var a    = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Import ───────────────────────────────────────────────────────
+var _importRows = []; // rows to insert
+
+function openImportModal() {
+  _importRows = [];
+  document.getElementById('importFile').value = '';
+  document.getElementById('importSummary').style.display = 'none';
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importSaveBtn').style.display = 'none';
+  document.getElementById('importModal').style.display = 'flex';
+}
+function closeImportModal() { document.getElementById('importModal').style.display = 'none'; }
+
+// Drag-and-drop
+(function(){
+  document.addEventListener('DOMContentLoaded', function(){
+    var dz = document.getElementById('dropZone');
+    if (!dz) return;
+    dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('drag-over'); });
+    dz.addEventListener('dragleave', function(){ dz.classList.remove('drag-over'); });
+    dz.addEventListener('drop', function(e){
+      e.preventDefault(); dz.classList.remove('drag-over');
+      var file = e.dataTransfer.files[0];
+      if (file) handleImportFile(file);
+    });
+  });
+})();
+
+function handleImportFile(file) {
+  if (!file) return;
+  var ext = file.name.split('.').pop().toLowerCase();
+  if (file.size > 5 * 1024 * 1024) { showToast('ไฟล์ใหญ่เกิน 5 MB', 'error'); return; }
+
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var text = e.target.result;
+    var parsed = [];
+    try {
+      if (ext === 'json') {
+        var arr = JSON.parse(text);
+        if (!Array.isArray(arr)) throw new Error('ต้องเป็น JSON array');
+        parsed = arr;
+      } else {
+        parsed = _parseCSV(text);
+      }
+    } catch(err) {
+      showToast('อ่านไฟล์ไม่ได้: ' + err.message, 'error'); return;
+    }
+    _showImportPreview(parsed);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function _parseCSV(text) {
+  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(function(l){ return l.trim(); });
+  if (!lines.length) return [];
+
+  function parseLine(line) {
+    var result = [], cur = '', inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else cur += c;
+    }
+    result.push(cur.trim()); return result;
+  }
+
+  var headers = parseLine(lines[0]).map(function(h){ return h.toLowerCase().replace(/[\s_-]+/g,''); });
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    var cols = parseLine(lines[i]);
+    var obj = {};
+    headers.forEach(function(h, idx){ obj[h] = cols[idx] || ''; });
+    rows.push(obj);
+  }
+  return rows;
+}
+
+function _normalizeRow(raw) {
+  // Accept flexible column names
+  function g(keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var val = raw[keys[i]];
+      if (val !== undefined && String(val).trim() !== '') return String(val).trim();
+    }
+    return '';
+  }
+  return {
+    name:   g(['name','ชื่อเพลง','song','title']),
+    artist: g(['artist','ศิลปิน','band','วง']),
+    key:    g(['key','คีย์','tonality']),
+    bpm:    parseInt(g(['bpm','tempo'])) || 0,
+    singer: g(['singer','นักร้อง','vocal']),
+    era:    g(['era','ยุค','period']),
+    mood:   g(['mood','อารมณ์']),
+  };
+}
+
+function _showImportPreview(rawRows) {
+  var existing = {};
+  _allSongs.forEach(function(s){ existing[(s.name||'').toLowerCase().trim()] = true; });
+
+  var normalized = rawRows.map(_normalizeRow).filter(function(r){ return r.name; });
+  var newRows = [], dupRows = [];
+  normalized.forEach(function(r){
+    var key = r.name.toLowerCase().trim();
+    if (existing[key]) dupRows.push(r);
+    else newRows.push(r);
+  });
+  _importRows = newRows;
+
+  // Summary badges
+  var sumEl = document.getElementById('importSummary');
+  sumEl.style.display = 'flex';
+  sumEl.innerHTML =
+    '<span style="background:#D1FAE5;color:#065F46">' + newRows.length + ' เพลงใหม่</span>' +
+    '<span style="background:#FEF9C3;color:#854D0E">' + dupRows.length + ' ซ้ำ (ข้าม)</span>' +
+    '<span style="background:#F1F5F9;color:#475569">' + normalized.length + ' รวม</span>';
+
+  if (!normalized.length) {
+    document.getElementById('importPreview').style.display = 'none';
+    document.getElementById('importSaveBtn').style.display = 'none';
+    showToast('ไม่พบข้อมูลในไฟล์', 'error'); return;
+  }
+
+  // Preview table (max 50 rows shown)
+  var preview = normalized.slice(0, 50);
+  var html = '<table><thead><tr><th>ชื่อเพลง</th><th>ศิลปิน</th><th>คีย์</th><th>BPM</th><th>นักร้อง</th><th>สถานะ</th></tr></thead><tbody>';
+  preview.forEach(function(r){
+    var isDup = existing[r.name.toLowerCase().trim()];
+    var cls   = isDup ? 'import-row-dup' : 'import-row-ok';
+    var badge = isDup ? '<span class="badge-dup">ซ้ำ</span>' : '<span class="badge-new">ใหม่</span>';
+    html += '<tr class="' + cls + '">' +
+      '<td>' + esc(r.name) + '</td><td>' + esc(r.artist) + '</td><td>' + esc(r.key) + '</td>' +
+      '<td>' + (r.bpm||'') + '</td><td>' + esc(r.singer) + '</td><td>' + badge + '</td>' +
+      '</tr>';
+  });
+  if (normalized.length > 50) html += '<tr><td colspan="6" style="text-align:center;color:#9CA3AF;padding:8px">... และอีก ' + (normalized.length-50) + ' รายการ</td></tr>';
+  html += '</tbody></table>';
+
+  var preEl = document.getElementById('importPreview');
+  preEl.innerHTML = html;
+  preEl.style.display = 'block';
+
+  var saveBtn = document.getElementById('importSaveBtn');
+  if (newRows.length > 0) {
+    saveBtn.style.display = 'inline-flex';
+    saveBtn.textContent = '💾 บันทึก ' + newRows.length + ' เพลงใหม่';
+  } else {
+    saveBtn.style.display = 'none';
+    showToast('ทุกเพลงในไฟล์มีอยู่ในคลังแล้ว', 'success');
+  }
+}
+
+function submitImport() {
+  if (!_importRows.length) return;
+  var btn = document.getElementById('importSaveBtn');
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+
+  var bandId = localStorage.getItem('bandId') || '';
+  var total  = _importRows.length;
+  var done   = 0;
+  var failed = 0;
+
+  function next(idx) {
+    if (idx >= total) {
+      btn.disabled = false;
+      closeImportModal();
+      clearSongsCache();
+      loadSongs();
+      showToast('✅ เพิ่ม ' + (total - failed) + ' เพลงสำเร็จ' + (failed ? ' (' + failed + ' ล้มเหลว)' : ''), 'success');
+      return;
+    }
+    var r = _importRows[idx];
+    apiCall('addSong', {
+      name: r.name, artist: r.artist, key: r.key, bpm: r.bpm,
+      singer: r.singer, era: r.era, mood: r.mood, bandId: bandId
+    }, function(res) {
+      if (!res || !res.success) failed++;
+      done++;
+      btn.textContent = 'กำลังบันทึก... (' + done + '/' + total + ')';
+      next(idx + 1);
+    });
+  }
+  next(0);
+}
+
 // ─── Keyboard shortcuts ───────────────────────────────────────────
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     closeAddModal();
     closeEditModal();
+    closeImportModal();
   }
   // Ctrl+Shift+A = เปิด add modal อย่างเร็ว
   if (e.ctrlKey && e.shiftKey && e.key === 'A') {
