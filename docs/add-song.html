@@ -71,7 +71,11 @@
           </div>
           <div class="form-r">
             <div class="form-group"><label>ยุคของเพลง</label><select id="era"><option value="">— เลือกยุค —</option><option value="80s">ยุค 80s (พ.ศ. 2523-2532)</option><option value="90s">ยุค 90s (พ.ศ. 2533-2542)</option><option value="2000s">ยุค 2000s (พ.ศ. 2543-2553)</option><option value="2010s">ยุค 2010s (พ.ศ. 2554-2562)</option><option value="2020s">ยุค 2020s (พ.ศ. 2563-ปัจจุบัน)</option></select></div>
-            <div class="form-group"><label>อารมณ์เพลง</label><select id="mood"><option value="">— เลือกอารมณ์ —</option><option>สุข / สนุก</option><option>เศร้า / เหงา</option><option>นิ่ง / ผ่อนคลาย</option><option>หวาน / อบอุ่น</option><option>มัน / ฮึกเหิม</option></select></div>
+            <div class="form-group">
+              <label>อารมณ์เพลง</label>
+              <select id="mood" onchange="updateMoodHint('mood','moodHint')"><option value="">— เลือกอารมณ์ —</option><option value="มัน / สนุก">มัน / สนุก</option><option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option><option value="เศร้า / อกหัก">เศร้า / อกหัก</option><option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option><option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option></select>
+              <small id="moodHint" style="display:block;margin-top:6px;color:var(--premium-text-muted,#888);font-size:12px;min-height:18px"></small>
+            </div>
           </div>
           <div class="form-group"><label>แนวเพลง (ประเภท)</label><select id="genre"><option value="">— เลือกแนวเพลง —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="ฮิปฮอป">ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option></select></div>
           <div class="form-group">
@@ -94,6 +98,18 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js"></script>
   <script>
+  var MOOD_HINTS = {
+    'มัน / สนุก':        '🎉 เพลงเร็ว เต้นได้ สนุกสนาน • เหมาะเปิดงาน เซกชั่นมัน หรือปาร์ตี้',
+    'หวาน / โรแมนติก':  '❤️ เพลงรักช้า อ่อนหวาน • เหมาะงานแต่ง โมเมนต์คู่รัก หรืองานเลี้ยง',
+    'เศร้า / อกหัก':    '💔 เพลงโศก คิดถึง อาลัย • เหมาะช่วงเนิบช้าที่ต้องการอารมณ์',
+    'นิ่ง / ผ่อนคลาย':  '🌿 เพลง Chill เบาๆ • เหมาะบรรยากาศผ่อนคลาย งานเลี้ยงพักผ่อน',
+    'ฮึกเหิม / ยิ่งใหญ่':'🔥 เพลงอลังการ ทรงพลัง • เหมาะเปิด/ปิดโชว์ใหญ่ หรือไฮไลต์งาน'
+  };
+  function updateMoodHint(selId, hintId) {
+    var v = document.getElementById(selId).value;
+    var h = document.getElementById(hintId);
+    if (h) h.textContent = MOOD_HINTS[v] || '';
+  }
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
       checkAdGate(); renderMainNav('mainNav'); applyTranslations();
