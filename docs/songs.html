@@ -78,20 +78,21 @@ select:focus,input:focus{
 }
 .song-search-icon{
   position:absolute;
-  left:14px;
+  left:12px;
   top:50%;
   transform:translateY(-50%);
-  font-size:18px;
+  font-size:16px;
   pointer-events:none;
-  opacity:.55;
+  opacity:.45;
   transition:opacity .2s;
+  line-height:1;
 }
 .song-search-wrap:focus-within .song-search-icon{
-  opacity:1;
+  opacity:.85;
 }
 .song-search-input{
   width:100%;
-  padding:13px 44px 13px 44px;
+  padding:13px 44px 13px 38px;
   border-radius:var(--radius-xl);
   border:2px solid var(--premium-border);
   background:var(--premium-white);
