@@ -292,55 +292,73 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─── Load ─────────────────────────────────────────────────────────
 function loadSongs() {
   setBodyLoading(true);
-  var bandId = localStorage.getItem('bandId') || '';
+  var bandId   = localStorage.getItem('bandId')   || '';
+  var bandName = localStorage.getItem('bandName') || '';
   var _done = 0;
-  var _libSongs = [];
-  var _histRows = [];
+  var _globalSongs = [];
+  var _bandSongs   = [];
+  var _histRows    = [];
 
   function _merge() {
     _done++;
-    if (_done < 2) return;
+    if (_done < 3) return;
     setBodyLoading(false);
 
-    // Build lookup of library song names (lowercase)
-    var libNames = {};
-    _libSongs.forEach(function(s) {
-      libNames[(s.name || '').toLowerCase().trim()] = true;
+    // Merge global + band songs, deduplicate by ID then by name
+    var libById   = {};
+    var libByName = {};
+    function addLib(s) {
+      if (s.id) { libById[s.id] = s; libByName[(s.name || '').toLowerCase().trim()] = s; }
+    }
+    _globalSongs.forEach(addLib);
+    _bandSongs.forEach(function(s) {
+      // Include band-only songs not already in global results
+      if (!libById[s.id]) addLib(s);
     });
+    var libSongs = Object.values(libById);
+
+    // Build name lookup for history dedup
+    var libNames = libByName;
 
     // Extract unique songs from history NOT already in library
     var histMap = {};
     _histRows.forEach(function(row) {
       (row.songs || []).forEach(function(s) {
         var key = (s.name || '').toLowerCase().trim();
-        if (!key || libNames[key]) return;
-        if (!histMap[key]) {
-          histMap[key] = {
-            id: '_hist_' + key,
-            name: s.name || '',
-            artist: s.artist || '',
-            key: s.key || '',
-            bpm: s.bpm || 0,
-            singer: s.singer || '',
-            era: '', mood: '',
-            _fromHistory: true
-          };
-        }
+        if (!key || libNames[key] || histMap[key]) return;
+        histMap[key] = {
+          id: '_hist_' + key,
+          name: s.name || '',
+          artist: s.artist || '',
+          key: s.key || '',
+          bpm: s.bpm || 0,
+          singer: s.singer || '',
+          era: '', mood: '',
+          _fromHistory: true
+        };
       });
     });
 
-    _allSongs = _libSongs.concat(Object.values(histMap));
+    _allSongs = libSongs.concat(Object.values(histMap));
     _allSongs.sort(function(a, b) {
       return (a.name || '').localeCompare(b.name || '', 'th');
     });
     filterTable();
   }
 
-  apiCall('getAllSongs', { source: 'global' }, function(r) {
-    _libSongs = (r && r.success) ? (r.data || []) : [];
+  // Same as songs.html: source:'global' + bandName + bandId
+  apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
+    _globalSongs = (r && r.success) ? (r.data || []) : [];
     _merge();
   });
 
+  // Band-specific songs (same query songs.html uses internally for band library)
+  apiCall('getAllSongs', { source: 'band', bandId: bandId }, function(r) {
+    _bandSongs = (r && r.success) ? (r.data || []) : [];
+    _merge();
+  });
+
+  // Playlist history songs
   apiCall('getPlaylistHistory', { bandId: bandId }, function(r) {
     _histRows = (r && r.success) ? (r.data || []) : [];
     _merge();
