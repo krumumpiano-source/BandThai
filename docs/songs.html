@@ -449,6 +449,14 @@ html{scroll-behavior:smooth}
 #selectBar .sb-add{background:var(--premium-gold);color:#fff}
 #selectBar .sb-add:disabled{opacity:.6;cursor:not-allowed}
 #selectBar .sb-cancel{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+
+/* ── Library tab switcher ── */
+.lib-tabs{display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--premium-border)}
+.lib-tab{flex:1;padding:12px 16px;text-align:center;font-size:var(--text-sm);font-weight:600;font-family:var(--font-family-body);cursor:pointer;border:none;background:transparent;color:var(--premium-text-muted);position:relative;transition:color .15s}
+.lib-tab:hover{color:var(--premium-text)}
+.lib-tab.active{color:var(--premium-gold-dark)}
+.lib-tab.active::after{content:'';position:absolute;bottom:-2px;left:0;right:0;height:3px;background:var(--premium-gold);border-radius:3px 3px 0 0}
+.lib-tab .tab-count{font-size:11px;font-weight:400;opacity:.7;margin-left:4px}
   </style>
 </head>
 
@@ -550,8 +558,16 @@ html{scroll-behavior:smooth}
   </div>
 </div>
 
+<div class="panel" style="padding-bottom:0">
+  <!-- Library tabs -->
+  <div class="lib-tabs" id="libTabs" style="display:none">
+    <button class="lib-tab active" data-source="global" onclick="switchLibrary('global')">📀 คลังเพลงกลาง<span class="tab-count" id="tabCountGlobal"></span></button>
+    <button class="lib-tab" data-source="band" onclick="switchLibrary('band')">🎸 คลังเพลงวง<span class="tab-count" id="tabCountBand"></span></button>
+  </div>
+</div>
+
 <div class="panel">
-  <h3>🎼 เพลงที่ค้นพบ</h3>
+  <h3 id="resultTitle">🎼 เพลงที่ค้นพบ</h3>
   <div id="result"></div>
 
   <div class="pagination">
@@ -647,6 +663,7 @@ let _totalCount = 0;
 let _totalPages = 1;
 let currentPage = 1;
 const PER_PAGE = 15;
+var _currentSource = 'global'; // 'global' or 'band'
 
 // ── Select mode state ──────────────────────────────────────────────
 var _selectMode = false;
@@ -832,7 +849,7 @@ function loadPage(page) {
   var search = (searchEl && searchEl.value) ? searchEl.value.trim() : '';
 
   apiCall('getSongsPage', {
-    source: 'global',
+    source: _currentSource,
     page: currentPage,
     perPage: PER_PAGE,
     search: search,
@@ -848,7 +865,11 @@ function loadPage(page) {
       _totalPages = Math.max(1, Math.ceil(_totalCount / PER_PAGE));
       // update header total
       var hts = document.getElementById('headerTotalSongs');
-      if (hts) hts.textContent = _totalCount.toLocaleString() + ' เพลง';
+      if (_currentSource === 'global' && hts) hts.textContent = _totalCount.toLocaleString() + ' เพลง';
+      // update tab count
+      var tcId = _currentSource === 'global' ? 'tabCountGlobal' : 'tabCountBand';
+      var tcEl = document.getElementById(tcId);
+      if (tcEl) tcEl.textContent = ' (' + _totalCount.toLocaleString() + ')';
       renderPage();
     } else {
       var msg = (result && result.message) ? result.message : 'error';
@@ -859,6 +880,28 @@ function loadPage(page) {
 }
 
 function loadInitial(forceRefresh) {
+  loadPage(1);
+}
+
+function switchLibrary(source) {
+  if (source === _currentSource) return;
+  _currentSource = source;
+  // update tab UI
+  document.querySelectorAll('.lib-tab').forEach(function(t) {
+    t.classList.toggle('active', t.dataset.source === source);
+  });
+  // update title
+  var titleEl = document.getElementById('resultTitle');
+  if (titleEl) titleEl.textContent = source === 'band' ? '🎸 เพลงในคลังวง' : '🎼 เพลงที่ค้นพบ';
+  // hide select mode btn in band view, show in global
+  var smBtn = document.getElementById('selectModeBtn');
+  if (smBtn) smBtn.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'flex' : 'none';
+  // hide add-song-band link in band view
+  var addWrap = document.getElementById('addSongBandWrap');
+  if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
+  // exit select mode if active
+  if (_selectMode) exitSelectMode();
+  // reload
   loadPage(1);
 }
 
@@ -1271,12 +1314,14 @@ window.onload = function() {
   loadInitial();
   loadBandSettings();
 
-  // Show select-mode button and add-song button when user has a band
+  // Show select-mode button, add-song button, and library tabs when user has a band
   var _smBandId = localStorage.getItem('bandId') || '';
   var _smBtn = document.getElementById('selectModeBtn');
   if (_smBtn && _smBandId) _smBtn.style.display = 'flex';
   var _addWrap = document.getElementById('addSongBandWrap');
   if (_addWrap && _smBandId) _addWrap.style.display = 'block';
+  var _libTabs = document.getElementById('libTabs');
+  if (_libTabs && _smBandId) _libTabs.style.display = 'flex';
 };
 </script>
 
