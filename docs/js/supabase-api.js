@@ -533,7 +533,7 @@
     // ── Songs ─────────────────────────────────────────────────────
     async function doGetAllSongs(d) {
       var source = d.source || 'global';
-      var PAGE = 1000;
+      var PAGE = 500;
       var all = [];
       var from = 0;
       while (true) {
