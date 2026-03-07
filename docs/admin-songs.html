@@ -28,13 +28,12 @@
     .pill-hist{background:#FEF9C3;color:#854D0E;border:1px solid #FDE68A;border-radius:12px;padding:1px 8px;font-size:10px;vertical-align:middle;margin-left:4px}
 
     /* ── Table ── */
-    .song-table{width:100%;border-collapse:collapse;font-size:14px;min-width:960px}
+    .song-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto}
     .song-table th{position:sticky;top:0;background:var(--premium-white);padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--premium-text-muted);border-bottom:2px solid var(--premium-border);white-space:nowrap;z-index:2}
     .song-table td{padding:9px 12px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
     .song-table tr:hover td{background:var(--premium-off-white)}
-    .td-name{font-weight:700;color:var(--premium-text);max-width:200px}
-    .td-artist{color:var(--premium-text-muted);font-size:13px;max-width:150px}
-    .td-name,.td-artist{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .td-name{font-weight:700;color:var(--premium-text);max-width:250px;overflow:hidden;text-overflow:ellipsis}
+    .td-artist{color:var(--premium-text-muted);font-size:13px;max-width:180px;overflow:hidden;text-overflow:ellipsis}
     .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
     .pill-key{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A}
     .pill-male{background:#DBEAFE;color:#1E3A8A}
@@ -154,8 +153,21 @@
     .sug-btn-reject{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
     .sug-btn-reject:hover{background:#fecdd3}
 
-    /* ── Responsive ── */
+    /* ── Responsive column hiding ── */
+    .hide-lg{display:table-cell}
+    .hide-md{display:table-cell}
+    .hide-sm{display:table-cell}
+
+    @media(max-width:1200px){
+      .hide-lg{display:none !important}
+    }
+    @media(max-width:900px){
+      .hide-md{display:none !important}
+      .td-name{max-width:180px}
+      .td-artist{max-width:140px;font-size:12px}
+    }
     @media(max-width:768px){
+      .hide-sm{display:none !important}
       .as-wrap{padding:0 12px}
       .as-toolbar{gap:8px}
       .as-search{min-width:150px;font-size:14px}
@@ -164,8 +176,14 @@
       .stats-bar{gap:10px}
       .stat-box{min-width:70px;padding:8px 12px}
       .stat-num{font-size:1.2rem}
-      .song-table{font-size:13px}
-      .song-table th,.song-table td{padding:8px 10px}
+      .song-table{font-size:12px}
+      .song-table th,.song-table td{padding:6px 8px}
+      .td-name{max-width:140px;white-space:normal;line-height:1.3}
+      .td-artist{max-width:110px;white-space:normal;line-height:1.3;font-size:11px}
+      .il-input{font-size:12px;padding:4px 6px}
+      .il-select{font-size:11px;padding:3px 2px}
+      .pill{font-size:10px;padding:1px 6px}
+      .btn-sm{padding:4px 10px;font-size:11px}
     }
     @media(max-width:600px){
       .sug-diff{grid-template-columns:1fr}
@@ -260,7 +278,7 @@
     <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
     <button class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
     <button class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
-    <button id="saveAllBtn" class="b;overflow:visibletn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
+    <button id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
   </div>
 
   <!-- Table -->
@@ -271,12 +289,12 @@
           <tr>
             <th onclick="sortBy('name')" style="cursor:pointer" title="คลิกเพื่อเรียง">ชื่อเพลง ↕</th>
             <th onclick="sortBy('artist')" style="cursor:pointer" title="คลิกเพื่อเรียง">ศิลปิน ↕</th>
-            <th>คีย์</th>
-            <th onclick="sortBy('bpm')" style="cursor:pointer" title="คลิกเพื่อเรียง">BPM ↕</th>
-            <th>นักร้อง</th>
-            <th>ยุค</th>
-            <th>แนวเพลง</th>
-            <th>อารมณ์</th>
+            <th class="hide-md">คีย์</th>
+            <th class="hide-md" onclick="sortBy('bpm')" style="cursor:pointer" title="คลิกเพื่อเรียง">BPM ↕</th>
+            <th class="hide-md">นักร้อง</th>
+            <th class="hide-sm">ยุค</th>
+            <th class="hide-lg">แนวเพลง</th>
+            <th class="hide-lg">อารมณ์</th>
             <th style="text-align:center">จัดการ</th>
           </tr>
         </thead>
@@ -691,7 +709,8 @@ function renderTable() {
       html += '<tr data-id="' + id + '">' +
         '<td class="td-name">' + esc(s.name) + ' <span class="pill-hist">📋 History</span></td>' +
         '<td style="color:var(--premium-text-muted);font-size:13px">' + esc(s.artist||'—') + '</td>' +
-        '<td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td>' +
+        '<td class="hide-md">—</td><td class="hide-md">—</td><td class="hide-md">—</td>' +
+        '<td class="hide-sm">—</td><td class="hide-lg">—</td><td class="hide-lg">—</td>' +
         '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + id + '\')">➕ เพิ่มในคลัง</button></div></td>' +
         '</tr>';
       return;
@@ -718,12 +737,12 @@ function renderTable() {
     html += '<tr data-id="' + id + '"' + (isDirty ? ' class="row-dirty"' : '') + '>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
-      '<td>' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
-      '<td><input class="il-input il-bpm" type="number" data-field="bpm" value="' + esc(dBpm) + '" min="0" max="300" oninput="markDirty(this)"></td>' +
-      '<td>' + singerSel + '</td>' +
-      '<td>' + _buildSel('era',  _ERA_OPTS,   dEra,  'il-era',   _ERA_LABELS, true)  + '</td>' +
-      '<td>' + _buildSel('tags', _GENRE_OPTS, dTags, 'il-genre', null,        true)  + '</td>' +
-      '<td>' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
+      '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
+      '<td class="hide-md"><input class="il-input il-bpm" type="number" data-field="bpm" value="' + esc(dBpm) + '" min="0" max="300" oninput="markDirty(this)"></td>' +
+      '<td class="hide-md">' + singerSel + '</td>' +
+      '<td class="hide-sm">' + _buildSel('era',  _ERA_OPTS,   dEra,  'il-era',   _ERA_LABELS, true)  + '</td>' +
+      '<td class="hide-lg">' + _buildSel('tags', _GENRE_OPTS, dTags, 'il-genre', null,        true)  + '</td>' +
+      '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td><div class="td-actions">' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
