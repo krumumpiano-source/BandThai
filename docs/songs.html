@@ -633,6 +633,11 @@ html{scroll-behavior:smooth}
       <input type="checkbox" id="copyKey" checked>
       แสดงคีย์
     </label>
+
+    <label style="display:flex;align-items:center;gap:6px">
+      <input type="checkbox" id="copyArtist">
+      แสดงชื่อศิลปิน
+    </label>
   </div>
 
   <ul id="playlist" class="list"></ul>
@@ -1671,6 +1676,7 @@ function _doCopyAndSave(){
 
     const showSpeed = document.getElementById("copySpeed")?.checked;
     const showKey   = document.getElementById("copyKey")?.checked;
+    const showArtist = document.getElementById("copyArtist")?.checked;
 
     const useDateEl = document.getElementById("useDate");
     const venueEl   = document.getElementById("venue");
@@ -1690,13 +1696,16 @@ function _doCopyAndSave(){
       if(s.break) return "พัก";
       n++;
 
+      const artistTxt =
+        showArtist && s.artist ? ` - ${s.artist}` : "";
+
       const bpmTxt =
         showSpeed && s.bpm ? ` ${s.bpm}` : "";
 
       const keyTxt =
         showKey ? ` [${formatKey(transposeKey(s.key, s.transpose, s.mode))}]` : "";
 
-      return `${n}. ${s.name}${bpmTxt}${keyTxt}`;
+      return `${n}. ${s.name}${artistTxt}${bpmTxt}${keyTxt}`;
     }).join("\n");
 
     const textToCopy = header + body;

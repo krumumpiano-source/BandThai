@@ -586,6 +586,7 @@ function loadSongs() {
     _allSongs.sort(function(a, b) {
       return (a.name || '').localeCompare(b.name || '', 'th');
     });
+    populateArtistFilter();
     filterTable();
   }
 
@@ -608,11 +609,33 @@ function setBodyLoading(on) {
   if (on) tb.innerHTML = '<tr><td colspan="9"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>';
 }
 
+// ─── Populate Artist Filter ───────────────────────────────────────
+function populateArtistFilter() {
+  var artistSet = {};
+  _allSongs.forEach(function(s) {
+    var artist = (s.artist || '').trim();
+    if (artist) artistSet[artist] = true;
+  });
+  var artists = Object.keys(artistSet).sort(function(a, b) {
+    return a.localeCompare(b, 'th');
+  });
+  
+  var sel = document.getElementById('asArtist');
+  if (!sel) return;
+  var currentVal = sel.value;
+  sel.innerHTML = '<option value="">ทุกศิลปิน</option>' + 
+    artists.map(function(a) {
+      return '<option value="' + esc(a) + '">' + esc(a) + '</option>';
+    }).join('');
+  sel.value = currentVal;
+}
+
 // ─── Filter + Sort + Paginate ─────────────────────────────────────
 function filterTable() {
   var q       = (document.getElementById('asSearch').value || '').toLowerCase().trim();
   var source  = document.getElementById('asSource').value;
   var singer  = document.getElementById('asSinger').value;
+  var artist  = document.getElementById('asArtist').value;
   var era     = document.getElementById('asEra').value;
   var genre   = document.getElementById('asGenre').value;
   var mood    = document.getElementById('asMood').value;
@@ -631,6 +654,7 @@ function filterTable() {
       var ok = (sv === singer) || (singer === 'คู่' && (sv === 'คู่' || sv === 'duet' || sv === 'ชาย/หญิง'));
       if (!ok) return false;
     }
+    if (artist && (s.artist || '').trim() !== artist) return false;
     if (era && s.era !== era) return false;
     if (genre && (s.tags || '') !== genre) return false;
     if (mood && (s.mood || '').indexOf(mood) < 0) return false;
