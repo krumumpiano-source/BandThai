@@ -38,11 +38,12 @@
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
     #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
     #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
-    .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:32px;height:32px;font-size:0.78rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:0 8px}
+    .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:32px;height:auto;font-size:0.78rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 8px}
     .font-btn:active{background:var(--bg4)}
+    .btn-hint{font-size:0.52rem;color:var(--text3);font-weight:400;letter-spacing:.02em;line-height:1}
     /* ─── METRONOME CONTROLS (top-right of Now Playing) ─── */
     .met-controls{position:absolute;top:6px;left:12px;display:flex;gap:6px;z-index:2}
-    .met-btn{cursor:pointer;border-radius:50%;width:28px;height:28px;font-size:0.85rem;display:inline-flex;align-items:center;justify-content:center;padding:0;transition:all .15s;line-height:1}
+    .met-btn{cursor:pointer;border-radius:8px;width:auto;min-width:28px;height:auto;font-size:0.85rem;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;gap:1px;transition:all .15s;line-height:1}
     .met-btn:active{transform:scale(.9)}
     #beatToggleBtn{background:rgba(34,197,94,.22);border:1px solid rgba(34,197,94,.5);color:#22c55e}
     #beatToggleBtn.off{background:rgba(100,100,100,.12);border-color:#444;color:#555}
@@ -63,6 +64,8 @@
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:2px}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
+    .key-hint{font-size:0.6rem;color:var(--text3);margin-top:2px;opacity:.7;transition:opacity .4s}
+    .key-hint.hide{opacity:0}
     #nowBpm{font-size:1rem;color:var(--text2);font-weight:500}
     #nowSinger{font-size:0.9rem;color:var(--text2)}
     #nowNote{font-size:0.82rem;color:var(--gold);margin-top:6px;font-style:italic;min-height:18px}
@@ -289,10 +292,10 @@
     </div>
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
-      <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
-      <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+      <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻<span class="btn-hint">เล็ก</span></button>
+      <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺<span class="btn-hint">ใหญ่</span></button>
 
-      <button id="keyModeBtn" class="font-btn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับรูปแบบคีย์">🔤</button>
+      <button id="keyModeBtn" class="font-btn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับรูปแบบคีย์">🔤<span class="btn-hint" style="color:rgba(255,255,255,.55)">คีย์</span></button>
       <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
       <button id="endBreakBtn" onclick="endBreak()">✅ จบเบรค</button>
@@ -308,14 +311,17 @@
     <div id="nowLabel">▶ กำลังเล่น</div>
     <div id="nowTitle">—</div>
     <div class="now-meta">
-      <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
+        <div class="key-hint" id="keyHint">แตะเปลี่ยนคีย์</div>
+      </div>
       <div id="nowBpm"></div>
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
     <div class="met-controls">
-      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
-      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
+      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡<span class="btn-hint">ไฟ</span></button>
+      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇<span class="btn-hint">คลิก</span></button>
     </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
@@ -1538,6 +1544,8 @@ function submitRequest() {
 // ─────────────────────────────────────────────────────────────────
 function openTranspose() {
   if (_isGuest) return;
+  var hint = document.getElementById('keyHint');
+  if (hint) hint.classList.add('hide');
   var s = _playlist[_current];
   if (!s) return;
   _trStep = 0;
