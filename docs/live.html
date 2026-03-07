@@ -73,6 +73,26 @@
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
 
+    /* ─── NAV ARROWS ─── */
+    .now-nav{display:flex;align-items:center;width:100%;gap:4px}
+    .nav-arrow{background:none;border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:1.4rem;padding:8px 6px;border-radius:10px;cursor:pointer;transition:background .12s,color .12s;line-height:1;min-width:40px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .nav-arrow:active{background:rgba(212,168,67,.2);color:var(--gold);border-color:rgba(212,168,67,.4)}
+    .nav-arrow:disabled{opacity:.2;pointer-events:none}
+    .nav-arrow .nav-hint{font-size:0.48rem;color:var(--text3);display:block}
+    .now-nav-title{flex:1;min-width:0;overflow:hidden}
+    /* ─── QUICK SEARCH ─── */
+    #songSearchWrap{padding:6px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:8px}
+    #songSearchInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px 12px;font-size:0.88rem;font-family:inherit;outline:none}
+    #songSearchInput:focus{border-color:var(--gold)}
+    #songSearchInput::placeholder{color:var(--text3)}
+    #songSearchClear{background:none;border:none;color:var(--text3);font-size:1.1rem;cursor:pointer;padding:4px 6px;display:none}
+    #songSearchClear:active{color:var(--text)}
+    .song-item.search-hide{display:none!important}
+    .song-item .si-name .search-hl{background:rgba(212,168,67,.3);color:var(--gold);border-radius:2px;padding:0 1px}
+    /* swipe indicator on now playing */
+    .now-swipe-hint{font-size:0.55rem;color:var(--text3);opacity:0;transition:opacity .3s;margin-top:2px}
+    .now-swipe-hint.show{opacity:.6}
+
     /* ─── SONG LIST ─── */
     #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
     #songList{padding:6px 0 80px}
@@ -319,7 +339,14 @@
     <div class="singer-strip" id="singerStrip"></div>
     <span id="beatDot" class="beat-dot" style="display:none"></span>
     <div id="nowLabel">▶ กำลังเล่น</div>
-    <div id="nowTitle">—</div>
+    <div class="now-nav">
+      <button class="nav-arrow" id="prevSongBtn" onclick="prevSong()" title="เพลงก่อนหน้า">◀</button>
+      <div class="now-nav-title">
+        <div id="nowTitle">—</div>
+      </div>
+      <button class="nav-arrow" id="nextSongBtn" onclick="nextSongDirect()" title="เพลงถัดไป">▶</button>
+    </div>
+    <div id="nowSwipeHint" class="now-swipe-hint">⟵ ปัดซ้าย-ขวาเปลี่ยนเพลง ⟶</div>
     <div class="now-meta">
       <div style="display:flex;flex-direction:column;align-items:center">
         <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
@@ -338,6 +365,13 @@
       <span class="np-name" id="nextName">—</span>
       <span class="np-key" id="nextKey"></span>
     </div>
+  </div>
+
+  <!-- ── QUICK SEARCH ── -->
+  <div id="songSearchWrap">
+    <span style="font-size:0.9rem;color:var(--text3)">🔍</span>
+    <input type="text" id="songSearchInput" placeholder="ค้นหาเพลงในลิสต์..." autocomplete="off" />
+    <button id="songSearchClear" onclick="clearSongSearch()">✕</button>
   </div>
 
   <!-- ── SONG LIST ── -->
@@ -369,8 +403,11 @@
 <div id="gestureHints" class="hidden">
   <div style="font-size:1.3rem;font-weight:700;color:var(--gold);margin-bottom:4px">🎤 วิธีใช้ Live Mode</div>
   <div class="hint-item"><div class="hint-icon">⏭</div><div class="hint-text"><strong>ไปเพลงถัดไป</strong> — กดปุ่มใหญ่ด้านล่าง</div></div>
+  <div class="hint-item"><div class="hint-icon">◀▶</div><div class="hint-text"><strong>ปุ่มลูกศร</strong> — สลับเพลงก่อน/หลังได้ทันที</div></div>
   <div class="hint-item"><div class="hint-icon">👆</div><div class="hint-text"><strong>กดค้างเพลง</strong> — เมนูลัด (เล่นตอนนี้ / ถัดไป / skip / โน้ต)</div></div>
   <div class="hint-item"><div class="hint-icon">👈</div><div class="hint-text"><strong>ปัดซ้าย</strong> — skip เพลง</div></div>
+  <div class="hint-item"><div class="hint-icon">👆👈</div><div class="hint-text"><strong>ปัดซ้าย-ขวาบนเพลงปัจจุบัน</strong> — สลับเพลงถัด/ก่อน</div></div>
+  <div class="hint-item"><div class="hint-icon">🔍</div><div class="hint-text"><strong>ค้นหาเพลง</strong> — พิมพ์ชื่อเพลงเพื่อค้นหาในลิสต์</div></div>
   <div class="hint-item"><div class="hint-icon">🎵</div><div class="hint-text"><strong>แตะคีย์</strong> — transpose ขึ้น/ลง</div></div>
   <button class="hint-dismiss" onclick="dismissHints()">เข้าใจแล้ว ✓</button>
 </div>
@@ -710,6 +747,13 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('nudgeSettingsModal').addEventListener('click', function(e) {
     if (e.target === this) closeNudgeSettings();
   });
+
+  // ── Song quick search & swipe-to-switch ──
+  initSongSearch();
+  initNowPlayingSwipe();
+  // Show swipe hint briefly
+  var swHint = document.getElementById('nowSwipeHint');
+  if (swHint) { swHint.classList.add('show'); setTimeout(function(){ swHint.classList.remove('show'); }, 4000); }
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -795,6 +839,8 @@ function renderNowPlaying() {
   startBeatDot(s.bpm);
   // ── Next song preview ──
   renderNextPreview();
+  // ── Nav arrow enable/disable ──
+  updateNavButtons();
 }
 
 function renderNextPreview() {
@@ -1280,6 +1326,134 @@ function advanceSong() {
   } else {
     showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
   }
+}
+
+// ─── PREV / NEXT SONG (direct, no animation) ──────────────────────────────────
+function prevSong() {
+  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
+  var prev = _current - 1;
+  while (prev >= 0 && _playlist[prev]._skipped) prev--;
+  if (prev >= 0) {
+    _current = prev;
+    _modified = true;
+    haptic(80);
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    renderNowPlaying();
+    renderSongList();
+    showToast('◀ ' + (_playlist[_current] ? _playlist[_current].name : ''));
+  } else {
+    showToast('นี่เพลงแรกแล้ว');
+  }
+}
+
+function nextSongDirect() {
+  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
+  var next = _current + 1;
+  while (next < _playlist.length && _playlist[next]._skipped) next++;
+  if (next < _playlist.length) {
+    _current = next;
+    _modified = true;
+    haptic(80);
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    renderNowPlaying();
+    renderSongList();
+    showToast('▶ ' + (_playlist[_current] ? _playlist[_current].name : ''));
+  } else {
+    showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+  }
+}
+
+// ─── QUICK SEARCH / FILTER ────────────────────────────────────────────────────
+var _searchTimer = null;
+function initSongSearch() {
+  var inp = document.getElementById('songSearchInput');
+  if (!inp) return;
+  inp.addEventListener('input', function() {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(filterSongList, 150);
+    document.getElementById('songSearchClear').style.display = inp.value ? 'block' : 'none';
+  });
+}
+
+function filterSongList() {
+  var q = (document.getElementById('songSearchInput').value || '').trim().toLowerCase();
+  var items = document.querySelectorAll('.song-item');
+  items.forEach(function(el) {
+    var idx = parseInt(el.getAttribute('data-idx'), 10);
+    var s = _playlist[idx];
+    if (!s) return;
+    if (!q) {
+      el.classList.remove('search-hide');
+      // restore original name
+      var nameEl = el.querySelector('.si-name');
+      if (nameEl) nameEl.textContent = s.name;
+      return;
+    }
+    var name = (s.name || '').toLowerCase();
+    var artist = (s.artist || '').toLowerCase();
+    var match = name.indexOf(q) >= 0 || artist.indexOf(q) >= 0;
+    el.classList.toggle('search-hide', !match);
+    // highlight match in name
+    var nameEl = el.querySelector('.si-name');
+    if (nameEl && match) {
+      var raw = s.name || '';
+      var li = raw.toLowerCase().indexOf(q);
+      if (li >= 0) {
+        nameEl.innerHTML = escHtml(raw.substring(0, li)) +
+          '<span class="search-hl">' + escHtml(raw.substring(li, li + q.length)) + '</span>' +
+          escHtml(raw.substring(li + q.length));
+      }
+    }
+  });
+}
+
+function clearSongSearch() {
+  var inp = document.getElementById('songSearchInput');
+  inp.value = '';
+  document.getElementById('songSearchClear').style.display = 'none';
+  filterSongList();
+  inp.blur();
+}
+
+// ─── SWIPE ON NOW-PLAYING ─────────────────────────────────────────────────────
+function initNowPlayingSwipe() {
+  var np = document.getElementById('nowPlaying');
+  var sx = 0, sy = 0, swiping = false;
+  np.addEventListener('touchstart', function(e) {
+    // Don't intercept touches on buttons/key
+    if (e.target.closest('.nav-arrow, #nowKey, .met-btn, .met-controls')) return;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+    swiping = true;
+  }, { passive: true });
+  np.addEventListener('touchmove', function(e) {
+    if (!swiping) return;
+    var dy = Math.abs(e.touches[0].clientY - sy);
+    if (dy > 40) swiping = false; // vertical scroll, cancel
+  }, { passive: true });
+  np.addEventListener('touchend', function(e) {
+    if (!swiping) return;
+    swiping = false;
+    var dx = e.changedTouches[0].clientX - sx;
+    if (Math.abs(dx) < 60) return; // too short
+    if (dx < 0) nextSongDirect(); // swipe left → next
+    else prevSong(); // swipe right → prev
+  });
+}
+
+// ─── UPDATE NAV BUTTONS STATE ─────────────────────────────────────────────────
+function updateNavButtons() {
+  var prevBtn = document.getElementById('prevSongBtn');
+  var nextBtn = document.getElementById('nextSongBtn');
+  if (!prevBtn || !nextBtn) return;
+  // check prev
+  var prev = _current - 1;
+  while (prev >= 0 && _playlist[prev]._skipped) prev--;
+  prevBtn.disabled = prev < 0;
+  // check next
+  var next = _current + 1;
+  while (next < _playlist.length && _playlist[next]._skipped) next++;
+  nextBtn.disabled = next >= _playlist.length;
 }
 
 function playNow(idx) {
