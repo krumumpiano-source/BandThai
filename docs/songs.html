@@ -560,6 +560,10 @@ html{scroll-behavior:smooth}
       <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
       <option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option>
     </select>
+
+    <select id="artist" onchange="onFilterChange()">
+      <option value="">ทุกศิลปิน</option>
+    </select>
   </div>
 
   <!-- Search Box -->
@@ -742,11 +746,13 @@ function getFilterValues() {
   var eraEl = getEl("era");
   var genreEl = getEl("genre");
   var moodEl = getEl("mood");
+  var artistEl = getEl("artist");
   return {
     singer: singerEl ? singerEl.value : "",
     era: eraEl ? eraEl.value : "",
     genre: genreEl ? genreEl.value : "",
-    mood: moodEl ? moodEl.value : ""
+    mood: moodEl ? moodEl.value : "",
+    artist: artistEl ? artistEl.value : ""
   };
 }
 
@@ -882,7 +888,8 @@ function loadPage(page) {
     singer: filters.singer,
     era: filters.era,
     genre: filters.genre,
-    mood: filters.mood
+    mood: filters.mood,
+    artist: filters.artist
   }, function(result) {
     setLoading(false);
     if (result && result.success) {
@@ -909,6 +916,32 @@ function loadInitial(forceRefresh) {
   loadPage(1);
 }
 
+function populateArtistFilter() {
+  apiCall('getAllSongs', { source: _currentSource }, function(r) {
+    if (r && r.success && r.data) {
+      var artistSet = {};
+      r.data.forEach(function(s) {
+        var art = (s.artist || '').trim();
+        if (art) artistSet[art] = true;
+      });
+      var artists = Object.keys(artistSet).sort(function(a, b) {
+        return a.localeCompare(b, 'th');
+      });
+      var sel = document.getElementById('artist');
+      if (sel) {
+        // Keep the first option "ทุกศิลปิน"
+        sel.innerHTML = '<option value="">ทุกศิลปิน</option>';
+        artists.forEach(function(art) {
+          var opt = document.createElement('option');
+          opt.value = art;
+          opt.textContent = art;
+          sel.appendChild(opt);
+        });
+      }
+    }
+  });
+}
+
 function switchLibrary(source) {
   if (source === _currentSource) return;
   _currentSource = source;
@@ -929,6 +962,7 @@ function switchLibrary(source) {
   if (_selectMode) exitSelectMode();
   // reload
   loadPage(1);
+  populateArtistFilter();
 }
 
 function deleteBandSong(songId, songName, libType) {
@@ -1427,6 +1461,7 @@ window.onload = function() {
 
   loadInitial();
   loadBandSettings();
+  populateArtistFilter();
 
   // Show select-mode button, add-song button, and library tabs when user has a band
   var _smBandId = localStorage.getItem('bandId') || '';
