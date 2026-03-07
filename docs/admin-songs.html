@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="css/compat.css">
   <style>
     /* ── Layout ── */
-    .as-wrap{max-width:1400px;margin:0 auto}
+    .as-wrap{max-width:1400px;margin:0 auto;padding:0 16px}
     .as-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
     .as-search{flex:1;min-width:200px;padding:10px 14px;border-radius:10px;border:1.5px solid var(--premium-border);font-size:15px;font-family:inherit;background:var(--premium-white);color:var(--premium-text)}
     .as-search:focus{outline:none;border-color:var(--premium-gold);box-shadow:0 0 0 3px rgba(246,173,85,.15)}
@@ -104,7 +104,11 @@
     @keyframes spin{to{transform:rotate(360deg)}}
 
     /* ── Table scrollable wrapper ── */
-    .table-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid var(--premium-border)}
+    .table-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid var(--premium-border);width:100%;-webkit-overflow-scrolling:touch}
+    .table-wrap::-webkit-scrollbar{height:10px}
+    .table-wrap::-webkit-scrollbar-track{background:var(--premium-off-white);border-radius:5px}
+    .table-wrap::-webkit-scrollbar-thumb{background:var(--premium-border);border-radius:5px}
+    .table-wrap::-webkit-scrollbar-thumb:hover{background:#ccc}
     .table-wrap .song-table th:first-child,.table-wrap .song-table td:first-child{padding-left:16px}
 
     /* ── Import/Export Buttons ── */
@@ -149,7 +153,29 @@
     .sug-btn-approve:hover{background:#a7f3d0}
     .sug-btn-reject{background:#fee2e2;color:#dc2626;border:1px solid #fecaca;padding:6px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
     .sug-btn-reject:hover{background:#fecdd3}
-    @media(max-width:600px){.sug-diff{grid-template-columns:1fr}}
+
+    /* ── Responsive ── */
+    @media(max-width:768px){
+      .as-wrap{padding:0 12px}
+      .as-toolbar{gap:8px}
+      .as-search{min-width:150px;font-size:14px}
+      .as-filter{font-size:13px;padding:8px 10px}
+      .btn-add,.btn-import-main,.btn-export,.btn-save-all{font-size:13px;padding:8px 14px}
+      .stats-bar{gap:10px}
+      .stat-box{min-width:70px;padding:8px 12px}
+      .stat-num{font-size:1.2rem}
+      .song-table{font-size:13px}
+      .song-table th,.song-table td{padding:8px 10px}
+    }
+    @media(max-width:600px){
+      .sug-diff{grid-template-columns:1fr}
+      .as-toolbar{flex-direction:column;align-items:stretch}
+      .as-search,.as-filter,.btn-add,.btn-import-main,.btn-export,.btn-save-all{width:100%}
+      .stats-bar{justify-content:space-around}
+      .stat-box{flex:1;min-width:60px}
+      .td-actions{flex-direction:column;gap:4px}
+      .btn-sm{padding:4px 8px;font-size:11px}
+    }
   </style>
 </head>
 <body>
@@ -157,7 +183,7 @@
 <div id="toast"></div>
 
 <main>
-<div class="container as-wrap">
+<div class="as-wrap">
 
   <div class="page-header">
     <h1 class="page-title">🎵 จัดการคลังเพลง</h1>
@@ -234,7 +260,7 @@
     <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
     <button class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
     <button class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
-    <button id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
+    <button id="saveAllBtn" class="b;overflow:visibletn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
   </div>
 
   <!-- Table -->
