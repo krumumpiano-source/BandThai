@@ -38,7 +38,7 @@
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
     #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
     #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
-    .font-btn{background:var(--bg3);border:none;color:var(--text);cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:0.8rem;font-weight:700;font-family:inherit;transition:background .15s}
+    .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:32px;height:32px;font-size:0.78rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;align-items:center;justify-content:center;gap:3px;padding:0 8px}
     .font-btn:active{background:var(--bg4)}
     /* ─── METRONOME CONTROLS (top-right of Now Playing) ─── */
     .met-controls{position:absolute;top:6px;left:12px;display:flex;gap:6px;z-index:2}
@@ -48,8 +48,8 @@
     #beatToggleBtn.off{background:rgba(100,100,100,.12);border-color:#444;color:#555}
     #metSoundBtn{background:rgba(100,100,100,.12);border:1px solid #444;color:#555}
     #metSoundBtn.on{background:rgba(59,130,246,.22);border-color:rgba(59,130,246,.5);color:#60a5fa}
-    #endBreakBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
-    #endBreakBtn:active{background:var(--bg4)}
+    #endBreakBtn{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
     #nowPlaying{flex-shrink:0;padding:22px 16px 16px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -60,11 +60,11 @@
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:4px;opacity:.85}
     #nowTitle{font-size:var(--font-size-now);font-weight:700;line-height:1.2;color:#fde68a;word-break:break-word;margin-bottom:8px;transition:font-size .2s}
-    .now-meta{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
-    #nowKey{font-size:1.1rem;font-weight:600;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.12);border-radius:6px;padding:2px 10px;border:1px solid rgba(212,168,67,0.3);transition:background .15s}
-    #nowKey:active{background:rgba(212,168,67,0.25)}
-    #nowBpm{font-size:0.9rem;color:var(--text2)}
-    #nowSinger{font-size:0.85rem;color:var(--text2)}
+    .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:2px}
+    #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
+    #nowKey:active{background:rgba(212,168,67,0.3)}
+    #nowBpm{font-size:1rem;color:var(--text2);font-weight:500}
+    #nowSinger{font-size:0.9rem;color:var(--text2)}
     #nowNote{font-size:0.82rem;color:var(--gold);margin-top:6px;font-style:italic;min-height:18px}
     /* pulse animation — bright white strobe flash */
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
@@ -107,7 +107,7 @@
     #nextPreview{display:flex;align-items:center;gap:8px;margin-top:10px;padding:7px 14px;background:rgba(134,239,172,0.08);border:1px solid rgba(134,239,172,0.18);border-radius:10px;font-size:.82rem;color:#86efac;max-width:95%;text-align:left}
     #nextPreview .np-label{font-size:.68rem;font-weight:700;color:#4ade80;letter-spacing:.06em;white-space:nowrap}
     #nextPreview .np-name{font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    #nextPreview .np-key{font-size:.78rem;color:var(--gold);background:rgba(212,168,67,.12);padding:1px 7px;border-radius:5px;white-space:nowrap}
+    #nextPreview .np-key{font-size:.88rem;font-weight:600;color:var(--gold);background:rgba(212,168,67,.15);padding:2px 10px;border-radius:6px;white-space:nowrap;border:1px solid rgba(212,168,67,.25)}
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
@@ -188,8 +188,8 @@
     .guest-badge{background:#7c3aed;color:#fff;font-size:0.7rem;padding:2px 8px;border-radius:10px;white-space:nowrap;font-weight:600}
 
     /* share/QR button */
-    #shareBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
-    #shareBtn:active{background:var(--bg4)}
+    #shareBtn{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#93c5fd;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #shareBtn:active{background:rgba(59,130,246,.3)}
 
     /* QR modal */
     #qrModal .modal-sheet{text-align:center;padding-bottom:40px}
@@ -228,16 +228,16 @@
     #saveToLibBtn{margin-top:10px}
 
     /* ─── EXIT BUTTON ─── */
-    #exitLiveBtn{background:none;border:1px solid #333;color:#555;cursor:pointer;border-radius:8px;padding:5px 9px;font-size:.75rem;font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
-    #exitLiveBtn:active{color:var(--red);border-color:var(--red)}
+    #exitLiveBtn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:#f87171;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
+    #exitLiveBtn:active{color:#fff;background:rgba(239,68,68,.3);border-color:var(--red)}
 
     /* autocomplete add option */
     .ac-add{border-top:1px solid #3a3a3a!important;background:rgba(212,168,67,.06)}
     .ac-add strong{color:var(--gold)}
 
     /* ─── NUDGE ─── */
-    #nudgeBtn{background:var(--bg3);border:1px solid #444;color:var(--text2);cursor:pointer;border-radius:8px;padding:5px 10px;font-size:0.78rem;font-family:inherit;white-space:nowrap;transition:background .15s}
-    #nudgeBtn:active{background:var(--bg4)}
+    #nudgeBtn{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.35);color:#fdba74;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:background .15s}
+    #nudgeBtn:active{background:rgba(249,115,22,.25)}
     #nudgeModal .modal-sheet{padding-bottom:28px}
     .nudge-presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
     .nudge-preset{background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:12px 10px;font-size:0.92rem;cursor:pointer;text-align:center;font-family:inherit;transition:background .15s,border-color .15s}
@@ -292,10 +292,10 @@
       <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
       <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
 
-      <button id="keyModeBtn" class="font-btn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff;width:auto;padding:0 10px" title="สลับรูปแบบคีย์">🔤</button>
-      <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
+      <button id="keyModeBtn" class="font-btn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับรูปแบบคีย์">🔤</button>
+      <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
       <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
-      <button id="endBreakBtn" onclick="endBreak()">จบเบรค</button>
+      <button id="endBreakBtn" onclick="endBreak()">✅ จบเบรค</button>
       <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
     </div>
     <div id="venueLabel"></div>
