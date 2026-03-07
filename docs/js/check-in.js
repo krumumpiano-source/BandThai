@@ -12,6 +12,7 @@ var ciSelectedVenue = '';
 var ciSelectedDate = '';
 var ciExistingCheckIn = null;
 var ciIsSubstitute = false;
+var ciLeaveType = 'all'; // 'all' = ลาทั้งวัน, 'some' = ลาบางรอบ
 
 function ciGetEl(id) { return document.getElementById(id); }
 function ciLocalDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -292,6 +293,27 @@ function ciSubmit() {
 /* ===== INIT ===== */
 
 /* ===== SIMPLE LEAVE (inline form) ===== */
+function ciRenderLeaveSlots() {
+  var container = ciGetEl('ciLeaveSlotsContainer');
+  if (!container) return;
+  var dateStr = ciSelectedDate || (ciGetEl('ciDate') ? ciGetEl('ciDate').value : '');
+  if (!dateStr) { container.innerHTML = '<p style="font-size:12px;color:#999">เลือกวันที่ก่อน</p>'; return; }
+  var slots = ciGetSlotsForDate(dateStr);
+  if (!slots.length) { container.innerHTML = '<p style="font-size:12px;color:#999">ไม่พบรอบเวลาสำหรับวันนี้</p>'; return; }
+  container.innerHTML = slots.map(function(slot) {
+    return '<label class="ci-leave-slot-label">' +
+      '<input type="checkbox" name="ciLeaveSlot" value="' + ciEscHtml(slot.key) + '">' +
+      '<span>🕰️ ' + ciEscHtml(slot.label) + '</span>' +
+      '</label>';
+  }).join('');
+  // Toggle visual check
+  container.querySelectorAll('input[name="ciLeaveSlot"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      cb.closest('label').classList.toggle('checked', cb.checked);
+    });
+  });
+}
+
 function ciSubmitLeaveSimple() {
   var noSub = ciGetEl('ciLeaveNoSub') && ciGetEl('ciLeaveNoSub').checked;
   var subName = (ciGetEl('ciLeaveSubNameSimple') ? ciGetEl('ciLeaveSubNameSimple').value : '').trim();
@@ -300,9 +322,18 @@ function ciSubmitLeaveSimple() {
 
   var date = ciSelectedDate || '';
   var venue = ciSelectedVenue || '';
-  // ไม่มีคนแทน = ไม่ต้องเลือกรอบเวลา แค่บันทึกว่าลาเฉยๆ
-  var checkedSlots = noSub ? [] : Array.from(document.querySelectorAll('input[name="ciSlot"]:checked')).map(function(cb) { return cb.value; });
-  var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
+
+  // Determine leave slots based on leave type
+  var leaveSlots = [];
+  if (ciLeaveType === 'some') {
+    leaveSlots = Array.from(document.querySelectorAll('input[name="ciLeaveSlot"]:checked')).map(function(cb) { return cb.value; });
+    if (!leaveSlots.length) { ciShowToast('กรุณาเลือกรอบที่ต้องการลาอย่างน้อย 1 รอบ', 'error'); return; }
+  } else {
+    // ลาทั้งวัน — get all slots for that day
+    var allSlots = ciGetSlotsForDate(date);
+    leaveSlots = allSlots.map(function(s) { return s.key; });
+  }
+  var reason = ciLeaveType === 'some' ? 'ลาบางรอบ' : 'ลางาน (ทั้งวัน)';
 
   var btn = ciGetEl('ciLeaveSubmitSimple');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
@@ -313,8 +344,8 @@ function ciSubmitLeaveSimple() {
     memberName: ciMemberName,
     date: date,
     venue: venue,
-    slots: JSON.stringify(checkedSlots),
-    reason: reason,
+    slots: JSON.stringify(leaveSlots),
+    reason: reason + (noSub ? ' (ไม่มีคนแทน)' : ''),
     substituteName: subName,
     substituteContact: ''
   };
@@ -323,12 +354,13 @@ function ciSubmitLeaveSimple() {
     apiCall('requestLeave', payload, function(r) {
       if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
       if (r && r.success) {
-        ciShowToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
+        var leaveLabel = ciLeaveType === 'some' ? 'ลาบางรอบ' : 'ลาทั้งวัน';
+        ciShowToast('บันทึก' + leaveLabel + 'เรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
         var form = ciGetEl('ciLeaveForm');
         if (form) form.classList.remove('show');
         ciGetEl('ciLeaveSubNameSimple').value = '';
-        ciExistingCheckIn = { slots: checkedSlots, status: 'leave', venue: venue };
-        ciShowDone(checkedSlots, venue, 'leave');
+        ciExistingCheckIn = { slots: leaveSlots, status: 'leave', venue: venue };
+        ciShowDone(leaveSlots, venue, 'leave');
       } else {
         ciShowToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
       }
@@ -426,7 +458,29 @@ document.addEventListener('DOMContentLoaded', function() {
   if (leaveBtn && leaveForm) {
     leaveBtn.addEventListener('click', function() {
       leaveForm.classList.toggle('show');
+      if (leaveForm.classList.contains('show')) {
+        ciRenderLeaveSlots();
+      }
     });
+    // Leave type toggle (all / some)
+    var leaveTypeAll = ciGetEl('ciLeaveTypeAll');
+    var leaveTypeSome = ciGetEl('ciLeaveTypeSome');
+    var leaveSlotsWrap = ciGetEl('ciLeaveSlotsWrap');
+    if (leaveTypeAll && leaveTypeSome) {
+      leaveTypeAll.addEventListener('click', function() {
+        ciLeaveType = 'all';
+        leaveTypeAll.classList.add('active');
+        leaveTypeSome.classList.remove('active');
+        if (leaveSlotsWrap) leaveSlotsWrap.classList.remove('show');
+      });
+      leaveTypeSome.addEventListener('click', function() {
+        ciLeaveType = 'some';
+        leaveTypeSome.classList.add('active');
+        leaveTypeAll.classList.remove('active');
+        if (leaveSlotsWrap) leaveSlotsWrap.classList.add('show');
+        ciRenderLeaveSlots();
+      });
+    }
     var leaveCancelBtn = ciGetEl('ciLeaveCancelSimple');
     if (leaveCancelBtn) leaveCancelBtn.addEventListener('click', function() {
       leaveForm.classList.remove('show');

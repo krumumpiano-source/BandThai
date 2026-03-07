@@ -77,6 +77,16 @@
     .ci-leave-actions .btn-leave-ok{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
     .ci-leave-actions .btn-leave-ok:hover{background:#c53030}
     .ci-leave-actions .btn-leave-cancel{padding:10px 24px;border:1px solid #ccc;background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body)}
+    /* Leave type toggle */
+    .ci-leave-type{display:flex;gap:8px;margin-bottom:12px}
+    .ci-leave-type-btn{flex:1;padding:10px;border:2px solid #feb2b2;border-radius:var(--radius-md);background:#fff;color:#c53030;font-weight:700;font-size:var(--text-sm);cursor:pointer;text-align:center;transition:all .2s;font-family:var(--font-family-body)}
+    .ci-leave-type-btn.active{background:#e53e3e;color:#fff;border-color:#e53e3e}
+    .ci-leave-type-btn:hover:not(.active){background:#fff5f5}
+    .ci-leave-slots{display:none;margin-bottom:12px}
+    .ci-leave-slots.show{display:block}
+    .ci-leave-slot-label{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:2px solid #feb2b2;border-radius:var(--radius-md);cursor:pointer;margin-bottom:6px;transition:all .15s;user-select:none;font-size:var(--text-sm);font-weight:600}
+    .ci-leave-slot-label.checked{border-color:#e53e3e;background:#fff5f5}
+    .ci-leave-slot-label input[type=checkbox]{accent-color:#e53e3e;width:18px;height:18px;flex-shrink:0}
   </style>
 </head>
 <body>
@@ -172,7 +182,17 @@
           <!-- Leave inline form -->
           <div class="ci-leave-form" id="ciLeaveForm">
             <h4>🚫 ลางาน</h4>
-            <p>กรอกชื่อคนมาทำงานแทน หรือเลือก "ไม่มีคนแทน"</p>
+            <p>เลือกรูปแบบการลา แล้วกรอกชื่อคนแทน (ถ้ามี)</p>
+            <!-- Leave type: all breaks or some breaks -->
+            <div class="ci-leave-type">
+              <button type="button" class="ci-leave-type-btn active" id="ciLeaveTypeAll" data-type="all">🚫 ลาทั้งวัน</button>
+              <button type="button" class="ci-leave-type-btn" id="ciLeaveTypeSome" data-type="some">⏰ ลาบางรอบ</button>
+            </div>
+            <!-- Slot selection for partial leave -->
+            <div class="ci-leave-slots" id="ciLeaveSlotsWrap">
+              <label style="font-size:var(--text-sm);font-weight:600;color:#c53030;margin-bottom:6px;display:block">เลือกรอบที่ต้องการลา:</label>
+              <div id="ciLeaveSlotsContainer"></div>
+            </div>
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:10px;font-size:var(--text-sm);font-weight:600;user-select:none">
               <input type="checkbox" id="ciLeaveNoSub" style="accent-color:#e53e3e;width:18px;height:18px"> ไม่มีคนแทน
             </label>
