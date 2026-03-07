@@ -74,14 +74,14 @@
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
 
     /* ─── NAV ARROWS ─── */
-    .now-nav{display:flex;align-items:center;width:100%;gap:4px}
-    .nav-arrow{background:none;border:1px solid rgba(255,255,255,.12);color:var(--text2);font-size:1.4rem;padding:8px 6px;border-radius:10px;cursor:pointer;transition:background .12s,color .12s;line-height:1;min-width:40px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .nav-arrow:active{background:rgba(212,168,67,.2);color:var(--gold);border-color:rgba(212,168,67,.4)}
-    .nav-arrow:disabled{opacity:.2;pointer-events:none}
-    .nav-arrow .nav-hint{font-size:0.48rem;color:var(--text3);display:block}
+    .now-nav{display:flex;align-items:center;width:100%;gap:0}
+    .nav-arrow{background:none;border:none;color:var(--text3);font-size:1.1rem;padding:10px 8px;border-radius:10px;cursor:pointer;transition:color .12s;line-height:1;min-width:36px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.5}
+    .nav-arrow:active{color:var(--gold);opacity:1}
+    .nav-arrow:disabled{opacity:.12;pointer-events:none}
     .now-nav-title{flex:1;min-width:0;overflow:hidden}
     /* ─── QUICK SEARCH ─── */
-    #songSearchWrap{padding:6px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;display:flex;align-items:center;gap:8px}
+    #songSearchWrap{padding:6px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;display:none;align-items:center;gap:8px}
+    #songSearchWrap.open{display:flex}
     #songSearchInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px 12px;font-size:0.88rem;font-family:inherit;outline:none}
     #songSearchInput:focus{border-color:var(--gold)}
     #songSearchInput::placeholder{color:var(--text3)}
@@ -89,9 +89,9 @@
     #songSearchClear:active{color:var(--text)}
     .song-item.search-hide{display:none!important}
     .song-item .si-name .search-hl{background:rgba(212,168,67,.3);color:var(--gold);border-radius:2px;padding:0 1px}
-    /* swipe indicator on now playing */
-    .now-swipe-hint{font-size:0.55rem;color:var(--text3);opacity:0;transition:opacity .3s;margin-top:2px}
-    .now-swipe-hint.show{opacity:.6}
+    /* search toggle in action bar */
+    #searchToggleBtn{flex:.6;background:var(--bg3);border:1px solid #444;color:var(--text2);padding:12px 8px;font-size:.85rem;border-radius:12px;font-family:inherit;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
+    #searchToggleBtn.active{background:rgba(212,168,67,.15);border-color:rgba(212,168,67,.4);color:var(--gold)}
 
     /* ─── SONG LIST ─── */
     #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
@@ -346,7 +346,6 @@
       </div>
       <button class="nav-arrow" id="nextSongBtn" onclick="nextSongDirect()" title="เพลงถัดไป">▶</button>
     </div>
-    <div id="nowSwipeHint" class="now-swipe-hint">⟵ ปัดซ้าย-ขวาเปลี่ยนเพลง ⟶</div>
     <div class="now-meta">
       <div style="display:flex;flex-direction:column;align-items:center">
         <div id="nowKey" onclick="openTranspose()" title="แตะเพื่อ transpose">—</div>
@@ -388,6 +387,7 @@
 <!-- ── ACTION BAR ── -->
 <div id="actionBar">
   <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
+  <button id="searchToggleBtn" onclick="toggleSongSearch()">🔍</button>
   <button id="requestBtn" onclick="openRequest()">➕ เพลงขอ</button>
 </div>
 
@@ -751,9 +751,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // ── Song quick search & swipe-to-switch ──
   initSongSearch();
   initNowPlayingSwipe();
-  // Show swipe hint briefly
-  var swHint = document.getElementById('nowSwipeHint');
-  if (swHint) { swHint.classList.add('show'); setTimeout(function(){ swHint.classList.remove('show'); }, 4000); }
 });
 
 // ─────────────────────────────────────────────────────────────────
@@ -1413,6 +1410,18 @@ function clearSongSearch() {
   document.getElementById('songSearchClear').style.display = 'none';
   filterSongList();
   inp.blur();
+}
+
+function toggleSongSearch() {
+  var wrap = document.getElementById('songSearchWrap');
+  var btn = document.getElementById('searchToggleBtn');
+  var isOpen = wrap.classList.toggle('open');
+  if (btn) btn.classList.toggle('active', isOpen);
+  if (isOpen) {
+    document.getElementById('songSearchInput').focus();
+  } else {
+    clearSongSearch();
+  }
 }
 
 // ─── SWIPE ON NOW-PLAYING ─────────────────────────────────────────────────────
