@@ -858,7 +858,7 @@
           return '<div style="padding:4px 0;font-size:var(--text-sm);border-bottom:1px solid var(--premium-border);display:flex;align-items:center;gap:6px">' +
             '<span style="color:var(--premium-text-muted);font-size:var(--text-xs);min-width:20px">' + (n + 1) + '.</span>' +
             '<strong>' + escapeHtml(s.name || '') + '</strong>' +
-            (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">' + escapeHtml(s.key) + '</span>' : '') +
+            (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">' + escapeHtml(typeof formatKey === 'function' ? formatKey(s.key) : s.key) + '</span>' : '') +
             (s.bpm ? ' <span style="color:var(--premium-text-muted);font-size:11px">▸ ' + s.bpm + '</span>' : '') +
             '</div>';
         }).join('');

@@ -4,10 +4,10 @@
 
 var _KEY_MAP = {
   'C / Am': 'C / Am',
-  '1#': 'C# / A#m', '2#': 'D# / C#m', '3#': 'F / Dm',
-  '4#': 'F# / D#m', '5#': 'G# / Fm', '6#': 'A# / Gm', '7#': 'B / G#m',
-  '1b': 'F / Dm', '2b': 'Eb / Cm', '3b': 'Db / Bbm',
-  '4b': 'Cb / Abm', '5b': 'Bb / Gm', '6b': 'Ab / Fm', '7b': 'Bb / Gm'
+  '1#': 'G / Em',   '2#': 'D / Bm',    '3#': 'A / F#m',
+  '4#': 'E / C#m',  '5#': 'B / G#m',   '6#': 'F# / D#m',  '7#': 'C# / A#m',
+  '1b': 'F / Dm',   '2b': 'Bb / Gm',   '3b': 'Eb / Cm',
+  '4b': 'Ab / Fm',  '5b': 'Db / Bbm',  '6b': 'Gb / Ebm',  '7b': 'Cb / Abm'
 };
 
 function getKeyDisplayMode() {

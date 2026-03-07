@@ -456,10 +456,10 @@
       var sid     = s.songId || s.id || '';
       var already = curSongs.find(function(x){ return x.id === sid; });
       var isClickable = canAdd && !already;
-      var extraClass  = isClickable ? ' clickable' : ' disabled';formatKey(s.key)
+      var extraClass  = isClickable ? ' clickable' : ' disabled';
       var onclickAttr = isClickable ? ' onclick="addSong(\'' + escapeHtml(sid) + '\')"' : '';
       var check   = already ? '<span style="color:var(--premium-gold);margin-right:4px">✓</span>' : '';
-      var key     = s.key ? ('<span style="font-size:.68rem;color:var(--premium-text-muted);margin-left:3px">(' + escapeHtml(s.key) + ')</span>') : '';
+      var key     = s.key ? ('<span style="font-size:.68rem;color:var(--premium-text-muted);margin-left:3px">(' + escapeHtml(formatKey(s.key)) + ')</span>') : '';
       var dur     = s.duration ? ('<span class="song-dur">' + parseFloat(s.duration).toFixed(1) + 'm</span>') : '';
       return '<div class="song-pill' + extraClass + '"' + onclickAttr + '>'
         + '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'

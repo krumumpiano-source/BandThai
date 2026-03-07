@@ -1475,7 +1475,7 @@ function onReqSearch(val) {
 function renderAutoComplete(items, val) {
   var ac = document.getElementById('autocompleteList');
   var html = items.map(function(s, i) {
-    var meta = [s.key, s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+    var meta = [s.key ? formatKey(s.key) : '', s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
     return '<div class="ac-item" data-i="' + i + '">' +
       '<div>' + escHtml(s.name) + '</div>' +
       (meta ? '<div class="ac-meta">' + meta + '</div>' : '') +
@@ -1538,7 +1538,7 @@ function openTranspose() {
   if (!s) return;
   _trStep = 0;
   document.getElementById('trDisplay').textContent = s._key || '—';
-  document.getElementById('trLabel').textContent = 'คีย์เดิม: ' + (s.key || '—');
+  document.getElementById('trLabel').textContent = 'คีย์เดิม: ' + (s.key ? formatKey(s.key) : '—');
   document.getElementById('transposeModal').classList.add('show');
 }
 function closeTranspose() {

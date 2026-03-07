@@ -1890,7 +1890,7 @@ function filterHistoryByDate(date) {
     var songs = (h.songs || []).map(function(s, n){
       return '<div style="padding:3px 0;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151">'+
         (n+1)+'. <strong>'+s.name+'</strong>'+
-        (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">'+s.key+'</span>' : '')+
+        (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">'+formatKey(s.key)+'</span>' : '')+
         (s.bpm ? ' <span style="color:#6b7280;font-size:11px">▸ '+s.bpm+'</span>' : '')+
         '</div>';
     }).join('');
@@ -2018,7 +2018,7 @@ function openSuggestModal(songId, idx) {
 
   document.getElementById('sugNameCur').textContent = 'ปัจจุบัน: ' + (song.name || '—');
   document.getElementById('sugArtistCur').textContent = 'ปัจจุบัน: ' + (song.artist || '—');
-  document.getElementById('sugKeyCur').textContent = 'ปัจจุบัน: ' + (song.key || '—');
+  document.getElementById('sugKeyCur').textContent = 'ปัจจุบัน: ' + (song.key ? formatKey(song.key) : '—');
   document.getElementById('sugBpmCur').textContent = 'ปัจจุบัน: ' + ((song.bpm > 0) ? song.bpm : '—');
   document.getElementById('sugGenreCur').textContent = 'ปัจจุบัน: ' + (song.tags || '—');
   document.getElementById('sugSingerCur').textContent = 'ปัจจุบัน: ' + (song.singer || '—');
