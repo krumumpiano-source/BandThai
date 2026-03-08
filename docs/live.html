@@ -105,7 +105,7 @@
 
     /* ─── SONG LIST ─── */
     #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
-    #songList{padding:6px 0 170px}
+    #songList{padding:6px 0 200px}
     .song-item{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid #1e1e1e;cursor:pointer;transition:background .1s;position:relative;gap:10px;min-height:56px}
     .song-item:active{background:var(--bg3)}
     .song-item.is-current{background:rgba(253,230,138,0.07);border-left:3px solid #fde68a}
@@ -144,11 +144,14 @@
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{display:flex;gap:8px;padding:4px 10px 2px}
-    #actionBar button{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;flex:1;padding:8px 8px;font-size:0.85rem;min-height:36px}
+    #actionBar{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px 2px}
+    #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;padding:7px 6px;font-size:0.8rem;min-height:32px;text-align:center}
     #actionBar button:active{transform:scale(.96)}
+    #undoBtn,#endSongBtn{flex:1 1 45%}
     #endSongBtn{background:var(--gold);color:#000}
+    #actionBar #nudgeBtn,#historyBtn,#chatBtnWrap{flex:1 1 28%}
     #actionBar #nudgeBtn{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
+    #chatBtnWrap button{width:100%;padding:7px 6px;font-size:0.8rem;min-height:32px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
 
     /* ─── CONTEXT MENU ─── */
     #ctxMenu{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end}
@@ -310,6 +313,39 @@
     #nudgePopup .np-icon{font-size:2.6rem;margin-bottom:4px}
     #nudgePopup .np-from{font-size:0.95rem;font-weight:600;color:var(--gold);margin-bottom:8px}
     #nudgePopup .np-msg{font-size:1.8rem;color:#fff;font-weight:700}
+
+    /* ─── UNDO BUTTON ─── */
+    #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:none}
+
+    /* ─── HISTORY MODAL ─── */
+    #historyModal .modal-sheet{max-height:80vh;display:flex;flex-direction:column}
+    #historyList{flex:1;overflow-y:auto;padding:4px 0 8px}
+    .hist-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid #2a2a2a;font-size:0.88rem}
+    .hist-num{color:var(--text3);font-size:0.78rem;min-width:22px;text-align:right}
+    .hist-name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .hist-key{color:var(--gold);font-size:0.82rem;font-weight:600}
+    .hist-time{color:var(--text3);font-size:0.75rem;white-space:nowrap}
+    .hist-empty{text-align:center;color:var(--text3);padding:40px 0;font-size:0.9rem}
+
+    /* ─── CHAT MODAL ─── */
+    #chatModal .modal-sheet{max-height:80vh;display:flex;flex-direction:column;padding-bottom:0}
+    #chatMessages{flex:1;overflow-y:auto;padding:4px 0 8px;min-height:120px}
+    .chat-bubble{margin:4px 0;padding:8px 12px;border-radius:12px;max-width:85%;font-size:0.88rem;word-wrap:break-word}
+    .chat-bubble.mine{background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.25);margin-left:auto;text-align:right}
+    .chat-bubble.other{background:var(--bg3);border:1px solid #444}
+    .chat-sender{font-size:0.72rem;font-weight:700;color:var(--gold);margin-bottom:2px}
+    .chat-text{color:var(--text)}
+    .chat-ts{font-size:0.65rem;color:var(--text3);margin-top:2px}
+    .chat-empty{text-align:center;color:var(--text3);padding:40px 0;font-size:0.9rem}
+    #chatInputRow{display:flex;gap:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0));border-top:1px solid #333;flex-shrink:0}
+    #chatMsgInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:20px;padding:8px 14px;font-size:0.88rem;font-family:inherit;outline:none}
+    #chatMsgInput:focus{border-color:var(--gold)}
+    #chatMsgInput::placeholder{color:var(--text3)}
+    #chatSendMsgBtn{background:var(--gold);color:#000;border:none;border-radius:50%;width:36px;height:36px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    #chatSendMsgBtn:active{transform:scale(.9)}
+    /* badge on chat button */
+    #chatBtnBadge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px}
+    #chatBtnWrap{position:relative;display:inline-block}
   </style>
 </head>
 <body>
@@ -386,8 +422,11 @@
     <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
   </div>
   <div id="actionBar">
+    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง">↩ ย้อนกลับ</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
     <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
+    <button id="historyBtn" onclick="openHistory()" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:#6ee7b7" title="ประวัติเพลง">📋 ประวัติ</button>
+    <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;width:100%" title="แชท">💬 แชท</button><span id="chatBtnBadge">0</span></span>
   </div>
 </div>
 
@@ -458,6 +497,29 @@
     <span class="tr-reset" onclick="resetTranspose()">คีย์เดิม</span>
     <div class="modal-actions" style="margin-top:20px">
       <button class="modal-btn secondary" onclick="closeTranspose()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── HISTORY MODAL ── -->
+<div class="modal-backdrop" id="historyModal" style="display:none">
+  <div class="modal-sheet">
+    <h3>📋 ประวัติเพลงที่เล่นแล้ว</h3>
+    <div id="historyList"></div>
+    <div class="modal-actions" style="margin-top:10px">
+      <button class="modal-btn secondary" onclick="closeHistory()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHAT MODAL ── -->
+<div class="modal-backdrop" id="chatModal" style="display:none">
+  <div class="modal-sheet">
+    <h3>💬 แชทสมาชิก</h3>
+    <div id="chatMessages"></div>
+    <div id="chatInputRow">
+      <input type="text" id="chatMsgInput" placeholder="พิมพ์ข้อความ..." maxlength="200" />
+      <button id="chatSendMsgBtn" onclick="sendChatMsg()">➤</button>
     </div>
   </div>
 </div>
@@ -604,6 +666,17 @@ var _periodicSyncTimer = null;
 
 // ── Drag-reorder state ────────────────────────────────────────────
 var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
+
+// ── Undo state ─────────────────────────────────────────────────────
+var _undoStack = []; // array of { current, songName, songKey }
+
+// ── Play History ───────────────────────────────────────────────────
+var _playHistory = []; // array of { name, key, singer, time }
+
+// ── Chat ───────────────────────────────────────────────────────────
+var _chatMessages = []; // array of { from, text, time, isMine }
+var _chatUnread = 0;
+var _chatOpen = false;
 
 // ── Double-tap / double-click detection ──────────────────────────
 var _tapTimer   = null;
@@ -1243,7 +1316,7 @@ function haptic(ms) {
 function endSong() {
   if (_isEnding) return;
   haptic(200);
-  // คำนวณ nextIdx ก่อน broadcast เพื่อให้ทุกเครื่องได้รับ index เดียวกัน
+  _pushUndo();
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   var nextIdx = (next < _playlist.length) ? next : -1;
@@ -1267,6 +1340,7 @@ function triggerEnding(nextIdx) {
     np.classList.remove('pulsing');
     _isEnding = false;
     if (nextIdx >= 0 && nextIdx < _playlist.length) {
+      _recordHistory(_current);
       _current  = nextIdx;
       _modified = true;
       haptic(100);
@@ -1288,6 +1362,8 @@ function advanceSong() {
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
+    _pushUndo();
+    _recordHistory(_current);
     _current  = next;
     _modified = true;
     haptic(100);
@@ -1321,6 +1397,8 @@ function nextSongDirect() {
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
+    _pushUndo();
+    _recordHistory(_current);
     _current = next;
     _modified = true;
     haptic(80);
@@ -2147,6 +2225,10 @@ function initRealtime() {
       var d = payload.payload || {};
       if (d.from && d.msg) receiveNudge(d.from, d.msg);
     })
+    .on('broadcast', { event: 'chat_msg' }, function(payload) {
+      var d = payload.payload || {};
+      if (d.from && d.text) receiveChatMsg(d.from, d.text, d.time);
+    })
     .subscribe(function(status) {
       var ind = document.getElementById('realtimeIndicator');
       if (status === 'SUBSCRIBED') {
@@ -2199,6 +2281,161 @@ function startPeriodicSync() {
       broadcastEvent('state_sync', getState());
     }
   }, 30000);
+}
+
+// ─── UNDO ─────────────────────────────────────────────────────────
+function _pushUndo() {
+  var s = _playlist[_current];
+  if (!s) return;
+  _undoStack.push({ current: _current, songName: s.name, songKey: s._key || s.key });
+  if (_undoStack.length > 20) _undoStack.shift();
+  _updateUndoBtn();
+}
+
+function _updateUndoBtn() {
+  var btn = document.getElementById('undoBtn');
+  if (btn) btn.style.display = _undoStack.length > 0 ? '' : 'none';
+}
+
+function undoSong() {
+  if (_undoStack.length === 0) { showToast('ไม่มีอะไรให้ย้อนกลับ'); return; }
+  var state = _undoStack.pop();
+  _current = state.current;
+  _modified = true;
+  haptic(80);
+  broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+  renderNowPlaying();
+  renderSongList();
+  _updateUndoBtn();
+  // Remove last history entry too
+  if (_playHistory.length > 0) _playHistory.pop();
+  showToast('↩ ย้อนกลับ: ' + state.songName);
+}
+
+// ─── PLAY HISTORY ─────────────────────────────────────────────────
+function _recordHistory(idx) {
+  var s = _playlist[idx];
+  if (!s) return;
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2, '0');
+  var mm = String(now.getMinutes()).padStart(2, '0');
+  _playHistory.push({ name: s.name, key: s._key || s.key || '', singer: s.singer || '', time: hh + ':' + mm });
+}
+
+function openHistory() {
+  var list = document.getElementById('historyList');
+  if (!list) return;
+  if (_playHistory.length === 0) {
+    list.innerHTML = '<div class="hist-empty">ยังไม่มีเพลงที่เล่นจบ</div>';
+  } else {
+    list.innerHTML = '';
+    _playHistory.forEach(function(h, i) {
+      var row = document.createElement('div');
+      row.className = 'hist-item';
+      row.innerHTML = '<span class="hist-num">' + (i + 1) + '</span>' +
+        '<span class="hist-name">' + _escHtml(h.name) + '</span>' +
+        '<span class="hist-key">' + _escHtml(h.key) + '</span>' +
+        '<span class="hist-time">' + h.time + '</span>';
+      list.appendChild(row);
+    });
+    // Scroll to bottom
+    list.scrollTop = list.scrollHeight;
+  }
+  document.getElementById('historyModal').style.display = 'flex';
+}
+
+function closeHistory() {
+  document.getElementById('historyModal').style.display = 'none';
+}
+
+function _escHtml(s) {
+  var d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+// ─── CHAT ─────────────────────────────────────────────────────────
+function openChat() {
+  _chatOpen = true;
+  _chatUnread = 0;
+  _updateChatBadge();
+  _renderChatMessages();
+  document.getElementById('chatModal').style.display = 'flex';
+  var inp = document.getElementById('chatMsgInput');
+  if (inp) {
+    inp.value = '';
+    inp.onkeydown = function(e) { if (e.key === 'Enter') { e.preventDefault(); sendChatMsg(); } };
+  }
+}
+
+function closeChat() {
+  _chatOpen = false;
+  document.getElementById('chatModal').style.display = 'none';
+}
+
+// Close chat modal on backdrop click
+(function() {
+  setTimeout(function() {
+    var cm = document.getElementById('chatModal');
+    if (cm) cm.addEventListener('click', function(e) { if (e.target === cm) closeChat(); });
+    var hm = document.getElementById('historyModal');
+    if (hm) hm.addEventListener('click', function(e) { if (e.target === hm) closeHistory(); });
+  }, 500);
+})();
+
+function sendChatMsg() {
+  var inp = document.getElementById('chatMsgInput');
+  var text = inp ? inp.value.trim() : '';
+  if (!text) return;
+  var myName = localStorage.getItem('userName') || 'สมาชิก';
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2, '0');
+  var mm = String(now.getMinutes()).padStart(2, '0');
+  var msg = { from: myName, text: text, time: hh + ':' + mm, isMine: true };
+  _chatMessages.push(msg);
+  broadcastEvent('chat_msg', { from: myName, text: text, time: hh + ':' + mm });
+  inp.value = '';
+  _renderChatMessages();
+}
+
+function receiveChatMsg(from, text, time) {
+  _chatMessages.push({ from: from, text: text, time: time || '', isMine: false });
+  if (!_chatOpen) {
+    _chatUnread++;
+    _updateChatBadge();
+  } else {
+    _renderChatMessages();
+  }
+}
+
+function _renderChatMessages() {
+  var container = document.getElementById('chatMessages');
+  if (!container) return;
+  if (_chatMessages.length === 0) {
+    container.innerHTML = '<div class="chat-empty">ยังไม่มีข้อความ</div>';
+    return;
+  }
+  container.innerHTML = '';
+  _chatMessages.forEach(function(m) {
+    var bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ' + (m.isMine ? 'mine' : 'other');
+    bubble.innerHTML = (m.isMine ? '' : '<div class="chat-sender">' + _escHtml(m.from) + '</div>') +
+      '<div class="chat-text">' + _escHtml(m.text) + '</div>' +
+      '<div class="chat-ts">' + (m.time || '') + '</div>';
+    container.appendChild(bubble);
+  });
+  container.scrollTop = container.scrollHeight;
+}
+
+function _updateChatBadge() {
+  var badge = document.getElementById('chatBtnBadge');
+  if (!badge) return;
+  if (_chatUnread > 0) {
+    badge.textContent = _chatUnread > 99 ? '99+' : _chatUnread;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 // ─── NUDGE (สะกิด) ────────────────────────────────────────────────
