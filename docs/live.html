@@ -79,23 +79,30 @@
     .nav-arrow:active{color:var(--gold);opacity:1}
     .nav-arrow:disabled{opacity:.12;pointer-events:none}
     .now-nav-title{flex:1;min-width:0;overflow:hidden}
-    /* ─── QUICK SEARCH ─── */
-    #songSearchWrap{padding:6px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;display:none;align-items:center;gap:8px}
-    #songSearchWrap.open{display:flex}
-    #songSearchInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px 12px;font-size:0.88rem;font-family:inherit;outline:none}
-    #songSearchInput:focus{border-color:var(--gold)}
-    #songSearchInput::placeholder{color:var(--text3)}
-    #songSearchClear{background:none;border:none;color:var(--text3);font-size:1.1rem;cursor:pointer;padding:4px 6px;display:none}
-    #songSearchClear:active{color:var(--text)}
-    .song-item.search-hide{display:none!important}
-    .song-item .si-name .search-hl{background:rgba(212,168,67,.3);color:var(--gold);border-radius:2px;padding:0 1px}
-    /* search toggle in action bar */
-    #searchToggleBtn{flex:.6;background:var(--bg3);border:1px solid #444;color:var(--text2);padding:12px 8px;font-size:.85rem;border-radius:12px;font-family:inherit;font-weight:600;cursor:pointer;transition:background .12s,color .12s}
-    #searchToggleBtn.active{background:rgba(212,168,67,.15);border-color:rgba(212,168,67,.4);color:var(--gold)}
+    /* ─── CHAT BAR (song request) ─── */
+    #chatBar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--bg2);border-top:1px solid #333;padding:0 0 env(safe-area-inset-bottom,0)}
+    #chatBarInner{display:flex;align-items:flex-end;gap:8px;padding:8px 10px}
+    #chatBarInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:20px;padding:10px 16px;font-size:0.92rem;font-family:inherit;outline:none;resize:none;min-height:20px;max-height:40px;line-height:1.3;user-select:text;-webkit-user-select:text}
+    #chatBarInput:focus{border-color:var(--gold)}
+    #chatBarInput::placeholder{color:var(--text3)}
+    #chatBarSend{background:var(--gold);color:#000;border:none;border-radius:50%;width:40px;height:40px;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s,transform .1s}
+    #chatBarSend:active{transform:scale(.9)}
+    #chatBarSend:disabled{opacity:.3;cursor:default}
+    #chatBarSuggest{position:absolute;bottom:100%;left:0;right:0;max-height:45vh;overflow-y:auto;background:var(--bg2);border-top:1px solid #444;display:none;z-index:49}
+    #chatBarSuggest.open{display:block}
+    .cb-item{padding:12px 16px;cursor:pointer;font-size:0.92rem;border-bottom:1px solid #222;display:flex;align-items:center;gap:10px;transition:background .1s}
+    .cb-item:active{background:var(--bg4)}
+    .cb-item-info{flex:1;min-width:0}
+    .cb-item-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .cb-item-meta{font-size:0.75rem;color:var(--text2);margin-top:1px}
+    .cb-item-icon{color:var(--gold);font-size:1.1rem;flex-shrink:0}
+    .cb-item.cb-add{color:var(--gold);font-weight:600}
+    .cb-item.cb-add .cb-item-name{color:var(--gold)}
+    .cb-hl{background:rgba(212,168,67,.3);color:var(--gold);border-radius:2px;padding:0 1px}
 
     /* ─── SONG LIST ─── */
     #songListWrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg)}
-    #songList{padding:6px 0 80px}
+    #songList{padding:6px 0 140px}
     .song-item{display:flex;align-items:center;padding:11px 14px;border-bottom:1px solid #1e1e1e;cursor:pointer;transition:background .1s;position:relative;gap:10px;min-height:56px}
     .song-item:active{background:var(--bg3)}
     .song-item.is-current{background:rgba(253,230,138,0.07);border-left:3px solid #fde68a}
@@ -134,11 +141,10 @@
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{position:fixed;bottom:0;left:0;right:0;display:flex;gap:10px;padding:10px 12px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0));background:linear-gradient(transparent,var(--bg2) 40%);pointer-events:none}
+    #actionBar{position:fixed;bottom:58px;bottom:calc(58px + env(safe-area-inset-bottom,0));left:0;right:0;display:flex;gap:10px;padding:8px 12px;background:linear-gradient(transparent,var(--bg2) 50%);pointer-events:none;z-index:48}
     #actionBar button{pointer-events:auto;border:none;border-radius:12px;font-family:inherit;font-weight:700;cursor:pointer;transition:transform .1s,opacity .15s}
     #actionBar button:active{transform:scale(.96)}
-    #endSongBtn{flex:2.5;background:var(--gold);color:#000;padding:16px 8px;font-size:1.1rem;min-height:54px}
-    #requestBtn{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);padding:12px 8px;font-size:.85rem}
+    #endSongBtn{flex:1;background:var(--gold);color:#000;padding:14px 8px;font-size:1.05rem;min-height:48px}
 
     /* ─── CONTEXT MENU ─── */
     #ctxMenu{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end}
@@ -177,13 +183,6 @@
     .modal-btn{flex:1;border:none;border-radius:var(--radius-sm);padding:12px;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer}
     .modal-btn.primary{background:var(--gold);color:#000}
     .modal-btn.secondary{background:var(--bg3);color:var(--text);border:1px solid #444}
-
-    /* autocomplete */
-    #autocompleteList{background:var(--bg3);border:1px solid #444;border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);max-height:200px;overflow-y:auto;display:none}
-    .ac-item{padding:10px 12px;cursor:pointer;font-size:0.92rem;border-bottom:1px solid #333;display:flex;flex-direction:column;gap:2px}
-    .ac-item:last-child{border-bottom:none}
-    .ac-item:active{background:var(--bg4)}
-    .ac-meta{font-size:0.75rem;color:var(--text2)}
 
     /* transpose modal */
     #transposeModal .modal-sheet{padding-bottom:40px}
@@ -366,13 +365,6 @@
     </div>
   </div>
 
-  <!-- ── QUICK SEARCH ── -->
-  <div id="songSearchWrap">
-    <span style="font-size:0.9rem;color:var(--text3)">🔍</span>
-    <input type="text" id="songSearchInput" placeholder="ค้นหาเพลงในลิสต์..." autocomplete="off" />
-    <button id="songSearchClear" onclick="clearSongSearch()">✕</button>
-  </div>
-
   <!-- ── SONG LIST ── -->
   <div id="songListWrap">
     <div id="songList">
@@ -387,8 +379,15 @@
 <!-- ── ACTION BAR ── -->
 <div id="actionBar">
   <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
-  <button id="searchToggleBtn" onclick="toggleSongSearch()">🔍</button>
-  <button id="requestBtn" onclick="openRequest()">➕ เพลงขอ</button>
+</div>
+
+<!-- ── CHAT BAR (song request) ── -->
+<div id="chatBar">
+  <div id="chatBarSuggest"></div>
+  <div id="chatBarInner">
+    <input type="text" id="chatBarInput" placeholder="พิมพ์ชื่อเพลงเพื่อขอเพลง..." autocomplete="off" />
+    <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
+  </div>
 </div>
 
 <!-- ── CONTEXT MENU ── -->
@@ -407,7 +406,7 @@
   <div class="hint-item"><div class="hint-icon">👆</div><div class="hint-text"><strong>กดค้างเพลง</strong> — เมนูลัด (เล่นตอนนี้ / ถัดไป / skip / โน้ต)</div></div>
   <div class="hint-item"><div class="hint-icon">👈</div><div class="hint-text"><strong>ปัดซ้าย</strong> — skip เพลง</div></div>
   <div class="hint-item"><div class="hint-icon">👆👈</div><div class="hint-text"><strong>ปัดซ้าย-ขวาบนเพลงปัจจุบัน</strong> — สลับเพลงถัด/ก่อน</div></div>
-  <div class="hint-item"><div class="hint-icon">🔍</div><div class="hint-text"><strong>ค้นหาเพลง</strong> — พิมพ์ชื่อเพลงเพื่อค้นหาในลิสต์</div></div>
+  <div class="hint-item"><div class="hint-icon">�</div><div class="hint-text"><strong>ขอเพลง</strong> — พิมพ์ชื่อเพลงในช่องด้านล่าง autocomplete จากคลังเพลง</div></div>
   <div class="hint-item"><div class="hint-icon">🎵</div><div class="hint-text"><strong>แตะคีย์</strong> — transpose ขึ้น/ลง</div></div>
   <button class="hint-dismiss" onclick="dismissHints()">เข้าใจแล้ว ✓</button>
 </div>
@@ -443,22 +442,7 @@
   </div>
 </div>
 
-<!-- ── SONG REQUEST MODAL ── -->
-<div class="modal-backdrop" id="requestModal">
-  <div class="modal-sheet">
-    <h3>➕ เพลงขอ</h3>
-    <input class="modal-input" id="reqSearch" type="text" placeholder="พิมพ์ชื่อเพลง..." autocomplete="off" oninput="onReqSearch(this.value)">
-    <div id="autocompleteList"></div>
-    <div class="modal-row">
-      <input class="modal-mini" id="reqKey" type="text" placeholder="คีย์ เช่น 3#">
-      <input class="modal-mini" id="reqBpm" type="number" placeholder="BPM">
-    </div>
-    <div class="modal-actions">
-      <button class="modal-btn secondary" onclick="closeRequest()">ยกเลิก</button>
-      <button class="modal-btn primary" onclick="submitRequest()">เพิ่มเพลง</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- ── TRANSPOSE MODAL ── -->
 <div class="modal-backdrop" id="transposeModal">
@@ -597,8 +581,6 @@ var _bandId    = localStorage.getItem('bandId') || '';
 var _joinedAt  = Date.now();
 var _trStep    = 0;   // current transpose offset for active song (temp, before commit)
 var _noteIdx   = -1;  // which song is being noted
-var _acTimer   = null;
-var _reqFromAC = null; // selected autocomplete result
 var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 0=S,1=M,2=L
 var _wakeLock  = null;
 var _endingTimer = null;
@@ -674,12 +656,12 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   if (_isGuest) {
-    // guest mode — verify token first, then load
+    // guest mode — verify token first, then load (full access)
     document.getElementById('guestBadge').style.display = 'inline-block';
-    document.getElementById('endBreakBtn').style.display = 'none';
-    document.getElementById('exitLiveBtn').style.display = 'none';
-    document.getElementById('shareBtn').style.display = 'none';
-    document.getElementById('requestBtn').style.display = 'none';
+    document.getElementById('endBreakBtn').style.display = 'inline-block';
+    document.getElementById('exitLiveBtn').style.display = 'inline-block';
+    document.getElementById('shareBtn').style.display = 'inline-block';
+    document.getElementById('nudgeBtn').style.display = 'inline-block';
     if (!_guestToken) { showInvalidToken(); return; }
     // save to sessionStorage to survive refresh
     sessionStorage.setItem('liveGuestToken', _guestToken);
@@ -699,19 +681,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // เป็นสมาชิก — อัปเกรดเป็น member mode
         _isGuest = false;
         document.getElementById('guestBadge').style.display = 'none';
-        document.getElementById('endBreakBtn').style.display = 'inline-block';
-        document.getElementById('exitLiveBtn').style.display = 'inline-block';
-        document.getElementById('shareBtn').style.display = 'inline-block';
-        document.getElementById('nudgeBtn').style.display = 'inline-block';
-        document.getElementById('requestBtn').style.display = 'inline-block';
-        loadPlaylist();
-        preGenerateToken();
-        setupBreakWarning();
-        showHintsIfFirstTime();
-      } else {
-        // guest จริง — read-only
-        loadPlaylist();
       }
+      // guest หรือ member — ใช้งานได้เหมือนกันทุกอย่าง
+      loadPlaylist();
+      preGenerateToken();
+      setupBreakWarning();
+      showHintsIfFirstTime();
     });
   } else {
     // member mode
@@ -733,7 +708,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (_modified) { e.preventDefault(); e.returnValue = ''; }
   });
   // touch close modals
-  ['requestModal','transposeModal','noteModal','clipModal','qrModal'].forEach(function(id) {
+  ['transposeModal','noteModal','clipModal','qrModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('show');
@@ -748,8 +723,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (e.target === this) closeNudgeSettings();
   });
 
-  // ── Song quick search & swipe-to-switch ──
-  initSongSearch();
+  // ── Chat bar & swipe-to-switch ──
+  initChatBar();
   initNowPlayingSwipe();
 });
 
@@ -891,7 +866,7 @@ function renderSongList() {
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
         (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
-        (!_isGuest ? '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' : '') +
+        '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
       '</div>'
     );
   });
@@ -914,14 +889,12 @@ function renderSongList() {
       _didSwipe = false;
       _didDrag  = false;
 
-      if (!_isGuest) {
-        _dragTimer = setTimeout(function() {
-          _dragTimer = null;
-          _didDrag = true;
-          haptic(40);
-          openCtx(idx);
-        }, 450);
-      }
+      _dragTimer = setTimeout(function() {
+        _dragTimer = null;
+        _didDrag = true;
+        haptic(40);
+        openCtx(idx);
+      }, 450);
     }, { passive: true });
 
     item.addEventListener('touchmove', function(e) {
@@ -970,7 +943,7 @@ function renderSongList() {
       _tapTimer = setTimeout(function() {
         _tapTimer = null; _lastTapIdx = -1;
         // single tap → open context menu (members only)
-        if (!_isGuest) openCtx(idx);
+        openCtx(idx);
       }, 260);
     });
   });
@@ -981,7 +954,6 @@ function renderSongList() {
 // ─── REMOVE SONG FROM PLAYLIST ────────────────────────────────────────────────
 function removeSong(e, idx) {
   e.stopPropagation();
-  if (_isGuest) return;
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
   _playlist.splice(idx, 1);
@@ -1142,11 +1114,9 @@ function startBeatDot(bpm) {
   var ctx = ensureAudioCtx();
   if (ctx) resumeAudio();
 
-  if (!_isGuest) {
-    // MANAGER: start the lookahead scheduler
-    _metNextTime = ctx ? ctx.currentTime + 0.05 : performance.now() / 1000;
-    metScheduler();
-  }
+  // Start the lookahead scheduler
+  _metNextTime = ctx ? ctx.currentTime + 0.05 : performance.now() / 1000;
+  metScheduler();
   // Receiver: waits for beat_sync, then starts local scheduler
 }
 
@@ -1162,7 +1132,7 @@ function metScheduler() {
     scheduleClick(_metNextTime);
     scheduleDotFlash(_metNextTime - ctx.currentTime);
     // Broadcast sync (only every 4th beat to reduce network traffic)
-    if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
+    if (_metBeatCount % _metTimeSig === 0) {
       // Send wall-clock origin so receivers can phase-lock precisely
       if (_metBeatCount === 0) _metWallOrigin = Date.now();
       broadcastEvent('beat_sync', {
@@ -1182,7 +1152,7 @@ function metSchedulerFallback() {
   while (_metNextTime < now + MET_LOOKAHEAD) {
     var delay = Math.max(0, (_metNextTime - now) * 1000);
     scheduleDotFlash(delay / 1000);
-    if (!_isGuest && _metBeatCount % _metTimeSig === 0) {
+    if (_metBeatCount % _metTimeSig === 0) {
       broadcastEvent('beat_sync', { bpm: _metBpm, beat: _metBeatCount, wallOrigin: _metWallOrigin });
     }
     _metNextTime += _metInterval;
@@ -1327,7 +1297,6 @@ function advanceSong() {
 
 // ─── PREV / NEXT SONG (direct, no animation) ──────────────────────────────────
 function prevSong() {
-  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
   var prev = _current - 1;
   while (prev >= 0 && _playlist[prev]._skipped) prev--;
   if (prev >= 0) {
@@ -1344,7 +1313,6 @@ function prevSong() {
 }
 
 function nextSongDirect() {
-  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
@@ -1360,68 +1328,151 @@ function nextSongDirect() {
   }
 }
 
-// ─── QUICK SEARCH / FILTER ────────────────────────────────────────────────────
-var _searchTimer = null;
-function initSongSearch() {
-  var inp = document.getElementById('songSearchInput');
-  if (!inp) return;
+// ─── CHAT BAR (inline song request) ───────────────────────────────────────────
+var _cbTimer = null;
+var _cbSelected = null; // selected autocomplete song object
+
+function initChatBar() {
+  var inp = document.getElementById('chatBarInput');
+  var sendBtn = document.getElementById('chatBarSend');
+  if (!inp || !sendBtn) return;
+
   inp.addEventListener('input', function() {
-    clearTimeout(_searchTimer);
-    _searchTimer = setTimeout(filterSongList, 150);
-    document.getElementById('songSearchClear').style.display = inp.value ? 'block' : 'none';
+    _cbSelected = null;
+    sendBtn.disabled = !inp.value.trim();
+    if (_cbTimer) clearTimeout(_cbTimer);
+    var val = inp.value.trim();
+    if (!val) { closeChatSuggest(); return; }
+    _cbTimer = setTimeout(function() { showChatSuggest(val); }, 120);
   });
-}
 
-function filterSongList() {
-  var q = (document.getElementById('songSearchInput').value || '').trim().toLowerCase();
-  var items = document.querySelectorAll('.song-item');
-  items.forEach(function(el) {
-    var idx = parseInt(el.getAttribute('data-idx'), 10);
-    var s = _playlist[idx];
-    if (!s) return;
-    if (!q) {
-      el.classList.remove('search-hide');
-      // restore original name
-      var nameEl = el.querySelector('.si-name');
-      if (nameEl) nameEl.textContent = s.name;
-      return;
-    }
-    var name = (s.name || '').toLowerCase();
-    var artist = (s.artist || '').toLowerCase();
-    var match = name.indexOf(q) >= 0 || artist.indexOf(q) >= 0;
-    el.classList.toggle('search-hide', !match);
-    // highlight match in name
-    var nameEl = el.querySelector('.si-name');
-    if (nameEl && match) {
-      var raw = s.name || '';
-      var li = raw.toLowerCase().indexOf(q);
-      if (li >= 0) {
-        nameEl.innerHTML = escHtml(raw.substring(0, li)) +
-          '<span class="search-hl">' + escHtml(raw.substring(li, li + q.length)) + '</span>' +
-          escHtml(raw.substring(li + q.length));
-      }
-    }
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); chatBarSubmit(); }
+    if (e.key === 'Escape') { closeChatSuggest(); inp.blur(); }
   });
+
+  sendBtn.addEventListener('click', function() { chatBarSubmit(); });
+
+  // close suggestions when tapping outside
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('#chatBar')) closeChatSuggest();
+  });
+
+  // Preload band songs on first focus
+  inp.addEventListener('focus', function() {
+    if (!_allSongsLoaded) {
+      apiCall('getSongs', { bandId: _bandId }, function(r) {
+        if (r && r.success && r.data) {
+          _allSongs = r.data.slice().sort(function(a, b) {
+            return (a.name || '').localeCompare(b.name || '', 'th');
+          });
+        }
+        _allSongsLoaded = true;
+      });
+    }
+  }, { once: true });
 }
 
-function clearSongSearch() {
-  var inp = document.getElementById('songSearchInput');
-  inp.value = '';
-  document.getElementById('songSearchClear').style.display = 'none';
-  filterSongList();
-  inp.blur();
-}
+function showChatSuggest(val) {
+  var sg = document.getElementById('chatBarSuggest');
+  var lower = val.toLowerCase();
+  var hits = [];
 
-function toggleSongSearch() {
-  var wrap = document.getElementById('songSearchWrap');
-  var btn = document.getElementById('searchToggleBtn');
-  var isOpen = wrap.classList.toggle('open');
-  if (btn) btn.classList.toggle('active', isOpen);
-  if (isOpen) {
-    document.getElementById('songSearchInput').focus();
-  } else {
-    clearSongSearch();
+  if (_allSongsLoaded && _allSongs.length > 0) {
+    hits = _allSongs.filter(function(s) {
+      return (s.name || '').toLowerCase().indexOf(lower) >= 0 ||
+             (s.artist || '').toLowerCase().indexOf(lower) >= 0;
+    }).slice(0, 20);
   }
+
+  var html = '';
+  hits.forEach(function(s, i) {
+    var nameParts = highlightMatch(s.name || '', lower);
+    var meta = [s.artist || '', s.key ? formatKey(s.key) : '', s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+    html += '<div class="cb-item" data-i="' + i + '">' +
+      '<div class="cb-item-info">' +
+        '<div class="cb-item-name">' + nameParts + '</div>' +
+        (meta ? '<div class="cb-item-meta">' + escHtml(meta) + '</div>' : '') +
+      '</div>' +
+      '<div class="cb-item-icon">＋</div>' +
+    '</div>';
+  });
+
+  // "add as new" option at bottom
+  html += '<div class="cb-item cb-add" data-add="1">' +
+    '<div class="cb-item-info">' +
+      '<div class="cb-item-name">➕ เพิ่ม "' + escHtml(val) + '" เป็นเพลงขอ</div>' +
+      '<div class="cb-item-meta">เพลงนี้ไม่อยู่ในคลัง — เพิ่มเข้าลิสได้เลย</div>' +
+    '</div>' +
+  '</div>';
+
+  sg.innerHTML = html;
+  sg.classList.add('open');
+
+  // bind taps on library items → instant add
+  sg.querySelectorAll('.cb-item:not(.cb-add)').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var idx = parseInt(el.dataset.i, 10);
+      var s = hits[idx];
+      if (!s) return;
+      addSongToPlaylist(s.name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+    });
+  });
+
+  // bind "add as new" item
+  var addEl = sg.querySelector('.cb-add');
+  if (addEl) {
+    addEl.addEventListener('click', function() {
+      chatBarSubmit();
+    });
+  }
+}
+
+function highlightMatch(text, q) {
+  var li = text.toLowerCase().indexOf(q);
+  if (li < 0) return escHtml(text);
+  return escHtml(text.substring(0, li)) +
+    '<span class="cb-hl">' + escHtml(text.substring(li, li + q.length)) + '</span>' +
+    escHtml(text.substring(li + q.length));
+}
+
+function closeChatSuggest() {
+  var sg = document.getElementById('chatBarSuggest');
+  if (sg) { sg.classList.remove('open'); sg.innerHTML = ''; }
+}
+
+function chatBarSubmit() {
+  var inp = document.getElementById('chatBarInput');
+  var name = (inp.value || '').trim();
+  if (!name) return;
+  addSongToPlaylist(name, '', 0, '', '', true);
+}
+
+function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
+  var song = {
+    name: name, key: key, bpm: bpm, singer: singer, artist: artist,
+    _key: key ? formatKey(key) : '', _note: '', _skipped: false,
+    _isRequest: !!isRequest, _isEncore: false
+  };
+  // Insert after current song's request block (FIFO)
+  var insertAt = _current + 1;
+  for (var qi = _current + 1; qi < _playlist.length; qi++) {
+    if (_playlist[qi]._isRequest) { insertAt = qi + 1; } else { break; }
+  }
+  _playlist.splice(insertAt, 0, song);
+  _modified = true;
+  broadcastEvent('request_song', { song: song, insertAfter: insertAt - 1 });
+
+  // Clear chat bar
+  var inp = document.getElementById('chatBarInput');
+  inp.value = '';
+  document.getElementById('chatBarSend').disabled = true;
+  closeChatSuggest();
+  inp.blur();
+
+  renderSongList();
+  showToast('➕ ' + name);
+  haptic(40);
 }
 
 // ─── SWIPE ON NOW-PLAYING ─────────────────────────────────────────────────────
@@ -1466,7 +1517,6 @@ function updateNavButtons() {
 }
 
 function playNow(idx) {
-  if (_isGuest) { showToast('Guest ไม่สามารถเลือกเพลงได้'); return; }
   if (idx === _current) return;
   _current = idx;
   _modified = true;
@@ -1479,7 +1529,6 @@ function playNow(idx) {
 }
 
 function setAsNext(idx) {
-  if (_isGuest) { showToast('Guest ไม่สามารถจัดคิวเพลงได้'); return; }
   if (idx === _current) return;
   var nextPos = _current + 1;
   if (idx === nextPos) { showToast('"' + (_playlist[idx]||{name:''}).name + '" เป็นเพลงถัดไปอยู่แล้ว ✅'); return; }
@@ -1499,7 +1548,6 @@ function setAsNext(idx) {
 //  SKIP / UNSKIP
 // ─────────────────────────────────────────────────────────────────
 function skipSong(idx) {
-  if (_isGuest) { showToast('Guest ไม่สามารถ skip เพลงได้'); return; }
   if (_playlist[idx]._skipped) return;
   haptic(50);
   _playlist[idx]._skipped = true;
@@ -1607,7 +1655,7 @@ function showBreakWarning() {
 //  PRE-GENERATE GUEST TOKEN
 // ─────────────────────────────────────────────────────────────────
 function preGenerateToken() {
-  if (_isGuest || !_bandId || !_date) return;
+  if (!_bandId || !_date) return;
   apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
     if (r && r.success && r.data) {
       _guestLinkToken = r.data;
@@ -1629,122 +1677,9 @@ function addEncore(idx) {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  SONG REQUEST MODAL
-// ─────────────────────────────────────────────────────────────────
-function openRequest() {
-  if (_isGuest) { showToast('Guest ไม่สามารถเพิ่มเพลงได้'); return; }
-  _reqFromAC = null;
-  document.getElementById('reqSearch').value = '';
-  document.getElementById('reqKey').value = '';
-  document.getElementById('reqBpm').value = '';
-  document.getElementById('autocompleteList').style.display = 'none';
-  document.getElementById('autocompleteList').innerHTML = '';
-  document.getElementById('requestModal').classList.add('show');
-  setTimeout(function(){ document.getElementById('reqSearch').focus(); }, 200);
-  // preload band songs for instant autocomplete
-  if (!_allSongsLoaded) {
-    apiCall('getSongs', { bandId: _bandId }, function(r) {
-      if (r && r.success && r.data) {
-        _allSongs = r.data.slice().sort(function(a, b) {
-          return (a.name || '').localeCompare(b.name || '', 'th');
-        });
-      }
-      _allSongsLoaded = true;
-    });
-  }
-}
-function closeRequest() {
-  document.getElementById('requestModal').classList.remove('show');
-  if (_acTimer) { clearTimeout(_acTimer); _acTimer = null; }
-}
-function onReqSearch(val) {
-  _reqFromAC = null;
-  document.getElementById('reqKey').value = '';
-  document.getElementById('reqBpm').value = '';
-  if (_acTimer) clearTimeout(_acTimer);
-  val = (val || '').trim();
-  var ac = document.getElementById('autocompleteList');
-  if (val.length < 1) { ac.style.display = 'none'; ac.innerHTML = ''; return; }
-  // Filter from preloaded library
-  if (_allSongsLoaded && _allSongs.length > 0) {
-    var lower = val.toLowerCase();
-    var hits = _allSongs.filter(function(s) {
-      return (s.name || '').toLowerCase().includes(lower);
-    }).slice(0, 30);
-    renderAutoComplete(hits, val);
-    return;
-  }
-  // Fallback: API search (debounced)
-  if (val.length < 1) return;
-  _acTimer = setTimeout(function() {
-    apiCall('searchSongs', { query: val }, function(r) {
-      renderAutoComplete((r && r.success && r.data) ? r.data : [], val);
-    });
-  }, 250);
-}
-
-function renderAutoComplete(items, val) {
-  var ac = document.getElementById('autocompleteList');
-  var html = items.map(function(s, i) {
-    var meta = [s.key ? formatKey(s.key) : '', s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
-    return '<div class="ac-item" data-i="' + i + '">' +
-      '<div>' + escHtml(s.name) + '</div>' +
-      (meta ? '<div class="ac-meta">' + meta + '</div>' : '') +
-    '</div>';
-  }).join('');
-  // Always show "เพิ่มเพลง: val" at bottom
-  html += '<div class="ac-item ac-add" data-add="1">' +
-    '<div>➕ เพิ่ม: <strong>' + escHtml(val) + '</strong></div>' +
-    '<div class="ac-meta">เพลงนี้ยังไม่อยู่ในคลัง — เพิ่มเป็นเพลงขอได้เลย</div>' +
-  '</div>';
-  ac.innerHTML = html;
-  ac.style.display = 'block';
-  ac.querySelectorAll('.ac-item:not(.ac-add)').forEach(function(el) {
-    el.addEventListener('click', function() {
-      var i = parseInt(el.dataset.i, 10);
-      _reqFromAC = items[i];
-      document.getElementById('reqSearch').value = items[i].name;
-      document.getElementById('reqKey').value = items[i].key || '';
-      document.getElementById('reqBpm').value = items[i].bpm || '';
-      ac.style.display = 'none';
-    });
-  });
-  var addBtn = ac.querySelector('.ac-add');
-  if (addBtn) {
-    addBtn.addEventListener('click', function() {
-      _reqFromAC = null;
-      ac.style.display = 'none';
-    });
-  }
-}
-
-function submitRequest() {
-  var name = document.getElementById('reqSearch').value.trim();
-  if (!name) { showToast('กรุณาใส่ชื่อเพลง'); return; }
-  var key = document.getElementById('reqKey').value.trim();
-  var bpm = parseInt(document.getElementById('reqBpm').value, 10) || 0;
-  var singer = _reqFromAC ? (_reqFromAC.singer || '') : '';
-  var artist = _reqFromAC ? (_reqFromAC.artist || '') : '';
-  var song = { name: name, key: key, bpm: bpm, singer: singer, artist: artist,
-               _key: key, _note: '', _skipped: false, _isRequest: true, _isEncore: false };
-  // หาตำแหน่งสุดท้ายของเพลงขอที่อยู่หลัง current แล้ว insert ต่อท้าย (FIFO)
-  var insertAt = _current + 1;
-  for (var qi = _current + 1; qi < _playlist.length; qi++) {
-    if (_playlist[qi]._isRequest) { insertAt = qi + 1; } else { break; }
-  }
-  _playlist.splice(insertAt, 0, song);
-  _modified = true;
-  broadcastEvent('request_song', { song: song, insertAfter: insertAt - 1 });
-  closeRequest();
-  renderSongList();
-  showToast('➕ เพิ่มเพลง: ' + name);
-}
-
-// ─────────────────────────────────────────────────────────────────
 //  TRANSPOSE MODAL
 // ─────────────────────────────────────────────────────────────────
 function openTranspose() {
-  if (_isGuest) return;
   var hint = document.getElementById('keyHint');
   if (hint) hint.classList.add('hide');
   var s = _playlist[_current];
@@ -1806,7 +1741,6 @@ function submitNote() {
 //  END BREAK (จบเบรค)
 // ─────────────────────────────────────────────────────────────────
 function endBreak() {
-  if (_isGuest) { showToast('เฉพาะสมาชิกเท่านั้นที่กด จบเบรค ได้'); return; }
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
     doExit();
@@ -2256,7 +2190,7 @@ function startPeriodicSync() {
   // Every 30s, all non-guest devices broadcast their state.
   // Receivers use smart diff — only update if state has actually changed.
   _periodicSyncTimer = setInterval(function() {
-    if (!_isGuest && _playlist.length > 0 && _channel) {
+    if (_playlist.length > 0 && _channel) {
       broadcastEvent('state_sync', getState());
     }
   }, 30000);
@@ -2318,7 +2252,6 @@ function renderNudgePresets() {
 }
 
 function openNudge() {
-  if (_isGuest) return;
   renderNudgePresets();
   document.getElementById('nudgeModal').style.display = 'flex';
 }
@@ -2568,7 +2501,6 @@ function showInvalidToken() {
 
 // ─── QR CODE / SHARE ──────────────────────────────────────────────
 function shareQR() {
-  if (_isGuest) return;
   if (_guestLinkToken) {
     showQRModal(_guestLinkToken);
     return;
@@ -2608,7 +2540,6 @@ function closeQR() {
 //  CONTEXT MENU (long-press / single-tap on song)
 // ─────────────────────────────────────────────────────────────────
 function openCtx(idx) {
-  if (_isGuest) return;
   _ctxIdx = idx;
   var s = _playlist[idx];
   if (!s) return;
@@ -2666,7 +2597,6 @@ function ctxAction(action) {
 }
 
 function removeSongDirect(idx) {
-  if (_isGuest) return;
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
   _playlist.splice(idx, 1);

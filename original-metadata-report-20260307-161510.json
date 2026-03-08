@@ -1,0 +1,172 @@
+﻿[
+    {
+        "id":  "62873120-f5d8-4f56-a3f9-fe8bc7b7674b",
+        "name_raw":  "à¸”à¸µà¹ƒà¸ˆà¸£à¸¶à¹€à¸›à¸¥à¹ˆà¸²",
+        "name":  "ดีใจรึเปล่า",
+        "query":  "ดีใจรึเปล่า",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "No recording matches",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "95aabce0-7c76-4630-a612-c73c5b6895c3",
+        "name_raw":  "à¸Šà¸µà¸§à¸´à¸•à¹€à¸¡à¸µà¸¢à¹€à¸Šà¹ˆà¸²",
+        "name":  "ชีวิตเมียเช่า",
+        "query":  "ชีวิตเมียเช่า",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "No recording matches",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "ac312f9b-0768-4e07-bb76-2c6dcb819dd6",
+        "name_raw":  "Good times",
+        "name":  "Good times",
+        "query":  "Good times",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "97cb99f9-020d-4c61-adfe-3d9a5ca3a98d",
+        "name_raw":  "à¸£à¸±à¸à¹„à¸¡à¹ˆà¸Šà¹ˆà¸§à¸¢à¸­à¸°à¹„à¸£",
+        "name":  "รักไม่ช่วยอะไร",
+        "query":  "รักไม่ช่วยอะไร",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "647acecf-a2b9-436f-b210-120c7b037f27",
+        "name_raw":  "à¹€à¸¥à¹ˆà¸™à¸‚à¸­à¸‡à¸ªà¸¹à¸‡",
+        "name":  "เล่นของสูง",
+        "query":  "เล่นของสูง",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "4c15548d-6537-4353-aeeb-2695bcced24c",
+        "name_raw":  "San Francisco street",
+        "name":  "San Francisco street",
+        "query":  "San Francisco street",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "254818f7-ac7e-45ca-8f36-dbb74f8d13a7",
+        "name_raw":  "The Young Ones",
+        "name":  "The Young Ones",
+        "query":  "The Young Ones",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "5b2427d0-1711-4fd9-872d-038ec29a47a4",
+        "name_raw":  "à¸à¸·à¸™(à¸¥à¸´à¸›à¸•à¸²)",
+        "name":  "ฝืน(ลิปตา)",
+        "query":  "ฝืน",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "Error: System.ArgumentException: Argument types do not match",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "3b3ff54f-44bc-41a1-a2f5-059f8a097ff0",
+        "name_raw":  "à¸žà¸¹à¸”à¹„à¸¡à¹ˆà¸„à¸´à¸”",
+        "name":  "พูดไม่คิด",
+        "query":  "พูดไม่คิด",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "No recording matches",
+        "candidates":  [
+
+                       ]
+    },
+    {
+        "id":  "b006b27e-3c55-41d4-ae39-3a4ce642dade",
+        "name_raw":  "à¸­à¸²à¸ˆà¸ˆà¸°à¹€à¸›à¹‡à¸™à¸„à¸™à¸™à¸µà¹‰",
+        "name":  "อาจจะเป็นคนนี้",
+        "query":  "อาจจะเป็นคนนี้",
+        "source":  "MusicBrainz",
+        "mb_recording_id":  null,
+        "mb_recording_url":  null,
+        "original_artist":  "ไม่พบข้อมูล",
+        "first_release_year":  "ไม่พบข้อมูล",
+        "score":  null,
+        "confidence":  "low",
+        "note":  "No recording matches",
+        "candidates":  [
+
+                       ]
+    }
+]

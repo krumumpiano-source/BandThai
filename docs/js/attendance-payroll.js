@@ -676,6 +676,11 @@ function apDoSave() {
 }
 
 /* ═══ RECEIPTS (save as image) ═══════════════════════ */
+function apIsMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2 && /MacIntel/.test(navigator.platform));
+}
+
 function apSaveAsImage(htmlContent, fileName) {
   var wrap = document.createElement('div');
   wrap.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;padding:36px 40px;font-family:Sarabun,Kanit,sans-serif;min-width:1000px;width:max-content;max-width:1600px';
@@ -693,6 +698,33 @@ function apSaveAsImage(htmlContent, fileName) {
   }
   html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', useCORS: true }).then(function(canvas) {
     document.body.removeChild(wrap);
+
+    /* ── Mobile: try Web Share API first, then open in new tab ── */
+    if (apIsMobile()) {
+      canvas.toBlob(function(blob) {
+        if (!blob) { apToast('ไม่สามารถสร้างรูปภาพได้', 'error'); return; }
+
+        /* Try navigator.share with file (iOS 15+, Android Chrome) */
+        if (navigator.share && navigator.canShare) {
+          var file = new File([blob], fileName, { type: 'image/png' });
+          var shareData = { files: [file] };
+          if (navigator.canShare(shareData)) {
+            navigator.share(shareData).then(function() {
+              apToast('แชร์/บันทึกรูปภาพสำเร็จ', 'success');
+            }).catch(function(e) {
+              if (e.name !== 'AbortError') apOpenImageInNewTab(blob, fileName);
+            });
+            return;
+          }
+        }
+
+        /* Fallback: open image in new tab (user can long-press to save) */
+        apOpenImageInNewTab(blob, fileName);
+      }, 'image/png');
+      return;
+    }
+
+    /* ── Desktop: normal download ── */
     var link = document.createElement('a');
     link.download = fileName;
     link.href = canvas.toDataURL('image/png');
@@ -702,6 +734,28 @@ function apSaveAsImage(htmlContent, fileName) {
     document.body.removeChild(wrap);
     apToast('เกิดข้อผิดพลาดในการบันทึก: ' + err, 'error');
   });
+}
+
+function apOpenImageInNewTab(blob, fileName) {
+  var url = URL.createObjectURL(blob);
+  var pw = window.open('', '_blank');
+  if (pw) {
+    pw.document.write(
+      '<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + fileName + '</title>' +
+      '<style>body{margin:0;display:flex;flex-direction:column;align-items:center;background:#f0f0f0;padding:16px;font-family:Sarabun,sans-serif}' +
+      'img{max-width:100%;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.15)}' +
+      '.hint{margin:16px 0;padding:12px 20px;background:#fff3cd;border-radius:8px;font-size:14px;text-align:center;color:#856404}</style></head><body>' +
+      '<div class="hint">📱 กดค้างที่รูปภาพ แล้วเลือก "บันทึกรูปภาพ" / "Save Image"</div>' +
+      '<img src="' + url + '" alt="' + fileName + '">' +
+      '</body></html>'
+    );
+    pw.document.close();
+    apToast('เปิดรูปภาพในแท็บใหม่แล้ว — กดค้างเพื่อบันทึก', 'success');
+  } else {
+    URL.revokeObjectURL(url);
+    apToast('กรุณาอนุญาต popup เพื่อดูรูปภาพ', 'error');
+  }
 }
 
 function apPrintVenueReceipt() {

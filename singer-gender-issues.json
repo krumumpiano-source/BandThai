@@ -1,0 +1,100 @@
+﻿[
+    {
+        "Type":  "Male song with female artist",
+        "Name":  "At My Worst",
+        "Artist":  "Pink Sweat$",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist is female but song marked as male"
+    },
+    {
+        "Type":  "Female song with male artist",
+        "Name":  "The game of love",
+        "Artist":  "Santana",
+        "Singer":  "à¸«à¸à¸´à¸‡",
+        "Issue":  "Artist is male but song marked as female"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "September",
+        "Artist":  "Earth, Wind \u0026 Fire",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "Get Lucky",
+        "Artist":  "Daft Punk ft. Pharrell",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "I Feel It Coming",
+        "Artist":  "The Weeknd ft. Daft Punk",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸šà¸­à¸à¸•à¸±à¸§à¹€à¸­à¸‡",
+        "Artist":  "Room39 ft. à¹‚à¸›à¹ˆà¸‡ à¸«à¸´à¸™à¹€à¸«à¸¥à¹‡à¸à¹„à¸Ÿ",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸­à¸¢à¸²à¸à¸¡à¸µà¹à¸Ÿà¸™à¹à¸¥à¹‰à¸§",
+        "Artist":  "Lipta ft. Lazyloxy",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸—à¸±à¸à¸„à¸£à¸±à¸š",
+        "Artist":  "Lipta ft. GUYGEEGEE",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸—à¸³à¹„à¸¡à¸•à¹‰à¸­à¸‡à¸£à¸±à¸à¹€à¸˜à¸­",
+        "Artist":  "à¹€à¸­à¸´à¹‰à¸™ à¸žà¸´à¸¢à¸°à¸”à¸² ft. à¸„à¸£à¸´à¸ª à¸«à¸­à¸§à¸±à¸‡",
+        "Singer":  "à¸«à¸à¸´à¸‡",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸Šà¹ˆà¸§à¸‡à¸—à¸µà¹ˆà¸”à¸µà¸—à¸µà¹ˆà¸ªà¸¸à¸”",
+        "Artist":  "Boy ft. Pod",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸žà¸´à¸ˆà¸²à¸£à¸“à¸²",
+        "Artist":  "Musketeers ft. MAIYARAP",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸‚à¸§à¸²à¸™à¸šà¸´à¹ˆà¸™",
+        "Artist":  "à¸ªà¸´à¸‡à¹‚à¸• à¸™à¸³à¹‚à¸Šà¸„ ft. à¹‚à¸ˆà¹Šà¸ à¹‚à¸‹à¸„à¸¹à¸¥",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "Smooth",
+        "Artist":  "Santana ft. Rob Thomas",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    },
+    {
+        "Type":  "Possible duet marked as solo",
+        "Name":  "à¸¥à¸·à¸¡à¹„à¸›",
+        "Artist":  "Wanyai ft. à¸›à¸¹à¹ˆà¸ˆà¹‹à¸²à¸™",
+        "Singer":  "à¸Šà¸²à¸¢",
+        "Issue":  "Artist suggests collaboration"
+    }
+]
