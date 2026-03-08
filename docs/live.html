@@ -149,7 +149,7 @@
     #actionBar button:active{transform:scale(.96)}
     #undoBtn,#endSongBtn{flex:1 1 45%}
     #endSongBtn{background:var(--gold);color:#000}
-    #actionBar #nudgeBtn,#historyBtn,#chatBtnWrap{flex:1 1 28%}
+    #actionBar #nudgeBtn,#chatBtnWrap{flex:1 1 28%}
     #actionBar #nudgeBtn{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
     #chatBtnWrap button{width:100%;padding:7px 6px;font-size:0.8rem;min-height:32px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
 
@@ -317,16 +317,6 @@
     /* ─── UNDO BUTTON ─── */
     #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:none}
 
-    /* ─── HISTORY MODAL ─── */
-    #historyModal .modal-sheet{max-height:80vh;display:flex;flex-direction:column}
-    #historyList{flex:1;overflow-y:auto;padding:4px 0 8px}
-    .hist-item{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid #2a2a2a;font-size:0.88rem}
-    .hist-num{color:var(--text3);font-size:0.78rem;min-width:22px;text-align:right}
-    .hist-name{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .hist-key{color:var(--gold);font-size:0.82rem;font-weight:600}
-    .hist-time{color:var(--text3);font-size:0.75rem;white-space:nowrap}
-    .hist-empty{text-align:center;color:var(--text3);padding:40px 0;font-size:0.9rem}
-
     /* ─── CHAT MODAL ─── */
     #chatModal .modal-sheet{max-height:80vh;display:flex;flex-direction:column;padding-bottom:0}
     #chatMessages{flex:1;overflow-y:auto;padding:4px 0 8px;min-height:120px}
@@ -425,7 +415,6 @@
     <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง">↩ ย้อนกลับ</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
     <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
-    <button id="historyBtn" onclick="openHistory()" style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.35);color:#6ee7b7" title="ประวัติเพลง">📋 ประวัติ</button>
     <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;width:100%" title="แชท">💬 แชท</button><span id="chatBtnBadge">0</span></span>
   </div>
 </div>
@@ -497,17 +486,6 @@
     <span class="tr-reset" onclick="resetTranspose()">คีย์เดิม</span>
     <div class="modal-actions" style="margin-top:20px">
       <button class="modal-btn secondary" onclick="closeTranspose()">ปิด</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── HISTORY MODAL ── -->
-<div class="modal-backdrop" id="historyModal" style="display:none">
-  <div class="modal-sheet">
-    <h3>📋 ประวัติเพลงที่เล่นแล้ว</h3>
-    <div id="historyList"></div>
-    <div class="modal-actions" style="margin-top:10px">
-      <button class="modal-btn secondary" onclick="closeHistory()">ปิด</button>
     </div>
   </div>
 </div>
@@ -669,9 +647,6 @@ var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
 
 // ── Undo state ─────────────────────────────────────────────────────
 var _undoStack = []; // array of { current, songName, songKey }
-
-// ── Play History ───────────────────────────────────────────────────
-var _playHistory = []; // array of { name, key, singer, time }
 
 // ── Chat ───────────────────────────────────────────────────────────
 var _chatMessages = []; // array of { from, text, time, isMine }
@@ -1340,7 +1315,6 @@ function triggerEnding(nextIdx) {
     np.classList.remove('pulsing');
     _isEnding = false;
     if (nextIdx >= 0 && nextIdx < _playlist.length) {
-      _recordHistory(_current);
       _current  = nextIdx;
       _modified = true;
       haptic(100);
@@ -1363,7 +1337,6 @@ function advanceSong() {
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
     _pushUndo();
-    _recordHistory(_current);
     _current  = next;
     _modified = true;
     haptic(100);
@@ -1398,7 +1371,6 @@ function nextSongDirect() {
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   if (next < _playlist.length) {
     _pushUndo();
-    _recordHistory(_current);
     _current = next;
     _modified = true;
     haptic(80);
@@ -2307,45 +2279,7 @@ function undoSong() {
   renderNowPlaying();
   renderSongList();
   _updateUndoBtn();
-  // Remove last history entry too
-  if (_playHistory.length > 0) _playHistory.pop();
   showToast('↩ ย้อนกลับ: ' + state.songName);
-}
-
-// ─── PLAY HISTORY ─────────────────────────────────────────────────
-function _recordHistory(idx) {
-  var s = _playlist[idx];
-  if (!s) return;
-  var now = new Date();
-  var hh = String(now.getHours()).padStart(2, '0');
-  var mm = String(now.getMinutes()).padStart(2, '0');
-  _playHistory.push({ name: s.name, key: s._key || s.key || '', singer: s.singer || '', time: hh + ':' + mm });
-}
-
-function openHistory() {
-  var list = document.getElementById('historyList');
-  if (!list) return;
-  if (_playHistory.length === 0) {
-    list.innerHTML = '<div class="hist-empty">ยังไม่มีเพลงที่เล่นจบ</div>';
-  } else {
-    list.innerHTML = '';
-    _playHistory.forEach(function(h, i) {
-      var row = document.createElement('div');
-      row.className = 'hist-item';
-      row.innerHTML = '<span class="hist-num">' + (i + 1) + '</span>' +
-        '<span class="hist-name">' + _escHtml(h.name) + '</span>' +
-        '<span class="hist-key">' + _escHtml(h.key) + '</span>' +
-        '<span class="hist-time">' + h.time + '</span>';
-      list.appendChild(row);
-    });
-    // Scroll to bottom
-    list.scrollTop = list.scrollHeight;
-  }
-  document.getElementById('historyModal').style.display = 'flex';
-}
-
-function closeHistory() {
-  document.getElementById('historyModal').style.display = 'none';
 }
 
 function _escHtml(s) {
@@ -2378,8 +2312,6 @@ function closeChat() {
   setTimeout(function() {
     var cm = document.getElementById('chatModal');
     if (cm) cm.addEventListener('click', function(e) { if (e.target === cm) closeChat(); });
-    var hm = document.getElementById('historyModal');
-    if (hm) hm.addEventListener('click', function(e) { if (e.target === hm) closeHistory(); });
   }, 500);
 })();
 
