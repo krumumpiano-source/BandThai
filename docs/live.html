@@ -317,21 +317,25 @@
     /* ─── UNDO BUTTON ─── */
     #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:none}
 
-    /* ─── CHAT MODAL ─── */
-    #chatModal .modal-sheet{max-height:80vh;display:flex;flex-direction:column;padding-bottom:0}
-    #chatMessages{flex:1;overflow-y:auto;padding:4px 0 8px;min-height:120px}
-    .chat-bubble{margin:4px 0;padding:8px 12px;border-radius:12px;max-width:85%;font-size:0.88rem;word-wrap:break-word}
+    /* ─── MINI CHAT PANEL ─── */
+    #chatPanel{display:none;border-top:1px solid #444;background:var(--bg2);flex-direction:column;max-height:220px}
+    #chatPanel.open{display:flex}
+    #chatPanelHeader{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-bottom:1px solid #333;flex-shrink:0}
+    #chatPanelHeader span{font-size:0.82rem;font-weight:700;color:var(--gold)}
+    #chatPanelClose{background:none;border:none;color:var(--text3);font-size:1rem;cursor:pointer;padding:2px 6px}
+    #chatMessages{flex:1;overflow-y:auto;padding:4px 8px 4px;min-height:0}
+    .chat-bubble{margin:3px 0;padding:6px 10px;border-radius:10px;max-width:85%;font-size:0.82rem;word-wrap:break-word}
     .chat-bubble.mine{background:rgba(212,168,67,.15);border:1px solid rgba(212,168,67,.25);margin-left:auto;text-align:right}
     .chat-bubble.other{background:var(--bg3);border:1px solid #444}
-    .chat-sender{font-size:0.72rem;font-weight:700;color:var(--gold);margin-bottom:2px}
+    .chat-sender{font-size:0.68rem;font-weight:700;color:var(--gold);margin-bottom:1px}
     .chat-text{color:var(--text)}
-    .chat-ts{font-size:0.65rem;color:var(--text3);margin-top:2px}
-    .chat-empty{text-align:center;color:var(--text3);padding:40px 0;font-size:0.9rem}
-    #chatInputRow{display:flex;gap:8px;padding:10px 0 calc(10px + env(safe-area-inset-bottom,0));border-top:1px solid #333;flex-shrink:0}
-    #chatMsgInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:20px;padding:8px 14px;font-size:0.88rem;font-family:inherit;outline:none}
+    .chat-ts{font-size:0.6rem;color:var(--text3);margin-top:1px}
+    .chat-empty{text-align:center;color:var(--text3);padding:20px 0;font-size:0.85rem}
+    #chatInputRow{display:flex;gap:6px;padding:6px 8px;border-top:1px solid #333;flex-shrink:0}
+    #chatMsgInput{flex:1;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:20px;padding:7px 12px;font-size:0.82rem;font-family:inherit;outline:none}
     #chatMsgInput:focus{border-color:var(--gold)}
     #chatMsgInput::placeholder{color:var(--text3)}
-    #chatSendMsgBtn{background:var(--gold);color:#000;border:none;border-radius:50%;width:36px;height:36px;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    #chatSendMsgBtn{background:var(--gold);color:#000;border:none;border-radius:50%;width:32px;height:32px;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     #chatSendMsgBtn:active{transform:scale(.9)}
     /* badge on chat button */
     #chatBtnBadge{position:absolute;top:-4px;right:-4px;background:#ef4444;color:#fff;font-size:0.6rem;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px}
@@ -406,6 +410,14 @@
 
 <!-- ── CHAT BAR (song request) + ACTION BAR ── -->
 <div id="chatBar">
+  <div id="chatPanel">
+    <div id="chatPanelHeader"><span>💬 แชทสมาชิก</span><button id="chatPanelClose" onclick="closeChat()">✕</button></div>
+    <div id="chatMessages"></div>
+    <div id="chatInputRow">
+      <input type="text" id="chatMsgInput" placeholder="พิมพ์ข้อความ..." maxlength="200" />
+      <button id="chatSendMsgBtn" onclick="sendChatMsg()">➤</button>
+    </div>
+  </div>
   <div id="chatBarSuggest"></div>
   <div id="chatBarInner">
     <input type="text" id="chatBarInput" placeholder="พิมพ์ชื่อเพลงเพื่อขอเพลง..." autocomplete="off" />
@@ -490,17 +502,7 @@
   </div>
 </div>
 
-<!-- ── CHAT MODAL ── -->
-<div class="modal-backdrop" id="chatModal" style="display:none">
-  <div class="modal-sheet">
-    <h3>💬 แชทสมาชิก</h3>
-    <div id="chatMessages"></div>
-    <div id="chatInputRow">
-      <input type="text" id="chatMsgInput" placeholder="พิมพ์ข้อความ..." maxlength="200" />
-      <button id="chatSendMsgBtn" onclick="sendChatMsg()">➤</button>
-    </div>
-  </div>
-</div>
+
 
 <!-- ── NOTE MODAL ── -->
 <div class="modal-backdrop" id="noteModal">
@@ -2290,11 +2292,13 @@ function _escHtml(s) {
 
 // ─── CHAT ─────────────────────────────────────────────────────────
 function openChat() {
+  var panel = document.getElementById('chatPanel');
+  if (panel.classList.contains('open')) { closeChat(); return; }
   _chatOpen = true;
   _chatUnread = 0;
   _updateChatBadge();
   _renderChatMessages();
-  document.getElementById('chatModal').style.display = 'flex';
+  panel.classList.add('open');
   var inp = document.getElementById('chatMsgInput');
   if (inp) {
     inp.value = '';
@@ -2304,16 +2308,10 @@ function openChat() {
 
 function closeChat() {
   _chatOpen = false;
-  document.getElementById('chatModal').style.display = 'none';
+  document.getElementById('chatPanel').classList.remove('open');
 }
 
-// Close chat modal on backdrop click
-(function() {
-  setTimeout(function() {
-    var cm = document.getElementById('chatModal');
-    if (cm) cm.addEventListener('click', function(e) { if (e.target === cm) closeChat(); });
-  }, 500);
-})();
+// No backdrop listener needed for mini panel;
 
 function sendChatMsg() {
   var inp = document.getElementById('chatMsgInput');
