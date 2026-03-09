@@ -214,8 +214,8 @@
             </div>
             <div class="table-responsive">
               <table class="table">
-                <thead><tr><th>ชื่อวง</th><th>รหัสวง</th><th>จังหวัด</th><th>แพ็กเกจ</th><th>สมัครเมื่อ</th><th>เปลี่ยนแพ็ก</th><th></th></tr></thead>
-                <tbody id="bandsTbody"><tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</td></tr></tbody>
+                <thead><tr><th>ชื่อวง</th><th>รหัสวง</th><th>จังหวัด</th><th>สมาชิก</th><th>แพ็กเกจ</th><th>สมัครเมื่อ</th><th>เปลี่ยนแพ็ก</th><th></th></tr></thead>
+                <tbody id="bandsTbody"><tr><td colspan="8" class="text-center" style="color:var(--premium-text-muted)">กดรีเฟรชเพื่อโหลด</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -1157,7 +1157,7 @@
 
   function loadAllBands() {
     var tbody = document.getElementById('bandsTbody');
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr>';
     apiCall('getAllBands', {}, function(r) {
       _allBandsData = (r && r.data) || [];
       renderBandsTable(_allBandsData);
@@ -1166,24 +1166,32 @@
 
   function renderBandsTable(data) {
     var tbody = document.getElementById('bandsTbody');
-    if (!data.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">ไม่มีวงดนตรี</td></tr>'; return; }
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center" style="color:var(--premium-text-muted)">ไม่มีวงดนตรี</td></tr>'; return; }
     var planColors = { free: '#22c55e', lite: '#2563eb', pro: '#d97706' };
     tbody.innerHTML = data.map(function(b) {
       var created = b.created_at ? new Date(b.created_at).toLocaleDateString('th-TH') : '—';
       var plan = b.band_plan || 'free';
-      var memberCount = b.profiles ? (Array.isArray(b.profiles) ? b.profiles.length : b.profiles) : '—';
+      var members = b.member_count != null ? b.member_count : '—';
+      var hasId = b.id && !b._from_profiles;
+      var planSelect = hasId
+        ? '<select class="role-select" style="font-size:.75rem" onchange="setBandPlan(\'' + b.id + '\',this.value)">'
+          + '<option value="free"'+(plan==='free'?' selected':'')+'>🆓 Free</option>'
+          + '<option value="lite"'+(plan==='lite'?' selected':'')+'>🎵 Lite</option>'
+          + '<option value="pro"'+(plan==='pro'?' selected':'')+'>👑 Pro</option>'
+          + '</select>'
+        : '<span style="font-size:.75rem;color:var(--premium-text-muted)" title="วงนี้ยังไม่ได้สร้างผ่านระบบคำขอ">—</span>';
+      var deleteBtn = hasId
+        ? '<button class="btn btn-danger btn-sm" onclick="adminDeleteBand(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\')">🗑️</button>'
+        : '';
       return '<tr>'
-        + '<td><b>' + escapeHtml(b.band_name || '—') + '</b></td>'
+        + '<td><b>' + escapeHtml(b.band_name || '—') + '</b>' + (b._from_profiles ? '<br><span style="font-size:.65rem;color:#f59e0b" title="วงนี้ยังไม่ได้อยู่ในตาราง bands อาจต้องอนุมัติใหม่">(ไม่มีในระบบวง)</span>' : '') + '</td>'
         + '<td><code style="font-size:.8rem">' + escapeHtml(b.band_code || '—') + '</code></td>'
         + '<td style="font-size:.78rem">' + escapeHtml(b.province || '—') + '</td>'
+        + '<td style="text-align:center">' + members + '</td>'
         + '<td><span style="background:' + (planColors[plan]||'#6b7280') + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">' + plan.toUpperCase() + '</span></td>'
         + '<td style="font-size:.78rem">' + created + '</td>'
-        + '<td><select class="role-select" style="font-size:.75rem" onchange="setBandPlan(\'' + b.id + '\',this.value)">'
-        + '<option value="free"'+(plan==='free'?' selected':'')+'>🆓 Free</option>'
-        + '<option value="lite"'+(plan==='lite'?' selected':'')+'>🎵 Lite</option>'
-        + '<option value="pro"'+(plan==='pro'?' selected':'')+'>👑 Pro</option>'
-        + '</select></td>'
-        + '<td><button class="btn btn-danger btn-sm" onclick="adminDeleteBand(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\')">🗑️</button></td>'
+        + '<td>' + planSelect + '</td>'
+        + '<td>' + deleteBtn + '</td>'
         + '</tr>';
     }).join('');
   }

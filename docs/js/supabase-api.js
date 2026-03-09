@@ -2040,14 +2040,55 @@
 
     // ── Bands Management ───────────────────────────────────────────
     async function doGetAllBands() {
+      // 1. ดึงจากตาราง bands (source of truth)
       var { data, error } = await sb.from('bands')
-        .select('id, band_name, band_code, band_plan, province, created_at, profiles!profiles_band_id_fkey(count)')
+        .select('id, band_name, band_code, band_plan, province, created_at')
         .order('created_at', { ascending: false });
-      if (error) {
-        // Fallback: if join fails, get bands without member count
-        var res2 = await sb.from('bands').select('id, band_name, band_code, band_plan, province, created_at').order('created_at', { ascending: false });
-        if (res2.error) throw res2.error;
-        return { success: true, data: res2.data || [] };
+      if (error) data = [];
+
+      // 2. ถ้า bands ว่าง → derive จาก profiles (backward-compat กับวงที่สร้างก่อนระบบ band_requests)
+      if (!data || !data.length) {
+        var { data: profiles, error: pErr } = await sb.from('profiles')
+          .select('band_id, band_name, province, role, created_at')
+          .not('band_name', 'is', null)
+          .neq('band_name', '');
+        if (pErr || !profiles || !profiles.length) return { success: true, data: [] };
+
+        var bandMap = {};
+        profiles.forEach(function(p) {
+          var key = p.band_id || p.band_name;
+          if (!bandMap[key]) {
+            bandMap[key] = {
+              id: p.band_id || null,
+              band_name: p.band_name,
+              band_code: '',
+              band_plan: 'free',
+              province: p.province || '',
+              created_at: p.created_at,
+              member_count: 0,
+              _from_profiles: true
+            };
+          }
+          bandMap[key].member_count++;
+          if (p.created_at && p.created_at < bandMap[key].created_at) {
+            bandMap[key].created_at = p.created_at;
+          }
+        });
+        data = Object.values(bandMap);
+        data.sort(function(a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); });
+      } else {
+        // เสริมจำนวนสมาชิก
+        var { data: profiles } = await sb.from('profiles')
+          .select('band_id')
+          .not('band_id', 'is', null)
+          .neq('band_id', '');
+        if (profiles) {
+          var countMap = {};
+          profiles.forEach(function(p) {
+            countMap[p.band_id] = (countMap[p.band_id] || 0) + 1;
+          });
+          data.forEach(function(b) { b.member_count = countMap[b.id] || 0; });
+        }
       }
       return { success: true, data: data || [] };
     }
