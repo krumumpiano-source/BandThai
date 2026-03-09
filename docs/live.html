@@ -747,7 +747,11 @@ document.addEventListener('DOMContentLoaded', function() {
       showHintsIfFirstTime();
     });
   } else {
-    // member mode
+    // member mode — require login
+    if (!_bandId || !localStorage.getItem('auth_token')) {
+      window.location.replace('index.html');
+      return;
+    }
     document.getElementById('shareBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
     loadPlaylist();

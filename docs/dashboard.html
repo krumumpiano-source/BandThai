@@ -216,7 +216,7 @@
           <!-- Leave button (always visible) -->
           <div style="margin-top:var(--spacing-md);display:flex;align-items:center;gap:var(--spacing-md);flex-wrap:wrap">
             <button type="button" class="qci-leave-btn" id="qciLeaveBtn">🚫 ลา</button>
-            <a href="leave.html" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 จัดการใบลาทั้งหมด</a>
+            <a href="attendance-payroll.html" style="font-size:var(--text-xs);color:var(--premium-gold);font-weight:600;text-decoration:none">🔄 ดูสรุปการลา</a>
           </div>
           <!-- Leave inline form -->
           <div class="qci-leave-form" id="qciLeaveForm">
@@ -640,7 +640,7 @@
       var params = '?date=' + encodeURIComponent(dateStr) +
         '&venue=' + encodeURIComponent(venue) +
         '&sub=' + encodeURIComponent(subName);
-      window.location.href = 'leave.html' + params;
+      showDashToast('ไม่สามารถบันทึกลาได้ กรุณารีเฟรชหน้าแล้วลองใหม่', 'error');
     }
   }
 

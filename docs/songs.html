@@ -907,7 +907,7 @@ function loadPage(page) {
     } else {
       var msg = (result && result.message) ? result.message : 'error';
       var resultEl = getEl('result');
-      if (resultEl) resultEl.innerHTML = '<div class="result-loading result-error">โหลดข้อมูลไม่ได้: ' + msg + '</div>';
+      if (resultEl) { var _d = document.createElement('div'); _d.className = 'result-loading result-error'; _d.textContent = 'โหลดข้อมูลไม่ได้: ' + msg; resultEl.innerHTML = ''; resultEl.appendChild(_d); }
     }
   });
 }

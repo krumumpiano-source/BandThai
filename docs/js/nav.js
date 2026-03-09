@@ -62,7 +62,9 @@ function renderMainNav(containerId) {
     navLink('equipment',     '🎸 ' + _t('nav_equipment'),    'อุปกรณ์วงและงบซ่อมบำรุง') +
     navLink('band-fund',     '💰 ' + _t('nav_bandFund'),     'บัญชีรายรับรายจ่ายกองกลาง') +
     navLink('band-info',     '👥 ' + _t('nav_bandInfo'),     'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
-    navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว');
+    navLink('my-profile',    '👤 ' + _t('nav_myProfile'),    'ข้อมูลส่วนตัวและอัตราค่าตัว') +
+    navLink('setlist',        '🎼 เซ็ตลิสต์',                 'จัดลำดับเพลงสำหรับงาน') +
+    navLink('user-manual',    '📖 คู่มือใช้งาน',              'วิธีใช้งานแต่ละฟีเจอร์');
 
   // ── ลิงก์อัปเกรด (แสดงเฉพาะ free/lite) ──────────────
   var _plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();

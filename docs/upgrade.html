@@ -234,7 +234,7 @@
         if (priceEl) priceEl.innerHTML = '฿' + Math.round(p.price / 100) + '<span>/เดือน</span>';
         var featsEl = document.getElementById('feats_' + p.id);
         if (featsEl && Array.isArray(p.features)) {
-          featsEl.innerHTML = p.features.map(function(f){ return '<li>' + f + '</li>'; }).join('');
+          featsEl.innerHTML = p.features.map(function(f){ var _t = document.createElement('span'); _t.textContent = f; return '<li>' + _t.innerHTML + '</li>'; }).join('');
         }
         if (!p.active) {
           var card = document.getElementById('card' + p.id.charAt(0).toUpperCase() + p.id.slice(1));
