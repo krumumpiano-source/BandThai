@@ -1017,24 +1017,22 @@ function deleteSong(songId, songName) {
 function addToLibrary(songId) {
   var song = _allSongs.find(function(s){ return s.id === songId; });
   if (!song) { showToast('ไม่พบข้อมูลเพลง', 'error'); return; }
-  if (!confirm('เพิ่ม "' + song.name + '" เข้าคลังเพลง?')) return;
 
-  apiCall('addSong', {
-    name:   song.name,
-    artist: song.artist || '',
-    key:    song.key || '',
-    bpm:    String(song.bpm || ''),
-    singer: song.singer || '',
-    bandId: null
-  }, function(r) {
-    if (r && r.success) {
-      showToast('✅ เพิ่ม "' + song.name + '" เข้าคลังแล้ว', 'success');
-      clearSongsCache();
-      loadSongs();
-    } else {
-      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
-    }
+  // Pre-fill the Add Song modal with history data
+  document.getElementById('mName').value   = song.name || '';
+  document.getElementById('mArtist').value = song.artist || '';
+  document.getElementById('mKey').value    = song.key || '';
+  document.getElementById('mBpm').value    = song.bpm || '';
+  document.getElementById('mEra').value    = song.era || '';
+  document.getElementById('mMood').value   = song.mood || '';
+  document.getElementById('mGenre').value  = '';
+  // Set singer radio
+  var singerVal = song.singer || '';
+  document.querySelectorAll('input[name="ms"]').forEach(function(r){
+    r.checked = (r.value === singerVal);
   });
+  document.getElementById('addModal').style.display = 'flex';
+  setTimeout(function(){ document.getElementById('mName').focus(); }, 100);
 }
 
 function clearSongsCache() {
