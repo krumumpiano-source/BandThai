@@ -64,7 +64,7 @@
               <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา / Package</div>
               <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo Codes</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
-              <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ App Config</div>
+              <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ ตั้งค่าระบบ</div>
               <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
               <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
               <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
@@ -185,11 +185,19 @@
           <!-- App Config Panel -->
           <div class="card a-panel" id="panel-appconfig">
             <div class="card-header" style="justify-content:space-between">
-              <h3 class="card-title">⚙️ App Config / Feature Flags</h3>
+              <h3 class="card-title">⚙️ ตั้งค่าระบบ</h3>
               <button class="btn btn-primary btn-sm" onclick="loadAppConfig()">🔄 รีเฟรช</button>
             </div>
-            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">ตั้งค่าระดับแอปพลิเคชัน — มีผลทันทีสำหรับผู้ใช้ทุกคน</p>
-            <div id="appConfigList"><div style="color:var(--premium-text-muted);padding:24px;text-align:center">กดรีเฟรชเพื่อโหลด</div></div>
+            <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:16px">เปลี่ยนการตั้งค่าที่นี่จะมีผลกับผู้ใช้ทั้งหมดทันที (เมื่อเขาโหลดหน้าใหม่)</p>
+
+            <!-- Quick Actions -->
+            <div id="appConfigQuickActions" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:20px"></div>
+
+            <!-- Advanced / Other configs -->
+            <details id="appConfigAdvanced" style="margin-top:8px">
+              <summary style="cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);padding:8px 0">🔧 ตั้งค่าอื่นๆ (ขั้นสูง)</summary>
+              <div id="appConfigOtherList" style="display:flex;flex-direction:column;gap:10px;margin-top:12px"></div>
+            </details>
           </div>
 
           <!-- Bands Management Panel -->
@@ -1000,47 +1008,145 @@
     }
   }
   // ── App Config Panel ──────────────────────────────────────────────────────
+  // ── App Config — Friendly UI ──────────────────────────────────────────────
+  var _knownConfigs = {
+    maintenance_mode: {
+      icon: '🔧', label: 'ปิดปรับปรุงระบบ',
+      desc: 'เปิด = ผู้ใช้ทั้งหมดจะเห็นหน้า "ระบบปิดปรับปรุง" เข้าใช้งานไม่ได้ (Admin ยังเข้าได้ปกติ)',
+      color: '#ef4444', type: 'toggle'
+    },
+    announce_banner: {
+      icon: '📢', label: 'ป้ายประกาศ',
+      desc: 'ข้อความที่จะแสดงเป็นแถบด้านบนทุกหน้า (เว้นว่าง = ไม่แสดง)',
+      color: '#2563eb', type: 'text', placeholder: 'เช่น "ระบบจะปิดปรับปรุงคืนนี้ 22:00"'
+    },
+    announce_type: {
+      icon: '🎨', label: 'สีป้ายประกาศ',
+      desc: 'เลือกสีของแถบประกาศด้านบน',
+      color: '#8b5cf6', type: 'select',
+      options: [
+        { value: 'info',    label: '🟦 แจ้งข่าว (น้ำเงิน)' },
+        { value: 'warning', label: '🟨 เตือน (เหลือง)' },
+        { value: 'error',   label: '🟥 ด่วน (แดง)' }
+      ]
+    }
+  };
+
   function loadAppConfig() {
-    var el = document.getElementById('appConfigList');
-    el.innerHTML = '<div style="color:var(--premium-text-muted)">กำลังโหลด...</div>';
+    var qaEl = document.getElementById('appConfigQuickActions');
+    var otherEl = document.getElementById('appConfigOtherList');
+    qaEl.innerHTML = '<div style="color:var(--premium-text-muted);grid-column:1/-1;text-align:center;padding:16px">กำลังโหลด...</div>';
+    otherEl.innerHTML = '';
     apiCall('getAppConfig', {}, function(r) {
       var list = (r && r.data) || [];
-      if (!list.length) { el.innerHTML = '<div style="color:var(--premium-text-muted);padding:24px;text-align:center">ไม่มีข้อมูล Config</div>'; return; }
-      el.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">'
-        + list.map(function(row) {
-            var isBool = row.value === 'true' || row.value === 'false';
-            var isLong = row.value.length > 30;
-            var inputEl;
-            if (isBool) {
-              inputEl = '<select id="cfgval_' + row.key + '" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">'
-                + '<option value="true"' + (row.value==='true'?' selected':'') + '>✅ เปิด (true)</option>'
-                + '<option value="false"' + (row.value==='false'?' selected':'') + '>❌ ปิด (false)</option>'
-                + '</select>';
-            } else if (isLong) {
-              inputEl = '<textarea id="cfgval_' + row.key + '" rows="2" style="width:100%;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-family:inherit;resize:vertical;box-sizing:border-box">' + escapeHtml(row.value) + '</textarea>';
-            } else {
-              inputEl = '<input id="cfgval_' + row.key + '" type="text" value="' + escapeHtml(row.value) + '" style="flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">';
-            }
-            return '<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:14px">'
-              + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-              + '<div><code style="font-size:.82rem;color:var(--premium-gold)">' + escapeHtml(row.key) + '</code>'
-              + '<span style="font-size:.73rem;color:var(--premium-text-muted);margin-left:8px">' + escapeHtml(row.description || '') + '</span></div>'
-              + '<button class="btn btn-primary btn-sm" style="font-size:.78rem;padding:4px 12px" onclick="saveAppConfigKey(\'' + row.key + '\',\'' + escapeHtml(row.description||'') + '\')">💾 บันทึก</button>'
-              + '</div>'
-              + '<div style="display:flex;align-items:center;gap:8px">' + inputEl + '</div>'
-              + '</div>';
-          }).join('')
-        + '</div>';
+      if (!list.length) {
+        qaEl.innerHTML = '<div style="color:var(--premium-text-muted);grid-column:1/-1;text-align:center;padding:24px">ไม่มีข้อมูล Config</div>';
+        return;
+      }
+
+      var qaHtml = '';
+      var otherHtml = '';
+
+      list.forEach(function(row) {
+        var known = _knownConfigs[row.key];
+        if (known) {
+          qaHtml += buildKnownConfigCard(row, known);
+        } else {
+          otherHtml += buildGenericConfigRow(row);
+        }
+      });
+
+      qaEl.innerHTML = qaHtml || '<div style="color:var(--premium-text-muted);grid-column:1/-1;text-align:center;padding:16px">ไม่มีการตั้งค่าหลัก</div>';
+      otherEl.innerHTML = otherHtml;
+
+      // Hide advanced section if no other configs
+      var advEl = document.getElementById('appConfigAdvanced');
+      if (advEl) advEl.style.display = otherHtml ? '' : 'none';
     });
   }
 
-  function saveAppConfigKey(key, description) {
+  function buildKnownConfigCard(row, cfg) {
+    var inputHtml = '';
+    if (cfg.type === 'toggle') {
+      var isOn = row.value === 'true';
+      inputHtml = '<div style="display:flex;align-items:center;gap:10px;margin-top:10px">'
+        + '<label style="position:relative;display:inline-block;width:52px;height:28px;flex-shrink:0">'
+        + '<input type="checkbox" id="cfgval_' + row.key + '" ' + (isOn ? 'checked' : '') + ' onchange="saveAppConfigToggle(\'' + row.key + '\',this.checked)" style="opacity:0;width:0;height:0">'
+        + '<span style="position:absolute;cursor:pointer;inset:0;background:' + (isOn ? cfg.color : '#ccc') + ';border-radius:28px;transition:.3s"></span>'
+        + '<span style="position:absolute;left:' + (isOn ? '26px' : '4px') + ';top:4px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>'
+        + '</label>'
+        + '<span style="font-size:.85rem;font-weight:600;color:' + (isOn ? cfg.color : 'var(--premium-text-muted)') + '">' + (isOn ? 'เปิดอยู่' : 'ปิดอยู่') + '</span>'
+        + '</div>';
+    } else if (cfg.type === 'select') {
+      inputHtml = '<select id="cfgval_' + row.key + '" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);margin-top:10px">';
+      (cfg.options || []).forEach(function(opt) {
+        inputHtml += '<option value="' + opt.value + '"' + (row.value === opt.value ? ' selected' : '') + '>' + opt.label + '</option>';
+      });
+      inputHtml += '</select>'
+        + '<button class="btn btn-primary btn-sm" style="margin-top:8px;font-size:.78rem;padding:5px 14px" onclick="saveAppConfigKey(\'' + row.key + '\')">💾 บันทึก</button>';
+    } else {
+      inputHtml = '<div style="display:flex;gap:8px;margin-top:10px">'
+        + '<input id="cfgval_' + row.key + '" type="text" value="' + escapeHtml(row.value) + '" placeholder="' + escapeHtml(cfg.placeholder || '') + '" style="flex:1;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<button class="btn btn-primary btn-sm" style="font-size:.78rem;padding:5px 14px;white-space:nowrap" onclick="saveAppConfigKey(\'' + row.key + '\')">💾 บันทึก</button>'
+        + '</div>';
+    }
+
+    return '<div style="background:var(--bg-secondary);border:1.5px solid var(--border-color);border-radius:12px;padding:16px;border-left:4px solid ' + cfg.color + '">'
+      + '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'
+      + '<span style="font-size:1.3rem">' + cfg.icon + '</span>'
+      + '<span style="font-weight:700;font-size:.92rem">' + cfg.label + '</span>'
+      + '</div>'
+      + '<p style="font-size:.78rem;color:var(--premium-text-muted);margin:0">' + cfg.desc + '</p>'
+      + inputHtml
+      + '</div>';
+  }
+
+  function buildGenericConfigRow(row) {
+    var isBool = row.value === 'true' || row.value === 'false';
+    var isLong = (row.value || '').length > 30;
+    var inputEl;
+    if (isBool) {
+      inputEl = '<select id="cfgval_' + row.key + '" style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<option value="true"' + (row.value==='true'?' selected':'') + '>✅ เปิด</option>'
+        + '<option value="false"' + (row.value==='false'?' selected':'') + '>❌ ปิด</option>'
+        + '</select>';
+    } else if (isLong) {
+      inputEl = '<textarea id="cfgval_' + row.key + '" rows="2" style="width:100%;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary);font-family:inherit;resize:vertical;box-sizing:border-box">' + escapeHtml(row.value) + '</textarea>';
+    } else {
+      inputEl = '<input id="cfgval_' + row.key + '" type="text" value="' + escapeHtml(row.value) + '" style="flex:1;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-card);color:var(--text-primary)">';
+    }
+    return '<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:10px;padding:14px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      + '<div><code style="font-size:.82rem;color:var(--premium-gold)">' + escapeHtml(row.key) + '</code>'
+      + '<span style="font-size:.73rem;color:var(--premium-text-muted);margin-left:8px">' + escapeHtml(row.description || '') + '</span></div>'
+      + '<button class="btn btn-primary btn-sm" style="font-size:.78rem;padding:4px 12px" onclick="saveAppConfigKey(\'' + row.key + '\')">💾 บันทึก</button>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">' + inputEl + '</div>'
+      + '</div>';
+  }
+
+  function saveAppConfigToggle(key, isChecked) {
+    var value = isChecked ? 'true' : 'false';
+    var known = _knownConfigs[key];
+    var label = known ? known.label : key;
+    apiCall('setAppConfigKey', { key: key, value: value, description: known ? known.desc : '' }, function(r) {
+      if (r && r.success) {
+        showToast('✅ ' + label + ' → ' + (isChecked ? 'เปิด' : 'ปิด') + ' สำเร็จ', 'success');
+        apiCall('logActivity', { action: 'save_app_config', target_type: 'app_config', target_id: key, details: { value: value } }, function(){});
+        loadAppConfig();
+      } else { showToast((r && r.message) || t('msg_error'), 'error'); loadAppConfig(); }
+    });
+  }
+
+  function saveAppConfigKey(key) {
     var el = document.getElementById('cfgval_' + key);
     if (!el) return;
-    var value = el.tagName === 'SELECT' || el.tagName === 'INPUT' ? el.value : el.value;
-    apiCall('setAppConfigKey', { key: key, value: value, description: description }, function(r) {
+    var value = el.value;
+    var known = _knownConfigs[key];
+    var label = known ? known.label : key;
+    apiCall('setAppConfigKey', { key: key, value: value, description: known ? known.desc : '' }, function(r) {
       if (r && r.success) {
-        showToast('✅ บันทึก ' + key + ' = ' + value + ' สำเร็จ', 'success');
+        showToast('✅ ' + label + ' บันทึกสำเร็จ', 'success');
         apiCall('logActivity', { action: 'save_app_config', target_type: 'app_config', target_id: key, details: { value: value } }, function(){});
       } else showToast((r && r.message) || t('msg_error'), 'error');
     });
