@@ -1203,7 +1203,7 @@
       if (!email) return { success: false, message: 'กรุณากรอกอีเมล' };
       var siteUrl = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
       var { error } = await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: siteUrl + 'index.html'
+        redirectTo: siteUrl + 'reset-password.html'
       });
       if (error) return { success: false, message: error.message };
       return { success: true, message: 'ส่งอีเมลรีเซ็ตรหัสผ่านแล้ว กรุณาตรวจสอบกล่องจดหมาย' };
@@ -2200,6 +2200,9 @@
         clearSession();
       }
       if (event === 'TOKEN_REFRESHED' && session) {
+        localStorage.setItem('auth_token', session.access_token);
+      }
+      if (event === 'PASSWORD_RECOVERY' && session) {
         localStorage.setItem('auth_token', session.access_token);
       }
     });
