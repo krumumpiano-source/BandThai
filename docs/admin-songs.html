@@ -220,18 +220,6 @@
     </div>
   </div>
 
-  <!-- ── Artist Management Panel ── -->
-  <div class="card" id="artistPanel" style="margin-bottom:16px;padding:16px;border-color:#fdba74;background:#fffbeb">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
-      <h3 style="margin:0;font-size:1rem">🎤 จัดการศิลปิน</h3>
-      <div style="display:flex;gap:8px;align-items:center">
-        <span id="artistCount" style="font-size:12px;color:#92400E;font-weight:600">0 ศิลปิน</span>
-        <button class="btn-sm btn-add" onclick="openAddArtistPrompt()">➕ เพิ่มศิลปิน</button>
-      </div>
-    </div>
-    <div id="artistListWrap" style="display:flex;flex-wrap:wrap;gap:8px;max-height:200px;overflow-y:auto"></div>
-  </div>
-
   <!-- Stats -->
   <div class="stats-bar" id="statsBar">
     <div class="stat-box"><div class="stat-num" id="statTotal">—</div><div class="stat-lbl">เพลงทั้งหมด</div></div>
@@ -361,7 +349,7 @@
   <div class="modal-box">
     <h3>➕ เพิ่มเพลงใหม่</h3>
     <div class="m-group"><label>ชื่อเพลง *</label><input id="mName" class="m-input" placeholder="ชื่อเพลง" required></div>
-    <div class="m-group"><label>ศิลปิน / วงต้นฉบับ</label><select id="mArtist" class="m-select"><option value="">— เลือกศิลปิน —</option></select></div>
+    <div class="m-group"><label>ศิลปิน / วงต้นฉบับ</label><input type="text" id="mArtist" class="m-input" list="artistDatalist" placeholder="พิมพ์ชื่อศิลปิน"></div>
     <div class="m-row">
       <div class="m-group">
         <label>คีย์</label>
@@ -398,7 +386,7 @@
   </div>
 </div>
 
-<script src="js/i18n.js"></script>
+<datalist id="artistDatalist"></datalist>\n<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 <script src="js/nav.js"></script>
 <script>
@@ -633,7 +621,7 @@ function setBodyLoading(on) {
 // ─── Populate Artist Filter ───────────────────────────────────────
 function populateArtistFilter() {
   // ใช้ _artistList (master) แทนการดึงจากเพลง
-  updateArtistDropdowns();
+  updateArtistDatalist();
 }
 
 // ─── Filter + Sort + Paginate ─────────────────────────────────────
@@ -827,7 +815,7 @@ function renderTable() {
 
     html += '<tr data-id="' + id + '"' + (isDirty ? ' class="row-dirty"' : '') + '>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
-      '<td>' + buildArtistSelect('artist', dArtist) + '</td>' +
+      '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
       '<td class="hide-md"><input class="il-input il-bpm" type="number" data-field="bpm" value="' + esc(dBpm) + '" min="0" max="300" oninput="markDirty(this)"></td>' +
       '<td class="hide-md">' + singerSel + '</td>' +
@@ -904,6 +892,7 @@ function submitAddSong() {
   }, function(r) {
     btn.disabled = false; btn.textContent = '💾 บันทึก';
     if (r && r.success) {
+      ensureArtistExists(document.getElementById('mArtist').value.trim());
       closeAddModal();
       showToast('✅ เพิ่มเพลง "' + name + '" แล้ว', 'success');
       clearSongsCache();
@@ -960,6 +949,7 @@ function saveRow(songId) {
   apiCall('updateSong', Object.assign({}, data, { songId: songId }), function(r) {
     if (btn) { btn.disabled = true; btn.textContent = '💾'; }
     if (r && r.success) {
+      ensureArtistExists(data.artist);
       delete _dirty[songId];
       var row = document.querySelector('tr[data-id="' + songId + '"]');
       if (row) row.classList.remove('row-dirty');
@@ -987,6 +977,7 @@ function saveAllDirty() {
     apiCall('updateSong', Object.assign({}, data, { songId: songId }), function(r) {
       done++;
       if (r && r.success) {
+        ensureArtistExists(data.artist);
         delete _dirty[songId];
         var row = document.querySelector('tr[data-id="' + songId + '"]');
         if (row) row.classList.remove('row-dirty');
@@ -1282,37 +1273,17 @@ function submitImport() {
 function loadArtists() {
   apiCall('getArtists', {}, function(r) {
     _artistList = (r && r.success && r.data) ? r.data : [];
-    renderArtistPanel();
-    updateArtistDropdowns();
+    updateArtistDatalist();
   });
 }
 
-function renderArtistPanel() {
-  var wrap = document.getElementById('artistListWrap');
-  var countEl = document.getElementById('artistCount');
-  if (!wrap) return;
-  if (countEl) countEl.textContent = _artistList.length + ' ศิลปิน';
-  if (_artistList.length === 0) {
-    wrap.innerHTML = '<span style="color:#92400E;font-size:13px">ยังไม่มีศิลปิน — กดเพิ่มได้เลย</span>';
-    return;
-  }
-  wrap.innerHTML = _artistList.map(function(a) {
-    return '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff;border:1.5px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600">' +
-      esc(a.name) +
-      ' <button onclick="editArtist(\'' + esc(a.id) + '\',\'' + esc(a.name).replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px" title="แก้ไข">✏️</button>' +
-      ' <button onclick="deleteArtist(\'' + esc(a.id) + '\',\'' + esc(a.name).replace(/'/g, "\\'") + '\')" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0 2px" title="ลบ">🗑️</button>' +
-    '</span>';
+function updateArtistDatalist() {
+  var dl = document.getElementById('artistDatalist');
+  if (!dl) return;
+  dl.innerHTML = _artistList.map(function(a) {
+    return '<option value="' + esc(a.name) + '">';
   }).join('');
-}
-
-function updateArtistDropdowns() {
-  var opts = '<option value="">— ไม่ระบุ —</option>' + _artistList.map(function(a) {
-    return '<option value="' + esc(a.name) + '">' + esc(a.name) + '</option>';
-  }).join('');
-  // Modal add song
-  var mArtist = document.getElementById('mArtist');
-  if (mArtist) { var cv = mArtist.value; mArtist.innerHTML = opts; mArtist.value = cv; }
-  // Filter dropdown
+  // Update filter dropdown
   var asArtist = document.getElementById('asArtist');
   if (asArtist) {
     var fv = asArtist.value;
@@ -1323,53 +1294,12 @@ function updateArtistDropdowns() {
   }
 }
 
-function buildArtistSelect(field, curVal, cls) {
-  var h = '<select class="il-select' + (cls ? ' ' + cls : '') + '" data-field="' + esc(field) + '" onchange="markDirty(this)">';
-  h += '<option value="">—</option>';
-  _artistList.forEach(function(a) {
-    h += '<option value="' + esc(a.name) + '"' + (a.name === curVal ? ' selected' : '') + '>' + esc(a.name) + '</option>';
-  });
-  return h + '</select>';
-}
-
-function openAddArtistPrompt() {
-  var name = prompt('ชื่อศิลปิน / วงดนตรี:');
-  if (!name || !name.trim()) return;
-  apiCall('addArtist', { name: name.trim() }, function(r) {
-    if (r && r.success) {
-      showToast('✅ เพิ่มศิลปิน "' + (r.data && r.data.name || name) + '" แล้ว', 'success');
-      loadArtists();
-    } else if (r && r.duplicate) {
-      showToast('⚠️ ซ้ำกับ "' + (r.existing && r.existing.name || '') + '"', 'error');
-    } else {
-      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
-    }
-  });
-}
-
-function editArtist(id, oldName) {
-  var newName = prompt('แก้ไขชื่อศิลปิน:', oldName);
-  if (!newName || !newName.trim() || newName.trim() === oldName) return;
-  apiCall('updateArtist', { artistId: id, name: newName.trim() }, function(r) {
-    if (r && r.success) {
-      showToast('✅ แก้ไขเรียบร้อย', 'success');
-      loadArtists();
-      loadSongs(); // refresh to reflect new name
-    } else {
-      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
-    }
-  });
-}
-
-function deleteArtist(id, name) {
-  if (!confirm('ลบศิลปิน "' + name + '"?')) return;
-  apiCall('deleteArtist', { artistId: id }, function(r) {
-    if (r && r.success) {
-      showToast('ลบแล้ว', 'success');
-      loadArtists();
-    } else {
-      showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
-    }
+// Auto-save artist name to master table when saving song
+function ensureArtistExists(name, cb) {
+  if (!name || !name.trim()) { if (cb) cb(); return; }
+  apiCall('ensureArtist', { name: name.trim() }, function() {
+    loadArtists(); // refresh datalist
+    if (cb) cb();
   });
 }
 

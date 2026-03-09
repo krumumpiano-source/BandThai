@@ -61,7 +61,8 @@
       <div class="card">
         <form id="addSongForm">
           <div class="form-group"><label>ชื่อเพลง *</label><input type="text" id="songName" required placeholder="ชื่อเพลง"></div>
-          <div class="form-group"><label>ศิลปิน / วงดนตรีต้นฉบับ</label><select id="artist"><option value="">— เลือกศิลปิน —</option></select></div>
+          <div class="form-group"><label>ศิลปิน / วงดนตรีต้นฉบับ</label><input type="text" id="artist" list="artistDatalist" placeholder="พิมพ์ชื่อศิลปิน"></div>
+          <datalist id="artistDatalist"></datalist>
           <div class="form-r">
             <div class="form-group">
               <label>คีย์</label>
@@ -116,11 +117,11 @@
     // โหลดรายชื่อศิลปินจาก master list
     apiCall('getArtists', {}, function(r) {
       if (r && r.success && r.data) {
-        var sel = document.getElementById('artist');
+        var dl = document.getElementById('artistDatalist');
         r.data.forEach(function(a) {
           var opt = document.createElement('option');
-          opt.value = a.name; opt.textContent = a.name;
-          sel.appendChild(opt);
+          opt.value = a.name;
+          dl.appendChild(opt);
         });
       }
     });
@@ -145,6 +146,9 @@
       }, function(r) {
         btn.disabled = false; btn.textContent = '💾 บันทึก';
         if (r && r.success) {
+          // auto-save artist to master table
+          var art = document.getElementById('artist').value.trim();
+          if (art) apiCall('ensureArtist', { name: art });
           try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(ex) {}
           showToast('เพิ่มเพลงเรียบร้อย', 'success');
           setTimeout(function() { window.location.href = 'songs.html'; }, 1000);

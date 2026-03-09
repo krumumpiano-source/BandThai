@@ -145,6 +145,7 @@
         // ── Artists (Master) ───────────────────────────────────────
         case 'getArtists':         return doGetArtists();
         case 'addArtist':          return doAddArtist(d);
+        case 'ensureArtist':       return doEnsureArtist(d);
         case 'updateArtist':       return doUpdateArtist(d);
         case 'deleteArtist':       return doDeleteArtist(d);
         case 'searchArtists':      return doSearchArtists(d);
@@ -558,6 +559,14 @@
       var { data, error } = await sb.rpc('add_artist', { p_name: (d.name || '').trim() });
       if (error) throw error;
       return data || { success: false, message: 'ไม่มีผลลัพธ์' };
+    }
+
+    async function doEnsureArtist(d) {
+      var name = (d.name || '').trim();
+      if (!name) return { success: true };
+      var { error } = await sb.rpc('ensure_artist', { p_name: name });
+      if (error) throw error;
+      return { success: true };
     }
 
     async function doUpdateArtist(d) {
