@@ -64,14 +64,12 @@
               <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา / Package</div>
               <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo Codes</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
-              <div class="a-nav-item" onclick="showPanel('backup',this)">💾 สำรองข้อมูล</div>
               <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ App Config</div>
               <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
               <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
               <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
               <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
               <div class="a-nav-item" onclick="showPanel('templates',this)">📧 Templates</div>
-              <div class="a-nav-item" onclick="showPanel('danger',this)">⚠️ Danger Zone</div>
             </div>
           </div>
         </div>
@@ -118,16 +116,7 @@
             </div>
           </div>
 
-          <!-- Backup Panel -->
-          <div class="card a-panel" id="panel-backup">
-            <div class="card-header"><h3 class="card-title">สำรอง/กู้คืนข้อมูล</h3></div>
-            <p style="color:var(--premium-text-muted);font-size:var(--text-sm);margin-bottom:var(--spacing-xl)">ข้อมูลทั้งหมดบันทึกใน Google Sheets เสมอ คุณสามารถดาวน์โหลด Spreadsheet เป็น .xlsx ได้ตลอดเวลา</p>
-            <div style="display:flex;flex-direction:column;gap:var(--spacing-md)">
-              <button class="btn btn-primary" onclick="triggerBackup()">📥 สร้าง Backup (Export JSON ไปยัง Drive)</button>
-              <button class="btn btn-secondary" onclick="openSpreadsheet()">📊 เปิด Spreadsheet โดยตรง</button>
-              <button class="btn btn-secondary" onclick="runSetup()">🔧 รัน Setup (สร้าง Sheets ที่ขาดหายไป)</button>
-            </div>
-          </div>
+
 
           <!-- Subscriptions Panel -->
           <div class="card a-panel" id="panel-subscriptions">
@@ -147,7 +136,7 @@
             <div class="table-responsive">
               <table class="table">
                 <thead><tr><th>วง</th><th>แพ็กเกจ</th><th>ชำระโดย</th><th>ราคา</th><th>สถานะ</th><th>เริ่ม</th><th>หมดอายุ</th><th>Charge ID</th></tr></thead>
-                <tbody id="subsTbody"><tr><td colspan="7" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr></tbody>
+                <tbody id="subsTbody"><tr><td colspan="8" class="text-center" style="color:var(--premium-text-muted)">กำลังโหลด...</td></tr></tbody>
               </table>
             </div>
           </div>
@@ -315,20 +304,7 @@
             </div>
           </div>
 
-          <!-- Danger Zone Panel -->
-          <div class="card a-panel" id="panel-danger">
-            <div class="card-header"><h3 class="card-title" style="color:#c53030">⚠️ Danger Zone</h3></div>
-            <div class="danger-zone">
-              <h3>ล้างข้อมูลทั้งหมด</h3>
-              <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">คำเตือน: การดำเนินการนี้ไม่สามารถย้อนกลับได้ ข้อมูลทั้งหมดจะถูกลบออกจาก Sheets</p>
-              <button class="btn btn-danger" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
-            </div>
-            <div class="danger-zone" style="margin-top:var(--spacing-lg)">
-              <h3>รีเซ็ตบัญชี</h3>
-              <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">ลบผู้ใช้งานทั้งหมดและเริ่มต้นใหม่</p>
-              <button class="btn btn-danger" onclick="resetUsers()">🔐 รีเซ็ตบัญชีผู้ใช้งาน</button>
-            </div>
-          </div>
+
         </div>
       </div>
     </div>
@@ -562,16 +538,24 @@
   }
 
   function updateUserRole(id, role) {
-    apiCall('updateUserRole', { userId: id, role: role }, function(r) {
-      if (r && r.success) showToast(t('msg_saved'), 'success');
-      else showToast((r && r.message) || t('msg_error'), 'error');
+    var label = role === 'admin' ? '🛡️ Admin' : role === 'manager' ? '👑 Manager' : 'Member';
+    showConfirm('เปลี่ยน Role', 'ต้องการเปลี่ยน Role เป็น ' + label + ' ?').then(function(ok) {
+      if (!ok) { loadUsers(); return; }
+      apiCall('updateUserRole', { userId: id, role: role }, function(r) {
+        if (r && r.success) showToast('✅ เปลี่ยน Role → ' + label + ' สำเร็จ', 'success');
+        else { showToast((r && r.message) || t('msg_error'), 'error'); loadUsers(); }
+      });
     });
   }
 
   function setUserPlanOverride(id, plan) {
-    apiCall('setPlanOverride', { userId: id, planOverride: plan || null }, function(r) {
-      if (r && r.success) showToast('✅ Plan Override ' + (plan ? '→ ' + plan.toUpperCase() : '(ยกเลิก)') + ' สำเร็จ', 'success');
-      else showToast((r && r.message) || t('msg_error'), 'error');
+    var label = plan ? plan.toUpperCase() : 'ปกติ (ยกเลิก Override)';
+    showConfirm('เปลี่ยน Plan Override', 'ต้องการเปลี่ยนเป็น ' + label + ' ?').then(function(ok) {
+      if (!ok) { loadUsers(); return; }
+      apiCall('setPlanOverride', { userId: id, planOverride: plan || null }, function(r) {
+        if (r && r.success) showToast('✅ Plan Override → ' + label + ' สำเร็จ', 'success');
+        else { showToast((r && r.message) || t('msg_error'), 'error'); loadUsers(); }
+      });
     });
   }
 
@@ -599,50 +583,7 @@
     });
   }
 
-  function triggerBackup() {
-    showToast('กำลังสร้าง Backup...', 'info');
-    apiCall('createBackup', {}, function(r) {
-      if (r && r.success) showToast('Backup สำเร็จ: ' + (r.url || ''), 'success');
-      else showToast((r && r.message) || t('msg_error'), 'error');
-    });
-  }
 
-  function openSpreadsheet() {
-    apiCall('getSpreadsheetUrl', {}, function(r) {
-      if (r && r.url) window.open(r.url, '_blank');
-      else showToast(t('msg_error'), 'error');
-    });
-  }
-
-  function runSetup() {
-    showConfirm('รัน Setup', 'ระบบจะสร้าง Sheets ที่ขาดหายไป ดำเนินการต่อ?').then(function(ok) {
-      if (!ok) return;
-      apiCall('runSetupFromAdmin', {}, function(r) {
-        if (r && r.success) showToast('Setup สำเร็จ', 'success');
-        else showToast((r && r.message) || t('msg_error'), 'error');
-      });
-    });
-  }
-
-  function clearAllData() {
-    showConfirm('⚠️ ล้างข้อมูลทั้งหมด', 'การดำเนินการนี้จะลบข้อมูลทุกอย่างในทุก Sheet ยกเว้น Users คุณแน่ใจ?').then(function(ok) {
-      if (!ok) return;
-      apiCall('clearAllData', {}, function(r) {
-        if (r && r.success) showToast('ล้างข้อมูลสำเร็จ', 'success');
-        else showToast((r && r.message) || t('msg_error'), 'error');
-      });
-    });
-  }
-
-  function resetUsers() {
-    showConfirm('⚠️ รีเซ็ตบัญชีผู้ใช้งาน', 'ผู้ใช้งานทั้งหมดจะถูกลบ รวมถึงบัญชีของคุณ คุณแน่ใจ?').then(function(ok) {
-      if (!ok) return;
-      apiCall('resetUsers', {}, function(r) {
-        if (r && r.success) { showToast('รีเซ็ตสำเร็จ กรุณาสมัครบัญชีใหม่', 'success'); setTimeout(function(){ window.location.href='?page=index'; },2000); }
-        else showToast((r && r.message) || t('msg_error'), 'error');
-      });
-    });
-  }
 
   // ── Subscriptions Panel ───────────────────────────────────────────────────
   async function loadSubscriptions() {
@@ -755,10 +696,12 @@
   }
 
   function deletePromoCode(id) {
-    if (!confirm('ลบ Promo Code นี้?')) return;
-    apiCall('deletePromoCode', { id: id }, function(r) {
-      if (r && r.success) { showToast('ลบสำเร็จ', 'success'); loadPromoCodes(); }
-      else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    showConfirm('ลบ Promo Code', 'ต้องการลบ Promo Code นี้?').then(function(ok) {
+      if (!ok) return;
+      apiCall('deletePromoCode', { id: id }, function(r) {
+        if (r && r.success) { showToast('ลบสำเร็จ', 'success'); loadPromoCodes(); }
+        else showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+      });
     });
   }
 
@@ -1151,13 +1094,17 @@
   }
 
   function setBandPlan(bandId, plan) {
-    apiCall('setBandPlan', { bandId: bandId, plan: plan }, function(r) {
-      if (r && r.success) {
-        showToast('✅ เปลี่ยนแพ็กเกจวงเป็น ' + plan.toUpperCase() + ' สำเร็จ', 'success');
-        apiCall('logActivity', { action: 'set_band_plan', target_type: 'band', target_id: bandId, details: { plan: plan } }, function(){});
-        var b = _allBandsData.find(function(x){ return x.id === bandId; });
-        if (b) b.band_plan = plan;
-      } else showToast((r && r.message) || t('msg_error'), 'error');
+    var label = plan === 'pro' ? '👑 Pro' : plan === 'lite' ? '🎵 Lite' : '🆓 Free';
+    showConfirm('เปลี่ยนแพ็กเกจวง', 'ต้องการเปลี่ยนเป็น ' + label + ' ?').then(function(ok) {
+      if (!ok) { loadAllBands(); return; }
+      apiCall('setBandPlan', { bandId: bandId, plan: plan }, function(r) {
+        if (r && r.success) {
+          showToast('✅ เปลี่ยนแพ็กเกจวงเป็น ' + plan.toUpperCase() + ' สำเร็จ', 'success');
+          apiCall('logActivity', { action: 'set_band_plan', target_type: 'band', target_id: bandId, details: { plan: plan } }, function(){});
+          var b = _allBandsData.find(function(x){ return x.id === bandId; });
+          if (b) b.band_plan = plan;
+        } else { showToast((r && r.message) || t('msg_error'), 'error'); loadAllBands(); }
+      });
     });
   }
 

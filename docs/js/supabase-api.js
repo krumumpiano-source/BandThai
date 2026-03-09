@@ -2128,13 +2128,25 @@
       // Build query for matching push subscriptions
       var query = sb.from('push_subscriptions').select('endpoint, p256dh, auth, user_id');
       if (d.plan && d.plan !== 'all') {
-        // Join with profiles to filter by plan
-        var { data: matching } = await sb.from('profiles').select('id').eq('plan_override', d.plan);
-        // Note: if plan_override is null fall back to band plan — simplified filter for broadcast
-        if (matching && matching.length > 0) {
-          var ids = matching.map(function(p){ return p.id; });
-          query = query.in('user_id', ids);
+        // Get users whose effective plan matches the target
+        // Effective plan = plan_override if set, otherwise the band's band_plan
+        var { data: profiles } = await sb.from('profiles').select('id, plan_override, band_id');
+        var matchIds = [];
+        if (profiles && profiles.length) {
+          // Get all band plans in one query
+          var bandIds = profiles.map(function(p) { return p.band_id; }).filter(Boolean);
+          var bandPlanMap = {};
+          if (bandIds.length) {
+            var { data: bands } = await sb.from('bands').select('id, band_plan').in('id', bandIds);
+            (bands || []).forEach(function(b) { bandPlanMap[b.id] = b.band_plan || 'free'; });
+          }
+          profiles.forEach(function(p) {
+            var effectivePlan = p.plan_override || bandPlanMap[p.band_id] || 'free';
+            if (effectivePlan === d.plan) matchIds.push(p.id);
+          });
         }
+        if (!matchIds.length) return { success: false, message: 'ไม่พบผู้ใช้ในกลุ่ม ' + d.plan };
+        query = query.in('user_id', matchIds);
       }
 
       var { data: subs, error } = await query.limit(500);
