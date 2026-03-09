@@ -322,11 +322,16 @@
   <script>
   document.addEventListener('DOMContentLoaded', function() {
     requireAuth();
-    // Admin page: do NOT call checkAdGate() — admins bypass ad gate
-    var role = localStorage.getItem('userRole') || '';
-    if (role !== 'admin') { showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (role: ' + role + ')', 'error'); setTimeout(function(){ window.location.href='dashboard.html'; },2000); return; }
-    renderMainNav('mainNav'); applyTranslations();
-    loadBandRequests(); loadUsers(); loadSysInfo();
+    // Admin page: verify admin role from server (not localStorage)
+    apiCall('verifyAdmin', {}, function(r) {
+      if (!r || !r.success) {
+        showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error');
+        setTimeout(function(){ window.location.href='dashboard.html'; }, 1500);
+        return;
+      }
+      renderMainNav('mainNav'); applyTranslations();
+      loadBandRequests(); loadUsers(); loadSysInfo();
+    });
   });
 
   // ── Band Requests ─────────────────────────────────────────

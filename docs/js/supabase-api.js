@@ -245,6 +245,7 @@
         case 'syncBandPlan':    return doSyncBandPlan();
 
         // ── Admin ──────────────────────────────────────────────────
+        case 'verifyAdmin':       return doVerifyAdmin();
         case 'getAllUsers':       return doAdminGetAllUsers();
         case 'updateUserRole':    return doUpdate('profiles', d.userId, { role: d.role });
         case 'setPlanOverride':   return doSetPlanOverride(d);
@@ -1206,6 +1207,12 @@
     }
 
     // ── Admin ─────────────────────────────────────────────────────
+    async function doVerifyAdmin() {
+      var { data, error } = await sb.rpc('verify_admin');
+      if (error) throw error;
+      return data;
+    }
+
     async function doAdminGetAllUsers() {
       var { data, error } = await sb.from('profiles').select('*').order('email');
       if (error) throw error;

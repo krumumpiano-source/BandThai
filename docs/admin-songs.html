@@ -404,12 +404,15 @@ var _keyDisplayMode = localStorage.getItem('keyDisplayMode') || 'number'; // 'nu
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
   requireAuth();
-  // admin-only guard
-  var role = localStorage.getItem('userRole') || '';
-  if (role !== 'admin') {
-    document.querySelector('main').innerHTML = '<div style="text-align:center;padding:60px;color:#888"><div style="font-size:3rem">🔒</div><div style="margin-top:12px;font-size:1.1rem;font-weight:600">เฉพาะ Admin เท่านั้น</div></div>';
-    return;
-  }
+  // admin-only guard — verify from server
+  apiCall('verifyAdmin', {}, function(r) {
+    if (!r || !r.success) {
+      document.querySelector('main').innerHTML = '<div style="text-align:center;padding:60px;color:#888"><div style="font-size:3rem">🔒</div><div style="margin-top:12px;font-size:1.1rem;font-weight:600">เฉพาะ Admin เท่านั้น</div></div>';
+      return;
+    }
+    initAdminSongs();
+  });
+  function initAdminSongs() {
   checkAdGate();
   renderMainNav('mainNav');
   applyTranslations();
@@ -420,6 +423,7 @@ document.addEventListener('DOMContentLoaded', function() {
   updateModalKeyOptions();
   loadSongs();
   loadSuggestions();
+  } // end initAdminSongs
 });
 
 // ─── Song Suggestions ─────────────────────────────────────────────

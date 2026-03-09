@@ -493,7 +493,7 @@ html{scroll-behavior:smooth}
     <div style="display:flex;align-items:center;gap:14px;min-width:0">
       <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(246,173,85,.35)">🎶</div>
       <div style="flex:1;min-width:0">
-        <h2 style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">คลังเพลง SoulCiety</h2>
+        <h2 id="songLibTitle" style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">คลังเพลง</h2>
         <p style="margin:3px 0 0;font-size:var(--text-sm);color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รวมเพลงฮิตทุกแนว พร้อมให้วงของคุณเลือกใช้ได้เลย</p>
       </div>
     </div>
@@ -1448,6 +1448,9 @@ window.onload = function() {
       checkAdGate();
   if (typeof renderMainNav === 'function') renderMainNav('mainNav');
   if (typeof applyTranslations === 'function') applyTranslations();
+  // แสดงชื่อวงใน header
+  var libTitle = document.getElementById('songLibTitle');
+  if (libTitle) { var bn = localStorage.getItem('bandName'); libTitle.textContent = 'คลังเพลง' + (bn ? ' ' + bn : ''); }
 
   // ตั้ง date ก่อนเสมอ เพื่อให้ loadBandSettings → onPlaylistDateChange เห็น date ถูกต้อง
   var dateInput = document.getElementById('useDate');
