@@ -26,6 +26,22 @@
     .danger-zone h3{color:#c53030;font-size:var(--text-base);margin-bottom:var(--spacing-md)}
     .system-info-row{display:flex;justify-content:space-between;padding:var(--spacing-xs) 0;border-bottom:1px dashed var(--premium-light-gray);font-size:var(--text-sm)}
     .system-info-row:last-child{border-bottom:none}
+    /* Band-grouped user panels */
+    .band-group{margin-bottom:var(--spacing-lg);border:1px solid var(--premium-light-gray);border-radius:var(--radius-lg);overflow:hidden}
+    .band-group-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 16px;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;cursor:pointer;user-select:none}
+    .band-group-header:hover{filter:brightness(1.15)}
+    .band-group-header .bg-title{font-size:var(--text-base);font-weight:700;display:flex;align-items:center;gap:8px}
+    .band-group-header .bg-meta{display:flex;align-items:center;gap:12px;font-size:var(--text-xs);color:rgba(255,255,255,.7)}
+    .band-group-header .bg-meta .badge{font-size:.65rem;padding:2px 8px}
+    .band-group-body{overflow-x:auto}
+    .band-group-body .table{margin:0}
+    .band-group-body .table thead th{background:var(--premium-off-white);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.5px;padding:8px 12px}
+    .band-group-body .table td{padding:8px 12px;font-size:var(--text-sm);vertical-align:middle}
+    .band-group-body .table tr.row-manager{background:rgba(255,193,7,.06)}
+    .band-group--noband .band-group-header{background:linear-gradient(135deg,#4a4a4a,#2d2d2d)}
+    .user-search-wrap{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:var(--spacing-md)}
+    .user-search-wrap input{flex:1;min-width:200px;padding:8px 14px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm)}
+    .user-search-wrap .user-stat{font-size:var(--text-xs);color:var(--premium-text-muted);white-space:nowrap}
   </style>
 </head>
 <body>
@@ -75,11 +91,12 @@
             <div class="card-header"><h3 class="card-title">จัดการผู้ใช้งาน</h3>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">🔄 รีเฟรช</button>
             </div>
-            <div class="table-responsive">
-              <table class="table">
-                <thead><tr><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>วง</th><th>ตำแหน่ง</th><th>Role</th><th style="min-width:110px">Plan Override</th><th>สถานะ</th><th></th></tr></thead>
-                <tbody id="userTbody"><tr><td colspan="9" class="text-center">กำลังโหลด...</td></tr></tbody>
-              </table>
+            <div class="user-search-wrap" style="padding:12px 16px 0">
+              <input type="text" id="userSearchInput" placeholder="ค้นหาชื่อ / อีเมล / วง..." oninput="filterUserGroups()">
+              <span class="user-stat" id="userStat"></span>
+            </div>
+            <div id="userGroupContainer" style="padding:12px 16px">
+              <div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">กำลังโหลด...</div>
             </div>
           </div>
 
@@ -397,40 +414,151 @@
     if (id === 'templates')     setTimeout(loadNotifTemplates, 100);
   }
 
+  var _allUsersCache = [];
+
   function loadUsers() {
+    var container = document.getElementById('userGroupContainer');
+    container.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">กำลังโหลด...</div>';
     apiCall('getAllUsers', {}, function(r) {
-      var users = (r && r.data) || [];
-      var tbody = document.getElementById('userTbody');
-      if (!users.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center">ไม่มีข้อมูล</td></tr>'; return; }
-      tbody.innerHTML = users.map(function(u) {
-        var title     = u.title     || '';
-        var firstName = u.firstName || u.first_name || '';
-        var lastName  = u.lastName  || u.last_name  || '';
-        var nickname  = u.nickname  || u.userName   || '';
-        var fullName  = [title !== 'ไม่ระบุ' ? title : '', firstName, lastName].filter(Boolean).join(' ') || nickname || '—';
-        var userId    = u.id || '';
-        return '<tr>'
-          +'<td>'+escapeHtml(fullName)+'</td>'
-          +'<td>'+escapeHtml(nickname)+'</td>'
-          +'<td>'+escapeHtml(u.email||'')+'</td>'
-          +'<td>'+escapeHtml(u.bandName||u.band_name||'—')+'</td>'
-          +'<td><span style="font-size:var(--text-xs)">'+escapeHtml(u.instrument||'—')+'</span></td>'
-          +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(userId)+'\',this.value)">'
-          +'<option value="member"'+(u.role==='member'?' selected':'')+'>member</option>'
-          +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
-          +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
-          +'</select></td>'
-          +'<td><select class="role-select" style="font-size:.75rem" onchange="setUserPlanOverride(\''+escapeHtml(userId)+'\',this.value)">'
-          +'<option value=""'+( !(u.planOverride||u.plan_override)?' selected':'')+'> — ปกติ —</option>'
-          +'<option value="free"'+((u.planOverride||u.plan_override)==='free'?' selected':'')+'>\uD83C\uDD93 Free</option>'
-          +'<option value="lite"'+((u.planOverride||u.plan_override)==='lite'?' selected':'')+'>\uD83C\uDFB5 Lite</option>'
-          +'<option value="pro"'+((u.planOverride||u.plan_override)==='pro'?' selected':'')+'>\uD83D\uDC51 Pro</option>'
-          +'</select></td>'
-          +'<td><span class="badge '+(u.status==='active'?'badge-success':'badge-danger')+'">'+(u.status==='active'?'ใช้งาน':u.status||'—')+'</span></td>'
-          +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(userId)+'\')">🗑️</button></td>'
-          +'</tr>';
-      }).join('');
+      _allUsersCache = (r && r.data) || [];
+      renderUserGroups(_allUsersCache);
     });
+  }
+
+  function renderUserGroups(users) {
+    var container = document.getElementById('userGroupContainer');
+    var statEl = document.getElementById('userStat');
+    if (!users.length) {
+      container.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:var(--spacing-xl)">ไม่มีข้อมูล</div>';
+      if (statEl) statEl.textContent = '';
+      return;
+    }
+
+    // Group by band
+    var bandMap = {};
+    var noBandUsers = [];
+    users.forEach(function(u) {
+      var bn = u.bandName || u.band_name || '';
+      if (!bn) { noBandUsers.push(u); return; }
+      if (!bandMap[bn]) bandMap[bn] = { name: bn, users: [], earliest: u.createdAt || u.created_at || '' };
+      bandMap[bn].users.push(u);
+      var ca = u.createdAt || u.created_at || '';
+      if (ca && ca < bandMap[bn].earliest) bandMap[bn].earliest = ca;
+    });
+
+    // Sort bands by earliest member created_at
+    var bandList = Object.values(bandMap).sort(function(a, b) {
+      return (a.earliest || '').localeCompare(b.earliest || '');
+    });
+
+    // Sort users within each band: manager/admin first, then by name
+    var rolePriority = { admin: 0, manager: 1, member: 2 };
+    function sortMembers(arr) {
+      arr.sort(function(a, b) {
+        var ra = rolePriority[a.role] !== undefined ? rolePriority[a.role] : 9;
+        var rb = rolePriority[b.role] !== undefined ? rolePriority[b.role] : 9;
+        if (ra !== rb) return ra - rb;
+        return (a.nickname || a.firstName || '').localeCompare(b.nickname || b.firstName || '');
+      });
+    }
+    bandList.forEach(function(g) { sortMembers(g.users); });
+    sortMembers(noBandUsers);
+
+    // Count stats
+    var totalBands = bandList.length;
+    var totalUsers = users.length;
+    if (statEl) statEl.textContent = totalUsers + ' คน · ' + totalBands + ' วง';
+
+    var html = '';
+    // Render band groups
+    bandList.forEach(function(g) {
+      var managerCount = g.users.filter(function(u) { return u.role === 'manager' || u.role === 'admin'; }).length;
+      html += '<div class="band-group" data-bandname="' + escapeHtml(g.name.toLowerCase()) + '">'
+        + '<div class="band-group-header" onclick="toggleBandGroup(this)">'
+        + '<div class="bg-title"><span>🎸 ' + escapeHtml(g.name) + '</span>'
+        + '<span class="badge badge-primary" style="font-size:.65rem">' + g.users.length + ' คน</span></div>'
+        + '<div class="bg-meta">'
+        + (managerCount ? '<span>👑 ผู้จัดการ ' + managerCount + '</span>' : '')
+        + '<span>📅 ' + formatShortDate(g.earliest) + '</span>'
+        + '</div></div>'
+        + '<div class="band-group-body"><table class="table"><thead><tr>'
+        + '<th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>ตำแหน่ง</th><th>Role</th><th style="min-width:100px">Plan Override</th><th>สถานะ</th><th></th>'
+        + '</tr></thead><tbody>';
+      g.users.forEach(function(u) { html += renderUserRow(u); });
+      html += '</tbody></table></div></div>';
+    });
+
+    // No-band group
+    if (noBandUsers.length) {
+      html += '<div class="band-group band-group--noband" data-bandname="">'
+        + '<div class="band-group-header" onclick="toggleBandGroup(this)">'
+        + '<div class="bg-title"><span>👤 ไม่มีวง</span>'
+        + '<span class="badge badge-danger" style="font-size:.65rem">' + noBandUsers.length + ' คน</span></div>'
+        + '</div>'
+        + '<div class="band-group-body"><table class="table"><thead><tr>'
+        + '<th>ชื่อ-นามสกุล</th><th>ชื่อเล่น</th><th>อีเมล</th><th>ตำแหน่ง</th><th>Role</th><th style="min-width:100px">Plan Override</th><th>สถานะ</th><th></th>'
+        + '</tr></thead><tbody>';
+      noBandUsers.forEach(function(u) { html += renderUserRow(u); });
+      html += '</tbody></table></div></div>';
+    }
+
+    container.innerHTML = html;
+  }
+
+  function toggleBandGroup(headerEl) {
+    var body = headerEl.parentElement.querySelector('.band-group-body');
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+  }
+
+  function renderUserRow(u) {
+    var title     = u.title     || '';
+    var firstName = u.firstName || u.first_name || '';
+    var lastName  = u.lastName  || u.last_name  || '';
+    var nickname  = u.nickname  || u.userName   || '';
+    var fullName  = [title !== 'ไม่ระบุ' ? title : '', firstName, lastName].filter(Boolean).join(' ') || nickname || '—';
+    var userId    = u.id || '';
+    var isManager = (u.role === 'manager' || u.role === 'admin');
+    var roleIcon  = u.role === 'admin' ? '🛡️' : u.role === 'manager' ? '👑' : '';
+    return '<tr class="' + (isManager ? 'row-manager' : '') + '">'
+      +'<td>' + (roleIcon ? roleIcon + ' ' : '') + escapeHtml(fullName)+'</td>'
+      +'<td>'+escapeHtml(nickname)+'</td>'
+      +'<td style="font-size:var(--text-xs)">'+escapeHtml(u.email||'')+'</td>'
+      +'<td><span style="font-size:var(--text-xs)">'+escapeHtml(u.instrument||'—')+'</span></td>'
+      +'<td><select class="role-select" onchange="updateUserRole(\''+escapeHtml(userId)+'\',this.value)">'
+      +'<option value="member"'+(u.role==='member'?' selected':'')+'>member</option>'
+      +'<option value="manager"'+(u.role==='manager'?' selected':'')+'>manager</option>'
+      +'<option value="admin"'+(u.role==='admin'?' selected':'')+'>admin</option>'
+      +'</select></td>'
+      +'<td><select class="role-select" style="font-size:.75rem" onchange="setUserPlanOverride(\''+escapeHtml(userId)+'\',this.value)">'
+      +'<option value=""'+( !(u.planOverride||u.plan_override)?' selected':'')+'> — ปกติ —</option>'
+      +'<option value="free"'+((u.planOverride||u.plan_override)==='free'?' selected':'')+'>\uD83C\uDD93 Free</option>'
+      +'<option value="lite"'+((u.planOverride||u.plan_override)==='lite'?' selected':'')+'>\uD83C\uDFB5 Lite</option>'
+      +'<option value="pro"'+((u.planOverride||u.plan_override)==='pro'?' selected':'')+'>\uD83D\uDC51 Pro</option>'
+      +'</select></td>'
+      +'<td><span class="badge '+(u.status==='active'?'badge-success':'badge-danger')+'">'+(u.status==='active'?'ใช้งาน':u.status||'—')+'</span></td>'
+      +'<td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+escapeHtml(userId)+'\')">🗑️</button></td>'
+      +'</tr>';
+  }
+
+  function formatShortDate(d) {
+    if (!d) return '—';
+    try { var dt = new Date(d); return dt.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
+    catch(e) { return d.slice(0,10); }
+  }
+
+  function filterUserGroups() {
+    var q = (document.getElementById('userSearchInput').value || '').trim().toLowerCase();
+    if (!q) { renderUserGroups(_allUsersCache); return; }
+    var filtered = _allUsersCache.filter(function(u) {
+      var title     = u.title     || '';
+      var firstName = u.firstName || u.first_name || '';
+      var lastName  = u.lastName  || u.last_name  || '';
+      var nickname  = u.nickname  || u.userName   || '';
+      var bandName  = u.bandName  || u.band_name  || '';
+      var haystack  = (title+' '+firstName+' '+lastName+' '+nickname+' '+(u.email||'')+' '+bandName).toLowerCase();
+      return haystack.indexOf(q) >= 0;
+    });
+    renderUserGroups(filtered);
   }
 
   function updateUserRole(id, role) {

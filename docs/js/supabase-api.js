@@ -1322,7 +1322,7 @@
     }
 
     async function doAdminGetAllUsers() {
-      var { data, error } = await sb.from('profiles').select('*').order('email');
+      var { data, error } = await sb.from('profiles').select('*').order('created_at');
       if (error) throw error;
       return { success: true, data: toCamelList(data) };
     }
