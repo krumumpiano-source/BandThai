@@ -486,8 +486,129 @@
   }
 })();
 
-// ── Service Worker Registration ───────────────────────────────────────
+// ── PWA Install Prompt ────────────────────────────────────────────
 (function () {
+  var _deferredInstallPrompt = null;
+
+  // รับ event beforeinstallprompt จาก Chrome/Android
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    _deferredInstallPrompt = e;
+  });
+
+  function isMobileOrTablet() {
+    // Touch device ที่ไม่ใช่เดสก์ท็อป
+    return /Android|iPhone|iPad|iPod|Tablet|Mobile/i.test(navigator.userAgent) ||
+           (window.matchMedia && window.matchMedia('(pointer: coarse)').matches && window.innerWidth < 1280);
+  }
+
+  function isStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches ||
+           window.navigator.standalone === true;
+  }
+
+  function isIOS() {
+    return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  function showPwaBanner() {
+    // แสดงแบนเนอร์แนะนำการติดตั้ง
+    var banner = document.createElement('div');
+    banner.id = 'pwaBanner';
+    banner.style.cssText = [
+      'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:99999',
+      'background:linear-gradient(135deg,#1a1a2e,#16213e)',
+      'color:#fff', 'padding:14px 16px',
+      'display:flex', 'align-items:flex-start', 'gap:12px',
+      'box-shadow:0 -4px 24px rgba(0,0,0,.5)',
+      'font-family:Kanit,Sarabun,sans-serif',
+      'font-size:14px', 'line-height:1.5'
+    ].join(';');
+
+    var ios = isIOS();
+    var icon = '📲';
+    var title = 'ติดตั้งแอปบนอุปกรณ์ของคุณ';
+    var hint = ios
+      ? 'กด <strong>Share</strong> (อีคอนแชร์) แล้วเลือก <strong>"เพิ่มลงที่หน้าจอหลัก"</strong> เพื่อเปิดแอปได้สะดวกขึ้นในครั้งต่อไป'
+      : 'ติดตั้งแอปลงบนอุปกรณ์เพื่อเปิดได้เร็ว ใช้งานได้สะดวกโดยไม่ต้องเปิดเบราว์เซอร์ทุกครั้ง';
+
+    var installBtnHtml = (!ios && _deferredInstallPrompt)
+      ? '<button id="pwaBannerInstallBtn" style="background:#c9a227;color:#1a1a1a;border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:Kanit,sans-serif">ติดตั้งเลย</button>'
+      : '';
+
+    banner.innerHTML =
+      '<div style="font-size:28px;flex-shrink:0;line-height:1">' + icon + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="font-weight:700;font-size:15px;margin-bottom:4px">' + title + '</div>' +
+        '<div style="color:#c9b88a;font-size:12px">' + hint + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;flex-shrink:0">' +
+        installBtnHtml +
+        '<button id="pwaBannerDismissBtn" style="background:rgba(255,255,255,.12);color:#ccc;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;white-space:nowrap;font-family:Kanit,sans-serif">ปิด ไม่ถามอีก</button>' +
+      '</div>';
+
+    document.body.appendChild(banner);
+
+    // ปุ่มติดตั้ง (Android/Chrome)
+    var installBtn = document.getElementById('pwaBannerInstallBtn');
+    if (installBtn) {
+      installBtn.addEventListener('click', function () {
+        if (_deferredInstallPrompt) {
+          _deferredInstallPrompt.prompt();
+          _deferredInstallPrompt.userChoice.then(function (r) {
+            if (r.outcome === 'accepted') {
+              try { localStorage.setItem('pwa_installed', '1'); } catch(e) {}
+            }
+            _deferredInstallPrompt = null;
+          });
+        }
+        banner.remove();
+        try { localStorage.setItem('pwa_prompt_dismissed', Date.now()); } catch(e) {}
+      });
+    }
+
+    // ปุ่มปิด
+    var dismissBtn = document.getElementById('pwaBannerDismissBtn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', function () {
+        banner.remove();
+        try { localStorage.setItem('pwa_prompt_dismissed', Date.now()); } catch(e) {}
+      });
+    }
+  }
+
+  // ตรวจว่าควรแสดงหรือไม่
+  function maybeShowBanner() {
+    if (!isMobileOrTablet()) return;
+    if (isStandalone()) return; // ติดตั้งแล้ว
+    try {
+      if (localStorage.getItem('pwa_installed') === '1') return;
+      var dismissed = parseInt(localStorage.getItem('pwa_prompt_dismissed') || '0', 10);
+      // ถ้าปิดไปมากกว่า 30 วันแล้ว ให้ถามใหม่
+      if (dismissed && (Date.now() - dismissed) < 30 * 24 * 60 * 60 * 1000) return;
+    } catch(e) {}
+
+    // รอให้ requireAuth โหลดเสร็จก่อน (2.5 วินาที) แล้วค่อยแสดง
+    setTimeout(function () {
+      // ไม่แสดงบนหน้า login/register/terms
+      var path = location.pathname;
+      if (/\/(index|register|create-band|terms|forgot|reset)/.test(path)) return;
+      // ต้อง login อยู่ถึงจะแสดง
+      if (!localStorage.getItem('userId')) return;
+      if (document.getElementById('pwaBanner')) return; // มีแล้ว
+      showPwaBanner();
+    }, 2500);
+  }
+
+  window.addEventListener('load', maybeShowBanner);
+
+  // ถ้า PWA ถูกติดตั้งสำเร็จจาก prompt
+  window.addEventListener('appinstalled', function () {
+    try { localStorage.setItem('pwa_installed', '1'); } catch(e) {}
+    var b = document.getElementById('pwaBanner');
+    if (b) b.remove();
+  });
+})();
   if (!('serviceWorker' in navigator)) return;
   // ไม่ register บนหน้า index/register/create-band (ไม่ต้องการ push)
   var path = location.pathname;
