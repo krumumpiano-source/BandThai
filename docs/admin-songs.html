@@ -177,6 +177,17 @@
     .btn-sm-toggle{display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border-radius:10px;border:1.5px solid #C4B5FD;background:#EDE9FE;color:#6D28D9;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .15s}
     .btn-sm-toggle:hover{background:#DDD6FE}
 
+    /* ── Online Presence Bar ── */
+    .presence-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 16px;background:var(--premium-white);border:1.5px solid var(--premium-border);border-radius:10px;min-height:42px}
+    .presence-label{font-size:12px;font-weight:700;color:var(--premium-text-muted);white-space:nowrap;display:flex;align-items:center;gap:5px}
+    .presence-dot{width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse-dot 2s infinite}
+    @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+    .presence-users{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+    .presence-chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;font-size:12px;font-weight:600;font-family:inherit;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;white-space:nowrap;transition:all .15s}
+    .presence-chip.me{background:#F0FDF4;color:#16A34A;border-color:#BBF7D0}
+    .presence-chip .pc-activity{font-weight:400;color:#6B7280;font-size:11px;margin-left:2px}
+    .presence-chip .pc-avatar{width:20px;height:20px;border-radius:50%;background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
     /* ── Responsive column hiding ── */
     .hide-lg{display:table-cell}
     .hide-md{display:table-cell}
@@ -231,6 +242,14 @@
     <h1 class="page-title">🎵 จัดการคลังเพลง</h1>
     <span class="badge badge-danger" style="font-size:12px">Admin</span>
     <span class="sug-badge" id="sugBadge" onclick="toggleSugPanel()" style="display:none" title="คำแนะนำรอตรวจ">💡 <span id="sugBadgeCount">0</span></span>
+  </div>
+
+  <!-- Online Presence Bar -->
+  <div class="presence-bar" id="presenceBar">
+    <span class="presence-label"><span class="presence-dot"></span> ออนไลน์</span>
+    <div class="presence-users" id="presenceUsers">
+      <span style="font-size:12px;color:var(--premium-text-muted)">กำลังเชื่อมต่อ...</span>
+    </div>
   </div>
 
   <!-- Suggestion Review Panel -->
@@ -443,6 +462,8 @@ var _loadSongsReqId = 0;
 var _searchDebounce = null;
 var _isAdmin = false;       // true if current user is full admin
 var _selectedArtistFilter = ''; // currently selected artist for filter
+var _presenceChannel = null; // Supabase Presence channel
+var _myActivity = 'ดูรายการ'; // current user activity description
 
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -482,6 +503,7 @@ document.addEventListener('DOMContentLoaded', function() {
   loadArtists();
   loadSongs();
   loadSuggestions();
+  initPresence();
   } // end initAdminSongs
 });
 
@@ -1000,6 +1022,10 @@ function markDirty(el) {
   var btn = document.getElementById('sbtn-' + songId);
   if (btn) btn.disabled = false;
   updateSaveAllBtn();
+  // Track activity: editing which song
+  var nameEl = row.querySelector('[data-field="name"]');
+  var songName = nameEl ? nameEl.value.substring(0, 20) : '';
+  updateMyActivity('แก้ไข: ' + (songName || 'เพลง'));
 }
 
 function readRowFromDOM(row) {
@@ -1557,6 +1583,165 @@ function saveSongManagers() {
     });
   });
 }
+
+// ─── Online Presence (Realtime) ───────────────────────────────────
+var _ACTIVITY_COLORS = {
+  'ดูรายการ': '#EFF6FF',
+  'ค้นหาเพลง': '#FEF3C7',
+  'แก้ไขเพลง': '#FEF2F2',
+  'เพิ่มเพลง': '#F0FDF4',
+  'นำเข้าเพลง': '#EDE9FE',
+  'ตั้งค่าผู้ดูแล': '#FCE7F3'
+};
+
+function initPresence() {
+  if (!window._sb) return;
+  var bandId = localStorage.getItem('bandId') || 'default';
+  var channelName = 'presence-admin-songs-' + bandId;
+  var userId = localStorage.getItem('userId') || '';
+  var userName = localStorage.getItem('userName') || localStorage.getItem('userNickname') || 'ไม่ทราบชื่อ';
+
+  _presenceChannel = window._sb.channel(channelName, {
+    config: { presence: { key: userId } }
+  });
+
+  _presenceChannel
+    .on('presence', { event: 'sync' }, function() {
+      renderPresence();
+    })
+    .on('presence', { event: 'join' }, function() {
+      renderPresence();
+    })
+    .on('presence', { event: 'leave' }, function() {
+      renderPresence();
+    })
+    .subscribe(function(status) {
+      if (status === 'SUBSCRIBED') {
+        _presenceChannel.track({
+          userId: userId,
+          name: userName,
+          activity: _myActivity,
+          joinedAt: new Date().toISOString()
+        });
+      }
+    });
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', function() {
+    if (_presenceChannel) _presenceChannel.untrack();
+  });
+}
+
+function updateMyActivity(activity) {
+  _myActivity = activity;
+  if (_presenceChannel) {
+    var userId = localStorage.getItem('userId') || '';
+    var userName = localStorage.getItem('userName') || localStorage.getItem('userNickname') || 'ไม่ทราบชื่อ';
+    _presenceChannel.track({
+      userId: userId,
+      name: userName,
+      activity: activity,
+      joinedAt: new Date().toISOString()
+    });
+  }
+}
+
+function renderPresence() {
+  if (!_presenceChannel) return;
+  var state = _presenceChannel.presenceState();
+  var myId = localStorage.getItem('userId') || '';
+  var users = [];
+
+  // presenceState returns { key: [{ ... }], ... }
+  var keys = Object.keys(state);
+  for (var i = 0; i < keys.length; i++) {
+    var entries = state[keys[i]];
+    if (entries && entries.length > 0) {
+      users.push(entries[0]); // latest presence per user
+    }
+  }
+
+  var container = document.getElementById('presenceUsers');
+  if (!container) return;
+
+  if (users.length === 0) {
+    container.innerHTML = '<span style="font-size:12px;color:var(--premium-text-muted)">ไม่มีใครออนไลน์</span>';
+    return;
+  }
+
+  var html = '';
+  for (var j = 0; j < users.length; j++) {
+    var u = users[j];
+    var isMe = u.userId === myId;
+    var initial = (u.name || '?').charAt(0).toUpperCase();
+    var chipClass = isMe ? 'presence-chip me' : 'presence-chip';
+    var activity = u.activity || 'ดูรายการ';
+    html += '<span class="' + chipClass + '">'
+      + '<span class="pc-avatar">' + esc(initial) + '</span>'
+      + esc(u.name || 'ไม่ทราบชื่อ') + (isMe ? ' (คุณ)' : '')
+      + '<span class="pc-activity">— ' + esc(activity) + '</span>'
+      + '</span>';
+  }
+  container.innerHTML = html;
+}
+
+// ─── Activity Tracking Hooks ──────────────────────────────────────
+// Hook into existing functions to track user activity
+(function() {
+  // Track search
+  var _origSearchInput = window.searchInputChanged;
+  window.searchInputChanged = function() {
+    var val = (document.getElementById('asSearch').value || '').trim();
+    if (val) updateMyActivity('ค้นหา: "' + val.substring(0, 20) + '"');
+    else updateMyActivity('ดูรายการ');
+    if (_origSearchInput) _origSearchInput.apply(this, arguments);
+  };
+
+  // Track opening add modal
+  var _origOpenAdd = window.openAddModal;
+  if (_origOpenAdd) {
+    window.openAddModal = function() {
+      updateMyActivity('เพิ่มเพลง');
+      _origOpenAdd.apply(this, arguments);
+    };
+  }
+
+  // Track closing add modal
+  var _origCloseAdd = window.closeAddModal;
+  if (_origCloseAdd) {
+    window.closeAddModal = function() {
+      updateMyActivity('ดูรายการ');
+      _origCloseAdd.apply(this, arguments);
+    };
+  }
+
+  // Track import modal
+  var _origOpenImport = window.openImportModal;
+  if (_origOpenImport) {
+    window.openImportModal = function() {
+      updateMyActivity('นำเข้าเพลง');
+      _origOpenImport.apply(this, arguments);
+    };
+  }
+  var _origCloseImport = window.closeImportModal;
+  if (_origCloseImport) {
+    window.closeImportModal = function() {
+      updateMyActivity('ดูรายการ');
+      _origCloseImport.apply(this, arguments);
+    };
+  }
+
+  // Track song manager panel
+  var _origToggleSM = window.toggleSongManagerPanel;
+  if (_origToggleSM) {
+    window.toggleSongManagerPanel = function() {
+      var panel = document.getElementById('smPanel');
+      var willOpen = !panel.classList.contains('show');
+      _origToggleSM.apply(this, arguments);
+      updateMyActivity(willOpen ? 'ตั้งค่าผู้ดูแล' : 'ดูรายการ');
+    };
+  }
+})();
 </script>
 </body>
 </html>
