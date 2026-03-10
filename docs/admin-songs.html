@@ -1103,6 +1103,7 @@ function saveRow(songId) {
       if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood });
       updateSaveAllBtn();
       clearSongsCache();
+      apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
       showToast('✅ บันทึก "' + data.name + '" แล้ว', 'success');
     } else {
       if (btn) btn.disabled = false;
@@ -1139,6 +1140,7 @@ function saveAllDirty() {
     if (done < total) return;
     clearSongsCache();
     updateSaveAllBtn();
+    apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
     showToast('✅ บันทึกแล้ว ' + (total - failed) + ' เพลง' + (failed ? ' (' + failed + ' ล้มเหลว)' : ''), 'success');
   }
 }
@@ -1152,6 +1154,7 @@ function deleteSong(songId, songName) {
       clearSongsCache();
       _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
       refilterKeepPage();
+      apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
     } else {
       showToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
     }

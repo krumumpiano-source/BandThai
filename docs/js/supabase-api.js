@@ -150,6 +150,7 @@
         case 'ensureArtist':       return doEnsureArtist(d);
         case 'updateArtist':       return doUpdateArtist(d);
         case 'deleteArtist':       return doDeleteArtist(d);
+        case 'cleanupOrphanArtists': return doCleanupOrphanArtists();
         case 'searchArtists':      return doSearchArtists(d);
 
         // ── Song Suggestions ───────────────────────────────────────
@@ -615,6 +616,21 @@
       var { error } = await sb.from('artists').delete().eq('id', d.artistId);
       if (error) throw error;
       return { success: true };
+    }
+
+    async function doCleanupOrphanArtists() {
+      // Get all distinct artist names currently in band_songs
+      var { data: songRows, error: e1 } = await sb.from('band_songs').select('artist').not('artist', 'is', null).neq('artist', '');
+      if (e1) throw e1;
+      var usedNames = new Set((songRows || []).map(function(r) { return (r.artist || '').trim().toLowerCase(); }).filter(Boolean));
+      // Get all artists
+      var { data: artistRows, error: e2 } = await sb.from('artists').select('id, name');
+      if (e2) throw e2;
+      var toDelete = (artistRows || []).filter(function(a) { return !usedNames.has((a.name || '').trim().toLowerCase()); });
+      for (var i = 0; i < toDelete.length; i++) {
+        await sb.from('artists').delete().eq('id', toDelete[i].id);
+      }
+      return { success: true, deleted: toDelete.length };
     }
 
     async function doSearchArtists(d) {
