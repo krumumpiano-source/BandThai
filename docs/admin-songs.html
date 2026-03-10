@@ -909,7 +909,7 @@ function renderTable() {
         '<td class="hide-md">—</td><td class="hide-md">—</td><td class="hide-md">—</td>' +
         '<td class="hide-sm">—</td><td class="hide-lg">—</td><td class="hide-lg">—</td>' +
         '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + jsId + '\')">➕ เพิ่มในคลัง</button>' +
-        '<button class="btn-sm btn-del" onclick="hideHistorySong(\'' + jsId + '\')" title="ซ่อนเพลงนี้">✕ ซ่อน</button></div></td>' +
+        '<button class="btn-sm btn-del" onclick="deleteHistorySong(\'' + jsId + '\')" title="ลบออกจากประวัติ">🗑️ ลบออก</button></div></td>' +
         '</tr>';
       return;
     }
@@ -1236,20 +1236,32 @@ function loadHiddenHistSongs(cb) {
   });
 }
 
-function hideHistorySong(songId) {
+function deleteHistorySong(songId) {
   var song = _allSongs.find(function(s){ return s.id === songId; });
   if (!song) return;
   var key = (song.name || '').toLowerCase().trim();
   if (!key) return;
 
-  _hiddenHistSongs[key] = true;
-  // Remove from current list immediately
-  _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
-  refilterKeepPage();
-  showToast('ซ่อน "' + song.name + '" แล้ว', 'success');
-
-  // Save to band_settings
-  saveHiddenList();
+  showConfirm('ลบออกจากประวัติ', '"' + song.name + '" จะถูกลบออกจากประวัติ Setlist ทั้งหมด\nดำเนินการต่อหรือไม่?', {danger: true, confirmText: 'ลบออก'}).then(function(ok) {
+    if (!ok) return;
+    // Remove from local state immediately
+    _hiddenHistSongs[key] = true;
+    _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
+    refilterKeepPage();
+    showToast('กำลังลบ "' + song.name + '" ออกจากประวัติ...', 'success');
+    // Remove from all playlist_history records in DB
+    apiCall('removeSongFromAllHistory', { songName: song.name }, function(r) {
+      if (r && r.success) {
+        showToast('🗑️ ลบ "' + song.name + '" ออกจากประวัติแล้ว (' + (r.updated||0) + ' รายการ)', 'success');
+        saveHiddenList(); // also store in hidden list as fallback
+      } else {
+        // Rollback visual if API fails
+        showToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
+        delete _hiddenHistSongs[key];
+        loadSongs();
+      }
+    });
+  });
 }
 
 function unhideAllHistSongs() {

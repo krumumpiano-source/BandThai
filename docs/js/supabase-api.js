@@ -132,6 +132,7 @@
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
         case 'deletePlaylistHistory': return doDeletePlaylistHistory(d);
+        case 'removeSongFromAllHistory': return doRemoveSongFromAllHistory(d);
         case 'getSongInsights':    return doGetSongInsights(d);
         case 'searchSongs':        return doSearchSongs(d);
         case 'getSongsPage':       return doGetSongsPage(d);
@@ -1526,6 +1527,30 @@
         .delete().eq('id', id).eq('band_id', bandId);
       if (error) throw error;
       return { success: true };
+    }
+
+    async function doRemoveSongFromAllHistory(d) {
+      var bandId   = d.bandId   || getBandId();
+      var songName = (d.songName || '').toLowerCase().trim();
+      if (!songName) return { success: false, message: 'ไม่พบชื่อเพลง' };
+      var { data, error } = await sb.from('playlist_history')
+        .select('id, playlist').eq('band_id', bandId);
+      if (error) throw error;
+      var toUpdate = [];
+      (data || []).forEach(function(row) {
+        var pl = row.playlist || [];
+        var filtered = pl.filter(function(s) {
+          return (s.name || '').toLowerCase().trim() !== songName;
+        });
+        if (filtered.length !== pl.length) toUpdate.push({ id: row.id, playlist: filtered });
+      });
+      for (var i = 0; i < toUpdate.length; i++) {
+        var { error: ue } = await sb.from('playlist_history')
+          .update({ playlist: toUpdate[i].playlist })
+          .eq('id', toUpdate[i].id).eq('band_id', bandId);
+        if (ue) throw ue;
+      }
+      return { success: true, updated: toUpdate.length };
     }
 
     // ── Song Insights (สถิติเพลง) ────────────────────────────────
