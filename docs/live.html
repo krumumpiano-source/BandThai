@@ -637,7 +637,6 @@ var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
 var _ctxIdx = -1; // context menu target song index
-var _endBreakSavedAt = 0; // timestamp of last end_break save (ms) — used to prevent duplicate DB writes
 
 // ── Sync state (realtime) ─────────────────────────────────────────
 var _syncReceived     = false; // have we received a state_sync after joining?
@@ -1805,7 +1804,10 @@ function submitNote() {
 // ─────────────────────────────────────────────────────────────────
 //  END BREAK (จบเบรค)
 // ─────────────────────────────────────────────────────────────────
+var _endBreakSaving = false; // guard against concurrent saves (multi-device race)
+
 function endBreak() {
+  if (_endBreakSaving) return; // prevent double-call on same device
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
     doExit();
@@ -1819,20 +1821,11 @@ function endBreak() {
     return;
   }
 
-  // ถ้าสมาชิกคนอื่นกด "จบเบรค" ไปแล้วภายใน 10 วินาที → ข้ามการบันทึก DB (ป้องกัน duplicate)
-  var now = Date.now();
-  if (_endBreakSavedAt > 0 && (now - _endBreakSavedAt) < 10000) {
-    _showClipModal();
-    return;
-  }
+  _endBreakSaving = true;
 
   // Disable button ระหว่าง save
   var btn = document.getElementById('endBreakBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
-
-  // แจ้งสมาชิกคนอื่นว่าเรากำลัง save แล้ว (ให้พวกเขาข้ามการ save ซ้ำ)
-  _endBreakSavedAt = now;
-  broadcastEvent('end_break', { by: localStorage.getItem('userName') || '' });
 
   var songs = _playlist.map(function(s) {
     return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
@@ -1843,9 +1836,14 @@ function endBreak() {
     date: _date, venue: _venue, timeSlot: _timeSlot,
     songs: songs
   }, function(r) {
-    if (btn) { btn.disabled = false; btn.textContent = 'จบเบรค'; }
     if (!r || !r.success) {
+      // บันทึกไม่สำเร็จ — คืน state ให้กดใหม่ได้
+      _endBreakSaving = false;
+      if (btn) { btn.disabled = false; btn.textContent = 'จบเบรค'; }
       showToast('⚠️ บันทึกไม่สำเร็จ — คัดลอกรายการแทนได้');
+    } else {
+      // สำเร็จแล้ว — ล็อคปุ่ม ไม่ให้กดซ้ำ
+      if (btn) { btn.textContent = 'บันทึกแล้ว ✓'; }
     }
     _showClipModal();
   });
@@ -2221,10 +2219,6 @@ function initRealtime() {
     .on('broadcast', { event: 'chat_msg' }, function(payload) {
       var d = payload.payload || {};
       if (d.from && d.text) receiveChatMsg(d.from, d.text, d.time);
-    })
-    .on('broadcast', { event: 'end_break' }, function(payload) {
-      // Another member already triggered the DB save — mark it so we skip our own save
-      _endBreakSavedAt = Date.now();
     })
     .subscribe(function(status) {
       var ind = document.getElementById('realtimeIndicator');
