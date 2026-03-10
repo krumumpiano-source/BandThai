@@ -464,6 +464,7 @@ var _isAdmin = false;       // true if current user is full admin
 var _selectedArtistFilter = ''; // currently selected artist for filter
 var _presenceChannel = null; // Supabase Presence channel
 var _myActivity = 'ดูรายการ'; // current user activity description
+var _hiddenHistSongs = {}; // hidden history song keys (lowercase name → true)
 
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -500,9 +501,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('smToggleBtn').style.display = '';
   }
   updateModalKeyOptions();
-  loadArtists();
-  loadSongs();
-  loadSuggestions();
+  loadHiddenHistSongs(function() {
+    loadArtists();
+    loadSongs();
+    loadSuggestions();
+  });
   initPresence();
   } // end initAdminSongs
 });
@@ -659,6 +662,7 @@ function loadSongs() {
       (row.songs || []).forEach(function(s) {
         var key = (s.name || '').toLowerCase().trim();
         if (!key || libByName[key] || histMap[key]) return;
+        if (_hiddenHistSongs[key]) return; // skip hidden history songs
         histMap[key] = {
           id: '_hist_' + key,
           name: s.name || '',
@@ -899,7 +903,8 @@ function renderTable() {
         '<td style="color:var(--premium-text-muted);font-size:13px">' + esc(s.artist||'—') + '</td>' +
         '<td class="hide-md">—</td><td class="hide-md">—</td><td class="hide-md">—</td>' +
         '<td class="hide-sm">—</td><td class="hide-lg">—</td><td class="hide-lg">—</td>' +
-        '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + jsId + '\')">➕ เพิ่มในคลัง</button></div></td>' +
+        '<td><div class="td-actions"><button class="btn-sm btn-add" onclick="addToLibrary(\'' + jsId + '\')">➕ เพิ่มในคลัง</button>' +
+        '<button class="btn-sm btn-del" onclick="hideHistorySong(\'' + jsId + '\')" title="ซ่อนเพลงนี้">✕ ซ่อน</button></div></td>' +
         '</tr>';
       return;
     }
@@ -958,6 +963,20 @@ function updateStats() {
   document.getElementById('statFemale').textContent  = female;
   document.getElementById('statDuet').textContent    = duet;
   document.getElementById('statHistory').textContent = hist;
+  var hiddenCount = Object.keys(_hiddenHistSongs).length;
+  var histEl = document.getElementById('statHistory');
+  if (hiddenCount > 0) {
+    histEl.textContent = hist + ' (ซ่อน ' + hiddenCount + ')';
+    histEl.parentNode.title = 'คลิกเพื่อยกเลิกซ่อนทั้งหมด';
+    histEl.parentNode.style.cursor = 'pointer';
+    histEl.parentNode.onclick = function() {
+      if (confirm('ยกเลิกซ่อนเพลง History ทั้ง ' + hiddenCount + ' เพลง?')) unhideAllHistSongs();
+    };
+  } else {
+    histEl.parentNode.title = '';
+    histEl.parentNode.style.cursor = '';
+    histEl.parentNode.onclick = null;
+  }
   document.getElementById('statGlobal').textContent  = globalCnt;
   document.getElementById('statBand').textContent    = bandCnt;
 }
@@ -1151,6 +1170,49 @@ function clearSongsCache() {
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   try { sessionStorage.removeItem('songs_cache_' + (bandId || bandName)); } catch(e) {}
+}
+
+// ─── Hidden History Songs ─────────────────────────────────────────
+function loadHiddenHistSongs(cb) {
+  apiCall('getBandSettings', {}, function(r) {
+    var settings = (r && r.success && r.data) || {};
+    var arr = settings.hiddenHistorySongs || [];
+    _hiddenHistSongs = {};
+    for (var i = 0; i < arr.length; i++) _hiddenHistSongs[arr[i]] = true;
+    if (cb) cb();
+  });
+}
+
+function hideHistorySong(songId) {
+  var song = _allSongs.find(function(s){ return s.id === songId; });
+  if (!song) return;
+  var key = (song.name || '').toLowerCase().trim();
+  if (!key) return;
+
+  _hiddenHistSongs[key] = true;
+  // Remove from current list immediately
+  _allSongs = _allSongs.filter(function(s){ return s.id !== songId; });
+  refilterKeepPage();
+  showToast('ซ่อน "' + song.name + '" แล้ว', 'success');
+
+  // Save to band_settings
+  saveHiddenList();
+}
+
+function unhideAllHistSongs() {
+  _hiddenHistSongs = {};
+  saveHiddenList(function() {
+    showToast('ยกเลิกซ่อนทั้งหมดแล้ว — กำลังโหลดใหม่', 'success');
+    loadSongs();
+  });
+}
+
+function saveHiddenList(cb) {
+  apiCall('getBandSettings', {}, function(r) {
+    var existing = (r && r.success && r.data) || {};
+    existing.hiddenHistorySongs = Object.keys(_hiddenHistSongs);
+    apiCall('saveBandSettings', existing, function() { if (cb) cb(); });
+  });
 }
 
 // ─── Export ───────────────────────────────────────────────────────
