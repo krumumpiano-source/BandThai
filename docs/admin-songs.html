@@ -414,16 +414,16 @@
     <div class="m-row">
       <div class="m-group">
         <label>คีย์</label>
-        <select id="mKey" class="m-select"><option value="">—</option><option>C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+        <select id="mKey" class="m-select" onchange="checkDuplicate()"><option value="">—</option><option>C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
       </div>
       <div class="m-group"><label>BPM</label><input id="mBpm" class="m-input" type="number" min="0" max="300" placeholder="0"></div>
     </div>
     <div class="m-group">
       <label>นักร้อง</label>
       <div class="singer-pills">
-        <div class="singer-pill"><input type="radio" name="ms" id="ms-male" value="ชาย"><label for="ms-male">🎤 ชาย</label></div>
-        <div class="singer-pill"><input type="radio" name="ms" id="ms-female" value="หญิง"><label for="ms-female">🎤 หญิง</label></div>
-        <div class="singer-pill"><input type="radio" name="ms" id="ms-duet" value="ชาย/หญิง"><label for="ms-duet">🎤🎤 คู่</label></div>
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-male" value="ชาย" onchange="checkDuplicate()"><label for="ms-male">🎤 ชาย</label></div>
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-female" value="หญิง" onchange="checkDuplicate()"><label for="ms-female">🎤 หญิง</label></div>
+        <div class="singer-pill"><input type="radio" name="ms" id="ms-duet" value="ชาย/หญิง" onchange="checkDuplicate()"><label for="ms-duet">🎤🎤 คู่</label></div>
       </div>
     </div>
     <div class="m-row">
@@ -930,23 +930,48 @@ function openAddModal() {
 function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
 
 function _normSong(s) { return (s||'').toLowerCase().replace(/\s+/g,'').replace(/[^\u0e00-\u0e7fa-z0-9]/g,''); }
+function _normSinger(s) { var v=(s||'').toLowerCase().trim(); if(v==='male'||v==='ชาย') return 'ชาย'; if(v==='female'||v==='หญิง') return 'หญิง'; if(v==='duet'||v==='คู่'||v==='ชาย/หญิง') return 'คู่'; return v; }
 
 function checkDuplicate() {
   var raw = document.getElementById('mName').value.trim();
   var warn = document.getElementById('dupWarn');
   if (!raw) { warn.style.display='none'; return; }
-  var norm = _normSong(raw);
+  var norm   = _normSong(raw);
+  var singer = _normSinger((document.querySelector('input[name="ms"]:checked')||{}).value);
+  var key    = document.getElementById('mKey').value;
   var libSongs = _allSongs.filter(function(s){ return !s._fromHistory; });
-  var exact   = libSongs.filter(function(s){ return _normSong(s.name) === norm; });
-  var similar = exact.length ? [] : libSongs.filter(function(s){
+  var sameName = libSongs.filter(function(s){ return _normSong(s.name) === norm; });
+  // Full exact: same name AND same singer (if both filled) AND same key (if both filled)
+  var fullExact = sameName.filter(function(s){
+    var ss = _normSinger(s.singer);
+    var sk = (s.key||'').trim();
+    var sameS = !singer || !ss || singer === ss;
+    var sameK = !key    || !sk || key    === sk;
+    return sameS && sameK;
+  });
+  // Diff-version: same name but singer or key clearly differs
+  var diffVer = sameName.filter(function(s){
+    var ss = _normSinger(s.singer);
+    var sk = (s.key||'').trim();
+    var singerDiff = singer && ss && singer !== ss;
+    var keyDiff    = key    && sk && key    !== sk;
+    return singerDiff || keyDiff;
+  });
+  var similar = sameName.length ? [] : libSongs.filter(function(s){
     var sn = _normSong(s.name);
     return sn && (sn.includes(norm) || norm.includes(sn));
   });
-  if (exact.length) {
+  if (fullExact.length) {
     warn.className='exact';
-    warn.innerHTML='<strong>⚠️ มีเพลงชื่อเดียวกันในคลังแล้ว</strong>' + exact.map(function(s){
-      return '<div class="dup-item">• ' + esc(s.name) + (s.artist ? ' — ' + esc(s.artist) : '') + '</div>';
+    warn.innerHTML='<strong>⛔ มีเพลงชื่อเดียวกัน นักร้องเดียวกัน และคีย์เดียวกันในคลังแล้ว</strong>' + fullExact.map(function(s){
+      return '<div class="dup-item">• ' + esc(s.name) + (s.singer ? ' 🎤 ' + esc(s.singer) : '') + (s.key ? ' [' + esc(s.key) + ']' : '') + (s.artist ? ' — ' + esc(s.artist) : '') + '</div>';
     }).join('');
+    warn.style.display='block';
+  } else if (diffVer.length) {
+    warn.className='similar';
+    warn.innerHTML='<strong>⚠️ พบเพลงชื่อเดียวกันในคลัง (ต่างนักร้องหรือต่างคีย์)</strong>' + diffVer.map(function(s){
+      return '<div class="dup-item">• ' + esc(s.name) + (s.singer ? ' 🎤 ' + esc(s.singer) : '') + (s.key ? ' [' + esc(s.key) + ']' : '') + (s.artist ? ' — ' + esc(s.artist) : '') + '</div>';
+    }).join('') + '<div style="margin-top:4px;font-size:11px;color:#92400e">✔️ ต่างเวอร์ชันสามารถเพิ่มได้เลย</div>';
     warn.style.display='block';
   } else if (similar.length) {
     warn.className='similar';
@@ -992,17 +1017,29 @@ function _doSubmitAdd() {
 function submitAddSong() {
   var name = document.getElementById('mName').value.trim();
   if (!name) { document.getElementById('mName').focus(); showToast('กรุณาใส่ชื่อเพลง', 'error'); return; }
-  // Duplicate check before submitting
-  var norm = _normSong(name);
+  var norm   = _normSong(name);
+  var singer = _normSinger((document.querySelector('input[name="ms"]:checked')||{}).value);
+  var key    = document.getElementById('mKey').value;
   var libSongs = _allSongs.filter(function(s){ return !s._fromHistory; });
-  var exact = libSongs.filter(function(s){ return _normSong(s.name) === norm; });
-  if (exact.length) {
-    var matches = exact.slice(0,3).map(function(s){ return '"' + s.name + '"' + (s.artist ? ' (' + s.artist + ')' : ''); }).join(', ');
-    showConfirm('พบเพลงซ้ำในคลัง', 'มีเพลง ' + matches + ' อยู่แล้ว\nต้องการเพิ่มซ้ำหรือไม่?', {confirmText: 'เพิ่มต่อไป'}).then(function(ok) {
+  var sameName = libSongs.filter(function(s){ return _normSong(s.name) === norm; });
+  // Block only when name+singer+key all match
+  var fullExact = sameName.filter(function(s){
+    var ss = _normSinger(s.singer);
+    var sk = (s.key||'').trim();
+    var sameS = !singer || !ss || singer === ss;
+    var sameK = !key    || !sk || key    === sk;
+    return sameS && sameK;
+  });
+  if (fullExact.length) {
+    var matches = fullExact.slice(0,3).map(function(s){
+      return '"' + s.name + '"' + (s.singer ? ' 🎤 '+s.singer : '') + (s.key ? ' ['+s.key+']' : '') + (s.artist ? ' ('+s.artist+')' : '');
+    }).join(', ');
+    showConfirm('พบเพลงซ้ำในคลัง', 'มีเพลง ' + matches + ' อยู่แล้ว\nนักร้องและคีย์เหมือนกัน ต้องการเพิ่มซ้ำหรือไม่?', {confirmText: 'เพิ่มต่อไป'}).then(function(ok) {
       if (ok) _doSubmitAdd();
     });
     return;
   }
+  // Different version (singer/key differ) → add directly, no confirm needed
   _doSubmitAdd();
 }
 
