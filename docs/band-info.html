@@ -343,7 +343,7 @@
 
   function deleteCurrentMember() {
     var id = document.getElementById('memberId').value;
-    showConfirm('ยืนยันการลบ', 'ต้องการลบสมาชิกคนนี้?').then(function(ok) {
+    showConfirm('ยืนยันการลบ', 'ต้องการลบสมาชิกคนนี้?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('deleteBandMember', { memberId: id }, function(r) {
         if (r && r.success) { showToast('ลบแล้ว', 'success'); closeMemberModal(); loadBandMembers(); }

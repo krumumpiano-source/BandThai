@@ -107,7 +107,7 @@ if (document.getElementById('memberForm')) {
 
 function deleteCurrentMember() {
   var id = document.getElementById('memberId').value;
-  showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg')).then(function(ok) {
+  showConfirm(t('confirmDeleteTitle'), t('confirmDeleteMsg'), {danger:true, confirmText:t('delete')}).then(function(ok) {
     if (!ok) return;
     apiCall('deleteBandMember', { memberId: id }, function(r) {
       if (r && r.success) {

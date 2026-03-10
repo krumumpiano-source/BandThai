@@ -157,11 +157,14 @@
   // ======================================================
   // Confirm Dialog
   // ======================================================
-  function showConfirm(title, message) {
-    if (typeof title === 'object') { var o = title; title = o.title; message = o.message; }
+  function showConfirm(title, message, opts) {
+    if (typeof title === 'object') { var o = title; title = o.title; message = o.message; opts = o; }
+    opts = opts || {};
     return new Promise(function(resolve) {
       title   = title   || (typeof t === 'function' ? t('confirmDeleteTitle') : 'ยืนยัน');
       message = message || (typeof t === 'function' ? t('confirmDeleteMsg')   : 'ต้องการดำเนินการใช่หรือไม่?');
+      var btnText  = opts.confirmText  || (typeof t === 'function' ? t('confirm') : 'ยืนยัน');
+      var btnClass = opts.danger ? 'btn btn-danger' : 'btn btn-primary';
       var overlay = document.createElement('div');
       overlay.className = 'confirm-overlay active';
       overlay.innerHTML =
@@ -170,7 +173,7 @@
           '<p>' + escapeHtml(message) + '</p>' +
           '<div class="confirm-actions">' +
             '<button class="btn btn-secondary" id="_confirmCancel">' + (typeof t === 'function' ? t('cancel') : 'ยกเลิก') + '</button>' +
-            '<button class="btn btn-danger" id="_confirmOk">' + (typeof t === 'function' ? t('delete') : 'ยืนยัน') + '</button>' +
+            '<button class="' + btnClass + '" id="_confirmOk">' + escapeHtml(btnText) + '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(overlay);

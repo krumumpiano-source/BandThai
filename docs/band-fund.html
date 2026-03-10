@@ -562,7 +562,7 @@
 
   /* ── Delete (manager only) ── */
   function deleteTx(id) {
-    showConfirm('ยืนยันการลบ', 'ต้องการลบรายการนี้?').then(function(ok) {
+    showConfirm('ยืนยันการลบ', 'ต้องการลบรายการนี้?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('deleteFundTransaction', { txId: id }, function(r) {
         if (r && r.success) { showToast('ลบแล้ว', 'success'); loadFund(); }

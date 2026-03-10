@@ -544,7 +544,7 @@
   /* ── Delete ── */
   function deleteQuot(id){
     if (typeof showConfirm === 'function') {
-      showConfirm('ลบใบเสนอราคา', 'ต้องการลบใบเสนอราคานี้?').then(function(ok){
+      showConfirm('ลบใบเสนอราคา', 'ต้องการลบใบเสนอราคานี้?', {danger:true, confirmText:'ลบ'}).then(function(ok){
         if (!ok) return;
         doDelete(id);
       });

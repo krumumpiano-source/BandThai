@@ -284,7 +284,7 @@
   }
 
   function deleteJob(jobId) {
-    showConfirm('ลบงานนอก','ยืนยันลบงานนี้? ข้อมูลจะหายถาวร').then(function(ok){
+    showConfirm('ลบงานนอก','ยืนยันลบงานนี้? ข้อมูลจะหายถาวร', {danger:true, confirmText:'ลบ'}).then(function(ok){
       if (!ok) return;
       apiCall('deleteExternalJob',{jobId:jobId},function(r){
         if(r&&r.success){showToast('ลบแล้ว','success');loadJobs();}
@@ -350,7 +350,7 @@
   }
 
   function delPayout(id){
-    showConfirm('ลบรายการ','ยืนยันลบ?').then(function(ok){
+    showConfirm('ลบรายการ','ยืนยันลบ?', {danger:true, confirmText:'ลบ'}).then(function(ok){
       if(!ok) return;
       apiCall('deleteExternalPayout',{payoutId:id},function(r){
         if(r&&r.success){showToast('ลบแล้ว','success');loadPayouts();}

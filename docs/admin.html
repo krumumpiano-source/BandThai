@@ -568,7 +568,7 @@
   }
 
   function deleteUser(id) {
-    showConfirm('ลบผู้ใช้งาน?', 'คุณแน่ใจที่จะลบผู้ใช้งานนี้?').then(function(ok) {
+    showConfirm('ลบผู้ใช้งาน?', 'คุณแน่ใจที่จะลบผู้ใช้งานนี้?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('deleteUser', { userId: id }, function(r) {
         if (r && r.success) { showToast(t('msg_deleted'), 'success'); loadUsers(); }
@@ -704,7 +704,7 @@
   }
 
   function deletePromoCode(id) {
-    showConfirm('ลบ Promo Code', 'ต้องการลบ Promo Code นี้?').then(function(ok) {
+    showConfirm('ลบ Promo Code', 'ต้องการลบ Promo Code นี้?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('deletePromoCode', { id: id }, function(r) {
         if (r && r.success) { showToast('ลบสำเร็จ', 'success'); loadPromoCodes(); }
@@ -1216,7 +1216,7 @@
   }
 
   function adminDeleteBand(bandId, bandName) {
-    showConfirm('ลบวง "' + bandName + '"?', 'ข้อมูลวง สมาชิก เพลง ตารางงานทั้งหมดในวงนี้จะถูกลบ ดำเนินการต่อ?').then(function(ok) {
+    showConfirm('ลบวง "' + bandName + '"?', 'ข้อมูลวง สมาชิก เพลง ตารางงานทั้งหมดในวงนี้จะถูกลบ ดำเนินการต่อ?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('adminDeleteBand', { bandId: bandId }, function(r) {
         if (r && r.success) {
