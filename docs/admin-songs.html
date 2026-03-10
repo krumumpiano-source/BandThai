@@ -30,8 +30,12 @@
     /* ── Table ── */
     .song-table{width:100%;border-collapse:collapse;font-size:14px;table-layout:auto}
     .song-table th{position:sticky;top:0;background:var(--premium-white);padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--premium-text-muted);border-bottom:2px solid var(--premium-border);white-space:nowrap;z-index:2;user-select:none}
-    .song-table th .sort-icon{font-size:11px;opacity:0.5;margin-left:2px}
-    .song-table th[style*="color"]:not([style*="color:''"]) .sort-icon{opacity:1}
+    .song-table th.sortable{cursor:pointer;transition:color .15s}
+    .song-table th.sortable:hover{color:var(--premium-text)}
+    .song-table th .sort-icon{display:inline-block;font-size:14px;margin-left:4px;opacity:0.3;transition:opacity .15s;font-style:normal}
+    .song-table th.sortable:hover .sort-icon{opacity:0.65}
+    .song-table th.sort-active{color:var(--premium-accent,#f0a500) !important}
+    .song-table th.sort-active .sort-icon{opacity:1 !important;font-size:12px}
     .song-table td{padding:9px 12px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
     .song-table tr:hover td{background:var(--premium-off-white)}
     .td-name{font-weight:700;color:var(--premium-text);max-width:250px;overflow:hidden;text-overflow:ellipsis}
@@ -354,12 +358,12 @@
       <table class="song-table">
         <thead>
           <tr>
-            <th id="th-name" onclick="sortBy('name')" style="cursor:pointer" title="คลิกเพื่อเรียง">ชื่อเพลง <span class="sort-icon">↕</span></th>
-            <th id="th-artist" onclick="sortBy('artist')" style="cursor:pointer" title="คลิกเพื่อเรียง">ศิลปิน <span class="sort-icon">↕</span></th>
+            <th id="th-name" class="sortable" onclick="sortBy('name')" title="เรียงตามชื่อเพลง">ชื่อเพลง<i class="sort-icon">↕</i></th>
+            <th id="th-artist" class="sortable" onclick="sortBy('artist')" title="เรียงตามศิลปิน">ศิลปิน<i class="sort-icon">↕</i></th>
             <th class="hide-md">คีย์</th>
-            <th id="th-bpm" class="hide-md" onclick="sortBy('bpm')" style="cursor:pointer" title="คลิกเพื่อเรียง">BPM <span class="sort-icon">↕</span></th>
-            <th class="hide-md">นักร้อง</th>
-            <th class="hide-sm">ยุค</th>
+            <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm')" title="เรียงตาม BPM">BPM<i class="sort-icon">↕</i></th>
+            <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer')" title="เรียงตามนักร้อง">นักร้อง<i class="sort-icon">↕</i></th>
+            <th id="th-era" class="sortable hide-sm" onclick="sortBy('era')" title="เรียงตามยุค">ยุค<i class="sort-icon">↕</i></th>
             <th class="hide-lg">แนวเพลง</th>
             <th class="hide-lg">อารมณ์</th>
             <th style="text-align:center">จัดการ</th>
@@ -760,18 +764,18 @@ function applySortToFiltered() {
 }
 
 function renderSortHeaders() {
-  var cols = ['name', 'artist', 'bpm'];
+  var cols = ['name', 'artist', 'bpm', 'singer', 'era'];
   cols.forEach(function(col) {
     var th = document.getElementById('th-' + col);
     if (!th) return;
-    var span = th.querySelector('.sort-icon');
-    if (!span) return;
+    var icon = th.querySelector('.sort-icon');
+    if (!icon) return;
     if (_sortKey === col) {
-      span.textContent = _sortAsc ? '▲' : '▼';
-      th.style.color = 'var(--premium-accent, #f0a500)';
+      icon.textContent = _sortAsc ? '▲' : '▼';
+      th.classList.add('sort-active');
     } else {
-      span.textContent = '↕';
-      th.style.color = '';
+      icon.textContent = '↕';
+      th.classList.remove('sort-active');
     }
   });
 }
