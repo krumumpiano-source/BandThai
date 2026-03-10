@@ -1245,6 +1245,9 @@ function renderPage() {
       // Batch add to playlist mode
       if (typeof _plAddMode !== 'undefined' && _plAddMode) {
         var plSel = (typeof _plSelectedForAdd !== 'undefined' && _plSelectedForAdd[s.id || s.songId || '']);
+        // song manager เห็น ✏️ เฉพาะตอนอยู่ใน band library + owned songs เท่านั้น
+        // (global library ใช้ updateSong → band_songs ซึ่งไม่ถูกต้องสำหรับ global songs)
+        var _canInlineEdit = _isSongManager && _currentSource === 'band' && (s.libType || 'owned') === 'owned';
         buf.push(
           '<div class="result-item' + (plSel ? ' pl-selected' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" style="cursor:pointer" onclick="(function(el){var si=el.getAttribute(\'data-index\');var sd=_pageData[parseInt(si,10)];if(sd){togglePlSelection(sd.id||sd.songId||\'\',el)}})(this)">' +
           '<div class="pl-cb"><input type="checkbox"' + (plSel ? ' checked' : '') + ' onclick="event.stopPropagation()" onchange="(function(cb){var el=cb.closest(\'.result-item\');var si=el.getAttribute(\'data-index\');var sd=_pageData[parseInt(si,10)];if(sd)togglePlSelection(sd.id||sd.songId||\'\',el)})(this)"></div>' +
@@ -1252,7 +1255,7 @@ function renderPage() {
           '<div class="song-title">' + titleHtml + newTag + '</div>' +
           artistHtml + metaHtml +
           '</div>' +
-          (_isSongManager ? '<div class="song-actions" onclick="event.stopPropagation()"><span class="song-mgr-edit-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แก้ไขเพลง" style="font-size:15px">✏️</span></div>' : '') +
+          (_canInlineEdit ? '<div class="song-actions" onclick="event.stopPropagation()"><span class="song-mgr-edit-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แก้ไขเพลง" style="font-size:15px">✏️</span></div>' : '') +
           '</div>'
         );
       } else if (_selectMode) {
@@ -1306,32 +1309,18 @@ function renderPage() {
           );
         }
       } else {
-        // Global source — song managers get direct edit button, others get suggest
-        if (_isSongManager) {
-          buf.push(
-            '<div class="result-item" data-index="' + idx + '">' +
-            '<div class="result-item-left">' +
-            '<div class="song-title">' + titleHtml + newTag + '</div>' +
-            artistHtml + metaHtml +
-            '</div>' +
-            '<div class="song-actions">' +
-            '<span class="song-mgr-edit-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แก้ไขเพลง">✏️</span>' +
-            '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-            '</div></div>'
-          );
-        } else {
-          buf.push(
-            '<div class="result-item" data-index="' + idx + '">' +
-            '<div class="result-item-left">' +
-            '<div class="song-title">' + titleHtml + newTag + '</div>' +
-            artistHtml + metaHtml +
-            '</div>' +
-            '<div class="song-actions">' +
-            '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02">\u{1F4A1}</span>' +
-            '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
-            '</div></div>'
-          );
-        }
+        // Global source — suggest for everyone (updateSong targets band_songs so cannot edit global songs)
+        buf.push(
+          '<div class="result-item" data-index="' + idx + '">' +
+          '<div class="result-item-left">' +
+          '<div class="song-title">' + titleHtml + newTag + '</div>' +
+          artistHtml + metaHtml +
+          '</div>' +
+          '<div class="song-actions">' +
+          '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02">\u{1F4A1}</span>' +
+          '<span class="add-song-btn" data-index="' + idx + '" title="\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e25\u0e34\u0e2a">\u2795</span>' +
+          '</div></div>'
+        );
       }
     }
     html = '<div class="result-columns">' + buf.join('') + '</div>';
@@ -1392,23 +1381,10 @@ document.addEventListener("click", function (e) {
     var eid = e.target.getAttribute("data-songid");
     var elib = e.target.getAttribute("data-libtype") || 'owned';
     if (eid) {
-      // In playlist mode: use inline edit modal to avoid losing playlist context
-      if (typeof _plAddMode !== 'undefined' && _plAddMode) {
-        var eidx = parseInt(e.target.getAttribute("data-index") || '-1', 10);
-        // Find idx from data-index or scan _pageData
-        var foundIdx = -1;
-        for (var pi = 0; pi < _pageData.length; pi++) {
-          if ((_pageData[pi].id || _pageData[pi].songId || '') === eid) { foundIdx = pi; break; }
-        }
-        if (foundIdx === -1 && !isNaN(eidx)) foundIdx = eidx;
-        openDirectEditModal(eid, foundIdx);
-        return;
-      }
       if (elib === 'ref') {
         // Detach ref → create band-owned copy → edit
         e.target.style.opacity = '0.5';
         e.target.style.pointerEvents = 'none';
-        // Save pagination position before navigating
         try { sessionStorage.setItem('songs_returnPage', currentPage); } catch(ex) {}
         apiCall('detachRefSong', { songId: eid }, function(r) {
           if (r && r.success && r.newSongId) {
@@ -1421,7 +1397,6 @@ document.addEventListener("click", function (e) {
           }
         });
       } else {
-        // Save pagination position before navigating
         try { sessionStorage.setItem('songs_returnPage', currentPage); } catch(ex) {}
         window.location.href = 'edit-song.html?songId=' + eid;
       }
