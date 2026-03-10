@@ -395,6 +395,97 @@
   }
 })();
 
+// ── Global Band Presence Tracker ─────────────────────────────────────
+// Broadcasts current user + page to 'presence-band-{bandId}' realtime channel.
+// Admin dashboard subscribes to this to see who is online.
+(function() {
+  var PAGE_LABELS = {
+    'dashboard':          '🏠 หน้าหลัก',
+    'admin-songs':        '🎵 จัดการเพลง',
+    'songs':              '🎵 คลังเพลง',
+    'schedule':           '📅 ตารางงาน',
+    'attendance-payroll': '💳 เบิกเงิน',
+    'statistics':         '📊 สถิติ',
+    'band-info':          '🎸 ข้อมูลวง',
+    'equipment':          '🎸 อุปกรณ์',
+    'external-payout':    '💼 งานนอก',
+    'song-insights':      '📈 วิเคราะห์เพลง',
+    'quotation':          '📃 ใบเสนอราคา',
+    'setlist':            '📋 เซ็ตลิสต์',
+    'members':            '👥 สมาชิก'
+  };
+
+  function _getPageLabel() {
+    var path = (window.location.pathname || '').replace(/.*\//, '').replace(/\.html.*$/, '');
+    return PAGE_LABELS[path] || ('📄 ' + path);
+  }
+
+  var _globalPresenceCh = null;
+  var _gpActivity = _getPageLabel();
+
+  function initGlobalPresence() {
+    if (!window._sb) return;
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) return;
+    var userId = localStorage.getItem('userId') || '';
+    if (!userId) return;
+    var userName = localStorage.getItem('userName') || localStorage.getItem('userNickname') || 'ไม่ทราบชื่อ';
+    var userRole = localStorage.getItem('userRole') || 'member';
+    var channelName = 'presence-band-' + bandId;
+
+    _globalPresenceCh = window._sb.channel(channelName, {
+      config: { presence: { key: userId } }
+    });
+    _globalPresenceCh
+      .on('presence', { event: 'sync' }, function() { if (window._onGlobalPresenceSync) window._onGlobalPresenceSync(); })
+      .on('presence', { event: 'join' }, function() { if (window._onGlobalPresenceSync) window._onGlobalPresenceSync(); })
+      .on('presence', { event: 'leave' }, function() { if (window._onGlobalPresenceSync) window._onGlobalPresenceSync(); })
+      .subscribe(function(status) {
+        if (status === 'SUBSCRIBED') {
+          _globalPresenceCh.track({
+            userId: userId, name: userName, role: userRole,
+            page: _getPageLabel(), activity: _gpActivity,
+            joinedAt: new Date().toISOString()
+          });
+        }
+      });
+
+    window.addEventListener('beforeunload', function() {
+      if (_globalPresenceCh) _globalPresenceCh.untrack();
+    });
+    window._globalPresenceCh = _globalPresenceCh;
+  }
+
+  // Update activity text (called by individual pages)
+  function updateGlobalActivity(activity) {
+    _gpActivity = activity;
+    if (_globalPresenceCh) {
+      _globalPresenceCh.track({
+        userId: localStorage.getItem('userId') || '',
+        name: localStorage.getItem('userName') || localStorage.getItem('userNickname') || 'ไม่ทราบชื่อ',
+        role: localStorage.getItem('userRole') || 'member',
+        page: _getPageLabel(), activity: activity,
+        joinedAt: new Date().toISOString()
+      });
+    }
+  }
+  window.updateGlobalActivity = updateGlobalActivity;
+
+  // Auto-init after supabase-api loads (poll up to 5 sec)
+  var _gpTries = 0;
+  function _tryInitGP() {
+    var bandId = localStorage.getItem('bandId') || '';
+    var userId = localStorage.getItem('userId') || '';
+    if (window._sb && bandId && userId) { initGlobalPresence(); return; }
+    if (++_gpTries < 50) setTimeout(_tryInitGP, 100);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(_tryInitGP, 500); });
+  } else {
+    setTimeout(_tryInitGP, 500);
+  }
+})();
+
 // ── Service Worker Registration ───────────────────────────────────────
 (function () {
   if (!('serviceWorker' in navigator)) return;
