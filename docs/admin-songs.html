@@ -1482,8 +1482,7 @@ function updateArtistDatalist() {
   dl.innerHTML = _artistList.map(function(a) {
     return '<option value="' + esc(a.name) + '">';
   }).join('');
-  // Build autocomplete list items (will render on open/filter)
-  buildArtistACList();
+  // Note: filter autocomplete (buildArtistACList) uses _allSongs, not _artistList
 }
 
 // Auto-save artist name to master table when saving song
@@ -1516,19 +1515,24 @@ function buildArtistACList(filterText) {
   var list = document.getElementById('acArtistList');
   if (!list) return;
   var q = (filterText || '').toLowerCase().trim();
-  var html = '<div class="ac-item ac-item-all" data-val="">ทุกศิลปิน</div>';
-  var matched = _artistList.filter(function(a) {
-    return !q || a.name.toLowerCase().indexOf(q) >= 0;
+  // Use artists from songs currently in library (not master table, to avoid orphan entries)
+  var seen = {};
+  var artists = [];
+  _allSongs.forEach(function(s) {
+    var n = (s.artist || '').trim();
+    if (n && !seen[n.toLowerCase()]) { seen[n.toLowerCase()] = true; artists.push(n); }
   });
+  artists.sort(function(a, b) { return a.localeCompare(b, 'th'); });
+  var matched = q ? artists.filter(function(n) { return n.toLowerCase().indexOf(q) >= 0; }) : artists;
+  var html = '<div class="ac-item ac-item-all" data-val="">ทุกศิลปิน</div>';
   for (var i = 0; i < matched.length; i++) {
-    html += '<div class="ac-item" data-val="' + esc(matched[i].name) + '">' + esc(matched[i].name) + '</div>';
+    html += '<div class="ac-item" data-val="' + esc(matched[i]) + '">' + esc(matched[i]) + '</div>';
   }
   if (matched.length === 0 && q) {
     html += '<div class="ac-item" style="color:var(--premium-text-muted);pointer-events:none">ไม่พบศิลปิน</div>';
   }
   list.innerHTML = html;
   _acActiveIdx = -1;
-  // Attach click handlers
   var items = list.querySelectorAll('.ac-item[data-val]');
   for (var j = 0; j < items.length; j++) {
     items[j].addEventListener('click', function() {
