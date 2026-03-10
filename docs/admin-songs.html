@@ -1024,6 +1024,7 @@ function submitAddSong() {
       closeAddModal();
       showToast('✅ เพิ่มเพลง "' + name + '" แล้ว', 'success');
       clearSongsCache();
+      filterTable.__keepPage = true;
       loadSongs();
     } else {
       showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
