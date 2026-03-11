@@ -206,6 +206,12 @@
     .tr-btn:active{background:var(--bg4)}
     .tr-reset{display:block;text-align:center;margin-top:12px;font-size:0.82rem;color:var(--text2);cursor:pointer;text-decoration:underline}
 
+    /* bpm modal */
+    .bpm-display{text-align:center;padding:12px 0}
+    .bpm-display input{background:transparent;border:none;border-bottom:2px solid var(--gold);color:var(--gold);font-size:2.8rem;font-weight:700;text-align:center;width:140px;outline:none;font-family:inherit;letter-spacing:2px;-moz-appearance:textfield}
+    .bpm-display input::-webkit-inner-spin-button,.bpm-display input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+    .bpm-label{text-align:center;font-size:0.82rem;color:var(--text2);margin-top:-4px;margin-bottom:16px}
+
     /* note modal */
     #noteModal textarea{width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:var(--radius-sm);padding:10px 12px;font-size:0.97rem;font-family:inherit;outline:none;resize:none;height:90px;user-select:text;-webkit-user-select:text}
     #noteModal textarea:focus{border-color:var(--gold)}
@@ -411,7 +417,7 @@
         <div class="key-hint" id="keyHint">แตะเปลี่ยนคีย์</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center">
-        <div id="nowBpm" onclick="openEditSong(_current, true)" style="cursor:pointer" title="แตะเพื่อแก้ไข BPM"></div>
+        <div id="nowBpm" onclick="openBpm()" style="cursor:pointer" title="แตะเพื่อแก้ไข BPM"></div>
         <div class="key-hint">แตะแก้ BPM</div>
       </div>
       <div id="nowSinger"></div>
@@ -529,6 +535,27 @@
     <span class="tr-reset" onclick="resetTranspose()">คีย์เดิม</span>
     <div class="modal-actions" style="margin-top:20px">
       <button class="modal-btn secondary" onclick="closeTranspose()">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BPM MODAL ── -->
+<div class="modal-backdrop" id="bpmModal">
+  <div class="modal-sheet">
+    <h3>🎵 ปรับความเร็ว (BPM)</h3>
+    <div class="bpm-display"><input id="bpmDisplay" type="number" min="0" max="999" value="0"></div>
+    <div class="bpm-label" id="bpmLabel"></div>
+    <div class="transpose-btns">
+      <button class="tr-btn" onclick="adjustBpm(-5)">−5</button>
+      <button class="tr-btn" onclick="adjustBpm(-1)">−1</button>
+      <button class="tr-btn" onclick="adjustBpm(1)">+1</button>
+      <button class="tr-btn" onclick="adjustBpm(5)">+5</button>
+    </div>
+    <span class="tr-reset" onclick="resetBpm()">ค่าเดิม</span>
+    <div id="bpmHint" class="edit-hint" style="text-align:center;margin-top:10px"></div>
+    <div class="modal-actions" style="margin-top:16px">
+      <button class="modal-btn secondary" onclick="closeBpm()">ยกเลิก</button>
+      <button class="modal-btn primary" onclick="submitBpm()">บันทึก</button>
     </div>
   </div>
 </div>
@@ -824,7 +851,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (_modified) { e.preventDefault(); e.returnValue = ''; }
   });
   // touch close modals
-  ['transposeModal','noteModal','editSongModal','clipModal','qrModal'].forEach(function(id) {
+  ['transposeModal','noteModal','editSongModal','bpmModal','clipModal','qrModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
       if (e.target === this) {
         this.classList.remove('show');
@@ -1865,6 +1892,62 @@ function submitNote() {
 
 // ─────────────────────────────────────────────────────────────────
 //  EDIT KEY / BPM MODAL
+// ── BPM Modal (transpose-style) ──────────────────────────────────
+var _bpmIdx = -1;
+var _bpmOriginal = 0;
+
+function openBpm() {
+  var idx = _current;
+  var s = _playlist[idx];
+  if (!s) return;
+  _bpmIdx = idx;
+  _bpmOriginal = parseInt(s.bpm, 10) || 0;
+  var el = document.getElementById('bpmDisplay');
+  el.value = _bpmOriginal || '';
+  document.getElementById('bpmLabel').textContent = 'BPM เดิม: ' + (_bpmOriginal || '—');
+  var role = localStorage.getItem('userRole') || 'member';
+  var isAdmin = (role === 'admin' || role === 'manager');
+  document.getElementById('bpmHint').textContent = isAdmin
+    ? '✅ บันทึกลงคลังเพลงอัตโนมัติ' : 'ℹ️ แก้เฉพาะรอบนี้';
+  document.getElementById('bpmModal').classList.add('show');
+  setTimeout(function(){ el.focus(); el.select(); }, 200);
+}
+
+function adjustBpm(delta) {
+  var el = document.getElementById('bpmDisplay');
+  var v = parseInt(el.value, 10) || 0;
+  v = Math.max(0, Math.min(999, v + delta));
+  el.value = v;
+}
+
+function resetBpm() {
+  document.getElementById('bpmDisplay').value = _bpmOriginal || '';
+}
+
+function closeBpm() {
+  document.getElementById('bpmModal').classList.remove('show');
+  _bpmIdx = -1;
+}
+
+function submitBpm() {
+  if (_bpmIdx < 0) return;
+  var s = _playlist[_bpmIdx];
+  if (!s) { closeBpm(); return; }
+  var newBpm = parseInt(document.getElementById('bpmDisplay').value, 10) || 0;
+  var curKey = s._key || s.key || '';
+  s.bpm = newBpm;
+  _modified = true;
+  broadcastEvent('edit_keybpm', { idx: _bpmIdx, key: curKey, bpm: newBpm });
+  if (_bpmIdx === _current) renderNowPlaying();
+  renderSongList();
+  var role = localStorage.getItem('userRole') || 'member';
+  if (role === 'admin' || role === 'manager') {
+    _saveKeyBpmToLibrary(s.name, curKey, newBpm);
+  }
+  closeBpm();
+  showToast('🎵 BPM → ' + newBpm);
+}
+
 // ─────────────────────────────────────────────────────────────────
 var _editSongIdx = -1;
 var _editBpmOnly = false;
