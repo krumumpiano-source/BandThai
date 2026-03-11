@@ -657,15 +657,24 @@
     if (!el) return;
     var html = '';
     var s = _qCorrect;
-    // Always show stage 0 hint
-    if (s.bpm) html += '<span>BPM: ' + s.bpm + '</span>';
-    if (_qHintStage >= 1 && s.key) html += '<span>คีย์: ' + esc(s.key) + '</span>';
-    if (_qHintStage >= 2 && s.artist) html += '<span>ศิลปิน: ' + esc(s.artist) + '</span>';
-    if (_qHintStage >= 3) {
-      var name = s.name || '';
+    var name = s.name || '';
+    // Stage 0: artist (most useful first clue)
+    if (s.artist) html += '<span>ศิลปิน: ' + esc(s.artist) + '</span>';
+    // Stage 1: first 2 chars of song name
+    if (_qHintStage >= 1) {
       html += '<span>เริ่มด้วย: ' + esc(name.substring(0, 2)) + '...</span>';
     }
-    if (!html) html = '<span>ไม่มีคำใบ้เพิ่มเติม</span>';
+    // Stage 2: BPM + Key
+    if (_qHintStage >= 2) {
+      if (s.bpm) html += '<span>BPM: ' + s.bpm + '</span>';
+      if (s.key) html += '<span>คีย์: ' + esc(s.key) + '</span>';
+    }
+    // Stage 3: half the song name
+    if (_qHintStage >= 3) {
+      var half = Math.ceil(name.length / 2);
+      html += '<span>' + esc(name.substring(0, half)) + '...</span>';
+    }
+    if (!html) html = '<span>🤔 ลองเดาดู!</span>';
     el.innerHTML = html;
   }
 
