@@ -411,7 +411,7 @@
         <div class="key-hint" id="keyHint">แตะเปลี่ยนคีย์</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:center">
-        <div id="nowBpm" onclick="openEditSong(_current)" style="cursor:pointer" title="แตะเพื่อแก้ไข BPM"></div>
+        <div id="nowBpm" onclick="openEditSong(_current, true)" style="cursor:pointer" title="แตะเพื่อแก้ไข BPM"></div>
         <div class="key-hint">แตะแก้ BPM</div>
       </div>
       <div id="nowSinger"></div>
@@ -550,10 +550,10 @@
 <!-- ── EDIT KEY/BPM MODAL ── -->
 <div class="modal-backdrop" id="editSongModal">
   <div class="modal-sheet">
-    <h3>🎹 แก้คีย์ / BPM</h3>
+    <h3 id="editSongTitle">🎹 แก้คีย์ / BPM</h3>
     <div id="editSongName" style="font-size:0.85rem;color:var(--gold);margin-bottom:10px"></div>
     <div class="edit-row">
-      <div style="flex:1"><label>คีย์</label><input id="editKeyInput" placeholder="เช่น C, 2#, 3b" autocomplete="off"></div>
+      <div style="flex:1" id="editKeyWrap"><label>คีย์</label><input id="editKeyInput" placeholder="เช่น C, 2#, 3b" autocomplete="off"></div>
       <div style="flex:1"><label>BPM</label><input id="editBpmInput" type="number" min="0" max="300" placeholder="เช่น 120"></div>
     </div>
     <div id="editSongHint" class="edit-hint"></div>
@@ -1867,21 +1867,26 @@ function submitNote() {
 //  EDIT KEY / BPM MODAL
 // ─────────────────────────────────────────────────────────────────
 var _editSongIdx = -1;
+var _editBpmOnly = false;
 
-function openEditSong(idx) {
+function openEditSong(idx, bpmOnly) {
   _editSongIdx = idx;
+  _editBpmOnly = !!bpmOnly;
   var s = _playlist[idx];
   if (!s) return;
   document.getElementById('editSongName').textContent = '🎵 ' + s.name;
   document.getElementById('editKeyInput').value = s._key || s.key || '';
   document.getElementById('editBpmInput').value = s.bpm || '';
+  // Show/hide key field
+  document.getElementById('editKeyWrap').style.display = _editBpmOnly ? 'none' : '';
+  document.getElementById('editSongTitle').textContent = _editBpmOnly ? '🎵 แก้ความเร็ว (BPM)' : '🎹 แก้คีย์ / BPM';
   var role = localStorage.getItem('userRole') || 'member';
   var isAdmin = (role === 'admin' || role === 'manager');
   document.getElementById('editSongHint').textContent = isAdmin
     ? '✅ แอดมิน/ผู้จัดการ — บันทึกลงคลังเพลงอัตโนมัติ'
     : 'ℹ️ แก้ไขเฉพาะ Live Mode นี้เท่านั้น';
   document.getElementById('editSongModal').classList.add('show');
-  setTimeout(function(){ document.getElementById('editKeyInput').focus(); }, 200);
+  setTimeout(function(){ document.getElementById('editBpmInput').focus(); }, 200);
 }
 
 function closeEditSong() {
@@ -1893,12 +1898,14 @@ function submitEditSong() {
   if (_editSongIdx < 0) return;
   var s = _playlist[_editSongIdx];
   if (!s) { closeEditSong(); return; }
-  var newKey = document.getElementById('editKeyInput').value.trim();
+  var newKey = _editBpmOnly ? (s._key || s.key || '') : document.getElementById('editKeyInput').value.trim();
   var newBpm = parseInt(document.getElementById('editBpmInput').value, 10) || 0;
 
   // Update playlist in memory
-  s._key = newKey ? formatKey(newKey) : '';
-  s.key = newKey;
+  if (!_editBpmOnly) {
+    s._key = newKey ? formatKey(newKey) : '';
+    s.key = newKey;
+  }
   s.bpm = newBpm;
   _modified = true;
 
