@@ -725,6 +725,7 @@ var _syncReceived     = false; // have we received a state_sync after joining?
 var _syncRetryCount   = 0;
 var _syncRetryTimer   = null;
 var _periodicSyncTimer = null;
+var _isSyncLeader     = false; // true = this device is earliest joiner & broadcast authority
 
 // ── Drag-reorder state ────────────────────────────────────────────
 var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
@@ -2082,7 +2083,8 @@ function endBreak() {
   var btn = document.getElementById('endBreakBtn');
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
-  var songs = _playlist.map(function(s) {
+  var snapshotPlaylist = _playlist.slice(); // snapshot ก่อน async call ป้องกัน Realtime เขียนทับ
+  var songs = snapshotPlaylist.map(function(s) {
     return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
   });
   apiCall('savePlaylistHistory', {
@@ -2100,12 +2102,13 @@ function endBreak() {
       // สำเร็จแล้ว — ล็อคปุ่ม ไม่ให้กดซ้ำ
       if (btn) { btn.textContent = 'บันทึกแล้ว ✓'; }
     }
-    _showClipModal();
+    _showClipModal(snapshotPlaylist);
   });
 }
 
-function _showClipModal() {
-  var lines = _playlist.filter(function(s){ return !s._skipped; }).map(function(s, i) {
+function _showClipModal(overrideList) {
+  var list = overrideList || _playlist;
+  var lines = list.filter(function(s){ return !s._skipped; }).map(function(s, i) {
     var parts = [(i + 1) + '.', s.name];
     if (s._key && s._key !== s.key) parts.push('[คีย์ ' + s._key + ']');
     else if (s._key) parts.push('[' + s._key + ']');
@@ -2122,7 +2125,7 @@ function _showClipModal() {
   // Show request songs → library section (admin/manager only)
   var role = localStorage.getItem('userRole') || 'member';
   var isAdmin = (role === 'admin' || role === 'manager');
-  var reqSongs = _playlist.filter(function(s) { return s._isRequest && !s._skipped; });
+  var reqSongs = list.filter(function(s) { return s._isRequest && !s._skipped; });
   var section = document.getElementById('reqToLibrarySection');
 
   if (isAdmin && reqSongs.length > 0) {
@@ -2353,6 +2356,7 @@ function initRealtime() {
         // This prevents all 4 devices broadcasting state_sync simultaneously
         var delay = Math.min(200, 50 + Math.random() * 150);
         setTimeout(function() {
+          _isSyncLeader = true; // I'm the senior device — I own periodic broadcast
           broadcastEvent('state_sync', getState());
         }, delay);
       }
@@ -2473,7 +2477,8 @@ function initRealtime() {
       }
 
       _playlist = d.playlist;
-      _current  = d.current || 0;
+      _current  = typeof d.current === 'number' ? d.current : 0;
+      _isSyncLeader = false; // someone else is senior — they own broadcast
       _modified = true;
       _resetHbdTracking();
       renderNowPlaying();
@@ -2492,6 +2497,7 @@ function initRealtime() {
       if (status === 'SUBSCRIBED') {
         ind.className = 'connected';
         // Request state with retry (handles late joiners + reconnections)
+        _isSyncLeader = false; // reset on (re)connect — will be re-elected via request_state flow
         _syncReceived = false;
         _syncRetryCount = 0;
         requestStateWithRetry();
@@ -2535,6 +2541,7 @@ function startPeriodicSync() {
   // Every 30s, all non-guest devices broadcast their state.
   // Receivers use smart diff — only update if state has actually changed.
   _periodicSyncTimer = setInterval(function() {
+    if (!_isSyncLeader) return; // only the sync leader (earliest joiner) broadcasts
     if (_playlist.length > 0 && _channel) {
       broadcastEvent('state_sync', getState());
     }
