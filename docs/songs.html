@@ -645,7 +645,7 @@ html{scroll-behavior:smooth}
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">
       <button onclick="loadInitial(true)" title="โหลดใหม่" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">🔄</button>
       <button id="plAddModeBtn" onclick="togglePlAddMode()" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(56,161,105,.3)">&#x2611;&#xFE0F; &#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe2b;&#xe25;&#xe32;&#xe22;&#xe40;&#xe1e;&#xe25;&#xe07;</button>
-      <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
+      <button id="selectModeBtn" onclick="toggleSelectMode()" data-tip-below="เลือกหลายเพลงได้พร้อมกัน แล้วกด ➕ เพิ่มในคลังวง" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
       <!-- Live Button -->
       <button id="liveModeBtn" onclick="goLiveMode()" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
         <span style="font-size:18px;line-height:1">🎤</span>
@@ -1312,10 +1312,12 @@ function renderPage() {
         }
       } else {
         // Global source — suggest for everyone (updateSong targets band_songs so cannot edit global songs)
+        var isInBand = _bandLibraryIds && !!_bandLibraryIds[songId];
+        var inBandBadge = isInBand ? '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span>' : '';
         buf.push(
           '<div class="result-item" data-index="' + idx + '">' +
           '<div class="result-item-left">' +
-          '<div class="song-title">' + titleHtml + newTag + '</div>' +
+          '<div class="song-title">' + titleHtml + newTag + inBandBadge + '</div>' +
           artistHtml + metaHtml +
           '</div>' +
           '<div class="song-actions">' +
@@ -1723,6 +1725,14 @@ window.onload = function() {
   if (_addWrap && _smBandId) _addWrap.style.display = 'block';
   var _libTabs = document.getElementById('libTabs');
   if (_libTabs && _smBandId) _libTabs.style.display = 'flex';
+
+  // Preload band library so badges show as soon as songs render
+  if (_smBandId) loadBandLibrary();
+
+  // Auto-enter select mode from ?selectMode=1 link (e.g. from add-song.html banner)
+  if (new URLSearchParams(location.search).get('selectMode') === '1' && _smBandId) {
+    enterSelectMode();
+  }
 };
 </script>
 
