@@ -352,12 +352,12 @@
           <div class="card" style="margin-bottom:var(--spacing-xl)">
             <div class="card-header"><h3 class="card-title" data-i18n="quickActions">ทางลัด</h3></div>
             <div class="quick-actions">
-              <button class="quick-btn" onclick="nav('schedule')">📅 <span data-i18n="nav_schedule">ตารางงาน</span></button>
-              <button class="quick-btn" onclick="nav('attendance-payroll')">💳 <span data-i18n="nav_payroll">เบิกเงิน</span></button>
-              <button class="quick-btn" onclick="nav('quotation')">📃 <span data-i18n="nav_quotation">ใบเสนอราคา</span></button>
-              <button class="quick-btn" onclick="nav('band-info')">🎵 <span data-i18n="nav_bandInfo">ข้อมูลวง</span></button>
-              <button class="quick-btn" onclick="nav('songs')">🎼 <span data-i18n="nav_songs">รายการเพลง</span></button>
-              <button class="quick-btn" onclick="nav('equipment')">🎸 <span data-i18n="nav_equipment">อุปกรณ์</span></button>
+              <button class="quick-btn" onclick="nav('schedule')" data-tip="ปฏิทินงานและตารางนัด">📅 <span data-i18n="nav_schedule">ตารางงาน</span></button>
+              <button class="quick-btn" onclick="nav('attendance-payroll')" data-tip="เช็คชื่อเข้างานและเบิกจ่าย">💳 <span data-i18n="nav_payroll">เบิกเงิน</span></button>
+              <button class="quick-btn" onclick="nav('quotation')" data-tip="สร้างและส่งใบเสนอราคา">📃 <span data-i18n="nav_quotation">ใบเสนอราคา</span></button>
+              <button class="quick-btn" onclick="nav('band-info')" data-tip="สมาชิกวงและช่องทางติดต่อ">🎵 <span data-i18n="nav_bandInfo">ข้อมูลวง</span></button>
+              <button class="quick-btn" onclick="nav('songs')" data-tip="คลังเพลงและเซ็ตลิสต์">🎼 <span data-i18n="nav_songs">รายการเพลง</span></button>
+              <button class="quick-btn" onclick="nav('equipment')" data-tip="อุปกรณ์วงและงบซ่อมบำรุง">🎸 <span data-i18n="nav_equipment">อุปกรณ์</span></button>
             </div>
           </div>
           <!-- Finance Summary -->
@@ -372,6 +372,9 @@
       </div>
     </div>
   </main>
+
+  <!-- Floating Help Button -->
+  <a href="user-manual.html" class="fab-help" aria-label="คู่มือใช้งาน">❓<span class="fab-help-label">คู่มือใช้งาน</span></a>
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
@@ -1316,13 +1319,13 @@
     th: {
       managerTitle: '🚀 เริ่มต้นสร้างวงของคุณ',
       memberTitle:  '🎸 เริ่มต้นใช้งาน BandThai',
-      subtitle: function(done, total) { return 'ทำตาม ' + total + ' ขั้นตอนนี้เพื่อเริ่มต้นได้สมบูรณ์ (' + done + '/' + total + ' เสร็จแล้ว)'; },
+      subtitle: function(done, total) { return '✅ ทำเสร็จแล้ว ' + done + '/' + total + ' ขั้นตอน — กดขั้นตอนที่ยังไม่เสร็จเพื่อเริ่มใช้งาน'; },
       dismiss: 'ไม่ต้องแสดงอีก ✕'
     },
     en: {
       managerTitle: '🚀 Set Up Your Band',
       memberTitle:  '🎸 Get Started with BandThai',
-      subtitle: function(done, total) { return 'Complete ' + total + ' steps to get fully set up (' + done + '/' + total + ' done)'; },
+      subtitle: function(done, total) { return '✅ Done ' + done + '/' + total + ' steps — Click any remaining step to get started'; },
       dismiss: 'Don\'t show again ✕'
     }
   };
@@ -1433,9 +1436,9 @@
     document.getElementById('obDismiss').textContent = strings.dismiss;
     fill.style.width = pct + '%';
 
-    cont.innerHTML = steps.map(function(s) {
+    cont.innerHTML = steps.map(function(s, idx) {
       var done = doneMap[s.key] ? ' done' : '';
-      var check = doneMap[s.key] ? '✓' : '';
+      var check = doneMap[s.key] ? '✓' : (idx + 1);
       var isAnchor = s.href.charAt(0) === '#';
       var clickAttr = isAnchor
         ? 'onclick="return obScrollTo(\'' + s.href.slice(1) + '\',\'' + s.key + '\')"'

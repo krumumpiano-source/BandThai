@@ -20,9 +20,22 @@
     .admin-layout{display:grid;grid-template-columns:220px 1fr;gap:var(--spacing-xl)}
     @media(max-width:768px){.admin-layout{grid-template-columns:1fr}}
     .admin-nav{display:flex;flex-direction:column;gap:2px}
+    .a-nav-group-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--premium-text-muted);padding:12px var(--spacing-md) 4px;margin-top:6px;opacity:.7;border-top:1px solid var(--premium-border)}
+    .a-nav-group-title:first-child{border-top:none;margin-top:0;padding-top:4px}
     .a-nav-item{padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);transition:all .15s}
     .a-nav-item.active,.a-nav-item:hover{background:var(--premium-gold);color:#fff}
     .a-panel{display:none}.a-panel.active{display:block}
+    /* Mobile: horizontal pill nav for admin */
+    @media(max-width:768px){
+      .admin-nav-sidebar{display:none}
+      .admin-nav-mobile{display:flex;overflow-x:auto;gap:6px;padding:10px;background:var(--premium-off-white);border-radius:var(--radius-lg);margin-bottom:var(--spacing-md);scrollbar-width:none;-ms-overflow-style:none;flex-wrap:nowrap;border:1px solid var(--premium-border)}
+      .admin-nav-mobile::-webkit-scrollbar{display:none}
+      .admin-nav-mobile .a-nav-item{white-space:nowrap;padding:7px 12px;font-size:var(--text-xs);flex-shrink:0}
+      .admin-nav-mobile .a-nav-group-title{display:none}
+    }
+    @media(min-width:769px){
+      .admin-nav-mobile{display:none}
+    }
     .role-select{font-size:var(--text-sm);padding:4px 8px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md)}
     .danger-zone{border:2px solid #fc8181;border-radius:var(--radius-lg);padding:var(--spacing-xl)}
     .danger-zone h3{color:#c53030;font-size:var(--text-base);margin-bottom:var(--spacing-md)}
@@ -58,20 +71,43 @@
       </div>
       <div class="admin-layout">
         <div>
-          <div class="card">
+          <!-- Mobile horizontal pill nav -->
+          <div class="admin-nav-mobile">
+            <div class="a-nav-item active" onclick="showPanel('bandreqs',this)">🎵 คำขอสร้างวง</div>
+            <div class="a-nav-item" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
+            <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
+            <div class="a-nav-item" onclick="showPanel('subscriptions',this)">💳 Subscriptions</div>
+            <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา</div>
+            <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo</div>
+            <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
+            <div class="a-nav-item" onclick="showPanel('templates',this)">📧 Templates</div>
+            <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
+            <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ ตั้งค่า</div>
+            <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
+            <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
+          </div>
+          <!-- Desktop sidebar nav -->
+          <div class="card admin-nav-sidebar">
             <div class="admin-nav">
+              <div class="a-nav-group-title">👥 ผู้ใช้งาน</div>
               <div class="a-nav-item active" onclick="showPanel('bandreqs',this)">🎵 คำขอสร้างวง</div>
               <div class="a-nav-item" onclick="showPanel('users',this)">👥 ผู้ใช้งาน</div>
+              <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
+
+              <div class="a-nav-group-title">💰 ธุรกิจ</div>
               <div class="a-nav-item" onclick="showPanel('subscriptions',this)">💳 Subscriptions</div>
               <div class="a-nav-item" onclick="showPanel('pricing',this)">💰 ตั้งราคา / Package</div>
               <div class="a-nav-item" onclick="showPanel('promo',this)">🎟️ Promo Codes</div>
+
+              <div class="a-nav-group-title">📣 การสื่อสาร</div>
+              <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
+              <div class="a-nav-item" onclick="showPanel('templates',this)">📧 Templates</div>
+
+              <div class="a-nav-group-title">⚙️ ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('sysinfo',this)">📊 ระบบ</div>
               <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ ตั้งค่าระบบ</div>
-              <div class="a-nav-item" onclick="showPanel('bands',this)">🎼 จัดการวง</div>
-              <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
-              <div class="a-nav-item" onclick="showPanel('broadcast',this)">📣 Broadcast</div>
               <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
-              <div class="a-nav-item" onclick="showPanel('templates',this)">📧 Templates</div>
+              <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
             </div>
           </div>
         </div>
@@ -389,8 +425,13 @@
   function showPanel(id, el) {
     document.querySelectorAll('.a-panel').forEach(function(p){p.classList.remove('active');});
     document.getElementById('panel-'+id).classList.add('active');
+    // sync active state across both mobile + desktop navs
     document.querySelectorAll('.a-nav-item').forEach(function(n){n.classList.remove('active');});
-    el.classList.add('active');
+    // highlight all items (mobile + desktop) that match this panel
+    document.querySelectorAll('.a-nav-item').forEach(function(n){
+      var onclick = n.getAttribute('onclick');
+      if (onclick && onclick.indexOf("'"+id+"'") !== -1) n.classList.add('active');
+    });
     if (id === 'subscriptions') setTimeout(loadSubscriptions, 100);
     if (id === 'pricing')       setTimeout(loadPricing, 100);
     if (id === 'promo')         setTimeout(loadPromoCodes, 100);
@@ -1354,5 +1395,9 @@
     });
   }
   </script>
+
+<!-- Floating Help Button -->
+<a href="user-manual.html" class="fab-help" aria-label="คู่มือใช้งาน">❓<span class="fab-help-label">คู่มือใช้งาน</span></a>
+
 </body>
 </html>
