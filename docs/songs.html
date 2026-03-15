@@ -500,7 +500,13 @@ html{scroll-behavior:smooth}
 
 /* ── Select mode ── */
 .result-item.selected{background:#fffbeb;border-color:var(--premium-gold)}
-.tap-add:active{background:#fef9ee}
+.tap-add:active{background:#fef3c7;transform:scale(.98)}
+.tap-add.just-added{animation:rowFlash .4s ease forwards}
+@keyframes rowFlash{
+  0%{background:#fef3c7}
+  40%{background:#fbbf24;color:#fff}
+  100%{background:#fef9ee}
+}
 .sel-cb{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px}
 .sel-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}
 .in-lib-tag{font-size:10px;background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;border-radius:99px;padding:2px 7px;white-space:nowrap;margin-left:6px}
@@ -1837,6 +1843,14 @@ function tapAddSong(e, idx) {
   if (!song) return;
   addSong(song);
   _lastAddedIndex = playlistData.length - 1;
+  // flash the row
+  var row = e.currentTarget;
+  if (row) {
+    row.classList.remove('just-added');
+    void row.offsetWidth; // reflow
+    row.classList.add('just-added');
+    setTimeout(function(){ row.classList.remove('just-added'); }, 420);
+  }
   var name = song.name || '';
   clearTimeout(_undoToastTimer);
   var t = document.getElementById('undoToast');
