@@ -265,11 +265,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .add-song-btn:active{transform:scale(.93)}
 
 .suggest-song-btn{
-  flex-shrink:0;width:28px;height:28px;border-radius:8px;
-  background:#f5f3ff;display:flex;align-items:center;justify-content:center;
-  font-size:13px;cursor:pointer;user-select:none;transition:background .12s;
+  flex-shrink:0;height:30px;border-radius:8px;
+  background:#f5f3ff;display:flex;align-items:center;justify-content:center;gap:4px;
+  font-size:11px;font-weight:600;cursor:pointer;user-select:none;transition:background .12s;
   -webkit-tap-highlight-color:transparent;
-  min-width:28px;min-height:28px;padding:0;border:1px solid #ddd6fe;color:#7c3aed;
+  min-height:30px;padding:0 8px;border:1px solid #ddd6fe;color:#7c3aed;white-space:nowrap;
 }
 .suggest-song-btn:hover{background:#ddd6fe;color:#5b21b6}
 .suggest-song-btn:active{transform:scale(.93)}
@@ -1330,7 +1330,7 @@ function renderPage() {
           artistHtml + metaHtml +
           '</div>' +
           '<div class="song-actions" onclick="event.stopPropagation()">' +
-          '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02">\u{1F4A1}</span>' +
+          '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07">\u{1F4DD} \u0e41\u0e19\u0e30\u0e19\u0e33</span>' +
           '</div></div>'
         );
       }
