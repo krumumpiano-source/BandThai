@@ -163,29 +163,30 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .result-item{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:11px 14px;
+  gap:10px;
+  padding:7px 12px;
   border-bottom:1px solid var(--premium-light-gray);
   transition:background .12s;
   cursor:default;
-  min-height:56px;
+  min-height:44px;
 }
 .result-item:hover{background:#fafaf9}
 .result-item-left{flex:1;min-width:0;overflow:hidden}
 
 .song-title{
-  font-size:14px;
+  font-size:13px;
   font-weight:700;
   font-family:var(--font-family-display);
   color:var(--premium-text);
-  white-space:normal;
-  word-break:break-word;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   margin-bottom:0;
   line-height:1.35;
 }
 .song-artist{
   display:inline;
-  font-size:12px;
+  font-size:11px;
   color:#6b7280;
   line-height:1.3;
 }
