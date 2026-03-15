@@ -136,6 +136,8 @@
         case 'addSong':            return doInsert('band_songs', d.data || d);
         case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
         case 'deleteSong':         return doDelete('band_songs', d.songId);
+        case 'getGlobalSongsAll':   return doGetGlobalSongsAll();
+        case 'mergeDuplicateSongs': return doMergeDuplicateSongs(d);
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
@@ -2255,6 +2257,46 @@
       });
       if (result.error) throw result.error;
       return { success: true, sent: subs.length, data: result.data };
+    }
+
+    // ── Global Songs — All (for duplicate check) ───────────────────────────
+    async function doGetGlobalSongsAll() {
+      var PAGE = 500;
+      var all = [];
+      var from = 0;
+      while (true) {
+        var { data, error } = await sb.from('band_songs')
+          .select('id, name, artist, singer, key, bpm, era, mood')
+          .is('band_id', null)
+          .order('name')
+          .range(from, from + PAGE - 1);
+        if (error) return { success: false, message: error.message };
+        if (!data || !data.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return { success: true, data: all };
+    }
+
+    // ── Merge Duplicate Songs (redirect refs then delete) ─────────────────────
+    async function doMergeDuplicateSongs(d) {
+      var keepId    = d.keepId;
+      var deleteIds = d.deleteIds || [];
+      if (!keepId || !deleteIds.length) return { success: false, message: 'ข้อมูลไม่ครบ' };
+      // Step 1: redirect band_song_refs → keep ไม่มีวงใดสูญเสียเพลง
+      for (var i = 0; i < deleteIds.length; i++) {
+        var { error: refErr } = await sb.from('band_song_refs')
+          .update({ song_id: keepId })
+          .eq('song_id', deleteIds[i]);
+        if (refErr) return { success: false, message: 'Redirect refs ล้มเหลว: ' + refErr.message };
+      }
+      // Step 2: ลบเพลงซ้ำออกจาก Global Library
+      var { error: delErr } = await sb.from('band_songs')
+        .delete()
+        .in('id', deleteIds);
+      if (delErr) return { success: false, message: 'ลบไม่สำเร็จ: ' + delErr.message };
+      return { success: true, deleted: deleteIds.length };
     }
 
     // ── Restore session จาก Supabase ─────────────────────────────

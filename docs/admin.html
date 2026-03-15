@@ -85,6 +85,7 @@
             <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ ตั้งค่า</div>
             <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
             <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
+            <div class="a-nav-item" onclick="showPanel('songdup',this);loadSongDupPanel()">🔍 ตรวจเพลงซ้ำ</div>
           </div>
           <!-- Desktop sidebar nav -->
           <div class="card admin-nav-sidebar">
@@ -108,6 +109,7 @@
               <div class="a-nav-item" onclick="showPanel('appconfig',this)">⚙️ ตั้งค่าระบบ</div>
               <div class="a-nav-item" onclick="showPanel('activitylog',this)">📋 Activity Log</div>
               <a href="admin-songs.html" class="a-nav-item" style="display:block;text-decoration:none">🎵 คลังเพลง</a>
+              <div class="a-nav-item" onclick="showPanel('songdup',this);loadSongDupPanel()">🔍 ตรวจเพลงซ้ำ</div>
             </div>
           </div>
         </div>
@@ -350,6 +352,42 @@
             </div>
           </div>
 
+          <!-- Song Duplicate Checker Panel -->
+          <div class="card a-panel" id="panel-songdup" style="max-width:100%">
+            <div class="card-header" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+              <h3 class="card-title">🔍 ตรวจสอบเพลงซ้ำ — Global Library</h3>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
+                <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
+                <button class="btn btn-sm" style="background:#dc2626;color:#fff" id="sd-btn-exec" disabled onclick="sdExecuteMerge()">⚡ ลบที่เลือก (<span id="sd-sel-count">0</span>)</button>
+              </div>
+            </div>
+            <div id="sd-notice" style="margin-bottom:12px;padding:10px 14px;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;font-size:.88rem">
+              ✅ ระบบจะ redirect <code>band_song_refs</code> ก่อน แล้วจึงลบ — ไม่กระทบคลังเพลงของวงใดทั้งสิ้น และวงที่เคยอ้างอิงเพลงซ้ำจะถูกปรับให้ถูกต้องโดยอัตโนมัติ
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+              <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px">
+                <div style="font-size:1.6rem;font-weight:700;color:#dc2626" id="sd-count-same">—</div>
+                <div style="font-size:.78rem;color:#6b7280">ซ้ำ singer เดียวกัน ⚠️</div>
+              </div>
+              <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px">
+                <div style="font-size:1.6rem;font-weight:700;color:#d97706" id="sd-count-diff">—</div>
+                <div style="font-size:.78rem;color:#6b7280">ชื่อซ้ำ singer ต่างกัน ❓</div>
+              </div>
+              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 16px;text-align:center;min-width:130px">
+                <div style="font-size:1.6rem;font-weight:700;color:#16a34a" id="sd-count-total">—</div>
+                <div style="font-size:.78rem;color:#6b7280">เพลงทั้งหมด</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px">
+              <button class="btn btn-sm" id="sd-tab-same" style="background:var(--premium-gold);color:#fff" onclick="sdSwitchTab('same')">⚠️ ซ้ำ Singer เดียวกัน</button>
+              <button class="btn btn-sm" id="sd-tab-diff" style="background:var(--premium-off-white);color:var(--premium-text-muted)" onclick="sdSwitchTab('diff')">❓ Singer ต่างกัน</button>
+            </div>
+            <input id="sd-search" type="text" placeholder="🔍 ค้นหาชื่อเพลง..." oninput="sdFilter(this.value)" style="width:100%;padding:9px 14px;border-radius:8px;border:1px solid var(--premium-border);font-size:.9rem;font-family:inherit;margin-bottom:10px;background:var(--premium-off-white);color:var(--premium-text)">
+            <div id="sd-list" style="max-height:65vh;overflow-y:auto">
+              <div style="text-align:center;color:var(--premium-text-muted);padding:40px">กดรีเฟรชเพื่อโหลดข้อมูล</div>
+            </div>
+          </div>
 
         </div>
       </div>
@@ -441,7 +479,199 @@
     if (id === 'templates')     setTimeout(loadNotifTemplates, 100);
   }
 
-  var _allUsersCache = [];
+  // ── Song Duplicate Checker ─────────────────────────────────────────────────
+  var _sdGroups = { same: [], diff: [] };
+  var _sdSelected = {};   // { keepId: [delId, ...] }
+  var _sdTab = 'same';
+  var _sdLoaded = false;
+
+  function loadSongDupPanel(force) {
+    if (_sdLoaded && !force) return;
+    _sdLoaded = false;
+    var list = document.getElementById('sd-list');
+    list.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:40px">⏳ กำลังโหลดเพลงทั้งหมด...</div>';
+    document.getElementById('sd-count-total').textContent = '—';
+    document.getElementById('sd-count-same').textContent  = '—';
+    document.getElementById('sd-count-diff').textContent  = '—';
+    _sdSelected = {};
+    sdUpdateCount();
+
+    apiCall('getGlobalSongsAll', {}, function(r) {
+      if (!r || !r.success) {
+        list.innerHTML = '<div style="color:#dc2626;padding:20px">โหลดไม่สำเร็จ: ' + ((r && r.message) || 'error') + '</div>';
+        return;
+      }
+      var songs = r.data || [];
+      document.getElementById('sd-count-total').textContent = songs.length.toLocaleString();
+      _sdGroups = sdAnalyze(songs);
+      document.getElementById('sd-count-same').textContent = _sdGroups.same.length;
+      document.getElementById('sd-count-diff').textContent = _sdGroups.diff.length;
+      _sdLoaded = true;
+      sdRender();
+    });
+  }
+
+  function sdAnalyze(songs) {
+    var map = {};
+    songs.forEach(function(s) {
+      var k = (s.name || '').trim().toLowerCase();
+      if (!map[k]) map[k] = [];
+      map[k].push(s);
+    });
+    var same = [], diff = [];
+    Object.keys(map).forEach(function(k) {
+      var arr = map[k];
+      if (arr.length < 2) return;
+      // score: เพลงที่ข้อมูลครบกว่า = KEEP
+      function score(s) {
+        return (s.key ? 3 : 0) + (s.bpm ? 2 : 0) + (s.artist ? 2 : 0) + (s.mood ? 1 : 0) + (s.era ? 1 : 0);
+      }
+      var sorted = arr.slice().sort(function(a, b) { return score(b) - score(a); });
+      var keep = sorted[0];
+      var dels = sorted.slice(1);
+      var singers = arr.map(function(s) { return (s.singer || '').trim().toLowerCase(); });
+      var uniqueSingers = singers.filter(function(v, i, a) { return a.indexOf(v) === i; });
+      var group = { name: arr[0].name, count: arr.length, keep: keep, dels: dels };
+      if (uniqueSingers.length === 1) same.push(group);
+      else diff.push(group);
+    });
+    return { same: same, diff: diff };
+  }
+
+  function sdSwitchTab(tab) {
+    _sdTab = tab;
+    document.getElementById('sd-tab-same').style.background = tab === 'same' ? 'var(--premium-gold)' : 'var(--premium-off-white)';
+    document.getElementById('sd-tab-same').style.color       = tab === 'same' ? '#fff' : 'var(--premium-text-muted)';
+    document.getElementById('sd-tab-diff').style.background  = tab === 'diff' ? 'var(--premium-gold)' : 'var(--premium-off-white)';
+    document.getElementById('sd-tab-diff').style.color        = tab === 'diff' ? '#fff' : 'var(--premium-text-muted)';
+    sdRender();
+  }
+
+  function sdRender() {
+    var groups = _sdGroups[_sdTab] || [];
+    var list = document.getElementById('sd-list');
+    if (!groups.length) {
+      list.innerHTML = '<div style="text-align:center;color:var(--premium-text-muted);padding:30px">✅ ไม่พบรายการ</div>';
+      return;
+    }
+    var html = groups.map(function(g) {
+      var isDiff = _sdTab === 'diff';
+      var delHtml = g.dels.map(function(d) {
+        var chk = isDiff ? '' : '<input type="checkbox" onchange="sdToggle(\'' + g.keep.id + '\',\'' + d.id + '\',this.checked)" style="accent-color:#dc2626;width:15px;height:15px;cursor:pointer"> ';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;margin-top:5px">'
+          + chk
+          + '<span style="background:#dc2626;color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:12px">DEL</span>'
+          + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(d.singer || '?') + '</span>'
+          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + d.id + '</span>'
+          + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
+          + (d.key ? '🎵 ' + escapeHtml(d.key) + ' ' : '') + (d.bpm ? '♩' + escapeHtml(String(d.bpm)) : '') + '</span>'
+          + '</div>';
+      }).join('');
+
+      return '<div class="sd-group" data-name="' + escapeHtml(g.name.toLowerCase()) + '" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:10px;overflow:hidden">'
+        + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--premium-off-white);cursor:pointer" onclick="sdToggleGroup(this)">'
+        + '<span style="font-weight:600;color:var(--premium-text);flex:1">' + escapeHtml(g.name) + '</span>'
+        + '<span style="background:' + (isDiff ? '#dbeafe' : '#fee2e2') + ';color:' + (isDiff ? '#1d4ed8' : '#dc2626') + ';font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600">' + g.count + ' ครั้ง</span>'
+        + (!isDiff ? '<button onclick="event.stopPropagation();sdSelectGroup(\'' + g.keep.id + '\',' + JSON.stringify(g.dels.map(function(d){return d.id;})) + ')" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.75rem;cursor:pointer">☑ เลือก DEL</button>' : '')
+        + '<span style="color:var(--premium-text-muted)">▼</span>'
+        + '</div>'
+        + '<div class="sd-group-body" style="display:none;padding:10px 14px">'
+        + '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px">'
+        + '<span style="background:#16a34a;color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:12px">KEEP</span>'
+        + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(g.keep.singer || '?') + '</span>'
+        + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + g.keep.id + '</span>'
+        + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
+        + (g.keep.key ? '🎵 ' + escapeHtml(g.keep.key) + ' ' : '') + (g.keep.bpm ? '♩' + escapeHtml(String(g.keep.bpm)) : '') + '</span>'
+        + '</div>'
+        + delHtml
+        + '</div></div>';
+    }).join('');
+    list.innerHTML = html;
+  }
+
+  function sdToggleGroup(header) {
+    var body = header.nextElementSibling;
+    body.style.display = body.style.display === 'none' ? '' : 'none';
+    var arrow = header.querySelector('span:last-child');
+    if (arrow) arrow.textContent = body.style.display === 'none' ? '▼' : '▲';
+  }
+
+  function sdToggle(keepId, delId, checked) {
+    if (!_sdSelected[keepId]) _sdSelected[keepId] = [];
+    if (checked) {
+      if (_sdSelected[keepId].indexOf(delId) === -1) _sdSelected[keepId].push(delId);
+    } else {
+      _sdSelected[keepId] = _sdSelected[keepId].filter(function(id){ return id !== delId; });
+      if (!_sdSelected[keepId].length) delete _sdSelected[keepId];
+    }
+    sdUpdateCount();
+  }
+
+  function sdSelectGroup(keepId, delIds) {
+    if (!_sdSelected[keepId]) _sdSelected[keepId] = [];
+    delIds.forEach(function(id) {
+      if (_sdSelected[keepId].indexOf(id) === -1) _sdSelected[keepId].push(id);
+      var chk = document.querySelector('input[onchange*="\'' + keepId + '\',\'' + id + '\'"]');
+      if (chk) chk.checked = true;
+    });
+    sdUpdateCount();
+  }
+
+  function sdSelectAll() {
+    _sdGroups.same.forEach(function(g) {
+      sdSelectGroup(g.keep.id, g.dels.map(function(d){ return d.id; }));
+    });
+    // tick checkboxes
+    document.querySelectorAll('#sd-list input[type=checkbox]').forEach(function(chk){ chk.checked = true; });
+    sdUpdateCount();
+  }
+
+  function sdUpdateCount() {
+    var total = Object.values(_sdSelected).reduce(function(s, arr){ return s + arr.length; }, 0);
+    document.getElementById('sd-sel-count').textContent = total;
+    document.getElementById('sd-btn-exec').disabled = total === 0;
+  }
+
+  function sdFilter(val) {
+    var lv = val.toLowerCase();
+    document.querySelectorAll('#sd-list .sd-group').forEach(function(g) {
+      g.style.display = g.dataset.name && g.dataset.name.indexOf(lv) !== -1 ? '' : 'none';
+    });
+  }
+
+  function sdExecuteMerge() {
+    var total = Object.values(_sdSelected).reduce(function(s, arr){ return s + arr.length; }, 0);
+    if (!total) return;
+    if (!confirm('ลบเพลงซ้ำ ' + total + ' เพลง?\n\nระบบจะ redirect คลังเพลงวงทุกวงก่อน — วงที่เคยมีเพลงซ้ำจะถูกปรับให้ถูกต้องโดยอัตโนมัติ')) return;
+
+    var btn = document.getElementById('sd-btn-exec');
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังดำเนินการ...';
+
+    var keepIds = Object.keys(_sdSelected);
+    var done = 0, failed = 0;
+    var total_groups = keepIds.length;
+
+    function next(i) {
+      if (i >= total_groups) {
+        showToast('✅ เสร็จสิ้น: ลบสำเร็จ ' + (total - failed) + ' เพลง' + (failed ? ' | ล้มเหลว ' + failed : ''), failed ? 'warning' : 'success');
+        btn.textContent = '⚡ ลบที่เลือก (<span id="sd-sel-count">0</span>)';
+        _sdSelected = {};
+        sdUpdateCount();
+        loadSongDupPanel(true);
+        return;
+      }
+      var keepId  = keepIds[i];
+      var delIds  = _sdSelected[keepId];
+      apiCall('mergeDuplicateSongs', { keepId: keepId, deleteIds: delIds }, function(r) {
+        if (r && r.success) done += delIds.length;
+        else { failed += delIds.length; showToast('ข้อผิดพลาด: ' + ((r && r.message) || 'unknown'), 'error'); }
+        next(i + 1);
+      });
+    }
+    next(0);
+  }
+  // ── END Song Duplicate Checker ─────────────────────────────────────────────
 
   function loadUsers() {
     var container = document.getElementById('userGroupContainer');
