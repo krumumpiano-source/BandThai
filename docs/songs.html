@@ -1345,8 +1345,8 @@ function renderPage() {
         var inBandBadge = isInBand ? '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span>' : '';
         var isRowAddedG = !!_addedSongIds[songId];
         var editBtn = _isSongManager
-          ? '<span class="edit-global-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07">\u270F\uFE0F \u0e41\u0e01\u0e49\u0e44\u0e02</span>'
-          : '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07">\u{1F4DD} \u0e41\u0e19\u0e30\u0e19\u0e33</span>';
+          ? '<span class="edit-global-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openDirectEditModal(\'' + songId + '\',' + idx + ')">\u270F\uFE0F \u0e41\u0e01\u0e49\u0e44\u0e02</span>'
+          : '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openSuggestModal(\'' + songId + '\',' + idx + ')">\u{1F4DD} \u0e41\u0e19\u0e30\u0e19\u0e33</span>';
         buf.push(
           '<div class="result-item tap-add' + (isRowAddedG ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
           '<div class="result-item-left">' +
