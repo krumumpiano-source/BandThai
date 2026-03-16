@@ -2406,58 +2406,61 @@
         if (!r5.error && r5.data) profiles = profiles.concat(r5.data);
       }
 
-      // 7. Compute tracked song adds per user
-      var addsByUser = {};
+      // 7. Compute scores per user from activity log (ALL action types count)
+      var actScoreByUser = {};
       logs.forEach(function(l) {
         var uid = l.user_id;
-        if (!addsByUser[uid]) addsByUser[uid] = 0;
-        if (l.action === 'add_song') addsByUser[uid] += 1;
-        if (l.action === 'bulk_add') addsByUser[uid] += Math.max(1, Math.round((l.score || 2) / 2));
+        if (!actScoreByUser[uid]) actScoreByUser[uid] = 0;
+        actScoreByUser[uid] += (l.score || 1);
       });
 
-      // 8. Historical songs divided equally among ALL (admins + managers)
-      var totalTrackedAdds = Object.values(addsByUser).reduce(function(s, v) { return s + v; }, 0);
-      var historicalSongs  = Math.max(0, totalSongs - totalTrackedAdds);
+      // 8. Base score = historical songs × 3 pts each, divided equally among all (admins + managers)
+      //    This represents work done before tracking started
+      var historicalSongs  = Math.max(0, totalSongs - (logs.filter(function(l){ return l.action === 'add_song' || l.action === 'bulk_add'; }).length));
+      var totalBaseScore   = historicalSongs * 3;  // add_song = 3 pts
       var numAll           = allIds.length || 1;
-      var historicalPer    = historicalSongs / numAll;
+      var basePerPerson    = Math.round(totalBaseScore / numAll);
 
-      // 9. Build member stats
+      // 9. Total activity score across all users
+      var totalActivityScore = Object.values(actScoreByUser).reduce(function(s, v) { return s + v; }, 0);
+
+      // 10. Build member stats — % based on (baseScore + activityScore)
       var profileMap = {};
       profiles.forEach(function(p) { profileMap[p.id] = p; });
 
       var members = allIds.map(function(uid) {
-        var p        = profileMap[uid] || {};
-        var name     = p.nickname || p.first_name || p.user_name || uid.substring(0, 8);
-        var isAdmin  = p.role === 'admin' || adminIds.indexOf(uid) >= 0;
-        var tracked  = addsByUser[uid] || 0;
-        var songCount = tracked + historicalPer;
+        var p           = profileMap[uid] || {};
+        var name        = p.nickname || p.first_name || p.user_name || uid.substring(0, 8);
+        var isAdm       = p.role === 'admin' || adminIds.indexOf(uid) >= 0;
+        var actScore    = actScoreByUser[uid] || 0;
+        var totalScore  = basePerPerson + actScore;
         return {
-          userId:          uid,
-          userName:        name + (isAdmin ? ' ⭐' : ''),
-          isAdmin:         isAdmin,
-          historicalSongs: Math.round(historicalPer * 10) / 10,
-          trackedSongs:    tracked,
-          totalSongs:      Math.round(songCount * 10) / 10,
-          pct:             0
+          userId:        uid,
+          userName:      name + (isAdm ? ' ⭐' : ''),
+          isAdmin:       isAdm,
+          baseScore:     basePerPerson,
+          activityScore: actScore,
+          totalScore:    totalScore,
+          pct:           0
         };
       });
 
-      var totalAttr = members.reduce(function(s, m) { return s + m.totalSongs; }, 0) || 1;
-      members.forEach(function(m) { m.pct = Math.round(m.totalSongs / totalAttr * 1000) / 10; });
-      // Sort: admin first, then by totalSongs desc
+      var grandTotal = members.reduce(function(s, m) { return s + m.totalScore; }, 0) || 1;
+      members.forEach(function(m) { m.pct = Math.round(m.totalScore / grandTotal * 1000) / 10; });
       members.sort(function(a, b) {
         if (a.isAdmin && !b.isAdmin) return -1;
         if (!a.isAdmin && b.isAdmin) return 1;
-        return b.totalSongs - a.totalSongs;
+        return b.totalScore - a.totalScore;
       });
 
       return {
-        success:         true,
-        totalSongs:      totalSongs,
-        historicalSongs: historicalSongs,
-        trackedSongs:    totalTrackedAdds,
-        trackStart:      logs.length > 0 ? logs[0].created_at : null,
-        members:         members
+        success:            true,
+        totalSongs:         totalSongs,
+        historicalSongs:    historicalSongs,
+        baseScore:          totalBaseScore,
+        totalActivityScore: totalActivityScore,
+        trackStart:         logs.length > 0 ? logs[0].created_at : null,
+        members:            members
       };
     }
 

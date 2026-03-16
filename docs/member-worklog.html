@@ -150,15 +150,15 @@
 
       <!-- Header -->
       <div class="page-header" style="margin-bottom:16px">
-        <h1 class="page-title">💰 ส่วนแบ่งรายได้คลังเพลง</h1>
-        <p style="font-size:.82rem;color:var(--premium-text-muted);margin:4px 0 0">คิดจากสัดส่วนเพลงที่แต่ละคนดูแล เทียบกับเพลงทั้งระบบ</p>
+        <h1 class="page-title">💰 ส่วนแบ่งรายได้</h1>
+        <p style="font-size:.82rem;color:var(--premium-text-muted);margin:4px 0 0">คิดจากสัดส่วนงานที่แต่ละคนดูแลในระบบทั้งหมด (คะแนนงานสะสม)</p>
       </div>
 
       <!-- Stats bar -->
       <div class="stats-bar" id="statsBar">
         <div class="stat-chip"><div class="sc-num" id="statTotal">—</div><div class="sc-lbl">🎵 เพลงทั้งหมด</div></div>
-        <div class="stat-chip"><div class="sc-num" id="statHistorical">—</div><div class="sc-lbl">📅 เพลงก่อนติดตาม</div></div>
-        <div class="stat-chip"><div class="sc-num" id="statTracked">—</div><div class="sc-lbl">✅ เพลงที่ติดตาม</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statHistorical">—</div><div class="sc-lbl">📅 คะแนนฐาน (ก่อนติดตาม)</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statTracked">—</div><div class="sc-lbl">✅ คะแนนงานสะสม</div></div>
         <div class="stat-chip"><div class="sc-num" id="statSince">—</div><div class="sc-lbl">⚡ ติดตามตั้งแต่</div></div>
       </div>
 
@@ -284,8 +284,8 @@
     var html = '<table class="mt">' +
       '<thead><tr>' +
       '<th>ชื่อสมาชิก</th>' +
-      '<th>เพลงก่อนติดตาม</th>' +
-      '<th>เพลงที่ติดตาม</th>' +
+      '<th>คะแนนฐาน</th>' +
+      '<th>คะแนนงาน</th>' +
       '<th>สัดส่วน</th>' +
       '<th>แบ่งได้ (บาท)</th>' +
       '</tr></thead><tbody>';
@@ -294,9 +294,9 @@
       var color = COLORS[i % COLORS.length];
       html += '<tr>' +
         '<td><div class="mt-name" style="color:' + color + '">● ' + esc(m.userName) + '</div>' +
-          '<div class="mt-sub">รวม ' + fmtNum(Math.round(m.totalSongs)) + ' เพลง</div></td>' +
-        '<td>' + fmtNum(Math.round(m.historicalSongs)) + '</td>' +
-        '<td>' + fmtNum(m.trackedSongs) + '</td>' +
+          '<div class="mt-sub">รวม ' + fmtNum(m.totalScore) + ' คะแนน</div></td>' +
+        '<td>' + fmtNum(m.baseScore) + '</td>' +
+        '<td>' + fmtNum(m.activityScore) + '</td>' +
         '<td>' +
           '<span class="pct-badge" style="background:' + color + '">' + m.pct + '%</span>' +
           '&nbsp;<span class="bar-wrap"><span class="bar-fill" style="width:' + m.pct + '%;background:' + color + '"></span></span>' +
@@ -321,17 +321,16 @@
 
       // Stats bar
       document.getElementById('statTotal').textContent      = fmtNum(r.totalSongs);
-      document.getElementById('statHistorical').textContent = fmtNum(r.historicalSongs);
-      document.getElementById('statTracked').textContent    = fmtNum(r.trackedSongs);
+      document.getElementById('statHistorical').textContent = fmtNum(r.baseScore);
+      document.getElementById('statTracked').textContent    = fmtNum(r.totalActivityScore);
       document.getElementById('statSince').textContent      = r.trackStart ? fmtDate(r.trackStart) : 'ยังไม่มี';
 
       // Info note
-      if (r.historicalSongs > 0) {
+      if (r.baseScore > 0) {
         var nm = (r.members || []).length || 1;
         document.getElementById('infoNote').style.display = 'flex';
         document.getElementById('infoNoteText').innerHTML =
-          'เพลงที่เพิ่มก่อนเริ่มระบบติดตาม <strong>' + fmtNum(r.historicalSongs) + ' เพลง</strong> ' +
-          'จะถูกแบ่งให้สมาชิกแต่ละคนเท่าๆ กัน คนละ <strong>' + fmtNum(Math.round(r.historicalSongs / nm)) + ' เพลง</strong>';
+          'คะแนนฐานจากเพลง ' + fmtNum(r.totalSongs) + ' เพลงก่อนเริ่มติดตาม (<strong>' + fmtNum(r.baseScore) + ' คะแนน</strong>) แบ่งเท่าๆ กัน คนละ <strong>' + fmtNum(Math.round(r.baseScore / nm)) + ' คะแนน</strong>';
       }
 
       renderMemberTable(r);
