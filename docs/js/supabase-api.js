@@ -2362,36 +2362,51 @@
       var bid = getBandId();
       if (!bid) return { success: false, message: 'ไม่พบ bandId' };
 
-      // 1. Band settings
+      // 1. Band settings → songManagers list
       var r1 = await sb.from('band_settings').select('settings').eq('band_id', bid).limit(1);
       if (r1.error) throw r1.error;
       var settings   = (r1.data && r1.data[0] && r1.data[0].settings) || {};
       var managerIds = settings.songManagers || [];
 
-      // 2. Total songs count
-      var r2 = await sb.from('band_songs').select('*', { count: 'exact', head: true }).eq('band_id', bid);
-      if (r2.error) throw r2.error;
-      var totalSongs = r2.count || 0;
+      // 2. Admin profiles (role=admin) — always include in the split
+      var r2a = await sb.from('profiles')
+        .select('id, first_name, last_name, nickname, user_name, role')
+        .eq('band_id', bid)
+        .eq('role', 'admin');
+      var adminProfiles = (!r2a.error && r2a.data) ? r2a.data : [];
+      var adminIds = adminProfiles.map(function(p){ return p.id; });
 
-      // 3. Activity log
-      var r3 = await sb.from('member_activity_log')
+      // 3. Merge: adminIds + managerIds (deduplicate)
+      var allIds = adminIds.slice();
+      managerIds.forEach(function(id) {
+        if (allIds.indexOf(id) < 0) allIds.push(id);
+      });
+
+      // 4. Total songs count
+      var r3 = await sb.from('band_songs').select('*', { count: 'exact', head: true }).eq('band_id', bid);
+      if (r3.error) throw r3.error;
+      var totalSongs = r3.count || 0;
+
+      // 5. Activity log
+      var r4 = await sb.from('member_activity_log')
         .select('user_id, user_name, action, score, created_at')
         .eq('band_id', bid)
         .order('created_at', { ascending: true })
         .limit(10000);
-      if (r3.error) throw r3.error;
-      var logs = r3.data || [];
+      if (r4.error) throw r4.error;
+      var logs = r4.data || [];
 
-      // 4. Profile data for managers
-      var profiles = [];
-      if (managerIds.length > 0) {
-        var r4 = await sb.from('profiles')
-          .select('id, first_name, last_name, nickname, user_name')
-          .in('id', managerIds);
-        if (!r4.error) profiles = r4.data || [];
+      // 6. Profile data for non-admin managers (admins already fetched)
+      var profiles = adminProfiles.slice();
+      var nonAdminManagerIds = managerIds.filter(function(id){ return adminIds.indexOf(id) < 0; });
+      if (nonAdminManagerIds.length > 0) {
+        var r5 = await sb.from('profiles')
+          .select('id, first_name, last_name, nickname, user_name, role')
+          .in('id', nonAdminManagerIds);
+        if (!r5.error && r5.data) profiles = profiles.concat(r5.data);
       }
 
-      // 3. Compute tracked song adds per user
+      // 7. Compute tracked song adds per user
       var addsByUser = {};
       logs.forEach(function(l) {
         var uid = l.user_id;
@@ -2400,26 +2415,41 @@
         if (l.action === 'bulk_add') addsByUser[uid] += Math.max(1, Math.round((l.score || 2) / 2));
       });
 
-      // 4. Historical songs divided equally among managers
+      // 8. Historical songs divided equally among ALL (admins + managers)
       var totalTrackedAdds = Object.values(addsByUser).reduce(function(s, v) { return s + v; }, 0);
       var historicalSongs  = Math.max(0, totalSongs - totalTrackedAdds);
-      var numManagers      = managerIds.length || 1;
-      var historicalPer    = historicalSongs / numManagers;
+      var numAll           = allIds.length || 1;
+      var historicalPer    = historicalSongs / numAll;
 
-      // 5. Build member stats
+      // 9. Build member stats
       var profileMap = {};
       profiles.forEach(function(p) { profileMap[p.id] = p; });
 
-      var members = managerIds.map(function(uid) {
-        var p = profileMap[uid] || {};
+      var members = allIds.map(function(uid) {
+        var p        = profileMap[uid] || {};
         var name     = p.nickname || p.first_name || p.user_name || uid.substring(0, 8);
+        var isAdmin  = p.role === 'admin' || adminIds.indexOf(uid) >= 0;
         var tracked  = addsByUser[uid] || 0;
         var songCount = tracked + historicalPer;
-        return { userId: uid, userName: name, historicalSongs: Math.round(historicalPer * 10) / 10, trackedSongs: tracked, totalSongs: Math.round(songCount * 10) / 10, pct: 0 };
+        return {
+          userId:          uid,
+          userName:        name + (isAdmin ? ' ⭐' : ''),
+          isAdmin:         isAdmin,
+          historicalSongs: Math.round(historicalPer * 10) / 10,
+          trackedSongs:    tracked,
+          totalSongs:      Math.round(songCount * 10) / 10,
+          pct:             0
+        };
       });
 
       var totalAttr = members.reduce(function(s, m) { return s + m.totalSongs; }, 0) || 1;
       members.forEach(function(m) { m.pct = Math.round(m.totalSongs / totalAttr * 1000) / 10; });
+      // Sort: admin first, then by totalSongs desc
+      members.sort(function(a, b) {
+        if (a.isAdmin && !b.isAdmin) return -1;
+        if (!a.isAdmin && b.isAdmin) return 1;
+        return b.totalSongs - a.totalSongs;
+      });
 
       return {
         success:         true,
