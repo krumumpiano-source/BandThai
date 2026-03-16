@@ -2266,7 +2266,7 @@
       var from = 0;
       while (true) {
         var { data, error } = await sb.from('band_songs')
-          .select('id, name, artist, singer, key, bpm, era, mood')
+          .select('id, name, artist, singer, key, bpm, era, mood, tags')
           .is('band_id', null)
           .order('name')
           .range(from, from + PAGE - 1);
