@@ -18,13 +18,14 @@
   <link rel="stylesheet" href="css/compat.css">
   <style>
     .admin-layout{display:grid;grid-template-columns:220px 1fr;gap:var(--spacing-xl)}
+    .admin-layout>*{min-width:0}
     @media(max-width:1100px){.admin-layout{grid-template-columns:1fr}}
     .admin-nav{display:flex;flex-direction:column;gap:2px}
     .a-nav-group-title{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--premium-text-muted);padding:12px var(--spacing-md) 4px;margin-top:6px;opacity:.7;border-top:1px solid var(--premium-border)}
     .a-nav-group-title:first-child{border-top:none;margin-top:0;padding-top:4px}
     .a-nav-item{padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);transition:all .15s}
     .a-nav-item.active,.a-nav-item:hover{background:var(--premium-gold);color:#fff}
-    .a-panel{display:none}.a-panel.active{display:block}
+    .a-panel{display:none;max-width:100%;overflow-x:auto}.a-panel.active{display:block}
     /* Mobile: horizontal pill nav for admin */
     @media(max-width:1100px){
       .admin-nav-sidebar{display:none}
