@@ -307,6 +307,7 @@
                   <button class="btn btn-sm" id="sd-ai-batch-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff" onclick="sdAiBatch()">🤖 AI วิเคราะห์ซ้ำ</button>
                   <button class="btn btn-sm" id="sd-ai-enrich-btn" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff" onclick="sdAiEnrichBatch()">🧠 AI ตรวจข้อมูล</button>
                 </span>
+                <button class="btn btn-sm" id="sd-key-btn" style="background:#f59e0b;color:#fff" onclick="sdShowGeminiSetup()">🔑 ตั้ง API Key</button>
                 <button class="btn btn-sm" style="background:#0ea5e9;color:#fff" onclick="sdExpandAll()">📂 เปิดหมด</button>
                 <button class="btn btn-sm" style="background:#64748b;color:#fff" onclick="sdCollapseAll()">📁 ปิดหมด</button>
                 <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
@@ -603,6 +604,8 @@
         _sdGeminiKey = s.geminiApiKey || '';
         var aiWrap = document.getElementById('sd-ai-wrap');
         if (aiWrap) aiWrap.style.display = _sdGeminiKey ? '' : 'none';
+        var keyBtn = document.getElementById('sd-key-btn');
+        if (keyBtn) keyBtn.style.display = _sdGeminiKey ? 'none' : '';
         var setupEl = document.getElementById('sd-gemini-setup');
         if (setupEl) setupEl.style.display = _sdGeminiKey ? 'none' : '';
       });
@@ -976,9 +979,9 @@
   // ── Gemini Key Setup ────────────────────────────────────────────────────
   function sdShowGeminiSetup() {
     var el = document.getElementById('sd-gemini-setup');
-    if (el) el.style.display = '';
+    if (el) { el.style.display = ''; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
     var inp = document.getElementById('sd-gemini-key-input');
-    if (inp) inp.focus();
+    if (inp) setTimeout(function() { inp.focus(); }, 400);
   }
   function sdSaveGeminiKey() {
     var inp = document.getElementById('sd-gemini-key-input');
@@ -995,6 +998,8 @@
           if (msgEl) { msgEl.style.color = '#16a34a'; msgEl.textContent = '✅ บันทึกแล้ว! AI พร้อมใช้งาน'; }
           var aiWrap = document.getElementById('sd-ai-wrap');
           if (aiWrap) aiWrap.style.display = '';
+          var keyBtn = document.getElementById('sd-key-btn');
+          if (keyBtn) keyBtn.style.display = 'none';
           setTimeout(function() {
             var setupEl = document.getElementById('sd-gemini-setup');
             if (setupEl) setupEl.style.display = 'none';
