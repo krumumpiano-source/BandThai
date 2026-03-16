@@ -303,6 +303,9 @@
               <h3 class="card-title">🔍 ตรวจสอบเพลงซ้ำ — Global Library</h3>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
+                <span id="sd-ai-wrap" style="display:none">
+                  <button class="btn btn-sm" id="sd-ai-batch-btn" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff" onclick="sdAiBatch()">🤖 AI วิเคราะห์</button>
+                </span>
                 <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
                 <button class="btn btn-sm" style="background:#dc2626;color:#fff" id="sd-btn-exec" disabled onclick="sdExecuteMerge()">⚡ ลบที่เลือก (<span id="sd-sel-count">0</span>)</button>
               </div>
@@ -445,6 +448,9 @@
   var _sdSelected = {};   // { keepId: [delId, ...] }
   var _sdTab = 'same';
   var _sdLoaded = false;
+  var _sdGeminiKey = '';
+  var _sdAiResults = {};
+  var _sdAllSongs = [];
 
   function loadSongDupPanel(force) {
     if (_sdLoaded && !force) return;
@@ -455,7 +461,16 @@
     document.getElementById('sd-count-same').textContent  = '—';
     document.getElementById('sd-count-diff').textContent  = '—';
     _sdSelected = {};
+    _sdAiResults = {};
     sdUpdateCount();
+    if (!_sdGeminiKey) {
+      apiCall('getBandSettings', {}, function(r) {
+        var s = (r && r.success && r.data) || {};
+        _sdGeminiKey = s.geminiApiKey || '';
+        var aiWrap = document.getElementById('sd-ai-wrap');
+        if (aiWrap) aiWrap.style.display = _sdGeminiKey ? '' : 'none';
+      });
+    }
 
     apiCall('getGlobalSongsAll', {}, function(r) {
       if (!r || !r.success) {
@@ -463,6 +478,7 @@
         return;
       }
       var songs = r.data || [];
+      _sdAllSongs = songs;
       document.getElementById('sd-count-total').textContent = songs.length.toLocaleString();
       _sdGroups = sdAnalyze(songs);
       document.getElementById('sd-count-same').textContent = _sdGroups.same.length;
@@ -567,63 +583,101 @@
       return;
     }
     if (_sdTab === 'fuzzy') { sdRenderFuzzy(groups, list); return; }
-    var html = groups.map(function(g) {
+    var showAi = !!_sdGeminiKey;
+    var html = groups.map(function(g, gi) {
       var isDiff = _sdTab === 'diff';
+      var aiKey = g.name.toLowerCase();
+      var aiRes = _sdAiResults[aiKey];
       var delHtml = g.dels.map(function(d) {
         var chk = isDiff ? '' : '<input type="checkbox" onchange="sdToggle(\'' + g.keep.id + '\',\'' + d.id + '\',this.checked)" style="accent-color:#dc2626;width:15px;height:15px;cursor:pointer"> ';
-        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;margin-top:5px">'
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;margin-top:5px;flex-wrap:wrap">'
           + chk
           + '<span style="background:#dc2626;color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:12px">DEL</span>'
           + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(d.singer || '?') + '</span>'
-          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + d.id + '</span>'
+          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + d.id.substring(0,8) + '</span>'
           + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
-          + (d.key ? '🎵 ' + escapeHtml(d.key) + ' ' : '') + (d.bpm ? '♩' + escapeHtml(String(d.bpm)) : '') + '</span>'
-          + '</div>';
+          + (d.key ? '🎵' + escapeHtml(d.key) + ' ' : '') + (d.bpm ? '♩' + escapeHtml(String(d.bpm)) : '') + '</span>'
+          + '<button onclick="event.stopPropagation();sdEditSong(\'' + d.id + '\')" style="background:transparent;border:none;cursor:pointer;font-size:.85rem" title="แก้ไข">✏️</button>'
+          + '</div>'
+          + '<div id="sd-edit-' + d.id + '" style="display:none"></div>';
       }).join('');
+
+      var aiResultHtml = '';
+      if (aiRes) {
+        var isMerge = aiRes.action === 'merge';
+        aiResultHtml = '<div style="padding:8px 12px;border-radius:6px;font-size:.82rem;margin-top:8px;'
+          + 'background:' + (isMerge ? '#f0fdf4' : '#fefce8') + ';border:1px solid ' + (isMerge ? '#bbf7d0' : '#fde68a') + '">'
+          + '<span style="font-weight:700;color:' + (isMerge ? '#16a34a' : '#ca8a04') + '">'
+          + (isMerge ? '✅ AI: ควร Merge' : '⏭️ AI: ข้ามไว้') + '</span> '
+          + '<span style="color:#374151">' + escapeHtml(aiRes.reason || '') + '</span></div>';
+      }
 
       return '<div class="sd-group" data-name="' + escapeHtml(g.name.toLowerCase()) + '" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:10px;overflow:hidden">'
         + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--premium-off-white);cursor:pointer" onclick="sdToggleGroup(this)">'
         + '<span style="font-weight:600;color:var(--premium-text);flex:1">' + escapeHtml(g.name) + '</span>'
         + '<span style="background:' + (isDiff ? '#dbeafe' : '#fee2e2') + ';color:' + (isDiff ? '#1d4ed8' : '#dc2626') + ';font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600">' + g.count + ' ครั้ง</span>'
+        + (showAi ? '<button onclick="event.stopPropagation();sdAiGroup(' + gi + ')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer">🤖</button>' : '')
         + (!isDiff ? '<button onclick="event.stopPropagation();sdSelectGroup(\'' + g.keep.id + '\',' + JSON.stringify(g.dels.map(function(d){return d.id;})) + ')" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.75rem;cursor:pointer">☑ เลือก DEL</button>' : '')
         + '<span style="color:var(--premium-text-muted)">▼</span>'
         + '</div>'
         + '<div class="sd-group-body" style="display:none;padding:10px 14px">'
-        + '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px">'
+        + '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;flex-wrap:wrap">'
         + '<span style="background:#16a34a;color:#fff;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:12px">KEEP</span>'
         + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(g.keep.singer || '?') + '</span>'
-        + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + g.keep.id + '</span>'
+        + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + g.keep.id.substring(0,8) + '</span>'
         + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
-        + (g.keep.key ? '🎵 ' + escapeHtml(g.keep.key) + ' ' : '') + (g.keep.bpm ? '♩' + escapeHtml(String(g.keep.bpm)) : '') + '</span>'
+        + (g.keep.key ? '🎵' + escapeHtml(g.keep.key) + ' ' : '') + (g.keep.bpm ? '♩' + escapeHtml(String(g.keep.bpm)) : '') + '</span>'
+        + '<button onclick="event.stopPropagation();sdEditSong(\'' + g.keep.id + '\')" style="background:transparent;border:none;cursor:pointer;font-size:.85rem" title="แก้ไข">✏️</button>'
         + '</div>'
+        + '<div id="sd-edit-' + g.keep.id + '" style="display:none"></div>'
         + delHtml
+        + '<div id="sd-ai-res-' + gi + '">' + aiResultHtml + '</div>'
         + '</div></div>';
     }).join('');
     list.innerHTML = html;
   }
 
   function sdRenderFuzzy(groups, list) {
-    var html = groups.map(function(g) {
+    var showAi = !!_sdGeminiKey;
+    var html = groups.map(function(g, gi) {
+      var aiKey = g.nameA.toLowerCase() + '||' + g.nameB.toLowerCase();
+      var aiRes = _sdAiResults[aiKey];
       var songRows = g.songs.map(function(s) {
-        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--premium-off-white);border:1px solid var(--premium-border);border-radius:6px;margin-top:5px">'
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--premium-off-white);border:1px solid var(--premium-border);border-radius:6px;margin-top:5px;flex-wrap:wrap">'
           + '<span style="font-weight:600;font-size:.85rem;color:var(--premium-text)">' + escapeHtml(s.name) + '</span>'
           + '<span style="background:#e5e7eb;font-size:.73rem;padding:2px 8px;border-radius:12px">' + escapeHtml(s.singer || '?') + '</span>'
-          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + s.id + '</span>'
+          + '<span style="font-family:monospace;font-size:.68rem;color:#9ca3af">' + s.id.substring(0,8) + '</span>'
           + '<span style="margin-left:auto;font-size:.75rem;color:#6b7280">'
-          + (s.key ? '🎵 ' + escapeHtml(s.key) + ' ' : '') + (s.bpm ? '♩' + escapeHtml(String(s.bpm)) : '') + '</span>'
-          + '</div>';
+          + (s.key ? '🎵' + escapeHtml(s.key) + ' ' : '') + (s.bpm ? '♩' + escapeHtml(String(s.bpm)) : '') + '</span>'
+          + '<button onclick="event.stopPropagation();sdEditSong(\'' + s.id + '\')" style="background:transparent;border:none;cursor:pointer;font-size:.85rem" title="แก้ไข">✏️</button>'
+          + '</div>'
+          + '<div id="sd-edit-' + s.id + '" style="display:none"></div>';
       }).join('');
+
+      var aiResultHtml = '';
+      if (aiRes) {
+        var isSame = aiRes.same;
+        aiResultHtml = '<div style="padding:8px 12px;border-radius:6px;font-size:.82rem;margin-top:8px;'
+          + 'background:' + (isSame ? '#f0fdf4' : '#fefce8') + ';border:1px solid ' + (isSame ? '#bbf7d0' : '#fde68a') + '">'
+          + '<span style="font-weight:700;color:' + (isSame ? '#16a34a' : '#ca8a04') + '">'
+          + (isSame ? '✅ เพลงเดียวกัน' : '❌ คนละเพลง') + '</span> '
+          + '<span style="color:#374151">' + escapeHtml(aiRes.reason || '') + '</span>'
+          + (isSame && aiRes.correctName ? '<br><span style="color:#7c3aed;font-weight:600">ชื่อที่ถูกต้อง: "' + escapeHtml(aiRes.correctName) + '"</span>'
+            + ' <button onclick="sdRenameGroup(' + JSON.stringify(g.songs.map(function(s){return s.id;})) + ',\'' + escapeHtml(aiRes.correctName).replace(/'/g,"\\'") + '\')" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:3px 10px;font-size:.75rem;cursor:pointer;margin-left:4px">✏️ เปลี่ยนชื่อทั้งกลุ่ม</button>' : '')
+          + '</div>';
+      }
 
       return '<div class="sd-group" data-name="' + escapeHtml(g.nameA.toLowerCase() + ' ' + g.nameB.toLowerCase()) + '" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:10px;overflow:hidden">'
         + '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f5f3ff;cursor:pointer" onclick="sdToggleGroup(this)">'
         + '<span style="font-weight:600;color:var(--premium-text);flex:1">'
-        + '「' + escapeHtml(g.nameA) + '」 ↔ 「' + escapeHtml(g.nameB) + '」</span>'
-        + '<span style="background:#ede9fe;color:#7c3aed;font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600">ต่าง ' + g.distance + ' ตัวอักษร</span>'
+        + escapeHtml(g.nameA) + ' ↔ ' + escapeHtml(g.nameB) + '</span>'
+        + '<span style="background:#ede9fe;color:#7c3aed;font-size:.72rem;padding:2px 8px;border-radius:12px;font-weight:600">ต่าง ' + g.distance + ' ตัว</span>'
+        + (showAi ? '<button onclick="event.stopPropagation();sdAiGroup(' + gi + ')" style="background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.72rem;cursor:pointer">🤖</button>' : '')
         + '<span style="color:var(--premium-text-muted)">▼</span>'
         + '</div>'
         + '<div class="sd-group-body" style="display:none;padding:10px 14px">'
-        + '<div style="font-size:.8rem;color:#6b7280;margin-bottom:8px">ℹ️ ชื่อเพลงเหล่านี้คล้ายกันมาก — อาจเป็นเพลงเดียวกันที่พิมพ์ต่างกัน</div>'
         + songRows
+        + '<div id="sd-ai-res-' + gi + '">' + aiResultHtml + '</div>'
         + '</div></div>';
     }).join('');
     list.innerHTML = html;
@@ -711,6 +765,170 @@
     }
     next(0);
   }
+
+  // ── AI Helpers for Song Duplicate ──────────────────────────────────────────
+  function _sdCallGemini(prompt, callback) {
+    if (!_sdGeminiKey) { showToast('❌ ยังไม่ได้ตั้ง Gemini API Key', 'error'); callback(null); return; }
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(_sdGeminiKey), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    }).then(function(res) { return res.json(); })
+    .then(function(data) {
+      if (!data || !data.candidates || !data.candidates[0]) { callback(null); return; }
+      var text = data.candidates[0].content.parts[0].text || '';
+      var jsonStr = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+      try { callback(JSON.parse(jsonStr)); } catch(e) { callback(null, text); }
+    }).catch(function(err) { callback(null, err.message); });
+  }
+
+  function sdAiBatch() {
+    var groups = _sdGroups[_sdTab] || [];
+    if (!groups.length) return;
+    var btn = document.getElementById('sd-ai-batch-btn');
+    btn.disabled = true; btn.innerHTML = '🤖 กำลังวิเคราะห์...';
+
+    if (_sdTab === 'fuzzy') {
+      var info = groups.slice(0, 30).map(function(g, i) {
+        return (i+1) + '. "' + g.nameA + '" vs "' + g.nameB + '" (distance ' + g.distance + ')';
+      }).join('\n');
+      var prompt = 'Analyze fuzzy-matched song name pairs in a Thai music database:\n' + info
+        + '\n\nRespond JSON array only: [{"pair":1,"same":true/false,"correctName":"correct name if same","reason":"brief reason in Thai"}]'
+        + '\nsame=true means they are the same song with typo difference, provide correctName'
+        + '\nsame=false means different songs'
+        + '\nRespond ONLY valid JSON, no explanation';
+      _sdCallGemini(prompt, function(result) {
+        btn.disabled = false; btn.innerHTML = '🤖 AI วิเคราะห์';
+        if (!result || !Array.isArray(result)) { showToast('AI ตอบกลับไม่สมบูรณ์', 'warning'); return; }
+        result.forEach(function(r) {
+          var idx = (r.pair || 0) - 1;
+          if (idx >= 0 && idx < groups.length) {
+            var key = groups[idx].nameA.toLowerCase() + '||' + groups[idx].nameB.toLowerCase();
+            _sdAiResults[key] = r;
+          }
+        });
+        sdRender();
+        var sameCount = result.filter(function(r) { return r.same; }).length;
+        showToast('✅ AI เสร็จ: พบ ' + sameCount + '/' + result.length + ' คู่ที่เป็นเพลงเดียวกัน', 'success');
+      });
+    } else {
+      var info = groups.slice(0, 30).map(function(g, i) {
+        var singers = [g.keep.singer || '?'].concat(g.dels.map(function(d) { return d.singer || '?'; }));
+        return (i+1) + '. "' + g.name + '" — singers: [' + singers.join(', ') + '] (' + g.count + ' copies)';
+      }).join('\n');
+      var prompt = 'Analyze duplicate songs (' + (_sdTab === 'same' ? 'same singer' : 'different singers') + ') in a Thai music database:\n' + info
+        + '\n\nRespond JSON array only: [{"group":1,"action":"merge"|"skip","reason":"brief reason in Thai"}]'
+        + '\nmerge = true duplicates, safe to remove copies'
+        + '\nskip = might be different versions/covers'
+        + '\nRespond ONLY valid JSON, no explanation';
+      _sdCallGemini(prompt, function(result) {
+        btn.disabled = false; btn.innerHTML = '🤖 AI วิเคราะห์';
+        if (!result || !Array.isArray(result)) { showToast('AI ตอบกลับไม่สมบูรณ์', 'warning'); return; }
+        var merged = 0;
+        result.forEach(function(r) {
+          var idx = (r.group || 0) - 1;
+          if (idx >= 0 && idx < groups.length) {
+            var g = groups[idx];
+            _sdAiResults[g.name.toLowerCase()] = r;
+            if (r.action === 'merge' && _sdTab === 'same') {
+              sdSelectGroup(g.keep.id, g.dels.map(function(d) { return d.id; }));
+              merged++;
+            }
+          }
+        });
+        sdRender();
+        showToast('✅ AI เสร็จ: แนะนำ merge ' + merged + ' กลุ่ม', 'success');
+      });
+    }
+  }
+
+  function sdAiGroup(idx) {
+    var groups = _sdGroups[_sdTab] || [];
+    var g = groups[idx]; if (!g) return;
+    var el = document.getElementById('sd-ai-res-' + idx);
+    if (el) el.innerHTML = '<span style="color:#667eea;font-size:.82rem">🤖 กำลังวิเคราะห์...</span>';
+
+    if (_sdTab === 'fuzzy') {
+      var prompt = 'Song names: "' + g.nameA + '" vs "' + g.nameB + '" (edit distance ' + g.distance + ')'
+        + '\nAre these the same Thai song with a typo?'
+        + '\nRespond JSON only: {"same":true/false,"correctName":"correct name if same","reason":"brief reason in Thai"}'
+        + '\nRespond ONLY valid JSON';
+      _sdCallGemini(prompt, function(result) {
+        if (!result) { if (el) el.innerHTML = '<span style="color:#dc2626;font-size:.82rem">⚠️ AI วิเคราะห์ไม่ได้</span>'; return; }
+        var key = g.nameA.toLowerCase() + '||' + g.nameB.toLowerCase();
+        _sdAiResults[key] = result;
+        sdRender();
+      });
+    } else {
+      var singers = [g.keep.singer || '?'].concat(g.dels.map(function(d) { return d.singer || '?'; }));
+      var prompt = 'Song "' + g.name + '" has ' + g.count + ' entries — singers: [' + singers.join(', ') + ']'
+        + '\nIs this a true duplicate that should be merged, or different versions?'
+        + '\nRespond JSON only: {"action":"merge"|"skip","reason":"brief reason in Thai"}'
+        + '\nRespond ONLY valid JSON';
+      _sdCallGemini(prompt, function(result) {
+        if (!result) { if (el) el.innerHTML = '<span style="color:#dc2626;font-size:.82rem">⚠️ AI วิเคราะห์ไม่ได้</span>'; return; }
+        _sdAiResults[g.name.toLowerCase()] = result;
+        sdRender();
+      });
+    }
+  }
+
+  // ── Inline Editing ─────────────────────────────────────────────────────────
+  function sdEditSong(songId) {
+    var el = document.getElementById('sd-edit-' + songId);
+    if (!el) return;
+    var song = _sdAllSongs.find(function(s) { return s.id === songId; });
+    if (!song) { showToast('ไม่พบข้อมูลเพลง', 'error'); return; }
+    el.style.display = el.style.display === 'none' ? '' : 'none';
+    if (el.style.display !== 'none') {
+      el.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:8px 0">'
+        + '<input id="sd-ed-name-' + songId + '" value="' + escapeHtml(song.name || '') + '" placeholder="ชื่อเพลง" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:.82rem;flex:1;min-width:120px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<input id="sd-ed-singer-' + songId + '" value="' + escapeHtml(song.singer || '') + '" placeholder="singer" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:.82rem;width:80px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<input id="sd-ed-artist-' + songId + '" value="' + escapeHtml(song.artist || '') + '" placeholder="artist" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:.82rem;width:100px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<input id="sd-ed-key-' + songId + '" value="' + escapeHtml(song.key || '') + '" placeholder="key" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:.82rem;width:55px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<input id="sd-ed-bpm-' + songId + '" value="' + (song.bpm || '') + '" placeholder="bpm" type="number" style="padding:5px 8px;border:1px solid var(--border-color);border-radius:6px;font-size:.82rem;width:55px;background:var(--bg-card);color:var(--text-primary)">'
+        + '<button onclick="sdSaveSong(\'' + songId + '\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.78rem;cursor:pointer;font-weight:600">💾 บันทึก</button>'
+        + '<button onclick="document.getElementById(\'sd-edit-' + songId + '\').style.display=\'none\'" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:.78rem;cursor:pointer">✕</button>'
+        + '</div>';
+    }
+  }
+
+  function sdSaveSong(songId) {
+    var name = document.getElementById('sd-ed-name-' + songId).value.trim();
+    var singer = document.getElementById('sd-ed-singer-' + songId).value.trim();
+    var artist = document.getElementById('sd-ed-artist-' + songId).value.trim();
+    var key = document.getElementById('sd-ed-key-' + songId).value.trim();
+    var bpm = document.getElementById('sd-ed-bpm-' + songId).value.trim();
+    if (!name) { showToast('ชื่อเพลงห้ามว่าง', 'error'); return; }
+    apiCall('updateSong', { songId: songId, name: name, singer: singer, artist: artist, key: key, bpm: bpm ? parseInt(bpm) : null }, function(r) {
+      if (r && r.success) {
+        showToast('✅ บันทึกเรียบร้อย', 'success');
+        var s = _sdAllSongs.find(function(x) { return x.id === songId; });
+        if (s) { s.name = name; s.singer = singer; s.artist = artist; s.key = key; s.bpm = bpm ? parseInt(bpm) : null; }
+        document.getElementById('sd-edit-' + songId).style.display = 'none';
+      } else {
+        showToast('❌ บันทึกไม่สำเร็จ: ' + ((r && r.message) || 'error'), 'error');
+      }
+    });
+  }
+
+  function sdRenameGroup(songIds, correctName) {
+    if (!confirm('เปลี่ยนชื่อเพลง ' + songIds.length + ' รายการเป็น "' + correctName + '"?')) return;
+    var done = 0, fail = 0;
+    songIds.forEach(function(id) {
+      apiCall('updateSong', { songId: id, name: correctName }, function(r) {
+        if (r && r.success) {
+          var s = _sdAllSongs.find(function(x) { return x.id === id; });
+          if (s) s.name = correctName;
+          done++;
+        } else { fail++; }
+        if (done + fail === songIds.length) {
+          showToast('✅ เปลี่ยนชื่อสำเร็จ ' + done + ' เพลง' + (fail ? ' | ล้มเหลว ' + fail : ''), done ? 'success' : 'error');
+          setTimeout(function() { loadSongDupPanel(true); }, 800);
+        }
+      });
+    });
+  }
+
   // ── END Song Duplicate Checker ─────────────────────────────────────────────
 
   function loadUsers() {
