@@ -2376,11 +2376,24 @@
       var bid = getBandId();
       if (!bid) return { success: false, message: 'ไม่พบ bandId' };
 
-      // 1. Band settings → songManagers list
+      // 1. Band settings → songManagers list + revenueAdminReservedPct
       var r1 = await sb.from('band_settings').select('settings').eq('band_id', bid).limit(1);
       if (r1.error) throw r1.error;
       var settings   = (r1.data && r1.data[0] && r1.data[0].settings) || {};
       var managerIds = settings.songManagers || [];
+
+      // ── Two-Pool Model ──────────────────────────────────────────────────────
+      // Pool 1: System Owner Reserved % (เจ้าของระบบ)
+      //   - สงวนให้ admin เสมอ = สะท้อนงานสร้างระบบ / ค่า AI / ออกแบบ / ดูแลทุกอย่างนอกคลังเพลง
+      //   - configurable ใน band_settings.revenueAdminReservedPct (default 60%)
+      // Pool 2: Activity Pool (งานดูแล)
+      //   - (100 - reservedPct)% แบ่งตามคะแนนงานสะสม รวมของ admin ด้วย
+      //   - ยิ่งทำงานมาก ยิ่งได้สัดส่วนจาก pool นี้มาก
+      // ─────────────────────────────────────────────────────────────────────
+      var adminReservedPct = parseFloat(settings.revenueAdminReservedPct);
+      if (isNaN(adminReservedPct)) adminReservedPct = 60;
+      adminReservedPct = Math.max(0, Math.min(95, adminReservedPct));
+      var activityPoolPct = 100 - adminReservedPct;
 
       // 2. Admin profiles (role=admin) — always include in the split
       var r2a = await sb.from('profiles')
@@ -2460,7 +2473,19 @@
       });
 
       var grandTotal = members.reduce(function(s, m) { return s + m.totalScore; }, 0) || 1;
-      members.forEach(function(m) { m.pct = Math.round(m.totalScore / grandTotal * 1000) / 10; });
+      members.forEach(function(m) {
+        var activityShare = activityPoolPct * m.totalScore / grandTotal;
+        if (m.isAdmin) {
+          // Admin: ได้ Pool1 (reserved) + ส่วนของตัวเองใน Pool2 (activity)
+          m.systemPct   = adminReservedPct;
+          m.activityPct = Math.round(activityShare * 10) / 10;
+          m.pct         = Math.round((adminReservedPct + activityShare) * 10) / 10;
+        } else {
+          m.systemPct   = 0;
+          m.activityPct = Math.round(activityShare * 10) / 10;
+          m.pct         = m.activityPct;
+        }
+      });
       members.sort(function(a, b) {
         if (a.isAdmin && !b.isAdmin) return -1;
         if (!a.isAdmin && b.isAdmin) return 1;
@@ -2473,6 +2498,8 @@
         historicalSongs:    historicalSongs,
         baseScore:          totalBaseScore,
         totalActivityScore: totalActivityScore,
+        adminReservedPct:   adminReservedPct,
+        activityPoolPct:    activityPoolPct,
         trackStart:         logs.length > 0 ? logs[0].created_at : null,
         members:            members
       };
