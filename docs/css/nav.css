@@ -504,6 +504,28 @@
 
 
 /* ============================================
+   Collapsible Sidebar Submenu
+   ============================================ */
+.nav-submenu-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px; color: #9ca3af; font-size: 14px; font-weight: 500;
+  font-family: var(--font-family-body, 'Sarabun', sans-serif);
+  cursor: pointer; border-left: 3px solid transparent;
+  border-radius: 0 8px 8px 0; margin-right: 10px;
+  transition: background .13s, color .13s;
+  user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.nav-submenu-toggle:hover { background: #1f2937; color: #e5e7eb; }
+.nav-submenu-toggle.open { color: var(--premium-gold, #f6ad55); border-left-color: var(--premium-gold, #f6ad55); background: rgba(246,173,85,.08); }
+.nav-submenu-toggle .arrow { transition: transform .2s; font-size: 11px; }
+.nav-submenu-toggle.open .arrow { transform: rotate(180deg); }
+.nav-submenu-toggle .nav-link-desc { display: block; font-size: 10.5px; font-weight: 400; color: #4b5563; }
+.nav-submenu-items { display: none; padding: 2px 0 6px 16px; }
+.nav-submenu-items.open { display: block; }
+.nav-submenu-items li a { font-size: 13px; padding: 6px 16px; }
+.nav-submenu-items li a .nav-link-desc { font-size: 10px; padding-left: 18px; }
+
+/* ============================================
    Accessibility — Nav link size override
    ============================================ */
 body.text-scale-lg .nav-link { padding: 14px 20px; font-size: 1.1rem; }

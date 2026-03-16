@@ -110,11 +110,36 @@ function renderMainNav(containerId) {
     navLink('band-settings',      '⚙️ ' + _t('nav_settings'),     'ตั้งค่าวง ร้าน และตาราง')
   ) : '';
 
-  // ── เมนูแอดมิน ────────────────────────────────────────
+  // ── เมนูแอดมิน (collapsible submenu) ────────────────────
+  var _adminPage = (currentPage === 'admin' || currentPage === 'admin-songs');
+  function _admSub(hash, icon, label) {
+    var href = 'admin.html#' + hash;
+    var cls = 'nav-link';
+    return '<li><a href="' + href + '" class="' + cls + '">' + icon + ' ' + label + '</a></li>';
+  }
   var adminLinks = isAdmin ? (
     navSection('🔧 แอดมิน') +
-    navLink('admin',       '🔧 ' + _t('nav_admin'),    'จัดการผู้ใช้และระบบ') +
-    navLink('admin-songs', '🎵 คลังเพลง Admin',        'เพิ่ม แก้ไข ลบเพลงในคลัง')
+    '<li>' +
+      '<div class="nav-submenu-toggle' + (_adminPage ? ' open' : '') + '" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'open\')">' +
+        '<div>🔧 แอดมิน<span class="nav-link-desc">จัดการผู้ใช้และระบบ</span></div>' +
+        '<span class="arrow">▼</span>' +
+      '</div>' +
+      '<ul class="nav-submenu-items' + (_adminPage ? ' open' : '') + '">' +
+        _admSub('bandreqs',     '🎵', 'คำขอสร้างวง') +
+        _admSub('users',        '👥', 'ผู้ใช้งาน') +
+        _admSub('bands',        '🎼', 'จัดการวง') +
+        _admSub('subscriptions','💳', 'Subscriptions') +
+        _admSub('pricing',      '💰', 'ตั้งราคา') +
+        _admSub('promo',        '🎟️', 'Promo Codes') +
+        _admSub('broadcast',    '📣', 'Broadcast') +
+        _admSub('templates',    '📧', 'Templates') +
+        _admSub('sysinfo',      '📊', 'ระบบ') +
+        _admSub('appconfig',    '⚙️', 'ตั้งค่า') +
+        _admSub('activitylog',  '📋', 'Activity Log') +
+        navLink('admin-songs',  '🎵 คลังเพลง', '') +
+        _admSub('songdup',      '🔍', 'ตรวจเพลงซ้ำ') +
+      '</ul>' +
+    '</li>'
   ) : '';
 
   container.innerHTML =
