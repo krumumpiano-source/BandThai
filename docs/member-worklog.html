@@ -74,6 +74,46 @@
     .bar-wrap { background: var(--premium-light-gray); border-radius: 99px; height: 5px; width: 80px; display: inline-block; vertical-align: middle; }
     .bar-fill { height: 5px; border-radius: 99px; background: var(--premium-gold); min-width: 2px; }
 
+    /* ── Admin Reserved Setting Card ── */
+    .reserved-card {
+      background: linear-gradient(135deg,#1a1a2e,#16213e);
+      border-radius: 14px; padding: 18px 22px; margin-bottom: 20px;
+    }
+    .reserved-card-title {
+      color: #fff; font-size: .88rem; font-weight: 700; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .reserved-pct-display {
+      background: var(--premium-gold); color: #fff;
+      border-radius: 99px; padding: 3px 13px; font-size: .95rem; font-weight: 800;
+    }
+    .reserved-slider {
+      -webkit-appearance: none; appearance: none;
+      width: 100%; height: 6px; border-radius: 99px;
+      background: linear-gradient(to right, var(--premium-gold) var(--val,60%), rgba(255,255,255,.2) var(--val,60%));
+      outline: none; cursor: pointer; margin: 6px 0 10px;
+    }
+    .reserved-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--premium-gold);
+      border: 3px solid #fff; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,.3);
+    }
+    .reserved-hint { color: rgba(255,255,255,.6); font-size: .77rem; line-height: 1.5; margin-bottom: 12px; }
+    .reserved-pools {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .pool-chip {
+      flex: 1; min-width: 130px; background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
+      padding: 10px 14px; text-align: center;
+    }
+    .pool-chip .pc-num { font-size: 1.2rem; font-weight: 800; }
+    .pool-chip .pc-lbl { font-size: .7rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+    .pool1-num { color: var(--premium-gold); }
+    .pool2-num { color: #68d391; }
+    /* ── Breakdown badge for admin row ── */
+    .breakdown-note { font-size: .7rem; color: var(--premium-text-muted); margin-top: 3px; }
+
     /* ── Info note ── */
     .info-note {
       background: #FFFBEB; border: 1.5px solid #FDE68A; border-radius: 10px;
@@ -162,6 +202,41 @@
         <div class="stat-chip"><div class="sc-num" id="statSince">—</div><div class="sc-lbl">⚡ ติดตามตั้งแต่</div></div>
       </div>
 
+      <!-- Admin Reserved % Setting (only admin sees this) -->
+      <div class="reserved-card" id="adminReservedCard" style="display:none">
+        <div class="reserved-card-title">
+          <span>🏗️ ส่วนสงวนเจ้าของระบบ</span>
+          <span class="reserved-pct-display" id="reservedPctDisplay">60%</span>
+        </div>
+        <div class="reserved-pools">
+          <div class="pool-chip">
+            <div class="pc-num pool1-num" id="pool1Display">60%</div>
+            <div class="pc-lbl">🏗️ กองเจ้าของระบบ<br>(ขั้นต่ำสงวนให้ admin)</div>
+          </div>
+          <div class="pool-chip">
+            <div class="pc-num pool2-num" id="pool2Display">40%</div>
+            <div class="pc-lbl">📊 กองงานดูแล<br>(แบ่งตามคะแนนสะสม)</div>
+          </div>
+        </div>
+        <input type="range" id="reservedPctSlider" class="reserved-slider"
+          min="0" max="95" step="5" value="60"
+          oninput="onReservedPctChange(this.value)">
+        <div class="reserved-hint">
+          <strong style="color:var(--premium-gold)">กองเจ้าของระบบ</strong> =
+          งานสร้างระบบ ค่า AI ออกแบบ วางแผน และดูแลทุกส่วนที่ไม่ได้บันทึกเป็นคะแนน<br>
+          <strong style="color:#68d391">กองงานดูแล</strong> =
+          แบ่งตามคะแนนสะสมจริงของทุกคน (รวม admin ด้วย)<br>
+          <span style="color:rgba(255,255,255,.4)">💡 แม้ระบบจะนิ่งและไม่มีใครทำงาน คะแนนสะสมก็คงที่ทำให้สัดส่วนมีเสถียรภาพ</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="btn btn-primary btn-sm" id="saveReservedBtn" onclick="saveReservedPct()"
+            style="background:var(--premium-gold);border:none;padding:8px 18px;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit">
+            💾 บันทึกการตั้งค่า
+          </button>
+          <span id="saveReservedMsg" style="font-size:.77rem;color:rgba(255,255,255,.6)"></span>
+        </div>
+      </div>
+
       <!-- Revenue Calculator -->
       <div class="revenue-box">
         <label>💵 รายได้เดือนนี้</label>
@@ -225,6 +300,59 @@
   var _stats   = null;
   var _logData = [];
   var _logLoaded = false;
+  var _adminReservedPct = 60; // sync with slider
+
+  // ── Recalculate pcts client-side (two-pool formula) ────────────
+  function recalcPcts(reservedPct) {
+    if (!_stats || !_stats.members) return;
+    reservedPct = Math.max(0, Math.min(95, parseFloat(reservedPct) || 60));
+    var activityPoolPct = 100 - reservedPct;
+    var grandTotal = _stats.members.reduce(function(s, m) { return s + m.totalScore; }, 0) || 1;
+    _stats.members.forEach(function(m) {
+      var actShare = activityPoolPct * m.totalScore / grandTotal;
+      if (m.isAdmin) {
+        m.systemPct   = reservedPct;
+        m.activityPct = Math.round(actShare * 10) / 10;
+        m.pct         = Math.round((reservedPct + actShare) * 10) / 10;
+      } else {
+        m.systemPct   = 0;
+        m.activityPct = Math.round(actShare * 10) / 10;
+        m.pct         = m.activityPct;
+      }
+    });
+    _adminReservedPct = reservedPct;
+  }
+
+  function onReservedPctChange(val) {
+    val = parseInt(val) || 0;
+    document.getElementById('reservedPctDisplay').textContent = val + '%';
+    document.getElementById('pool1Display').textContent = val + '%';
+    document.getElementById('pool2Display').textContent = (100 - val) + '%';
+    // Update slider gradient
+    var sl = document.getElementById('reservedPctSlider');
+    sl.style.setProperty('--val', val + '%');
+    recalcPcts(val);
+    renderMemberTable(_stats);
+    calcRevenue();
+  }
+
+  function saveReservedPct() {
+    var val = parseInt(document.getElementById('reservedPctSlider').value) || 60;
+    var btn = document.getElementById('saveReservedBtn');
+    var msg = document.getElementById('saveReservedMsg');
+    btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+    msg.textContent = '';
+    apiCall('saveBandSettings', { revenueAdminReservedPct: val }, function(r) {
+      btn.disabled = false; btn.textContent = '💾 บันทึกการตั้งค่า';
+      if (r && r.success) {
+        msg.style.color = '#68d391';
+        msg.textContent = '✅ บันทึกแล้ว — ' + val + '% สงวนให้เจ้าของระบบ';
+      } else {
+        msg.style.color = '#fc8181';
+        msg.textContent = '❌ ' + (r && r.message || 'เกิดข้อผิดพลาด');
+      }
+    });
+  }
 
   function esc(s) { return String(s||'').replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function fmtNum(n) { return Number(n||0).toLocaleString('th-TH'); }
@@ -292,6 +420,12 @@
 
     members.forEach(function(m, i) {
       var color = COLORS[i % COLORS.length];
+      var breakdownNote = '';
+      if (m.isAdmin && m.systemPct > 0) {
+        breakdownNote = '<div class="breakdown-note">🏗️ ระบบ ' + m.systemPct + '% + 📊 งาน ' + m.activityPct + '%</div>';
+      } else if (!m.isAdmin) {
+        breakdownNote = '<div class="breakdown-note">📊 จากกองงานดูแล</div>';
+      }
       html += '<tr>' +
         '<td><div class="mt-name" style="color:' + color + '">● ' + esc(m.userName) + '</div>' +
           '<div class="mt-sub">รวม ' + fmtNum(m.totalScore) + ' คะแนน</div></td>' +
@@ -299,7 +433,8 @@
         '<td>' + fmtNum(m.activityScore) + '</td>' +
         '<td>' +
           '<span class="pct-badge" style="background:' + color + '">' + m.pct + '%</span>' +
-          '&nbsp;<span class="bar-wrap"><span class="bar-fill" style="width:' + m.pct + '%;background:' + color + '"></span></span>' +
+          '&nbsp;<span class="bar-wrap"><span class="bar-fill" style="width:' + Math.min(m.pct,100) + '%;background:' + color + '"></span></span>' +
+          breakdownNote +
         '</td>' +
         '<td><div class="baht-cell">—</div></td>' +
       '</tr>';
@@ -318,6 +453,7 @@
         return;
       }
       _stats = r;
+      _adminReservedPct = r.adminReservedPct || 60;
 
       // Stats bar
       document.getElementById('statTotal').textContent      = fmtNum(r.totalSongs);
@@ -325,12 +461,24 @@
       document.getElementById('statTracked').textContent    = fmtNum(r.totalActivityScore);
       document.getElementById('statSince').textContent      = r.trackStart ? fmtDate(r.trackStart) : 'ยังไม่มี';
 
-      // Info note
-      if (r.baseScore > 0) {
-        var nm = (r.members || []).length || 1;
-        document.getElementById('infoNote').style.display = 'flex';
-        document.getElementById('infoNoteText').innerHTML =
-          'คะแนนฐานจากเพลง ' + fmtNum(r.totalSongs) + ' เพลงก่อนเริ่มติดตาม (<strong>' + fmtNum(r.baseScore) + ' คะแนน</strong>) แบ่งเท่าๆ กัน คนละ <strong>' + fmtNum(Math.round(r.baseScore / nm)) + ' คะแนน</strong>';
+      // Info note — explain two-pool model
+      document.getElementById('infoNote').style.display = 'flex';
+      document.getElementById('infoNoteText').innerHTML =
+        '<strong>ระบบแบ่ง 2 กอง:</strong> ' +
+        '🏗️ <strong>กองเจ้าของระบบ ' + _adminReservedPct + '%</strong> (สงวนให้ผู้สร้างระบบ — งานออกแบบ ค่า AI ดูแลทั้งหมดที่ไม่ได้บันทึกเป็นคะแนน) ' +
+        '+ 📊 <strong>กองงานดูแล ' + r.activityPoolPct + '%</strong> (แบ่งตามคะแนนสะสมของทุกคน)';
+
+      // Admin setting card
+      var role = localStorage.getItem('userRole') || '';
+      if (role === 'admin') {
+        var card = document.getElementById('adminReservedCard');
+        card.style.display = 'block';
+        var sl = document.getElementById('reservedPctSlider');
+        sl.value = _adminReservedPct;
+        sl.style.setProperty('--val', _adminReservedPct + '%');
+        document.getElementById('reservedPctDisplay').textContent = _adminReservedPct + '%';
+        document.getElementById('pool1Display').textContent = _adminReservedPct + '%';
+        document.getElementById('pool2Display').textContent = r.activityPoolPct + '%';
       }
 
       renderMemberTable(r);
