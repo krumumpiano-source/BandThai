@@ -303,7 +303,7 @@
               <h3 class="card-title">🔍 ตรวจสอบเพลงซ้ำ — Global Library</h3>
               <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
-                <button class="btn btn-sm" id="sd-itunes-btn" style="background:#1DB954;color:#fff" onclick="sdItunesEnrichBatch()">🔍 ค้นหา Spotify</button>
+                <button class="btn btn-sm" id="sd-itunes-btn" style="background:#0ea5e9;color:#fff" onclick="sdItunesEnrichBatch()">🔍 ค้นหา iTunes</button>
                 <button class="btn btn-sm" style="background:#7c3aed;color:#fff" onclick="sdClearAllIgnored()">🔓 เลิกยกเว้นทั้งหมด</button>
                 <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
                 <button class="btn btn-sm" style="background:#dc2626;color:#fff" id="sd-btn-exec" disabled onclick="sdExecuteMerge()">⚡ ลบที่เลือก (<span id="sd-sel-count">0</span>)</button>
@@ -349,7 +349,7 @@
   </main>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/spotify-api.js"></script>
+  <script src="js/itunes-api.js"></script>
   <script src="js/nav.js"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -511,7 +511,7 @@
     if (opts.showSwap) {
       btns += '<button onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" style="background:transparent;border:1px solid #9ca3af;border-radius:4px;padding:1px 5px;font-size:.68rem;cursor:pointer;color:#6b7280" title="\u0E2A\u0E25\u0E31\u0E1A">\uD83D\uDD04</button>';
     }
-    btns += '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem'+(hasCache?';color:#16a34a':'')+'" title="\u0E04\u0E49\u0E19\u0E2B\u0E32 Spotify">'+(hasCache?'\u2705':'\uD83D\uDD0D')+'</button>';
+    btns += '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem'+(hasCache?';color:#16a34a':'')+'" title="\u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes">'+(hasCache?'\u2705':'\uD83D\uDD0D')+'</button>';
     btns += '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>';
     var mainRow = '<tr style="background:'+bgColor+';border-bottom:1px solid #f1f5f9">'
       + '<td style="text-align:center;padding:5px 4px;width:30px">'+chkHtml+'</td>'
@@ -545,7 +545,7 @@
       if (_sdScore(s) < 5) {
         return '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#e0f2fe,#eff6ff);border:1px solid #7dd3fc;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')">'
           + '<span style="font-size:1.1rem">🔍</span>'
-          + '<span style="font-size:.78rem;color:#1DB954;font-weight:600">คลิกเพื่อค้นหาข้อมูลเพิ่มเติมจาก Spotify</span></div>';
+          + '<span style="font-size:.78rem;color:#0ea5e9;font-weight:600">คลิกเพื่อค้นหาข้อมูลเพิ่มเติมจาก iTunes</span></div>';
       }
       return '';
     }
@@ -588,13 +588,13 @@
 
     if (!hasDiff) {
       return '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;display:flex;align-items:center;gap:6px">'
-        + '<span style="font-size:.9rem">✅</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">Spotify ค้นแล้ว — ข้อมูลครบถูกต้อง</span></div>';
+        + '<span style="font-size:.9rem">✅</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">iTunes ค้นแล้ว — ข้อมูลครบถูกต้อง</span></div>';
     }
 
     var sid = s.id;
     return '<div style="margin-top:6px;background:#fafafa;border:1.5px solid #7dd3fc;border-radius:8px;overflow:hidden" onclick="event.stopPropagation()">'
-      + '<div style="background:linear-gradient(135deg,#1DB954,#191414);padding:6px 12px;display:flex;align-items:center;gap:8px">'
-      + '<span style="color:#fff;font-size:.82rem;font-weight:700">🎵 Spotify แนะนำ</span>'
+      + '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:6px 12px;display:flex;align-items:center;gap:8px">'
+      + '<span style="color:#fff;font-size:.82rem;font-weight:700">🎵 iTunes แนะนำ</span>'
       + (ai.notes ? '<span style="color:#e0f2fe;font-size:.7rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— '+escapeHtml(ai.notes)+'</span>' : '<span style="flex:1"></span>')
       + '<button onclick="sdItunesEnrich(\''+sid+'\',true)" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:2px 7px;font-size:.68rem;cursor:pointer">🔄</button>'
       + '</div>'
@@ -699,7 +699,7 @@
     // Count incomplete songs
     var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 5; }).length;
     if (incomplete) {
-      parts.push('<br>\uD83C\uDFB5 <span style="color:#1DB954">\u0E1E\u0E1A <b>'+incomplete+' \u0E40\u0E1E\u0E25\u0E07</b>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A \u2014 \u0E01\u0E14 <b>\uD83C\uDFB5 \u0E04\u0E49\u0E19\u0E2B\u0E32 Spotify</b> \u0E14\u0E49\u0E32\u0E19\u0E1A\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E01\u0E14 \uD83D\uDD0D \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A (\u0E04\u0E35\u0E22\u0E4C, BPM, \u0E2D\u0E32\u0E23\u0E21\u0E13\u0E4C)</span>');
+      parts.push('<br>\uD83C\uDFB5 <span style="color:#0ea5e9">\u0E1E\u0E1A <b>'+incomplete+' \u0E40\u0E1E\u0E25\u0E07</b>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A \u2014 \u0E01\u0E14 <b>\uD83C\uDFB5 \u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes</b> \u0E14\u0E49\u0E32\u0E19\u0E1A\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E01\u0E14 \uD83D\uDD0D \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E34\u0E48\u0E21 (\u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, \u0E22\u0E38\u0E04, \u0E41\u0E19\u0E27\u0E40\u0E1E\u0E25\u0E07)</span>');
     }
     el.innerHTML = parts.join(' &nbsp;\u00B7&nbsp; ');
   }
@@ -1021,9 +1021,9 @@
     next(0);
   }
 
-  // ── Spotify Search (via spotify-api.js) ────────────────────────────────────
-  function _sdSearchSpotify(name, artist, callback) {
-    spotifySearch(name, artist, function(result, errText) {
+  // ── iTunes Search (via itunes-api.js) ────────────────────────────────────
+  function _sdSearchItunes(name, artist, callback) {
+    itunesSearch(name, artist, function(result, errText) {
       if (!result) { callback(null, errText); return; }
       callback(result, null);
     });
@@ -1043,8 +1043,8 @@
     if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
     if (detailRow) detailRow.style.display = '';
     el.style.display = '';
-    el.innerHTML = '<div style="padding:10px;text-align:center;color:#1DB954;font-size:.84rem">\uD83C\uDFB5 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 Spotify...</div>';
-    _sdSearchSpotify(song.name, song.artist || song.singer, function(result, errText) {
+    el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83C\uDFB5 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
+    _sdSearchItunes(song.name, song.artist || song.singer, function(result, errText) {
       if (!result) {
         el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
           + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span>'
@@ -1065,13 +1065,13 @@
     var done = 0;
     function next(i) {
       if (i >= incomplete.length) {
-        if (btn) { btn.disabled = false; btn.textContent = '\uD83C\uDFB5 \u0E04\u0E49\u0E19\u0E2B\u0E32 Spotify'; }
+        if (btn) { btn.disabled = false; btn.textContent = '\uD83C\uDFB5 \u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes'; }
         showToast('\u2705 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E40\u0E2A\u0E23\u0E47\u0E08 ' + done + ' \u0E40\u0E1E\u0E25\u0E07', 'success');
         sdRender(); return;
       }
       if (btn) btn.textContent = '\uD83D\uDD0D ' + i + '/' + incomplete.length + '...';
       var s = incomplete[i];
-      _sdSearchSpotify(s.name, s.artist || s.singer, function(result) {
+      _sdSearchItunes(s.name, s.artist || s.singer, function(result) {
         if (result) { _sdEnrichCache[s.id] = result; done++; }
         setTimeout(function() { next(i + 1); }, 400);
       });
