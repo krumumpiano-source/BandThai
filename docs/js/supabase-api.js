@@ -2362,33 +2362,33 @@
       var bid = getBandId();
       if (!bid) return { success: false, message: 'ไม่พบ bandId' };
 
-      // 1. Run band_settings + total songs + activity log in PARALLEL
-      var [bsResult, countResult, logResult] = await Promise.all([
-        sb.from('band_settings').select('settings').eq('band_id', bid).limit(1),
-        sb.from('band_songs').select('*', { count: 'exact', head: true }).eq('band_id', bid),
-        sb.from('member_activity_log')
-          .select('user_id, user_name, action, score, created_at')
-          .eq('band_id', bid)
-          .order('created_at', { ascending: true })
-          .limit(10000)
-      ]);
-
-      if (bsResult.error) throw bsResult.error;
-      if (countResult.error) throw countResult.error;
-      if (logResult.error) throw logResult.error;
-
-      var settings   = (bsResult.data && bsResult.data[0] && bsResult.data[0].settings) || {};
+      // 1. Band settings
+      var r1 = await sb.from('band_settings').select('settings').eq('band_id', bid).limit(1);
+      if (r1.error) throw r1.error;
+      var settings   = (r1.data && r1.data[0] && r1.data[0].settings) || {};
       var managerIds = settings.songManagers || [];
-      var totalSongs = countResult.count || 0;
-      var logs       = logResult.data || [];
 
-      // 2. Profile data for managers (parallel with nothing else, after step 1)
+      // 2. Total songs count
+      var r2 = await sb.from('band_songs').select('*', { count: 'exact', head: true }).eq('band_id', bid);
+      if (r2.error) throw r2.error;
+      var totalSongs = r2.count || 0;
+
+      // 3. Activity log
+      var r3 = await sb.from('member_activity_log')
+        .select('user_id, user_name, action, score, created_at')
+        .eq('band_id', bid)
+        .order('created_at', { ascending: true })
+        .limit(10000);
+      if (r3.error) throw r3.error;
+      var logs = r3.data || [];
+
+      // 4. Profile data for managers
       var profiles = [];
       if (managerIds.length > 0) {
-        var { data: pdata, error: pe } = await sb.from('profiles')
+        var r4 = await sb.from('profiles')
           .select('id, first_name, last_name, nickname, user_name')
           .in('id', managerIds);
-        if (!pe) profiles = pdata || [];
+        if (!r4.error) profiles = r4.data || [];
       }
 
       // 3. Compute tracked song adds per user
