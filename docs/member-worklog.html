@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>บันทึกการทำงานสมาชิก — BandThai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .wl-wrap { max-width: 1200px; margin: 0 auto; padding: 0 16px 40px; }
+
+    /* ── Summary Cards ── */
+    .member-cards { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 24px; }
+    .member-card {
+      background: var(--premium-white); border: 1.5px solid var(--premium-border);
+      border-radius: 14px; padding: 16px 20px; min-width: 200px; flex: 1;
+      box-shadow: 0 2px 8px rgba(0,0,0,.06); position: relative; overflow: hidden;
+    }
+    .member-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: var(--mc-color, var(--premium-gold));
+    }
+    .mc-name { font-weight: 700; font-size: 1rem; color: var(--premium-text); margin-bottom: 10px; }
+    .mc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mc-stat { text-align: center; }
+    .mc-num { font-size: 1.4rem; font-weight: 700; color: var(--premium-gold-dark); line-height: 1; }
+    .mc-lbl { font-size: .68rem; color: var(--premium-text-muted); margin-top: 2px; }
+    .mc-bar-wrap { margin-top: 10px; background: var(--premium-light-gray); border-radius: 99px; height: 6px; }
+    .mc-bar { height: 6px; border-radius: 99px; background: var(--mc-color, var(--premium-gold)); min-width: 3px; }
+    .mc-last { font-size: .7rem; color: var(--premium-text-muted); margin-top: 6px; }
+
+    /* ── Filters ── */
+    .wl-filters {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+      background: var(--premium-white); border: 1.5px solid var(--premium-border);
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+    }
+    .wl-filters label { font-size: .78rem; color: var(--premium-text-muted); white-space: nowrap; }
+    .wl-filters select, .wl-filters input[type=date] {
+      padding: 7px 10px; border: 1.5px solid var(--premium-border); border-radius: 8px;
+      font-size: .82rem; font-family: inherit; background: var(--premium-off-white); color: var(--premium-text);
+    }
+    .wl-filters select:focus, .wl-filters input[type=date]:focus {
+      outline: none; border-color: var(--premium-gold);
+    }
+    .wl-filters .spacer { flex: 1; }
+
+    /* ── Section heading ── */
+    .wl-sect-title {
+      font-size: .75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--premium-text-muted);
+      padding-bottom: 6px; border-bottom: 2px solid var(--premium-border);
+      margin-bottom: 14px; margin-top: 28px;
+    }
+
+    /* ── Session groups ── */
+    .sess-group {
+      background: var(--premium-white); border: 1px solid var(--premium-border);
+      border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+    }
+    .sess-header {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      padding: 10px 16px; background: var(--premium-off-white);
+      cursor: pointer; user-select: none;
+    }
+    .sess-header:hover { background: var(--premium-light-gray); }
+    .sess-hname { font-weight: 700; font-size: .88rem; color: var(--premium-text); }
+    .sess-hmeta { display: flex; gap: 12px; font-size: .72rem; color: var(--premium-text-muted); }
+    .sess-hmeta span { white-space: nowrap; }
+    .sess-body { padding: 0; display: none; }
+    .sess-body.open { display: block; }
+    .sess-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .sess-table th {
+      background: var(--premium-off-white); text-align: left;
+      padding: 7px 12px; font-size: .7rem; font-weight: 700;
+      color: var(--premium-text-muted); text-transform: uppercase; letter-spacing: .04em;
+      border-bottom: 1px solid var(--premium-border);
+    }
+    .sess-table td { padding: 7px 12px; border-bottom: 1px solid var(--premium-light-gray); vertical-align: middle; }
+    .sess-table tr:last-child td { border-bottom: none; }
+    .act-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: .7rem; font-weight: 700;
+    }
+    .act-add    { background: #D1FAE5; color: #065F46; }
+    .act-edit   { background: #DBEAFE; color: #1E3A8A; }
+    .act-delete { background: #FEE2E2; color: #991B1B; }
+    .act-merge  { background: #EDE9FE; color: #4C1D95; }
+    .act-bulk   { background: #FEF9C3; color: #854D0E; }
+    .act-artist { background: #F0FDF4; color: #166534; }
+
+    /* ── Score pill ── */
+    .score-pill {
+      display: inline-block; min-width: 24px; text-align: center;
+      padding: 1px 6px; border-radius: 99px; font-size: .7rem; font-weight: 700;
+      background: var(--premium-gold); color: #fff;
+    }
+
+    /* ── Totals row ── */
+    .wl-total-row {
+      display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+    }
+    .wl-total-box {
+      background: linear-gradient(135deg, #1a1a2e, #16213e);
+      color: #fff; border-radius: 12px; padding: 14px 20px; flex: 1; min-width: 130px;
+      text-align: center;
+    }
+    .wl-total-num { font-size: 1.6rem; font-weight: 700; color: var(--premium-gold); }
+    .wl-total-lbl { font-size: .72rem; color: rgba(255,255,255,.6); margin-top: 2px; }
+
+    /* ── Empty state ── */
+    .wl-empty { text-align: center; padding: 48px; color: var(--premium-text-muted); font-size: .9rem; }
+    .wl-empty .wl-empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* ── Loading ── */
+    .wl-loading { text-align: center; padding: 32px; color: var(--premium-text-muted); }
+
+    /* ── Export btn ── */
+    .btn-export {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; background: #F0FDF4; color: #16A34A;
+      border: 1.5px solid #BBF7D0; border-radius: 8px; font-size: .82rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s;
+    }
+    .btn-export:hover { background: #DCFCE7; }
+    .btn-refresh {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; background: var(--premium-gold); color: #fff;
+      border: none; border-radius: 8px; font-size: .82rem;
+      font-weight: 700; cursor: pointer; font-family: inherit; transition: background .15s;
+    }
+    .btn-refresh:hover { background: var(--premium-gold-dark); }
+
+    @media (max-width: 640px) {
+      .mc-stats { grid-template-columns: 1fr 1fr 1fr; }
+      .member-card { min-width: calc(50% - 7px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container wl-wrap">
+      <div class="page-header" style="margin-bottom:16px">
+        <div>
+          <h1 class="page-title">📊 บันทึกการทำงานสมาชิก</h1>
+          <p style="font-size:.82rem;color:var(--premium-text-muted);margin:4px 0 0">ติดตามงานในคลังเพลง — ใช้ตัดสินใจเรื่องส่วนแบ่งรายได้</p>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="wl-filters">
+        <label>สมาชิก</label>
+        <select id="filterUser" onchange="loadWorklog()">
+          <option value="">ทุกคน</option>
+        </select>
+        <label>ประเภทงาน</label>
+        <select id="filterAction" onchange="loadWorklog()">
+          <option value="">ทุกประเภท</option>
+          <option value="add_song">เพิ่มเพลง</option>
+          <option value="edit_song">แก้ไขเพลง</option>
+          <option value="delete_song">ลบเพลง</option>
+          <option value="merge_songs">รวมเพลงซ้ำ</option>
+          <option value="bulk_add">เพิ่มเพลงกลุ่ม</option>
+          <option value="add_artist">เพิ่มศิลปิน</option>
+          <option value="edit_artist">แก้ไขศิลปิน</option>
+          <option value="delete_artist">ลบศิลปิน</option>
+        </select>
+        <label>ตั้งแต่</label>
+        <input type="date" id="filterFrom" onchange="loadWorklog()">
+        <label>ถึง</label>
+        <input type="date" id="filterTo" onchange="loadWorklog()">
+        <div class="spacer"></div>
+        <button class="btn-export" onclick="exportCsv()">📥 Export CSV</button>
+        <button class="btn-refresh" onclick="loadWorklog()">🔄 รีเฟรช</button>
+      </div>
+
+      <!-- Totals -->
+      <div class="wl-total-row" id="totalRow" style="display:none"></div>
+
+      <!-- Summary Cards per member -->
+      <div id="memberCards" class="member-cards"></div>
+
+      <!-- Session timeline -->
+      <div class="wl-sect-title">📋 ประวัติการทำงาน (จัดกลุ่มตาม Session)</div>
+      <div id="sessionsArea"><div class="wl-loading">⏳ กำลังโหลด...</div></div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+  // ── Constants ──────────────────────────────────────────────────
+  var MEMBER_COLORS = [
+    '#f6ad55','#68d391','#63b3ed','#fc8181','#b794f4',
+    '#f687b3','#4fd1c5','#fbd38d','#a0aec0','#9ae6b4'
+  ];
+  var ACTION_LABELS = {
+    add_song:     'เพิ่มเพลง',
+    edit_song:    'แก้ไขเพลง',
+    delete_song:  'ลบเพลง',
+    merge_songs:  'รวมเพลงซ้ำ',
+    bulk_add:     'เพิ่มเพลงกลุ่ม',
+    add_artist:   'เพิ่มศิลปิน',
+    edit_artist:  'แก้ไขศิลปิน',
+    delete_artist:'ลบศิลปิน'
+  };
+  var ACTION_CLASS = {
+    add_song: 'act-add', edit_song: 'act-edit', delete_song: 'act-delete',
+    merge_songs: 'act-merge', bulk_add: 'act-bulk',
+    add_artist: 'act-artist', edit_artist: 'act-edit', delete_artist: 'act-delete'
+  };
+
+  var _allLogs = [];
+  var _memberColorMap = {};
+  var _colorIdx = 0;
+
+  // ── Helpers ────────────────────────────────────────────────────
+  function fmt(dt) {
+    if (!dt) return '—';
+    var d = new Date(dt);
+    return d.toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+  }
+  function fmtDate(dt) {
+    if (!dt) return '—';
+    return new Date(dt).toLocaleDateString('th-TH', { day:'numeric', month:'short', year:'numeric' });
+  }
+  function diffMin(a, b) {
+    return Math.round(Math.abs(new Date(b) - new Date(a)) / 60000);
+  }
+  function fmtDur(min) {
+    if (min < 60) return min + ' นาที';
+    var h = Math.floor(min / 60), m = min % 60;
+    return h + ' ชม.' + (m ? (m + ' น.') : '');
+  }
+  function getColor(uid) {
+    if (!_memberColorMap[uid]) {
+      _memberColorMap[uid] = MEMBER_COLORS[_colorIdx % MEMBER_COLORS.length];
+      _colorIdx++;
+    }
+    return _memberColorMap[uid];
+  }
+  function esc(s) { return String(s || '').replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+  // ── Compute per-member summary from raw logs ───────────────────
+  function computeSummary(logs) {
+    var members = {};      // uid → { name, actions, score, sessions, totalMinutes }
+    var sessionMap = {};   // sessionId → { uid, first, last }
+
+    logs.forEach(function(r) {
+      var uid = r.userId;
+      if (!members[uid]) {
+        members[uid] = { uid: uid, name: r.userName || uid, actions: 0, score: 0, sessions: {}, totalMinutes: 0, lastAt: null };
+      }
+      members[uid].actions++;
+      members[uid].score += (r.score || 1);
+      if (!members[uid].lastAt || r.createdAt > members[uid].lastAt) members[uid].lastAt = r.createdAt;
+
+      // Session tracking
+      var sid = r.sessionId;
+      if (sid) {
+        if (!sessionMap[sid]) sessionMap[sid] = { uid: uid, first: r.createdAt, last: r.createdAt };
+        if (r.createdAt < sessionMap[sid].first) sessionMap[sid].first = r.createdAt;
+        if (r.createdAt > sessionMap[sid].last)  sessionMap[sid].last  = r.createdAt;
+        members[uid].sessions[sid] = true;
+      }
+    });
+
+    // Compute session durations
+    Object.values(sessionMap).forEach(function(sess) {
+      var uid = sess.uid;
+      if (members[uid]) {
+        members[uid].totalMinutes += diffMin(sess.first, sess.last);
+      }
+    });
+
+    return Object.values(members).sort(function(a, b) { return b.score - a.score; });
+  }
+
+  // ── Group logs into sessions ───────────────────────────────────
+  function groupBySessions(logs) {
+    var sessMap = {};
+    logs.forEach(function(r) {
+      var sid = r.sessionId || ('nosess_' + r.userId);
+      if (!sessMap[sid]) sessMap[sid] = { sid: sid, uid: r.userId, name: r.userName, items: [], first: r.createdAt, last: r.createdAt };
+      sessMap[sid].items.push(r);
+      if (r.createdAt < sessMap[sid].first) sessMap[sid].first = r.createdAt;
+      if (r.createdAt > sessMap[sid].last)  sessMap[sid].last  = r.createdAt;
+    });
+    return Object.values(sessMap).sort(function(a, b) { return b.last < a.last ? -1 : 1; });
+  }
+
+  // ── Render summary cards ───────────────────────────────────────
+  function renderCards(members, totalScore) {
+    var container = document.getElementById('memberCards');
+    var totalRow  = document.getElementById('totalRow');
+    if (!members.length) { container.innerHTML = ''; totalRow.style.display = 'none'; return; }
+
+    totalRow.style.display = 'flex';
+    totalRow.innerHTML =
+      '<div class="wl-total-box"><div class="wl-total-num">' + members.reduce(function(s,m){return s+m.actions;},0) + '</div><div class="wl-total-lbl">ครั้งทำงานรวม</div></div>' +
+      '<div class="wl-total-box"><div class="wl-total-num">' + totalScore + '</div><div class="wl-total-lbl">คะแนนรวมทั้งระบบ</div></div>' +
+      '<div class="wl-total-box"><div class="wl-total-num">' + members.length + '</div><div class="wl-total-lbl">สมาชิกที่มีส่วนร่วม</div></div>';
+
+    container.innerHTML = members.map(function(m) {
+      var pct   = totalScore > 0 ? Math.round(m.score / totalScore * 100) : 0;
+      var nSess = Object.keys(m.sessions).length;
+      var color = getColor(m.uid);
+      return '<div class="member-card" style="--mc-color:' + color + '">' +
+        '<div class="mc-name">👤 ' + esc(m.name) + '</div>' +
+        '<div class="mc-stats">' +
+          '<div class="mc-stat"><div class="mc-num">' + m.actions + '</div><div class="mc-lbl">ครั้งทำงาน</div></div>' +
+          '<div class="mc-stat"><div class="mc-num" style="color:' + color + '">' + m.score + '</div><div class="mc-lbl">คะแนน</div></div>' +
+          '<div class="mc-stat"><div class="mc-num">' + pct + '%</div><div class="mc-lbl">% งานระบบ</div></div>' +
+          '<div class="mc-stat"><div class="mc-num">' + (m.totalMinutes < 60 ? m.totalMinutes + '<span style="font-size:.7rem">น.</span>' : Math.floor(m.totalMinutes/60)+'<span style="font-size:.7rem">ชม.</span>') + '</div><div class="mc-lbl">เวลาทำงาน~</div></div>' +
+        '</div>' +
+        '<div class="mc-bar-wrap"><div class="mc-bar" style="width:' + pct + '%"></div></div>' +
+        '<div class="mc-last">🕐 ล่าสุด: ' + fmt(m.lastAt) + ' · ' + nSess + ' session</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── Render session groups ──────────────────────────────────────
+  function renderSessions(sessions) {
+    var area = document.getElementById('sessionsArea');
+    if (!sessions.length) {
+      area.innerHTML = '<div class="wl-empty"><div class="wl-empty-icon">📭</div>ยังไม่มีบันทึกการทำงานในช่วงที่เลือก</div>';
+      return;
+    }
+    area.innerHTML = sessions.map(function(sess, idx) {
+      var dur    = diffMin(sess.first, sess.last);
+      var score  = sess.items.reduce(function(s,r){return s+(r.score||1);},0);
+      var color  = getColor(sess.uid);
+      var bodyId = 'sb' + idx;
+      return '<div class="sess-group">' +
+        '<div class="sess-header" onclick="toggleSess(\'' + bodyId + '\')">' +
+          '<div class="sess-hname" style="color:' + color + '">👤 ' + esc(sess.name) + '</div>' +
+          '<div class="sess-hmeta">' +
+            '<span>📅 ' + fmtDate(sess.last) + '</span>' +
+            '<span>⏱️ ' + fmtDur(dur) + '</span>' +
+            '<span>✅ ' + sess.items.length + ' รายการ</span>' +
+            '<span>⭐ ' + score + ' คะแนน</span>' +
+            '<span style="font-size:.8rem">▼</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sess-body" id="' + bodyId + '">' +
+          '<table class="sess-table">' +
+            '<thead><tr><th>เวลา</th><th>ประเภทงาน</th><th>เป้าหมาย</th><th>คะแนน</th></tr></thead>' +
+            '<tbody>' +
+            sess.items.map(function(r) {
+              var cls = ACTION_CLASS[r.action] || 'act-edit';
+              return '<tr>' +
+                '<td style="color:var(--premium-text-muted);white-space:nowrap">' + fmt(r.createdAt) + '</td>' +
+                '<td><span class="act-badge ' + cls + '">' + esc(r.actionLabel || ACTION_LABELS[r.action] || r.action) + '</span></td>' +
+                '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis">' + esc(r.targetName || '—') + '</td>' +
+                '<td><span class="score-pill">' + (r.score || 1) + '</span></td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody>' +
+          '</table>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    // Auto-open first session
+    var first = document.getElementById('sb0');
+    if (first) first.classList.add('open');
+  }
+
+  function toggleSess(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('open');
+  }
+
+  // ── Load worklog ───────────────────────────────────────────────
+  function loadWorklog() {
+    var filterUser   = document.getElementById('filterUser').value;
+    var filterAction = document.getElementById('filterAction').value;
+    var filterFrom   = document.getElementById('filterFrom').value;
+    var filterTo     = document.getElementById('filterTo').value;
+
+    document.getElementById('sessionsArea').innerHTML = '<div class="wl-loading">⏳ กำลังโหลด...</div>';
+    document.getElementById('memberCards').innerHTML = '';
+    document.getElementById('totalRow').style.display = 'none';
+
+    apiCall('getMemberActivityLog', {
+      userId: filterUser || undefined,
+      action: filterAction || undefined,
+      from:   filterFrom  || undefined,
+      to:     filterTo    || undefined,
+      limit:  2000
+    }, function(r) {
+      if (!r || !r.success) {
+        document.getElementById('sessionsArea').innerHTML = '<div class="wl-empty"><div class="wl-empty-icon">⚠️</div>' + (r && r.message ? r.message : 'โหลดข้อมูลไม่สำเร็จ') + '</div>';
+        return;
+      }
+      _allLogs = r.data || [];
+
+      // Populate member dropdown (on first load)
+      if (document.getElementById('filterUser').options.length <= 1 && _allLogs.length) {
+        var seen = {};
+        _allLogs.forEach(function(row) {
+          if (!seen[row.userId]) {
+            seen[row.userId] = row.userName;
+            var opt = document.createElement('option');
+            opt.value = row.userId;
+            opt.textContent = row.userName || row.userId;
+            document.getElementById('filterUser').appendChild(opt);
+          }
+        });
+      }
+
+      var members = computeSummary(_allLogs);
+      var totalScore = members.reduce(function(s, m) { return s + m.score; }, 0);
+      renderCards(members, totalScore);
+
+      var sessions = groupBySessions(_allLogs);
+      renderSessions(sessions);
+    });
+  }
+
+  // ── Export CSV ─────────────────────────────────────────────────
+  function exportCsv() {
+    if (!_allLogs.length) { alert('ไม่มีข้อมูลให้ Export'); return; }
+    var BOM = '\uFEFF';
+    var header = ['วันที่เวลา','สมาชิก','ประเภทงาน','ชื่อเพลง/ศิลปิน','คะแนน','Session ID'];
+    var rows = _allLogs.map(function(r) {
+      return [
+        fmt(r.createdAt),
+        r.userName || '',
+        r.actionLabel || ACTION_LABELS[r.action] || r.action,
+        r.targetName || '',
+        r.score || 1,
+        r.sessionId || ''
+      ].map(function(v) { return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+    });
+    var csv = BOM + header.join(',') + '\n' + rows.join('\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href   = url;
+    a.download = 'member-worklog-' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ── Init ───────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function() {
+    // Default dates: 30 days ago → today
+    var today = new Date();
+    var from  = new Date(today); from.setDate(from.getDate() - 30);
+    document.getElementById('filterTo').value   = today.toISOString().slice(0, 10);
+    document.getElementById('filterFrom').value = from.toISOString().slice(0, 10);
+
+    // Access check: admin or manager only
+    var role = localStorage.getItem('userRole') || '';
+    if (role !== 'admin' && role !== 'manager') {
+      document.getElementById('sessionsArea').innerHTML =
+        '<div class="wl-empty"><div class="wl-empty-icon">🔒</div>เฉพาะแอดมินและผู้จัดการวงเท่านั้นที่เข้าถึงได้</div>';
+      document.getElementById('memberCards').innerHTML = '';
+      document.getElementById('wl-filters') && (document.getElementById('wl-filters').style.display = 'none');
+      return;
+    }
+
+    loadWorklog();
+  });
+  </script>
+</body>
+</html>

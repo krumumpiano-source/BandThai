@@ -37,6 +37,26 @@
     function getBandId()   { return localStorage.getItem('bandId')   || ''; }
     function getRole()     { return localStorage.getItem('userRole') || ''; }
 
+    // ── Member Activity Logging (fire-and-forget) ────────────────────
+    var _actSessId = 'S' + Date.now() + Math.random().toString(36).slice(2, 7);
+    function _logMemberAct(action, label, targetId, targetName, score) {
+      var uid   = localStorage.getItem('userId')   || '';
+      var uname = localStorage.getItem('userName') || '';
+      var bid   = getBandId();
+      if (!uid || !bid) return;
+      sb.from('member_activity_log').insert({
+        band_id:      bid,
+        user_id:      uid,
+        user_name:    uname,
+        action:       action,
+        action_label: label,
+        target_id:    String(targetId   || ''),
+        target_name:  String(targetName || ''),
+        score:        score || 1,
+        session_id:   _actSessId
+      }).then(function(){}).catch(function(e){ console.warn('[activity]', e); });
+    }
+
     function saveSession(session, profile) {
       localStorage.setItem('auth_token',    session.access_token);
       // เก็บ userId (Supabase auth UUID) ไว้ใช้ match check-in/leave records
@@ -133,11 +153,29 @@
         case 'getAllSongs':
         case 'getSongs':           return doGetAllSongs(d);
         case 'getSong':            return doGetOne('band_songs', d.songId);
-        case 'addSong':            return doInsert('band_songs', d.data || d);
-        case 'updateSong':         return doUpdate('band_songs', d.songId, d.data || d);
-        case 'deleteSong':         return doDelete('band_songs', d.songId);
+        case 'addSong': {
+          var _sdata = Object.assign({}, d.data || d);
+          var _sr = await doInsert('band_songs', _sdata);
+          if (_sr.success) _logMemberAct('add_song', 'เพิ่มเพลง', _sr.data && _sr.data.id, _sdata.name || '', 3);
+          return _sr;
+        }
+        case 'updateSong': {
+          var _sdata = Object.assign({}, d.data || d);
+          var _sr = await doUpdate('band_songs', d.songId, _sdata);
+          if (_sr.success) _logMemberAct('edit_song', 'แก้ไขเพลง', d.songId, _sdata.name || d.songName || '', 1);
+          return _sr;
+        }
+        case 'deleteSong': {
+          var _sr = await doDelete('band_songs', d.songId);
+          if (_sr.success) _logMemberAct('delete_song', 'ลบเพลง', d.songId, d.songName || d.name || '', 2);
+          return _sr;
+        }
         case 'getGlobalSongsAll':   return doGetGlobalSongsAll();
-        case 'mergeDuplicateSongs': return doMergeDuplicateSongs(d);
+        case 'mergeDuplicateSongs': {
+          var _sr = await doMergeDuplicateSongs(d);
+          if (_sr.success) _logMemberAct('merge_songs', 'รวมเพลงซ้ำ', d.keepId || '', d.keepName || d.name || '', 5);
+          return _sr;
+        }
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
@@ -147,7 +185,14 @@
         case 'searchSongs':        return doSearchSongs(d);
         case 'getSongsPage':       return doGetSongsPage(d);
         case 'getRequestedSongsFromHistory': return doGetRequestedSongsFromHistory(d);
-        case 'bulkAddSongsToLibrary': return doBulkAddSongsToLibrary(d);
+        case 'bulkAddSongsToLibrary': {
+          var _sr = await doBulkAddSongsToLibrary(d);
+          if (_sr.success) {
+            var _cnt = Array.isArray(d.songs) ? d.songs.length : (Array.isArray(d.songIds) ? d.songIds.length : 1);
+            _logMemberAct('bulk_add', 'เพิ่มเพลงกลุ่ม (' + _cnt + ')', '', _cnt + ' เพลง', Math.max(_cnt, 1) * 2);
+          }
+          return _sr;
+        }
         case 'cloneSongsToBand':   return doCloneSongsToBand(d);
         case 'removeFromBandLibrary': return doRemoveFromBandLibrary(d);
         case 'detachRefSong':      return doDetachRefSong(d);
@@ -156,10 +201,22 @@
         // ── Artists (Master) ───────────────────────────────────────
         case 'getArtists':         return doGetArtists();
         case 'getSongArtists':     return doGetSongArtists(d);
-        case 'addArtist':          return doAddArtist(d);
+        case 'addArtist': {
+          var _sr = await doAddArtist(d);
+          if (_sr.success) _logMemberAct('add_artist', 'เพิ่มศิลปิน', _sr.data && _sr.data.id, d.name || '', 2);
+          return _sr;
+        }
         case 'ensureArtist':       return doEnsureArtist(d);
-        case 'updateArtist':       return doUpdateArtist(d);
-        case 'deleteArtist':       return doDeleteArtist(d);
+        case 'updateArtist': {
+          var _sr = await doUpdateArtist(d);
+          if (_sr.success) _logMemberAct('edit_artist', 'แก้ไขศิลปิน', d.artistId || d.id, d.name || '', 1);
+          return _sr;
+        }
+        case 'deleteArtist': {
+          var _sr = await doDeleteArtist(d);
+          if (_sr.success) _logMemberAct('delete_artist', 'ลบศิลปิน', d.artistId || d.id, d.name || '', 2);
+          return _sr;
+        }
         case 'cleanupOrphanArtists': return doCleanupOrphanArtists();
         case 'searchArtists':      return doSearchArtists(d);
 
@@ -290,6 +347,8 @@
         // ── Activity Log ───────────────────────────────────────────
         case 'getActivityLog':        return doGetActivityLog(d);
         case 'logActivity':           return doLogActivity(d);
+        case 'getMemberActivityLog':     return doGetMemberActivityLog(d);
+        case 'getMemberActivitySummary': return doGetMemberActivitySummary(d);
 
         // ── Notification Templates ─────────────────────────────────
         case 'getNotifTemplates':     return doGetNotifTemplates();
@@ -2189,6 +2248,35 @@
       });
       if (error) throw error;
       return { success: true };
+    }
+
+    // ── Member Activity Log (band-level) ──────────────────────────
+    async function doGetMemberActivityLog(d) {
+      d = d || {};
+      var bid = getBandId();
+      var q = sb.from('member_activity_log').select('*').eq('band_id', bid);
+      if (d.userId) q = q.eq('user_id', d.userId);
+      if (d.action) q = q.eq('action',  d.action);
+      if (d.from)   q = q.gte('created_at', d.from + 'T00:00:00+00:00');
+      if (d.to)     q = q.lte('created_at', d.to   + 'T23:59:59+00:00');
+      q = q.order('created_at', { ascending: false }).limit(d.limit || 1000);
+      var { data, error } = await q;
+      if (error) throw error;
+      return { success: true, data: toCamelList(data || []) };
+    }
+
+    async function doGetMemberActivitySummary(d) {
+      d = d || {};
+      var bid = getBandId();
+      var q = sb.from('member_activity_log')
+        .select('user_id, user_name, action, score, session_id, created_at')
+        .eq('band_id', bid);
+      if (d.from) q = q.gte('created_at', d.from + 'T00:00:00+00:00');
+      if (d.to)   q = q.lte('created_at', d.to   + 'T23:59:59+00:00');
+      q = q.order('created_at', { ascending: true }).limit(10000);
+      var { data, error } = await q;
+      if (error) throw error;
+      return { success: true, data: toCamelList(data || []) };
     }
 
     // ── Notification Templates ──────────────────────────────────────
