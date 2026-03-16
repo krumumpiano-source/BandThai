@@ -184,6 +184,43 @@
       <!-- Summary Cards per member -->
       <div id="memberCards" class="member-cards"></div>
 
+      <!-- Backfill Panel -->
+      <details id="backfillPanel" style="margin-bottom:20px;background:var(--premium-white);border:1.5px solid #FDE68A;border-radius:12px;overflow:hidden">
+        <summary style="padding:14px 18px;cursor:pointer;font-weight:700;font-size:.88rem;list-style:none;display:flex;align-items:center;gap:8px;background:#FFFBEB;color:#92400E">
+          <span>🕐 กำหนดงานย้อนหลัง</span>
+          <span style="font-size:.72rem;font-weight:400;color:#B45309;margin-left:4px">— สำหรับเพลงที่เพิ่มก่อนเริ่มระบบติดตาม</span>
+        </summary>
+        <div style="padding:16px 18px;border-top:1px solid #FDE68A">
+          <p style="font-size:.78rem;color:var(--premium-text-muted);margin:0 0 14px">เลือกช่วงวันที่ที่เพลงถูกเพิ่มเข้าระบบ แล้วกำหนดว่าสมาชิกคนนั้นเป็นคนทำ ระบบจะบันทึกเป็นรายการย้อนหลัง</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <label style="font-size:.72rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">สมาชิกที่ทำงาน</label>
+              <select id="bfUser" style="padding:8px 12px;border:1.5px solid var(--premium-border);border-radius:8px;font-size:.82rem;font-family:inherit;background:var(--premium-white);min-width:160px">
+                <option value="">-- เลือกสมาชิก --</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:.72rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">ตั้งแต่วันที่</label>
+              <input type="date" id="bfFrom" style="padding:8px 10px;border:1.5px solid var(--premium-border);border-radius:8px;font-size:.82rem;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:.72rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">ถึงวันที่</label>
+              <input type="date" id="bfTo" style="padding:8px 10px;border:1.5px solid var(--premium-border);border-radius:8px;font-size:.82rem;font-family:inherit">
+            </div>
+            <div>
+              <label style="font-size:.72rem;color:var(--premium-text-muted);display:block;margin-bottom:3px">เพลงที่ยังไม่มีเจ้าของเท่านั้น</label>
+              <label style="display:flex;align-items:center;gap:6px;padding:8px 0">
+                <input type="checkbox" id="bfUnclaimed" checked style="width:16px;height:16px">
+                <span style="font-size:.82rem">ข้ามเพลงที่มีเจ้าของแล้ว</span>
+              </label>
+            </div>
+            <button onclick="previewBackfill()" style="padding:8px 16px;background:#FEF9C3;color:#854D0E;border:1.5px solid #FDE68A;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit">🔍 ตรวจสอบก่อน</button>
+            <button onclick="doBackfill()" style="padding:8px 16px;background:var(--premium-gold);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit">✅ กำหนดย้อนหลัง</button>
+          </div>
+          <div id="bfPreview" style="margin-top:12px;font-size:.82rem;color:var(--premium-text-muted)"></div>
+        </div>
+      </details>
+
       <!-- Session timeline -->
       <div class="wl-sect-title">📋 ประวัติการทำงาน (จัดกลุ่มตาม Session)</div>
       <div id="sessionsArea"><div class="wl-loading">⏳ กำลังโหลด...</div></div>
@@ -391,7 +428,7 @@
       action: filterAction || undefined,
       from:   filterFrom  || undefined,
       to:     filterTo    || undefined,
-      limit:  2000
+      limit:  5000
     }, function(r) {
       if (!r || !r.success) {
         document.getElementById('sessionsArea').innerHTML = '<div class="wl-empty"><div class="wl-empty-icon">⚠️</div>' + (r && r.message ? r.message : 'โหลดข้อมูลไม่สำเร็จ') + '</div>';
@@ -399,19 +436,23 @@
       }
       _allLogs = r.data || [];
 
-      // Populate member dropdown (on first load)
-      if (document.getElementById('filterUser').options.length <= 1 && _allLogs.length) {
-        var seen = {};
-        _allLogs.forEach(function(row) {
-          if (!seen[row.userId]) {
-            seen[row.userId] = row.userName;
+      // Populate member dropdowns (filterUser + bfUser)
+      var seen = {};
+      _allLogs.forEach(function(row) {
+        if (!seen[row.userId]) {
+          seen[row.userId] = row.userName;
+          if (!document.querySelector('#filterUser option[value="'+row.userId+'"]')) {
             var opt = document.createElement('option');
-            opt.value = row.userId;
-            opt.textContent = row.userName || row.userId;
+            opt.value = row.userId; opt.textContent = row.userName || row.userId;
             document.getElementById('filterUser').appendChild(opt);
           }
-        });
-      }
+          if (!document.querySelector('#bfUser option[value="'+row.userId+'"]')) {
+            var opt2 = document.createElement('option');
+            opt2.value = row.userId; opt2.textContent = row.userName || row.userId;
+            document.getElementById('bfUser').appendChild(opt2);
+          }
+        }
+      });
 
       var members = computeSummary(_allLogs);
       var totalScore = members.reduce(function(s, m) { return s + m.score; }, 0);
@@ -447,7 +488,93 @@
     URL.revokeObjectURL(url);
   }
 
-  // ── Init ───────────────────────────────────────────────────────
+  // ── Backfill functions ─────────────────────────────────────────
+  var _bfMembers = [];  // { userId, userName }
+
+  function loadMemberList() {
+    apiCall('getMemberActivityLog', { limit: 200 }, function(r) {
+      // ถ้ามีประวัติแล้ว ใช้จาก log
+      var seen = {};
+      if (r && r.success) {
+        (r.data || []).forEach(function(row) {
+          if (!seen[row.userId]) { seen[row.userId] = row.userName; }
+        });
+      }
+      // โหลด profiles สมาชิกทั้งหมดในวงเพิ่มเติม
+      apiCall('getBandSettings', {}, function(bs) {
+        // ไม่มี members list โดยตรง ใช้จากที่รู้แล้ว
+        Object.keys(seen).forEach(function(uid) {
+          if (!_bfMembers.find(function(m){ return m.userId===uid; })) {
+            _bfMembers.push({ userId: uid, userName: seen[uid] });
+          }
+          // populate filterUser dropdown
+          if (!document.querySelector('#filterUser option[value="'+uid+'"]')) {
+            var opt = document.createElement('option');
+            opt.value = uid; opt.textContent = seen[uid] || uid;
+            document.getElementById('filterUser').appendChild(opt);
+          }
+          // populate bfUser dropdown
+          if (!document.querySelector('#bfUser option[value="'+uid+'"]')) {
+            var opt2 = document.createElement('option');
+            opt2.value = uid; opt2.textContent = seen[uid] || uid;
+            opt2.dataset.name = seen[uid] || uid;
+            document.getElementById('bfUser').appendChild(opt2);
+          }
+        });
+      });
+    });
+  }
+
+  function previewBackfill() {
+    var uid   = document.getElementById('bfUser').value;
+    var from  = document.getElementById('bfFrom').value;
+    var to    = document.getElementById('bfTo').value;
+    var unclaimed = document.getElementById('bfUnclaimed').checked;
+    var prev  = document.getElementById('bfPreview');
+
+    if (!uid || !from || !to) { prev.innerHTML = '<span style="color:#DC2626">⚠️ กรุณาเลือกสมาชิก และระบุช่วงวันที่</span>'; return; }
+    prev.innerHTML = '⏳ กำลังนับเพลง...';
+
+    apiCall('getSongsInRange', { from: from, to: to, unclaimedOnly: unclaimed }, function(r) {
+      if (!r || !r.success) { prev.innerHTML = '<span style="color:#DC2626">เกิดข้อผิดพลาด: ' + (r && r.message || '') + '</span>'; return; }
+      var cnt = r.count || (r.data && r.data.length) || 0;
+      var sel = document.getElementById('bfUser');
+      var uname = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : uid;
+      prev.innerHTML = cnt > 0
+        ? '✅ พบ <strong>' + cnt + ' เพลง</strong> ในช่วงนั้น — จะกำหนดให้ <strong>' + esc(uname) + '</strong> (คะแนน ~' + (cnt*3) + ' คะแนน)'
+        : '📭 ไม่พบเพลง' + (unclaimed ? 'ที่ยังไม่มีเจ้าของ' : '') + 'ในช่วงวันที่นี้';
+    });
+  }
+
+  function doBackfill() {
+    var uid   = document.getElementById('bfUser').value;
+    var from  = document.getElementById('bfFrom').value;
+    var to    = document.getElementById('bfTo').value;
+    var unclaimed = document.getElementById('bfUnclaimed').checked;
+    var prev  = document.getElementById('bfPreview');
+    var sel   = document.getElementById('bfUser');
+    var uname = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : uid;
+
+    if (!uid || !from || !to) { prev.innerHTML = '<span style="color:#DC2626">⚠️ กรุณาเลือกสมาชิก และระบุช่วงวันที่</span>'; return; }
+    if (!confirm('กำหนดให้ "' + uname + '" เป็นคนเพิ่มเพลงในช่วง ' + from + ' ถึง ' + to + '\nดำเนินการต่อ?')) return;
+
+    prev.innerHTML = '⏳ กำลังบันทึกย้อนหลัง...';
+    apiCall('backfillMemberActivity', {
+      userId: uid, userName: uname,
+      from: from, to: to,
+      unclaimedOnly: unclaimed,
+      updateCreatedBy: true
+    }, function(r) {
+      if (!r || !r.success) {
+        prev.innerHTML = '<span style="color:#DC2626">❌ เกิดข้อผิดพลาด: ' + (r && r.message || '') + '</span>';
+        return;
+      }
+      prev.innerHTML = '✅ บันทึกสำเร็จ! กำหนด <strong>' + r.inserted + ' รายการ</strong> ให้ ' + esc(uname);
+      setTimeout(function() { loadWorklog(); }, 800);
+    });
+  }
+
+  // ── Backfill functions ─────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function() {
     // Default dates: 30 days ago → today
     var today = new Date();

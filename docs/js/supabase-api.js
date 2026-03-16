@@ -155,12 +155,17 @@
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong': {
           var _sdata = Object.assign({}, d.data || d);
+          var _uid = localStorage.getItem('userId') || '';
+          var _uname = localStorage.getItem('userName') || '';
+          if (_uid) { _sdata.created_by = _uid; _sdata.createdBy = _uid; _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
           var _sr = await doInsert('band_songs', _sdata);
           if (_sr.success) _logMemberAct('add_song', 'เพิ่มเพลง', _sr.data && _sr.data.id, _sdata.name || '', 3);
           return _sr;
         }
         case 'updateSong': {
           var _sdata = Object.assign({}, d.data || d);
+          var _uid = localStorage.getItem('userId') || '';
+          if (_uid) { _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
           var _sr = await doUpdate('band_songs', d.songId, _sdata);
           if (_sr.success) _logMemberAct('edit_song', 'แก้ไขเพลง', d.songId, _sdata.name || d.songName || '', 1);
           return _sr;
@@ -349,6 +354,8 @@
         case 'logActivity':           return doLogActivity(d);
         case 'getMemberActivityLog':     return doGetMemberActivityLog(d);
         case 'getMemberActivitySummary': return doGetMemberActivitySummary(d);
+        case 'backfillMemberActivity':   return doBackfillMemberActivity(d);
+        case 'getSongsInRange':          return doGetSongsInRange(d);
 
         // ── Notification Templates ─────────────────────────────────
         case 'getNotifTemplates':     return doGetNotifTemplates();
@@ -409,6 +416,7 @@
         userId: 'user_id',
         songId: 'song_id', keyNote: 'key_note',
         createdAt: 'created_at', updatedAt: 'updated_at',
+        createdBy: 'created_by', updatedBy: 'updated_by',
         createdBy: 'created_by', sourceContractId: 'source_contract_id',
         // external jobs fields
         jobName: 'job_name', clientPhone: 'client_phone',
@@ -2251,6 +2259,76 @@
     }
 
     // ── Member Activity Log (band-level) ──────────────────────────
+    async function doGetSongsInRange(d) {
+      // ดึงเพลงในช่วงวันที่ เพื่อใช้ backfill
+      d = d || {};
+      var bid = getBandId();
+      var q = sb.from('band_songs').select('id, name, artist, created_at, created_by').eq('band_id', bid);
+      if (d.from) q = q.gte('created_at', d.from + 'T00:00:00+00:00');
+      if (d.to)   q = q.lte('created_at', d.to   + 'T23:59:59+00:00');
+      // เฉพาะเพลงที่ยังไม่มี created_by (ก่อนติดตาม)
+      if (d.unclaimedOnly) q = q.eq('created_by', '');
+      q = q.order('created_at', { ascending: true }).limit(d.limit || 2000);
+      var { data, error } = await q;
+      if (error) throw error;
+      return { success: true, data: toCamelList(data || []), count: (data || []).length };
+    }
+
+    async function doBackfillMemberActivity(d) {
+      // Assign เพลงในช่วงวันที่ให้สมาชิกระบุ → insert ใน member_activity_log + update created_by
+      d = d || {};
+      if (!d.userId || !d.userName) return { success: false, message: 'ระบุ userId และ userName ก่อน' };
+      var bid = getBandId();
+      if (!bid) return { success: false, message: 'ไม่พบ bandId' };
+
+      // ดึงเพลงในช่วงนั้น
+      var q = sb.from('band_songs').select('id, name, created_at').eq('band_id', bid);
+      if (d.from) q = q.gte('created_at', d.from + 'T00:00:00+00:00');
+      if (d.to)   q = q.lte('created_at', d.to   + 'T23:59:59+00:00');
+      if (d.unclaimedOnly) q = q.eq('created_by', '');
+      q = q.order('created_at', { ascending: true }).limit(2000);
+      var { data: songs, error: e1 } = await q;
+      if (e1) throw e1;
+      if (!songs || !songs.length) return { success: true, inserted: 0, message: 'ไม่พบเพลงในช่วงวันที่นี้' };
+
+      // Insert log ทีละ batch
+      var sessId = 'backfill_' + d.userId.substring(0,8) + '_' + Date.now();
+      var rows = songs.map(function(s) {
+        return {
+          band_id:      bid,
+          user_id:      d.userId,
+          user_name:    d.userName,
+          action:       'add_song',
+          action_label: 'เพิ่มเพลง (ย้อนหลัง)',
+          target_id:    s.id,
+          target_name:  s.name || '',
+          score:        3,
+          session_id:   sessId,
+          created_at:   s.created_at
+        };
+      });
+
+      // Insert log in batches of 200
+      var inserted = 0;
+      for (var i = 0; i < rows.length; i += 200) {
+        var batch = rows.slice(i, i + 200);
+        var { error: e2 } = await sb.from('member_activity_log').insert(batch);
+        if (e2) throw e2;
+        inserted += batch.length;
+      }
+
+      // Update created_by ใน band_songs ด้วย (ถ้า unclaimedOnly หรือ overwrite)
+      if (d.updateCreatedBy) {
+        var ids = songs.map(function(s){ return s.id; });
+        for (var i = 0; i < ids.length; i += 200) {
+          var batchIds = ids.slice(i, i + 200);
+          await sb.from('band_songs').update({ created_by: d.userId }).in('id', batchIds);
+        }
+      }
+
+      return { success: true, inserted: inserted, total: songs.length };
+    }
+
     async function doGetMemberActivityLog(d) {
       d = d || {};
       var bid = getBandId();
@@ -2259,7 +2337,7 @@
       if (d.action) q = q.eq('action',  d.action);
       if (d.from)   q = q.gte('created_at', d.from + 'T00:00:00+00:00');
       if (d.to)     q = q.lte('created_at', d.to   + 'T23:59:59+00:00');
-      q = q.order('created_at', { ascending: false }).limit(d.limit || 1000);
+      q = q.order('created_at', { ascending: false }).limit(d.limit || 5000);
       var { data, error } = await q;
       if (error) throw error;
       return { success: true, data: toCamelList(data || []) };
