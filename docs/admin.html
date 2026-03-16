@@ -522,47 +522,110 @@
       + '<div id="sd-edit-'+s.id+'" style="display:none"></div>';
   }
 
+  var _SD_FIELD_LABELS = { name:'ชื่อเพลง', singer:'นักร้อง', artist:'ศิลปิน', key:'คีย์', bpm:'BPM', mood:'อารมณ์', era:'ยุค', tags:'แนวเพลง' };
+  var _SD_FIELD_ICONS  = { name:'🎶', singer:'🎤', artist:'👤', key:'🎵', bpm:'♩', mood:'💫', era:'📅', tags:'🏷️' };
+
   function _sdInlineSuggestion(s) {
     var ai = _sdEnrichCache[s.id];
     if (!ai) {
       if (_sdScore(s) < 5) {
         return '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#e0f2fe,#eff6ff);border:1px solid #7dd3fc;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')">'
-          + '<span style="font-size:1.1rem">\uD83D\uDD0D</span>'
-          + '<span style="font-size:.78rem;color:#0ea5e9;font-weight:600">iTunes \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, Era, Tags \u2014 \u0E44\u0E21\u0E48\u0E15\u0E49\u0E2D\u0E07\u0E43\u0E0A\u0E49 API Key</span></div>';
+          + '<span style="font-size:1.1rem">🔍</span>'
+          + '<span style="font-size:.78rem;color:#0ea5e9;font-weight:600">คลิกเพื่อค้นหาข้อมูลเพิ่มเติมจาก iTunes</span></div>';
       }
       return '';
     }
-    var fields = ['name','singer','artist','key','bpm','mood','era','tags'];
-    var icons = { name:'\uD83C\uDFB6', singer:'\uD83C\uDFA4', artist:'\uD83D\uDC64', key:'\uD83C\uDFB5', bpm:'\u266A', mood:'\uD83D\uDCAB', era:'\uD83D\uDCC5', tags:'\uD83C\uDFF7\uFE0F' };
-    var diffs = [];
+    var fields = ['artist','era','tags','mood','name','singer','key','bpm'];
+    var hasDiff = false;
+    var rows = '';
     fields.forEach(function(f) {
       var cur = String(s[f] || '');
       var sug = String(ai[f] != null ? ai[f] : '');
-      if (sug && cur.toLowerCase().trim() !== sug.toLowerCase().trim()) {
-        var safeVal = sug.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-        diffs.push('<span style="display:inline-flex;align-items:center;gap:2px;background:#fff;border:1px solid #bbf7d0;border-radius:4px;padding:1px 6px;font-size:.72rem">'
-          + icons[f]+' '
-          + (cur ? '<s style="color:#9ca3af">'+escapeHtml(cur)+'</s> \u2192 ' : '')
-          + '<b style="color:#16a34a">'+escapeHtml(sug)+'</b>'
-          + ' <button onclick="event.stopPropagation();sdApplyEnrich(\''+s.id+'\',\''+f+'\',\''+safeVal+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:3px;padding:0 4px;font-size:.6rem;cursor:pointer;line-height:1.4">\u0E43\u0E0A\u0E49</button>'
-          + '</span>');
+      if (!sug) return;
+      var isDiff = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
+      if (isDiff) hasDiff = true;
+      var inputId = 'sd-it-' + f + '-' + s.id;
+      var chkId   = 'sd-itchk-' + f + '-' + s.id;
+      var isOpt = (f === 'era' || f === 'tags' || f === 'mood');
+      var inputHtml;
+      if (f === 'era') {
+        inputHtml = '<select id="'+inputId+'" style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit">'
+          + _SD_ERA_OPTS.map(function(o){ return '<option value="'+escapeHtml(o)+'"'+(o===sug?' selected':'')+'>'+escapeHtml(o)+'</option>'; }).join('')
+          + '</select>';
+      } else if (f === 'tags') {
+        inputHtml = '<select id="'+inputId+'" style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit">'
+          + _SD_TAGS_OPTS.map(function(o){ return '<option value="'+escapeHtml(o)+'"'+(o===sug?' selected':'')+'>'+escapeHtml(o)+'</option>'; }).join('')
+          + '</select>';
+      } else if (f === 'mood') {
+        inputHtml = '<select id="'+inputId+'" style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit">'
+          + _SD_MOOD_OPTS.map(function(o){ return '<option value="'+escapeHtml(o)+'"'+(o===sug?' selected':'')+'>'+escapeHtml(o)+'</option>'; }).join('')
+          + '</select>';
+      } else {
+        inputHtml = '<input id="'+inputId+'" value="'+escapeHtml(sug)+'" '+(f==='bpm'?'type="number" ':'')
+          + 'style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit;min-width:80px;max-width:150px">';
       }
+      rows += '<tr>'
+        + '<td style="padding:3px 6px;white-space:nowrap"><input type="checkbox" id="'+chkId+'" '+(isDiff?'checked':'')+' onclick="event.stopPropagation()" style="accent-color:#16a34a;cursor:pointer"><label for="'+chkId+'" style="font-size:.78rem;font-weight:700;color:#374151;cursor:pointer;margin-left:4px">'+_SD_FIELD_ICONS[f]+' '+escapeHtml(_SD_FIELD_LABELS[f]||f)+'</label></td>'
+        + '<td style="padding:3px 6px;font-size:.75rem;color:#9ca3af;text-decoration:line-through;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(cur||'—')+'</td>'
+        + '<td style="padding:3px 6px;color:#6b7280;font-size:.75rem">→</td>'
+        + '<td style="padding:3px 4px">'+inputHtml+'</td>'
+        + '</tr>';
     });
-    if (!diffs.length) {
+
+    if (!hasDiff) {
       return '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;display:flex;align-items:center;gap:6px">'
-        + '<span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">iTunes \u0E04\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E04\u0E23\u0E1A\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07</span></div>';
+        + '<span style="font-size:.9rem">✅</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">iTunes ค้นแล้ว — ข้อมูลครบถูกต้อง</span></div>';
     }
-    var conf = ai.confidence ? Math.round(ai.confidence * 100) : '?';
-    var confColor = conf >= 80 ? '#16a34a' : conf >= 50 ? '#d97706' : '#dc2626';
-    return '<div style="margin-top:4px;padding:8px 10px;background:linear-gradient(135deg,#f0fdf4,#eff6ff);border:1px solid #86efac;border-radius:6px">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
-      + '<span style="font-size:.82rem;font-weight:700;color:#0ea5e9">\uD83D\uDD0D iTunes \u0E41\u0E19\u0E30\u0E19\u0E33:</span>'
-      + '<span style="background:#0ea5e9;color:#fff;font-size:.6rem;padding:1px 6px;border-radius:10px;font-weight:600">iTunes</span>'
-      + (ai.notes ? '<span style="font-size:.7rem;color:#6b7280;font-style:italic">\u2014 '+escapeHtml(ai.notes)+'</span>' : '')
-      + '<button onclick="event.stopPropagation();sdApplyAllEnrich(\''+s.id+'\')" style="margin-left:auto;background:linear-gradient(135deg,#16a34a,#059669);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.72rem;cursor:pointer;font-weight:600;white-space:nowrap">\u2705 \u0E43\u0E0A\u0E49\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>'
+
+    var sid = s.id;
+    return '<div style="margin-top:6px;background:#fafafa;border:1.5px solid #7dd3fc;border-radius:8px;overflow:hidden" onclick="event.stopPropagation()">'
+      + '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:6px 12px;display:flex;align-items:center;gap:8px">'
+      + '<span style="color:#fff;font-size:.82rem;font-weight:700">🔍 iTunes แนะนำ</span>'
+      + (ai.notes ? '<span style="color:#e0f2fe;font-size:.7rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— '+escapeHtml(ai.notes)+'</span>' : '<span style="flex:1"></span>')
+      + '<button onclick="sdItunesEnrich(\''+sid+'\',true)" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:2px 7px;font-size:.68rem;cursor:pointer">🔄</button>'
       + '</div>'
-      + '<div style="display:flex;flex-wrap:wrap;gap:4px">'+diffs.join('')+'</div>'
-      + '</div>';
+      + '<div style="padding:8px 10px">'
+      + '<div style="font-size:.72rem;color:#6b7280;margin-bottom:4px">☑️ เลือก field ที่ต้องการ แก้ค่าถ้าต้องการ แล้วกด <strong>นำไปใช้</strong></div>'
+      + '<div style="overflow-x:auto"><table style="border-collapse:collapse;min-width:280px;width:100%">'+rows+'</table></div>'
+      + '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
+      + '<button onclick="event.stopPropagation();sdApplySelectedEnrich(\''+sid+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:.78rem;cursor:pointer;font-weight:700">✅ นำไปใช้ที่เลือก</button>'
+      + '<button onclick="event.stopPropagation();sdCheckAllItunes(\''+sid+'\',true)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:.72rem;cursor:pointer">☑️ ทั้งหมด</button>'
+      + '<button onclick="event.stopPropagation();sdCheckAllItunes(\''+sid+'\',false)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:.72rem;cursor:pointer">☐ ยกเลิกหมด</button>'
+      + '</div></div></div>';
+  }
+
+  function sdCheckAllItunes(songId, check) {
+    var fields = ['artist','era','tags','mood','name','singer','key','bpm'];
+    fields.forEach(function(f) {
+      var el = document.getElementById('sd-itchk-' + f + '-' + songId);
+      if (el) el.checked = check;
+    });
+  }
+
+  function sdApplySelectedEnrich(songId) {
+    var ai = _sdEnrichCache[songId];
+    var song = _sdAllSongs.find(function(x) { return x.id === songId; });
+    if (!ai || !song) return;
+    var fields = ['artist','era','tags','mood','name','singer','key','bpm'];
+    var data = { songId: songId };
+    var changed = false;
+    fields.forEach(function(f) {
+      var chk = document.getElementById('sd-itchk-' + f + '-' + songId);
+      if (!chk || !chk.checked) return;
+      var inp = document.getElementById('sd-it-' + f + '-' + songId);
+      var val = inp ? inp.value.trim() : String(ai[f] || '');
+      if (!val) return;
+      data[f] = f === 'bpm' ? (parseInt(val) || null) : val;
+      changed = true;
+    });
+    if (!changed) { showToast('ไม่ได้เลือก field ใดเลย', 'error'); return; }
+    apiCall('updateSong', data, function(r) {
+      if (r && r.success) {
+        Object.keys(data).forEach(function(f) { if (f !== 'songId') song[f] = data[f]; });
+        showToast('✅ อัพเดตเรียบร้อย', 'success');
+        sdRender();
+      } else { showToast('❌ ' + ((r && r.message) || 'error'), 'error'); }
+    });
   }
 
   function _sdNormalize(name) {

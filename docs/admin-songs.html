@@ -482,10 +482,7 @@
       <button onclick="closeItunesPopover()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
     </div>
     <div id="itunesPopoverContent" style="min-height:60px"></div>
-    <div class="itunes-actions" id="itunesPopoverActions" style="display:none">
-      <button class="btn-sm" style="background:#EDE9FE;color:#5B21B6;border:1px solid #C4B5FD;flex:1" onclick="applyItunesData('empty')">✨ เติมเฉพาะที่ว่าง</button>
-      <button class="btn-sm" style="background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0;flex:1" onclick="applyItunesData('all')">✅ ใช้ทั้งหมด</button>
-    </div>
+    <div class="itunes-actions" id="itunesPopoverActions" style="display:none"></div>
   </div>
 </div>
 
@@ -1940,6 +1937,14 @@ function renderPresence() {
 var _itunesPendingSongId = null;
 var _itunesPendingData   = null;
 
+var _AS_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
+var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน'];
+var _AS_ITUNES_FIELDS = [
+  { f:'artist', label:'ศิลปิน',  icon:'👤', type:'text' },
+  { f:'era',    label:'ยุค',     icon:'📅', type:'era'  },
+  { f:'tags',   label:'แนวเพลง',icon:'🏷️', type:'tags' }
+];
+
 function _asGenreToTag(genre) {
   var g = (genre || '').toLowerCase();
   if (g.indexOf('pop') !== -1) return 'ป๊อป';
@@ -1993,59 +1998,95 @@ function itunesLookup(songId) {
   cnt.innerHTML = '<div style="text-align:center;color:#7C3AED;padding:16px 0">🔍 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo;...</div>';
   act.style.display = 'none';
   wrap.style.display = '';
-  _asSearchItunes(song.name, song.artist || song.singer, function(result, errText) {
+  _asSearchItunes(song.name, song.artist || '', function(result, errText) {
     if (!result) {
-      cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ' + esc(errText || 'ไม่พบข้อมูล') + '</div>';
+      cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ' + esc(errText || 'ไม่พบข้อมูล') + '</div>'
+        + '<button onclick="itunesLookup(\'' + esc(songId) + '\')" style="margin-top:8px;background:#6366f1;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer">🔄 ลองใหม่</button>';
+      act.style.display = 'none';
       return;
     }
     _itunesPendingData = result;
     var row = document.querySelector('tr[data-id="' + songId + '"]');
-    var curArtist = row ? ((row.querySelector('[data-field="artist"]') || {}).value || '') : (song.artist || '');
-    var curEra    = row ? ((row.querySelector('[data-field="era"]')    || {}).value || '') : (song.era    || '');
-    var curTags   = row ? ((row.querySelector('[data-field="tags"]')   || {}).value || '') : (song.tags   || '');
-    var fields = [
-      { label: 'เพลงที่พบ', val: result.trackName, diff: false },
-      { label: 'ศิลปิน',    val: result.artist,    diff: !!result.artist && curArtist !== result.artist },
-      { label: 'ยุค',       val: result.era,       diff: !!result.era  && curEra  !== result.era  },
-      { label: 'แนวเพลง',   val: result.tags,      diff: !!result.tags && curTags !== result.tags  },
-      { label: 'ปีที่ออก', val: result.year,       diff: false },
-      { label: 'Genre',     val: result.genre,     diff: false }
-    ];
-    var html = '';
-    fields.forEach(function(f) {
-      if (!f.val) return;
-      html += '<div class="itunes-field"><span class="itunes-field-label">' + esc(f.label) + '</span>' +
-        '<span class="itunes-field-val' + (f.diff ? ' itunes-field-changed' : '') + '">' + esc(f.val) + (f.diff ? ' ✏️' : '') + '</span></div>';
+
+    // Build field-by-field table with checkbox + editable input
+    var tableRows = '';
+    _AS_ITUNES_FIELDS.forEach(function(fd) {
+      var sug = result[fd.f] || '';
+      if (!sug) return;
+      var curEl = row ? row.querySelector('[data-field="' + fd.f + '"]') : null;
+      var cur = curEl ? (curEl.value || '') : (song[fd.f] || '');
+      var isDiff = cur.toLowerCase().trim() !== sug.toLowerCase().trim();
+      var inputId = 'as-it-' + fd.f;
+      var chkId   = 'as-itchk-' + fd.f;
+      var inputHtml;
+      if (fd.type === 'era') {
+        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
+          + _AS_ERA_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else if (fd.type === 'tags') {
+        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
+          + _AS_TAGS_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      } else {
+        inputHtml = '<input id="' + inputId + '" value="' + esc(sug) + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
+      }
+      tableRows += '<tr style="border-bottom:1px solid #f3f4f6">'
+        + '<td style="padding:5px 4px;white-space:nowrap;width:1%"><input type="checkbox" id="' + chkId + '" ' + (isDiff ? 'checked' : '') + ' style="accent-color:#16a34a;cursor:pointer;width:15px;height:15px"></td>'
+        + '<td style="padding:5px 4px;white-space:nowrap"><label for="' + chkId + '" style="font-size:.8rem;font-weight:700;color:#374151;cursor:pointer">' + fd.icon + ' ' + esc(fd.label) + '</label></td>'
+        + '<td style="padding:5px 4px;font-size:.75rem;color:#9ca3af;text-decoration:line-through;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(cur || '—') + '</td>'
+        + '<td style="padding:5px 4px;font-size:.75rem;color:#9ca3af">→</td>'
+        + '<td style="padding:5px 4px;min-width:120px">' + inputHtml + '</td>'
+        + '</tr>';
     });
-    cnt.innerHTML = html || '<div style="color:#94a3b8;font-size:.85rem">ไม่มีข้อมูลเพิ่มเติม</div>';
+
+    var infoHtml = '<div style="background:#f5f3ff;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:.78rem;color:#6b7280">'
+      + '🎵 <strong>' + esc(result.trackName) + '</strong>'
+      + (result.year ? ' · ' + esc(result.year) : '')
+      + (result.genre ? ' · ' + esc(result.genre) : '')
+      + '</div>';
+
+    cnt.innerHTML = infoHtml
+      + '<div style="font-size:.72rem;color:#6b7280;margin-bottom:6px">☑️ เลือก field แก้ค่าได้ แล้วกด <strong>นำไปใช้</strong></div>'
+      + '<table style="width:100%;border-collapse:collapse">' + tableRows + '</table>'
+      + '<div style="margin-top:8px;display:flex;gap:6px">'
+      + '<button onclick="asItunesCheckAll(true)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:3px 8px;font-size:.72rem;cursor:pointer">☑️ ทั้งหมด</button>'
+      + '<button onclick="asItunesCheckAll(false)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:3px 8px;font-size:.72rem;cursor:pointer">☐ ยกเลิก</button>'
+      + '</div>';
+
     act.style.display = '';
+    // Change action button to Apply Selected
+    act.innerHTML = '<button class="btn-sm" style="background:#16a34a;color:#fff;border:none;flex:1" onclick="applyItunesData()">✅ นำไปใช้ที่เลือก</button>'
+      + '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db" onclick="closeItunesPopover()">ยกเลิก</button>';
   });
 }
 
-function applyItunesData(mode) {
+function asItunesCheckAll(check) {
+  _AS_ITUNES_FIELDS.forEach(function(fd) {
+    var el = document.getElementById('as-itchk-' + fd.f);
+    if (el) el.checked = check;
+  });
+}
+
+function applyItunesData() {
   var songId = _itunesPendingSongId;
   var data   = _itunesPendingData;
   if (!songId || !data) return;
   var row = document.querySelector('tr[data-id="' + songId + '"]');
   if (!row) { closeItunesPopover(); showToast('เพลงอยู่คนละหน้า — เปิดหน้าที่มีเพลงนั้นก่อน แล้วกด 🎵 ใหม่', 'warning'); return; }
   var changed = false;
-  function setField(field, newVal) {
-    if (!newVal) return;
-    var el = row.querySelector('[data-field="' + field + '"]');
-    if (!el) return;
-    if (mode === 'empty' && (el.value || '').trim()) return;
-    el.value = newVal;
-    changed = true;
-  }
-  setField('artist', data.artist);
-  setField('era',    data.era);
-  setField('tags',   data.tags);
+  _AS_ITUNES_FIELDS.forEach(function(fd) {
+    var chk = document.getElementById('as-itchk-' + fd.f);
+    if (!chk || !chk.checked) return;
+    var inp = document.getElementById('as-it-' + fd.f);
+    var val = inp ? inp.value.trim() : (data[fd.f] || '');
+    if (!val) return;
+    var el = row.querySelector('[data-field="' + fd.f + '"]');
+    if (el) { el.value = val; changed = true; }
+  });
   if (changed) {
     var anyEl = row.querySelector('input,select');
     if (anyEl) markDirty(anyEl);
     showToast('✅ นำข้อมูล iTunes มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
   } else {
-    showToast('ℹ️ ไม่มีช่องที่ว่างให้เติม', 'info');
+    showToast('ℹ️ ไม่ได้เลือก field ใด', 'info');
   }
   closeItunesPopover();
 }
