@@ -490,7 +490,12 @@
       row.updated_at = new Date().toISOString();
       var { data, error } = await sb.from(table).update(row).eq('id', id).select();
       if (error) throw error;
-      return { success: true, data: data && data.length ? toCamel(data[0]) : null };
+      // Supabase returns empty array (no error) when RLS blocks or token expired —
+      // must detect this so we don't report false success to the user
+      if (!data || data.length === 0) {
+        return { success: false, message: 'บันทึกไม่สำเร็จ — กรุณา refresh และลองใหม่ (session อาจหมดอายุ หรือสิทธิ์ไม่เพียงพอ)' };
+      }
+      return { success: true, data: toCamel(data[0]) };
     }
 
     async function doUploadEquipmentImage(d) {
