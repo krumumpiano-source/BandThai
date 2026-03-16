@@ -1076,7 +1076,7 @@
     if (detailRow) detailRow.style.display = '';
     el.style.display = '';
     el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83D\uDD0D \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
-    _sdSearchItunes(song.name, song.singer, function(result, errText) {
+    _sdSearchItunes(song.name, song.artist || song.singer, function(result, errText) {
       if (!result) {
         el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
           + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span>'
@@ -1103,7 +1103,7 @@
       }
       if (btn) btn.textContent = '\uD83D\uDD0D ' + i + '/' + incomplete.length + '...';
       var s = incomplete[i];
-      _sdSearchItunes(s.name, s.singer, function(result) {
+      _sdSearchItunes(s.name, s.artist || s.singer, function(result) {
         if (result) { _sdEnrichCache[s.id] = result; done++; }
         setTimeout(function() { next(i + 1); }, 400);
       });
