@@ -29,9 +29,8 @@
     /* Mobile: horizontal pill nav for admin */
     @media(max-width:1100px){
       .admin-nav-sidebar{display:none}
-      .admin-nav-mobile{display:flex;overflow-x:auto;gap:6px;padding:10px;background:var(--premium-off-white);border-radius:var(--radius-lg);margin-bottom:var(--spacing-md);scrollbar-width:none;-ms-overflow-style:none;flex-wrap:nowrap;border:1px solid var(--premium-border)}
-      .admin-nav-mobile::-webkit-scrollbar{display:none}
-      .admin-nav-mobile .a-nav-item{white-space:nowrap;padding:7px 12px;font-size:var(--text-xs);flex-shrink:0}
+      .admin-nav-mobile{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:var(--premium-off-white);border-radius:var(--radius-lg);margin-bottom:var(--spacing-md);border:1px solid var(--premium-border)}
+      .admin-nav-mobile .a-nav-item{white-space:nowrap;padding:7px 12px;font-size:var(--text-xs)}
       .admin-nav-mobile .a-nav-group-title{display:none}
     }
     @media(min-width:1101px){
