@@ -14,8 +14,7 @@
    LAYOUT SHIFT — push page content
    ────────────────────────────────────────────────────────── */
 @media (min-width: 1024px) {
-  body { padding-left: var(--sidebar-width) !important; }
-  main { width: calc(100vw - var(--sidebar-width)); box-sizing: border-box; }
+  body { padding-left: var(--sidebar-width) !important; overflow-x: hidden; }
 }
 @media (max-width: 1023px) {
   body { padding-top: calc(var(--topbar-height) + env(safe-area-inset-top, 0px)) !important; }
