@@ -304,8 +304,7 @@
               <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
                 <button class="btn btn-secondary btn-sm" onclick="loadSongDupPanel(true)">🔄 โหลดใหม่</button>
                 <button class="btn btn-sm" id="sd-itunes-btn" style="background:#0ea5e9;color:#fff" onclick="sdItunesEnrichBatch()">🔍 ค้นหา iTunes</button>
-                <button class="btn btn-sm" style="background:#0ea5e9;color:#fff" onclick="sdExpandAll()">📂 เปิดหมด</button>
-                <button class="btn btn-sm" style="background:#64748b;color:#fff" onclick="sdCollapseAll()">📁 ปิดหมด</button>
+                <button class="btn btn-sm" style="background:#7c3aed;color:#fff" onclick="sdClearAllIgnored()">🔓 เลิกยกเว้นทั้งหมด</button>
                 <button class="btn btn-sm" id="sd-btn-select-all" style="background:#334155;color:#fff" onclick="sdSelectAll()">☑️ เลือก DEL ทั้งหมด</button>
                 <button class="btn btn-sm" style="background:#dc2626;color:#fff" id="sd-btn-exec" disabled onclick="sdExecuteMerge()">⚡ ลบที่เลือก (<span id="sd-sel-count">0</span>)</button>
               </div>
@@ -456,6 +455,15 @@
   var _SD_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
   var _SD_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน'];
   var _sdEnrichCache = {};
+  var _sdIgnored = {};
+  var _sdShowIgnored = false;
+  function _sdLoadIgnored() { try { _sdIgnored = JSON.parse(localStorage.getItem('sd_ignored') || '{}'); } catch(e) { _sdIgnored = {}; } }
+  function _sdSaveIgnored() { localStorage.setItem('sd_ignored', JSON.stringify(_sdIgnored)); }
+  function _sdGetIgnored() { if (!Object.keys(_sdIgnored).length) _sdLoadIgnored(); return _sdIgnored; }
+  function sdIgnoreGroup(gKey) { _sdIgnored[gKey] = true; _sdSaveIgnored(); sdRender(); }
+  function sdUnignoreGroup(gKey) { delete _sdIgnored[gKey]; _sdSaveIgnored(); sdRender(); }
+  function sdToggleShowIgnored() { _sdShowIgnored = !_sdShowIgnored; sdRender(); }
+  function sdClearAllIgnored() { _sdIgnored = {}; _sdSaveIgnored(); sdRender(); }
 
   function _sdScore(s) {
     var n = 0;
@@ -481,45 +489,50 @@
     if (s.tags) parts.push('<span style="color:#65a30d">\uD83C\uDFF7\uFE0F '+escapeHtml(s.tags)+'</span>');
     return parts.length ? parts.join(' <span style="color:#d1d5db">|</span> ') : '<span style="color:#d1d5db;font-style:italic">\u2014 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E40\u0E15\u0E34\u0E21 \u2014</span>';
   }
-  function _sdSongCard(s, label, opts) {
+  function _sdSongRow(s, label, opts) {
     opts = opts || {};
     var isKeep = label === 'KEEP';
     var bgColor = isKeep ? '#f0fdf4' : '#fef2f2';
-    var bdColor = isKeep ? '#bbf7d0' : '#fecaca';
     var lblBg = isKeep ? '#16a34a' : '#dc2626';
-    if (label === 'NEUTRAL') { bgColor = 'var(--premium-off-white)'; bdColor = 'var(--premium-border)'; lblBg = '#6b7280'; }
     var chkHtml = '';
-    if (opts.showCheckbox) {
+    if (!isKeep && opts.keepId) {
+      var isChecked = _sdSelected[opts.keepId] && _sdSelected[opts.keepId].indexOf(s.id) !== -1;
       chkHtml = '<input type="checkbox" data-keep="'+opts.keepId+'" data-del="'+s.id+'" '
-        + (opts.checked ? 'checked ' : '')
+        + (isChecked ? 'checked ' : '')
         + 'onchange="sdToggle(\''+opts.keepId+'\',\''+s.id+'\',this.checked)" '
-        + 'style="accent-color:#dc2626;width:16px;height:16px;cursor:pointer;flex-shrink:0"> ';
+        + 'style="accent-color:#dc2626;width:15px;height:15px;cursor:pointer">';
     }
-    var swapHtml = '';
+    var score = _sdScore(s);
+    var pct = Math.round(score / _SD_FIELDS.length * 100);
+    var scoreC = pct >= 75 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626';
+    var hasCache = !!_sdEnrichCache[s.id];
+    var btns = '';
     if (opts.showSwap) {
-      var swapTitle = isKeep ? '\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E40\u0E1B\u0E47\u0E19 DEL' : '\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19\u0E40\u0E1B\u0E47\u0E19 KEEP';
-      swapHtml = '<button onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" '
-        + 'style="background:transparent;border:1px solid #9ca3af;border-radius:4px;padding:2px 6px;font-size:.68rem;cursor:pointer;color:#6b7280" '
-        + 'title="'+swapTitle+'">\uD83D\uDD04</button>';
+      btns += '<button onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" style="background:transparent;border:1px solid #9ca3af;border-radius:4px;padding:1px 5px;font-size:.68rem;cursor:pointer;color:#6b7280" title="\u0E2A\u0E25\u0E31\u0E1A">\uD83D\uDD04</button>';
     }
-    return '<div style="padding:8px 10px;background:'+bgColor+';border:1px solid '+bdColor+';border-radius:6px;margin-top:4px">'
-      + '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
-      + chkHtml
-      + '<span style="background:'+lblBg+';color:#fff;font-size:.63rem;font-weight:700;padding:2px 7px;border-radius:12px;flex-shrink:0">'+label+'</span>'
-      + '<span style="font-weight:600;font-size:.88rem;color:var(--premium-text)">'+escapeHtml(s.name)+'</span>'
-      + '<span style="background:#e5e7eb;font-size:.68rem;padding:2px 7px;border-radius:12px">\uD83C\uDFA4 '+escapeHtml(s.singer||'?')+'</span>'
-      + _sdScoreBar(s)
-      + '<span style="font-family:monospace;font-size:.63rem;color:#9ca3af">'+s.id.substring(0,8)+'</span>'
-      + '<span style="margin-left:auto;display:flex;gap:4px;align-items:center">'
-      + swapHtml
-      + '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25">\uD83D\uDD0D</button>'
-      + '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>'
-      + '</span></div>'
-      + '<div style="font-size:.76rem;margin-top:3px;padding-left:'+(chkHtml?'22px':'0')+'">'+_sdMeta(s)+'</div>'
-      + '</div>'
-      + _sdInlineSuggestion(s)
+    btns += '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem'+(hasCache?';color:#16a34a':'')+'" title="\u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes">'+(hasCache?'\u2705':'\uD83D\uDD0D')+'</button>';
+    btns += '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>';
+    var mainRow = '<tr style="background:'+bgColor+';border-bottom:1px solid #f1f5f9">'
+      + '<td style="text-align:center;padding:5px 4px;width:30px">'+chkHtml+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;width:50px"><span style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap">'+label+'</span></td>'
+      + '<td style="padding:5px 6px;font-weight:600;font-size:.84rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.name)+'</td>'
+      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.singer||'\u2014')+'</td>'
+      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.artist||'\u2014')+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+escapeHtml(s.key||'\u2014')+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+escapeHtml(s.era||'\u2014')+'</td>'
+      + '<td style="padding:5px 6px;font-size:.78rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.tags||'\u2014')+'</td>'
+      + '<td style="text-align:center;padding:5px 3px"><span style="color:'+scoreC+';font-weight:700;font-size:.76rem">'+pct+'%</span></td>'
+      + '<td style="white-space:nowrap;padding:5px 4px;text-align:center">'+btns+'</td>'
+      + '</tr>';
+    var hasCached = !!_sdEnrichCache[s.id];
+    var suggestion = hasCached ? _sdInlineSuggestion(s) : '';
+    var detailRow = '<tr id="sd-detail-row-'+s.id+'" style="'+(hasCached?'':'display:none;')+'">'
+      + '<td colspan="10" style="padding:4px 10px 8px;background:#fafaff;border-bottom:2px solid #e2e8f0">'
+      + '<div id="sd-suggest-'+s.id+'">'+suggestion+'</div>'
       + '<div id="sd-enrich-'+s.id+'" style="display:none"></div>'
-      + '<div id="sd-edit-'+s.id+'" style="display:none"></div>';
+      + '<div id="sd-edit-'+s.id+'" style="display:none"></div>'
+      + '</td></tr>';
+    return mainRow + detailRow;
   }
 
   var _SD_FIELD_LABELS = { name:'ชื่อเพลง', singer:'นักร้อง', artist:'ศิลปิน', key:'คีย์', bpm:'BPM', mood:'อารมณ์', era:'ยุค', tags:'แนวเพลง' };
@@ -804,6 +817,19 @@
     sdRender();
   }
 
+  var _sdTblHead = '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;font-size:.72rem;color:#64748b">'
+    + '<th style="padding:5px 4px;width:30px;text-align:center">\u2610</th>'
+    + '<th style="padding:5px 4px;width:50px;text-align:center">\u0E2A\u0E16\u0E32\u0E19\u0E30</th>'
+    + '<th style="padding:5px 6px;text-align:left">\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07</th>'
+    + '<th style="padding:5px 6px;text-align:left">\u0E19\u0E31\u0E01\u0E23\u0E49\u0E2D\u0E07</th>'
+    + '<th style="padding:5px 6px;text-align:left">\u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19</th>'
+    + '<th style="padding:5px 4px;text-align:center">\u0E04\u0E35\u0E22\u0E4C</th>'
+    + '<th style="padding:5px 4px;text-align:center">\u0E22\u0E38\u0E04</th>'
+    + '<th style="padding:5px 6px;text-align:left">\u0E41\u0E19\u0E27</th>'
+    + '<th style="padding:5px 4px;text-align:center;width:40px">%</th>'
+    + '<th style="padding:5px 4px;text-align:center;width:80px">\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23</th>'
+    + '</tr></thead>';
+
   function sdRender() {
     var groups = _sdGroups[_sdTab] || [];
     var list = document.getElementById('sd-list');
@@ -812,76 +838,93 @@
       return;
     }
     if (_sdTab === 'fuzzy') { sdRenderFuzzy(groups, list); return; }
-    var autoExpand = groups.length <= 10;
-    var html = groups.map(function(g, gi) {
-      var isDiff = _sdTab === 'diff';
-      var showCheckbox = true;
-
-      var keepCard = _sdSongCard(g.keep, 'KEEP', { showSwap: true, groupIdx: gi });
-      var delCards = g.dels.map(function(d) {
-        var isChecked = _sdSelected[g.keep.id] && _sdSelected[g.keep.id].indexOf(d.id) !== -1;
-        return _sdSongCard(d, 'DEL', { showCheckbox: showCheckbox, checked: isChecked, keepId: g.keep.id, showSwap: true, groupIdx: gi });
-      }).join('');
-
+    var ignored = _sdGetIgnored();
+    var isDiff = _sdTab === 'diff';
+    var shownGroups = [];
+    var ignoredCount = 0;
+    groups.forEach(function(g, gi) {
+      var gKey = _sdTab + ':' + _sdNormalize(g.name);
+      if (ignored[gKey] && !_sdShowIgnored) { ignoredCount++; return; }
+      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: !!ignored[gKey] });
+    });
+    var ignoreNotice = '';
+    if (ignoredCount > 0) {
+      ignoreNotice = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:.82rem;color:#6b21a8">'
+        + '\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 <b>'+ignoredCount+'</b> \u0E01\u0E25\u0E38\u0E48\u0E21 '
+        + '<button onclick="sdToggleShowIgnored()" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">'
+        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19' : '\u0E41\u0E2A\u0E14\u0E07\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</button></div>';
+    }
+    if (!shownGroups.length && ignoredCount > 0) {
+      list.innerHTML = ignoreNotice + '<div style="text-align:center;color:var(--premium-text-muted);padding:20px">\u0E17\u0E38\u0E01\u0E01\u0E25\u0E38\u0E48\u0E21\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27</div>';
+      return;
+    }
+    var html = ignoreNotice + shownGroups.map(function(item) {
+      var g = item.g, gi = item.gi, gKey = item.gKey;
       var headerBg = isDiff ? '#fffbeb' : 'var(--premium-off-white)';
+      var isIgn = item.ignored;
       var artistsData = (g.keep.artist||'').toLowerCase() + ' ' + g.dels.map(function(d) { return (d.artist||'').toLowerCase(); }).join(' ');
-
-      return '<div class="sd-group" data-name="'+escapeHtml(g.name.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:8px;overflow:hidden">'
-        + '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:'+headerBg+';cursor:pointer" onclick="sdToggleGroup(this)">'
-        + '<span style="font-weight:600;color:var(--premium-text);flex:1;font-size:.92rem">'+escapeHtml(g.name)+'</span>'
-        + '<span style="background:'+(isDiff ? '#dbeafe' : '#fee2e2')+';color:'+(isDiff ? '#1d4ed8' : '#dc2626')+';font-size:.68rem;padding:2px 8px;border-radius:12px;font-weight:600">'+g.count+'x</span>'
-        + '<button onclick="event.stopPropagation();sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
-        + '<span style="color:var(--premium-text-muted);font-size:.8rem">'+(autoExpand ? '\u25B2' : '\u25BC')+'</span>'
+      var keepRow = _sdSongRow(g.keep, 'KEEP', { showSwap: true, groupIdx: gi });
+      var delRows = g.dels.map(function(d) {
+        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, showSwap: true, groupIdx: gi });
+      }).join('');
+      return '<div class="sd-group" data-name="'+escapeHtml(g.name.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
+        + '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:'+headerBg+'">'
+        + '<span style="font-weight:700;color:var(--premium-text);flex:1;font-size:.92rem">'+escapeHtml(g.name)+'</span>'
+        + '<span style="background:'+(isDiff?'#dbeafe':'#fee2e2')+';color:'+(isDiff?'#1d4ed8':'#dc2626')+';font-size:.68rem;padding:2px 8px;border-radius:12px;font-weight:600">'+g.count+'x</span>'
+        + '<button onclick="sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
+        + (isIgn
+          ? '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A</button>'
+          : '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>')
         + '</div>'
-        + '<div class="sd-group-body" style="'+(autoExpand ? '' : 'display:none;')+'padding:8px 12px">'
-        + keepCard + delCards
-        + '</div></div>';
+        + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">'
+        + _sdTblHead + '<tbody>' + keepRow + delRows + '</tbody></table></div></div>';
     }).join('');
     list.innerHTML = html;
   }
 
   function sdRenderFuzzy(groups, list) {
-    var autoExpand = groups.length <= 10;
-    var html = groups.map(function(g, gi) {
-      var keepCard = _sdSongCard(g.keep, 'KEEP', {});
-      var delCards = g.dels.map(function(d) {
-        var isChecked = _sdSelected[g.keep.id] && _sdSelected[g.keep.id].indexOf(d.id) !== -1;
-        return _sdSongCard(d, 'DEL', { showCheckbox: true, checked: isChecked, keepId: g.keep.id });
-      }).join('');
-
-      var matchLabel = g.matchType === 'norm' ? '\u0E40\u0E27\u0E49\u0E19\u0E27\u0E23\u0E23\u0E04/\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E2B\u0E21\u0E32\u0E22' : '\u0E15\u0E48\u0E32\u0E07 '+g.distance+' \u0E15\u0E31\u0E27';
+    var ignored = _sdGetIgnored();
+    var shownGroups = [];
+    var ignoredCount = 0;
+    groups.forEach(function(g, gi) {
+      var gKey = 'fuzzy:' + _sdNormalize(g.nameA) + '||' + _sdNormalize(g.nameB);
+      if (ignored[gKey] && !_sdShowIgnored) { ignoredCount++; return; }
+      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: !!ignored[gKey] });
+    });
+    var ignoreNotice = '';
+    if (ignoredCount > 0) {
+      ignoreNotice = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:.82rem;color:#6b21a8">'
+        + '\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 <b>'+ignoredCount+'</b> \u0E04\u0E39\u0E48 '
+        + '<button onclick="sdToggleShowIgnored()" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">'
+        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19' : '\u0E41\u0E2A\u0E14\u0E07\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</button></div>';
+    }
+    if (!shownGroups.length && ignoredCount > 0) {
+      list.innerHTML = ignoreNotice + '<div style="text-align:center;color:var(--premium-text-muted);padding:20px">\u0E17\u0E38\u0E01\u0E04\u0E39\u0E48\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27</div>';
+      return;
+    }
+    var html = ignoreNotice + shownGroups.map(function(item) {
+      var g = item.g, gi = item.gi, gKey = item.gKey;
+      var isIgn = item.ignored;
       var artistsData = g.songs.map(function(s) { return (s.artist||'').toLowerCase(); }).join(' ');
-
-      return '<div class="sd-group" data-name="'+escapeHtml(g.nameA.toLowerCase()+' '+g.nameB.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:8px;overflow:hidden">'
-        + '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f5f3ff;cursor:pointer" onclick="sdToggleGroup(this)">'
-        + '<span style="font-weight:600;color:var(--premium-text);flex:1;font-size:.9rem">'
+      var keepRow = _sdSongRow(g.keep, 'KEEP', { showSwap: false, groupIdx: gi });
+      var delRows = g.dels.map(function(d) {
+        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, showSwap: false, groupIdx: gi });
+      }).join('');
+      var matchLabel = g.matchType === 'norm' ? '\u0E40\u0E27\u0E49\u0E19\u0E27\u0E23\u0E23\u0E04/\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E2B\u0E21\u0E32\u0E22' : '\u0E15\u0E48\u0E32\u0E07 '+g.distance+' \u0E15\u0E31\u0E27';
+      return '<div class="sd-group" data-name="'+escapeHtml(g.nameA.toLowerCase()+' '+g.nameB.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
+        + '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f5f3ff">'
+        + '<span style="font-weight:700;color:var(--premium-text);flex:1;font-size:.9rem">'
         + escapeHtml(g.nameA)+' <span style="color:#7c3aed">\u2194</span> '+escapeHtml(g.nameB)+'</span>'
         + '<span style="background:#ede9fe;color:#7c3aed;font-size:.66rem;padding:2px 8px;border-radius:12px;font-weight:600;white-space:nowrap">'+matchLabel+'</span>'
-        + '<button onclick="event.stopPropagation();sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
-        + '<span style="color:var(--premium-text-muted);font-size:.8rem">'+(autoExpand ? '\u25B2' : '\u25BC')+'</span>'
+        + '<button onclick="sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
+        + (isIgn
+          ? '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A</button>'
+          : '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>')
         + '</div>'
-        + '<div class="sd-group-body" style="'+(autoExpand ? '' : 'display:none;')+'padding:8px 12px">'
-        + keepCard + delCards
-        + '</div></div>';
+        + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">'
+        + _sdTblHead + '<tbody>' + keepRow + delRows + '</tbody></table></div></div>';
     }).join('');
     list.innerHTML = html;
-  }
-
-  function sdToggleGroup(header) {
-    var body = header.nextElementSibling;
-    body.style.display = body.style.display === 'none' ? '' : 'none';
-    var arrow = header.querySelector('span:last-child');
-    if (arrow) arrow.textContent = body.style.display === 'none' ? '\u25BC' : '\u25B2';
-  }
-
-  function sdExpandAll() {
-    document.querySelectorAll('#sd-list .sd-group-body').forEach(function(b) { b.style.display = ''; });
-    document.querySelectorAll('#sd-list .sd-group > div:first-child span:last-child').forEach(function(a) { a.textContent = '\u25B2'; });
-  }
-
-  function sdCollapseAll() {
-    document.querySelectorAll('#sd-list .sd-group-body').forEach(function(b) { b.style.display = 'none'; });
-    document.querySelectorAll('#sd-list .sd-group > div:first-child span:last-child').forEach(function(a) { a.textContent = '\u25BC'; });
   }
 
   function sdSwapKeep(groupIdx, newKeepId) {
@@ -1019,11 +1062,18 @@
   }
   function sdItunesEnrich(songId, forceRetry) {
     var el = document.getElementById('sd-enrich-' + songId);
+    var detailRow = document.getElementById('sd-detail-row-' + songId);
     if (!el) return;
-    if (!forceRetry && el.style.display !== 'none') { el.style.display = 'none'; return; }
+    // If cached and not force, toggle detail row visibility
+    if (!forceRetry && _sdEnrichCache[songId]) {
+      if (detailRow) detailRow.style.display = detailRow.style.display === 'none' ? '' : 'none';
+      return;
+    }
+    // If already loading/visible and not forced, hide
+    if (!forceRetry && el.style.display !== 'none') { el.style.display = 'none'; if (detailRow && !_sdEnrichCache[songId]) detailRow.style.display = 'none'; return; }
     var song = _sdAllSongs.find(function(s) { return s.id === songId; });
     if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
-    if (!forceRetry && _sdEnrichCache[songId]) { el.style.display = 'none'; sdRender(); return; }
+    if (detailRow) detailRow.style.display = '';
     el.style.display = '';
     el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83D\uDD0D \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
     _sdSearchItunes(song.name, song.singer, function(result, errText) {
@@ -1065,10 +1115,12 @@
   function sdEditSong(songId) {
     var el = document.getElementById('sd-edit-'+songId);
     if (!el) return;
+    var detailRow = document.getElementById('sd-detail-row-'+songId);
     var song = _sdAllSongs.find(function(s) { return s.id === songId; });
     if (!song) { showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E40\u0E1E\u0E25\u0E07', 'error'); return; }
     el.style.display = el.style.display === 'none' ? '' : 'none';
     if (el.style.display !== 'none') {
+      if (detailRow) detailRow.style.display = '';
       el.innerHTML = '<div style="background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:6px;padding:10px;margin-top:4px">'
         + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px;margin-bottom:8px">'
         + _sdEditField('name', songId, '\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07', song.name)
