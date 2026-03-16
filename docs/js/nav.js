@@ -138,6 +138,7 @@ function renderMainNav(containerId) {
         _admSub('activitylog',  '📋', 'Activity Log') +
         navLink('admin-songs',  '🎵 คลังเพลง', '') +
         _admSub('songdup',      '🔍', 'ตรวจเพลงซ้ำ') +
+        navLink('member-worklog', '📊 รายงานงานสมาชิก', '') +
       '</ul>' +
     '</li>'
   ) : '';
