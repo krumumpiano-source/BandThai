@@ -354,6 +354,7 @@
         case 'logActivity':           return doLogActivity(d);
         case 'getMemberActivityLog':     return doGetMemberActivityLog(d);
         case 'getMemberActivitySummary': return doGetMemberActivitySummary(d);
+        case 'getMemberWorkStats':       return doGetMemberWorkStats(d);
         case 'backfillMemberActivity':   return doBackfillMemberActivity(d);
         case 'getSongsInRange':          return doGetSongsInRange(d);
 
@@ -2355,6 +2356,94 @@
       var { data, error } = await q;
       if (error) throw error;
       return { success: true, data: toCamelList(data || []) };
+    }
+
+    async function doGetMemberWorkStats() {
+      // ดึงข้อมูลครบในการ call เดียว: song managers + profiles + total songs + activity logs
+      var bid = getBandId();
+      if (!bid) return { success: false, message: 'ไม่พบ bandId' };
+
+      // 1. Band settings → songManagers list
+      var { data: bsRows, error: e1 } = await sb.from('band_settings').select('settings').eq('band_id', bid).limit(1);
+      if (e1) throw e1;
+      var settings = (bsRows && bsRows[0] && bsRows[0].settings) || {};
+      var managerIds = settings.songManagers || [];
+
+      // 2. Profile data for managers
+      var profiles = [];
+      if (managerIds.length > 0) {
+        var { data: pdata, error: e2 } = await sb.from('profiles').select('id, first_name, last_name, nickname, user_name').in('id', managerIds);
+        if (e2) throw e2;
+        profiles = pdata || [];
+      }
+
+      // 3. Total songs in library
+      var { count: totalSongs, error: e3 } = await sb.from('band_songs').select('*', { count: 'exact', head: true }).eq('band_id', bid);
+      if (e3) throw e3;
+      totalSongs = totalSongs || 0;
+
+      // 4. Activity log — all entries
+      var { data: logs, error: e4 } = await sb.from('member_activity_log')
+        .select('user_id, user_name, action, score, created_at')
+        .eq('band_id', bid)
+        .order('created_at', { ascending: true })
+        .limit(50000);
+      if (e4) throw e4;
+      logs = logs || [];
+
+      // 5. Compute tracked song adds per user (add_song=1, bulk_add=score/2)
+      var addsByUser = {};
+      var scoreByUser = {};
+      logs.forEach(function(l) {
+        var uid = l.user_id;
+        if (!addsByUser[uid]) addsByUser[uid] = 0;
+        if (!scoreByUser[uid]) scoreByUser[uid] = 0;
+        if (l.action === 'add_song') addsByUser[uid] += 1;
+        if (l.action === 'bulk_add') addsByUser[uid] += Math.max(1, Math.round((l.score || 2) / 2));
+        scoreByUser[uid] += (l.score || 0);
+      });
+
+      // 6. Historical songs (untracked) divided equally among managers
+      var totalTrackedAdds = Object.values(addsByUser).reduce(function(s, v) { return s + v; }, 0);
+      var historicalSongs = Math.max(0, totalSongs - totalTrackedAdds);
+      var numManagers = managerIds.length || 1;
+      var historicalPerManager = historicalSongs / numManagers;
+
+      // 7. Build member stats array
+      var profileMap = {};
+      profiles.forEach(function(p) { profileMap[p.id] = p; });
+
+      // Total attributed songs across all managers (historical share + tracked)
+      var members = managerIds.map(function(uid) {
+        var p = profileMap[uid] || {};
+        var name = p.nickname || p.first_name || p.user_name || uid.substring(0, 8);
+        var tracked = addsByUser[uid] || 0;
+        var songCount = tracked + historicalPerManager;
+        return {
+          userId:          uid,
+          userName:        name,
+          historicalSongs: Math.round(historicalPerManager * 10) / 10,
+          trackedSongs:    tracked,
+          totalSongs:      Math.round(songCount * 10) / 10,
+          activityScore:   scoreByUser[uid] || 0,
+          pct:             0  // filled below
+        };
+      });
+
+      var totalAttr = members.reduce(function(s, m) { return s + m.totalSongs; }, 0) || 1;
+      members.forEach(function(m) { m.pct = Math.round(m.totalSongs / totalAttr * 1000) / 10; });
+
+      // Track start date (first log entry)
+      var trackStart = logs.length > 0 ? logs[0].created_at : null;
+
+      return {
+        success: true,
+        totalSongs:      totalSongs,
+        historicalSongs: historicalSongs,
+        trackedSongs:    totalTrackedAdds,
+        trackStart:      trackStart,
+        members:         members
+      };
     }
 
     // ── Notification Templates ──────────────────────────────────────
