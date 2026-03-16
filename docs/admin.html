@@ -521,6 +521,8 @@
       + '</span></div>'
       + '<div style="font-size:.76rem;margin-top:3px;padding-left:'+(chkHtml?'22px':'0')+'">'+_sdMeta(s)+'</div>'
       + '</div>'
+      + (_sdScore(s) < 5 && !_sdEnrichCache[s.id] ? '<div style="margin-top:4px;padding:6px 10px;background:linear-gradient(135deg,#faf5ff,#eff6ff);border:1px solid #c4b5fd;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')"><span style="font-size:1.1rem">\uD83E\uDD16</span><span style="font-size:.78rem;color:#7c3aed;font-weight:600">AI \u0E0A\u0E48\u0E27\u0E22\u0E40\u0E15\u0E34\u0E21\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25 \u2014 \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, \u0E04\u0E35\u0E22\u0E4C, BPM, mood, era</span></div>' : '')
+      + (_sdEnrichCache[s.id] ? '<div style="margin-top:4px;padding:5px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:6px" onclick="event.stopPropagation();sdAiEnrich(\''+s.id+'\')"><span style="font-size:.9rem">\u2705</span><span style="font-size:.76rem;color:#16a34a;font-weight:600">AI \u0E21\u0E35\u0E02\u0E49\u0E2D\u0E41\u0E19\u0E30\u0E19\u0E33\u0E41\u0E25\u0E49\u0E27 \u2014 \u0E01\u0E14\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25</span></div>' : '')
       + '<div id="sd-enrich-'+s.id+'" style="display:none"></div>'
       + '<div id="sd-edit-'+s.id+'" style="display:none"></div>';
   }
@@ -588,6 +590,11 @@
     if (diffGroups) parts.push('\uD83D\uDFE1 \u0E15\u0E23\u0E27\u0E08\u0E2A\u0E2D\u0E1A <b>'+diffGroups+' \u0E01\u0E25\u0E38\u0E48\u0E21</b> \u0E17\u0E35\u0E48 singer \u0E15\u0E48\u0E32\u0E07\u0E01\u0E31\u0E19');
     if (fuzzyGroups) parts.push('\uD83D\uDFE3 \u0E15\u0E23\u0E27\u0E08\u0E0A\u0E37\u0E48\u0E2D\u0E04\u0E25\u0E49\u0E32\u0E22 <b>'+fuzzyGroups+' \u0E04\u0E39\u0E48</b>');
     if (!parts.length) parts.push('\u2705 \u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E1E\u0E25\u0E07\u0E0B\u0E49\u0E33');
+    // Count incomplete songs
+    var incomplete = _sdAllSongs.filter(function(s) { return _sdScore(s) < 5; }).length;
+    if (incomplete && _sdGeminiKey) {
+      parts.push('<br>\uD83E\uDDE0 <span style="color:#7c3aed">\u0E1E\u0E1A <b>'+incomplete+' \u0E40\u0E1E\u0E25\u0E07</b>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E21\u0E48\u0E04\u0E23\u0E1A \u2014 \u0E01\u0E14 <b>\uD83E\uDDE0 AI \u0E15\u0E23\u0E27\u0E08\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</b> \u0E14\u0E49\u0E32\u0E19\u0E1A\u0E19 \u0E2B\u0E23\u0E37\u0E2D\u0E01\u0E14 \uD83E\uDD16 \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07 \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E2B\u0E49 AI \u0E04\u0E49\u0E19\u0E2B\u0E32\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07, \u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19, Key, BPM, Mood, Era \u0E43\u0E2B\u0E49</span>');
+    }
     el.innerHTML = parts.join(' &nbsp;\u00B7&nbsp; ');
   }
 
@@ -1237,7 +1244,8 @@
       if (batchIdx >= batches.length) {
         btn.disabled = false;
         btn.innerHTML = '\uD83E\uDDE0 AI \u0E15\u0E23\u0E27\u0E08\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25';
-        showToast('\u2705 AI \u0E15\u0E23\u0E27\u0E08\u0E40\u0E2A\u0E23\u0E47\u0E08 '+done+' \u0E40\u0E1E\u0E25\u0E07 — \u0E01\u0E14 \uD83E\uDD16 \u0E17\u0E35\u0E48\u0E40\u0E1E\u0E25\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25', 'success');
+        showToast('\u2705 AI \u0E15\u0E23\u0E27\u0E08\u0E40\u0E2A\u0E23\u0E47\u0E08 '+done+' \u0E40\u0E1E\u0E25\u0E07 \u2014 \u0E01\u0E14\u0E41\u0E16\u0E1A\u0E2A\u0E35\u0E40\u0E02\u0E35\u0E22\u0E27 \u201CAI \u0E21\u0E35\u0E02\u0E49\u0E2D\u0E41\u0E19\u0E30\u0E19\u0E33\u0E41\u0E25\u0E49\u0E27\u201D \u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E14\u0E39\u0E1C\u0E25\u0E41\u0E25\u0E30\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19', 'success');
+        sdRender();
         return;
       }
       var batch = batches[batchIdx];
