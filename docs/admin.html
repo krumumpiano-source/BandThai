@@ -938,7 +938,7 @@
   }
   function _sdSearchItunes(name, singer, callback) {
     var term = encodeURIComponent(((singer || '') + ' ' + name).trim());
-    fetch('https://itunes.apple.com/search?term=' + term + '&limit=5&entity=song&media=music')
+    fetch('https://itunes.apple.com/search?term=' + term + '&limit=5&entity=song&media=music&country=TH&lang=th_TH')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         if (!data || !data.results || !data.results.length) { callback(null, '\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E40\u0E1E\u0E25\u0E07\u0E19\u0E35\u0E49\u0E43\u0E19 iTunes'); return; }
