@@ -25,7 +25,7 @@
     .a-nav-group-title:first-child{border-top:none;margin-top:0;padding-top:4px}
     .a-nav-item{padding:var(--spacing-sm) var(--spacing-md);border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);color:var(--premium-text-muted);transition:all .15s}
     .a-nav-item.active,.a-nav-item:hover{background:var(--premium-gold);color:#fff}
-    .a-panel{display:none;max-width:100%;overflow:hidden;box-sizing:border-box}.a-panel.active{display:block}
+    .a-panel{display:none;min-width:0;max-width:100%;overflow-x:auto;box-sizing:border-box}.a-panel.active{display:block}
     /* Mobile: horizontal pill nav for admin */
     @media(max-width:1100px){
       .admin-nav-sidebar{display:none}

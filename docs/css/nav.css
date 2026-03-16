@@ -15,7 +15,7 @@
    ────────────────────────────────────────────────────────── */
 @media (min-width: 1024px) {
   body { padding-left: var(--sidebar-width) !important; }
-  main, .container, .page-container { max-width: calc(100vw - var(--sidebar-width)) !important; overflow-x: hidden; box-sizing: border-box; }
+  main { width: calc(100vw - var(--sidebar-width)); box-sizing: border-box; }
 }
 @media (max-width: 1023px) {
   body { padding-top: calc(var(--topbar-height) + env(safe-area-inset-top, 0px)) !important; }
