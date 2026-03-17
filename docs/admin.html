@@ -452,6 +452,8 @@
   var _sdLoaded = false;
   var _sdAllSongs = [];
   var _SD_FIELDS = ['name','singer','artist','key','bpm','mood','era','tags'];
+  var _SD_SINGER_OPTS = ['ชาย','หญิง','ชาย/หญิง'];
+  var _SD_KEY_OPTS = ['C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
   var _SD_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
   var _SD_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
   var _SD_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน'];
@@ -508,20 +510,27 @@
     var scoreC = pct >= 75 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626';
     var hasCache = !!_sdEnrichCache[s.id];
     var btns = '';
-    if (opts.showSwap) {
-      btns += '<button onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" style="background:transparent;border:1px solid #9ca3af;border-radius:4px;padding:1px 5px;font-size:.68rem;cursor:pointer;color:#6b7280" title="\u0E2A\u0E25\u0E31\u0E1A">\uD83D\uDD04</button>';
-    }
     btns += '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem'+(hasCache?';color:#16a34a':'')+'" title="\u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes">'+(hasCache?'\u2705':'\uD83D\uDD0D')+'</button>';
     btns += '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>';
+    // Clickable KEEP/DEL label to swap
+    var lblClick = (opts.groupIdx !== undefined)
+      ? ' onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;cursor:pointer;border:none;display:inline-block" title="คลิกเพื่อสลับ KEEP/DEL"'
+      : ' style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap"';
+    // Inline editable cells
+    function cellEdit(field, val) {
+      var sid = s.id;
+      var display = escapeHtml(val || '\u2014');
+      return '<span class="sd-cell-edit" data-sid="'+sid+'" data-field="'+field+'" onclick="event.stopPropagation();sdCellEdit(this,\''+sid+'\',\''+field+'\')" style="cursor:pointer;border-bottom:1px dashed #cbd5e1;padding-bottom:1px" title="คลิกแก้ไข">'+display+'</span>';
+    }
     var mainRow = '<tr style="background:'+bgColor+';border-bottom:1px solid #f1f5f9">'
       + '<td style="text-align:center;padding:5px 4px;width:30px">'+chkHtml+'</td>'
-      + '<td style="text-align:center;padding:5px 3px;width:50px"><span style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:1px 7px;border-radius:10px;white-space:nowrap">'+label+'</span></td>'
-      + '<td style="padding:5px 6px;font-weight:600;font-size:.84rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.name)+'</td>'
-      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.singer||'\u2014')+'</td>'
-      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.artist||'\u2014')+'</td>'
-      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+escapeHtml(s.key||'\u2014')+'</td>'
-      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+escapeHtml(s.era||'\u2014')+'</td>'
-      + '<td style="padding:5px 6px;font-size:.78rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(s.tags||'\u2014')+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;width:50px"><button'+lblClick+'>'+label+'</button></td>'
+      + '<td style="padding:5px 6px;font-weight:600;font-size:.84rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('name',s.name)+'</td>'
+      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('singer',s.singer)+'</td>'
+      + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('artist',s.artist)+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+cellEdit('key',s.key)+'</td>'
+      + '<td style="text-align:center;padding:5px 3px;font-size:.78rem">'+cellEdit('era',s.era)+'</td>'
+      + '<td style="padding:5px 6px;font-size:.78rem;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('tags',s.tags)+'</td>'
       + '<td style="text-align:center;padding:5px 3px"><span style="color:'+scoreC+';font-weight:700;font-size:.76rem">'+pct+'%</span></td>'
       + '<td style="white-space:nowrap;padding:5px 4px;text-align:center">'+btns+'</td>'
       + '</tr>';
@@ -534,6 +543,69 @@
       + '<div id="sd-edit-'+s.id+'" style="display:none"></div>'
       + '</td></tr>';
     return mainRow + detailRow;
+  }
+
+  // ── Inline cell editing ──────────────────────────────────────────────────
+  function sdCellEdit(el, songId, field) {
+    // Don't open if already editing
+    if (el.querySelector('select') || el.querySelector('input')) return;
+    var song = _sdAllSongs.find(function(x) { return x.id === songId; });
+    if (!song) return;
+    var curVal = String(song[field] || '');
+    var html = '';
+    var opts = null;
+    if (field === 'singer') opts = _SD_SINGER_OPTS;
+    else if (field === 'key') opts = _SD_KEY_OPTS;
+    else if (field === 'era') opts = _SD_ERA_OPTS;
+    else if (field === 'tags') opts = _SD_TAGS_OPTS;
+    else if (field === 'mood') opts = _SD_MOOD_OPTS;
+
+    if (opts) {
+      html = '<select onchange="sdCellSave(\''+songId+'\',\''+field+'\',this.value,this)" '
+           + 'onblur="sdCellCancel(this,\''+escapeHtml(curVal||'\u2014')+'\')" '
+           + 'style="font-size:.78rem;padding:1px 4px;border:1px solid var(--premium-gold);border-radius:4px;background:#fff;max-width:130px">'
+           + '<option value="">\u2014</option>'
+           + opts.map(function(o) { return '<option value="'+escapeHtml(o)+'"'+(o===curVal?' selected':'')+'>'+escapeHtml(o)+'</option>'; }).join('')
+           + '</select>';
+    } else if (field === 'bpm') {
+      html = '<input type="number" value="'+escapeHtml(curVal)+'" '
+           + 'onblur="sdCellSave(\''+songId+'\',\''+field+'\',this.value,this)" '
+           + 'onkeydown="if(event.key===\'Enter\')sdCellSave(\''+songId+'\',\''+field+'\',this.value,this);if(event.key===\'Escape\')sdCellCancel(this,\''+escapeHtml(curVal||'\u2014')+'\')" '
+           + 'style="font-size:.78rem;padding:1px 4px;border:1px solid var(--premium-gold);border-radius:4px;width:60px">';
+    } else {
+      html = '<input type="text" value="'+escapeHtml(curVal)+'" '
+           + 'onblur="sdCellSave(\''+songId+'\',\''+field+'\',this.value,this)" '
+           + 'onkeydown="if(event.key===\'Enter\')sdCellSave(\''+songId+'\',\''+field+'\',this.value,this);if(event.key===\'Escape\')sdCellCancel(this,\''+escapeHtml(curVal||'\u2014')+'\')" '
+           + 'style="font-size:.78rem;padding:1px 4px;border:1px solid var(--premium-gold);border-radius:4px;width:100%;max-width:150px">';
+    }
+    el.innerHTML = html;
+    var inp = el.querySelector('select') || el.querySelector('input');
+    if (inp) inp.focus();
+  }
+  function sdCellSave(songId, field, value, inputEl) {
+    var song = _sdAllSongs.find(function(x) { return x.id === songId; });
+    if (!song) return;
+    var val = (value || '').trim();
+    var oldVal = String(song[field] || '');
+    if (val === oldVal) { sdCellCancel(inputEl, escapeHtml(oldVal || '\u2014')); return; }
+    var data = { songId: songId };
+    data[field] = field === 'bpm' ? (parseInt(val) || null) : val;
+    // Optimistic update
+    song[field] = data[field];
+    sdRender();
+    apiCall('updateSong', data, function(r) {
+      if (r && r.success) {
+        showToast('\u2705 \u0E2D\u0E31\u0E1E\u0E40\u0E14\u0E17 '+(_SD_FIELD_LABELS[field]||field)+' \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22','success');
+      } else {
+        song[field] = field === 'bpm' ? (parseInt(oldVal) || null) : oldVal;
+        sdRender();
+        showToast('\u274C '+((r&&r.message)||'error'),'error');
+      }
+    });
+  }
+  function sdCellCancel(inputEl, displayText) {
+    var parent = inputEl.parentElement;
+    if (parent) parent.innerHTML = displayText;
   }
 
   var _SD_FIELD_LABELS = { name:'ชื่อเพลง', singer:'นักร้อง', artist:'ศิลปิน', key:'คีย์', bpm:'BPM', mood:'อารมณ์', era:'ยุค', tags:'แนวเพลง' };
@@ -864,9 +936,9 @@
       var headerBg = isDiff ? '#fffbeb' : 'var(--premium-off-white)';
       var isIgn = item.ignored;
       var artistsData = (g.keep.artist||'').toLowerCase() + ' ' + g.dels.map(function(d) { return (d.artist||'').toLowerCase(); }).join(' ');
-      var keepRow = _sdSongRow(g.keep, 'KEEP', { showSwap: true, groupIdx: gi });
+      var keepRow = _sdSongRow(g.keep, 'KEEP', { groupIdx: gi });
       var delRows = g.dels.map(function(d) {
-        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, showSwap: true, groupIdx: gi });
+        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, groupIdx: gi });
       }).join('');
       return '<div class="sd-group" data-name="'+escapeHtml(g.name.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
         + '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:'+headerBg+'">'
@@ -907,9 +979,9 @@
       var g = item.g, gi = item.gi, gKey = item.gKey;
       var isIgn = item.ignored;
       var artistsData = g.songs.map(function(s) { return (s.artist||'').toLowerCase(); }).join(' ');
-      var keepRow = _sdSongRow(g.keep, 'KEEP', { showSwap: false, groupIdx: gi });
+      var keepRow = _sdSongRow(g.keep, 'KEEP', { groupIdx: gi });
       var delRows = g.dels.map(function(d) {
-        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, showSwap: false, groupIdx: gi });
+        return _sdSongRow(d, 'DEL', { keepId: g.keep.id, groupIdx: gi });
       }).join('');
       var matchLabel = g.matchType === 'norm' ? '\u0E40\u0E27\u0E49\u0E19\u0E27\u0E23\u0E23\u0E04/\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E2B\u0E21\u0E32\u0E22' : '\u0E15\u0E48\u0E32\u0E07 '+g.distance+' \u0E15\u0E31\u0E27';
       return '<div class="sd-group" data-name="'+escapeHtml(g.nameA.toLowerCase()+' '+g.nameB.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
