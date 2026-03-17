@@ -12,18 +12,21 @@
   // ── Genre → tag (ต้องตรงกับ _GENRE_OPTS ของระบบ) ────
   function genreToTag(genre) {
     var g = (genre || '').toLowerCase();
-    if (g.indexOf('rock') !== -1) return 'ร็อค';
-    if (g.indexOf('pop') !== -1) return 'ป๊อป';
+    if (g.indexOf('rock') !== -1 || g.indexOf('metal') !== -1 || g.indexOf('punk') !== -1) return 'ร็อค';
+    if (g.indexOf('k-pop') !== -1 || g.indexOf('k pop') !== -1 || g.indexOf('korean') !== -1) return 'เคป๊อป';
+    if (g.indexOf('j-pop') !== -1 || g.indexOf('j pop') !== -1 || g.indexOf('japanese') !== -1 || g.indexOf('anime') !== -1) return 'เจป๊อป';
     if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'ฮิปฮอป';
-    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1) return 'ดิสโก้';
+    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1 || g.indexOf('house') !== -1 || g.indexOf('techno') !== -1) return 'ดิสโก้';
+    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1) return 'อาร์แอนด์บี';
+    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'แจ๊ส / บลูส์';
+    if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1) return 'เรกเก้';
+    if (g.indexOf('indie') !== -1 || g.indexOf('alternative') !== -1) return 'อินดี้';
     if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1) return 'ลูกทุ่ง / อีสาน';
     if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return 'เพื่อชีวิต';
     if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
-    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1) return 'ป๊อป';
-    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'สากลเก่า';
-    if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1) return 'เรกเก้';
-    if (g.indexOf('thai') !== -1) return 'ป๊อป';
-    if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1) return 'ป๊อป';
+    if (g.indexOf('thai') !== -1 || g.indexOf('t-pop') !== -1) return 'ป๊อป';
+    if (g.indexOf('pop') !== -1) return 'ป๊อป';
+    if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1 || g.indexOf('latin') !== -1) return 'ป๊อป';
     return 'สากลปัจจุบัน';
   }
 
