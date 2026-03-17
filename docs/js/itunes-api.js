@@ -116,6 +116,50 @@
       .catch(function(err) { callback(null, 'iTunes search error: ' + (err.message || err)); });
   };
 
+  // ── Search iTunes — return top N results (for multi-pick) ─────────────
+  window.itunesSearchMulti = function(name, artist, callback, limit) {
+    limit = limit || 5;
+    var term = ((artist || '') + ' ' + name).trim();
+    if (!term) { callback(null, 'กรุณาระบุชื่อเพลง'); return; }
+    var url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(term)
+            + '&country=TH&media=music&limit=15';
+
+    fetch(url)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.results || !data.results.length) {
+          if (artist && name) {
+            var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(name)
+                     + '&country=TH&media=music&limit=15';
+            return fetch(url2).then(function(r2) { return r2.json(); });
+          }
+          callback(null, 'ไม่พบเพลงนี้ใน iTunes');
+          return;
+        }
+        return data;
+      })
+      .then(function(data) {
+        if (!data || !data.results || !data.results.length) {
+          if (data !== undefined) callback(null, 'ไม่พบเพลงนี้ใน iTunes');
+          return;
+        }
+        // Deduplicate by trackName+artistName, sort by artist score
+        var seen = {};
+        var unique = data.results.filter(function(t) {
+          var key = normalizeStr(t.trackName) + '||' + normalizeStr(t.artistName);
+          if (seen[key]) return false;
+          seen[key] = true;
+          return true;
+        });
+        unique.sort(function(a, b) {
+          return artistScore(b, artist) - artistScore(a, artist);
+        });
+        var mapped = unique.slice(0, limit).map(mapResult);
+        callback(mapped, null);
+      })
+      .catch(function(err) { callback(null, 'iTunes search error: ' + (err.message || err)); });
+  };
+
   // ── Expose helpers ──────────────────────────────────
   window.itunesGenreToTag = genreToTag;
   window.itunesYearToEra  = yearToEra;
