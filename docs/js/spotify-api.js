@@ -46,8 +46,8 @@
     if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1) return 'ดิสโก้';
     if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('thai country') !== -1) return 'ลูกทุ่ง / อีสาน';
     if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('phleng phuea chiwit') !== -1) return 'เพื่อชีวิต';
-    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
-    return 'สากลปัจจุบัน';
+    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'ป๊อป';
+    return 'ป๊อป';
   }
 
   // ── Year → era ──────────────────────────────────────

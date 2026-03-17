@@ -375,8 +375,6 @@
       <option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option>
       <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
       <option value="เพื่อชีวิต">เพื่อชีวิต</option>
-      <option value="สากลเก่า">สากลเก่า</option>
-      <option value="สากลปัจจุบัน">สากลปัจจุบัน</option>
       <option value="อาร์แอนด์บี">อาร์แอนด์บี</option>
       <option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option>
       <option value="เรกเก้">เรกเก้</option>
@@ -511,7 +509,7 @@
     </div>
     <div class="m-group">
       <label>แนวเพลง (ประเภท)</label>
-      <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
+      <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
     </div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
@@ -980,7 +978,7 @@ function updateModalKeyOptions() {
 var _ERA_OPTS   = ['','80s','90s','2000s','2010s','2020s'];
 var _ERA_LABELS = {'':'—','80s':'2523-2532 (80s)','90s':'2533-2542 (90s)','2000s':'2543-2553 (00s)','2010s':'2554-2562 (10s)','2020s':'2563-ปัจจุบัน (20s)'};
 var _MOOD_OPTS  = ['','มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
-var _GENRE_OPTS = ['','ป๊อป','ร็อค','ดิสโก้','แร๊ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้'];
+var _GENRE_OPTS = ['','ป๊อป','ร็อค','ดิสโก้','แร๊ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้'];
 
 function _buildSel(field, opts, cur, cls, labelMap, strict) {
   var val = strict ? (opts.indexOf(cur) >= 0 ? cur : '') : (cur || '');
@@ -2142,7 +2140,7 @@ var _itunesPendingSongId = null;
 var _itunesPendingData   = null;
 
 var _AS_ERA_OPTS  = ['80s','90s','2000s','2010s','2020s'];
-var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','แร๊ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','สากลเก่า','สากลปัจจุบัน','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้'];
+var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','แร๊ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้'];
 var _AS_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
 var _AS_KEY_OPTS  = ['C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
 var _AS_SINGER_OPTS = ['ชาย','หญิง','ชาย/หญิง'];

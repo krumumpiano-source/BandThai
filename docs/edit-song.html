@@ -89,7 +89,7 @@
               <small id="moodHint" style="display:block;margin-top:6px;color:var(--premium-text-muted,#888);font-size:12px;min-height:18px"></small>
             </div>
           </div>
-          <div class="form-group"><label>แนวเพลง (ประเภท)</label><select id="genre"><option value="">— เลือกแนวเพลง —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="สากลเก่า">สากลเก่า</option><option value="สากลปัจจุบัน">สากลปัจจุบัน</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select></div>
+          <div class="form-group"><label>แนวเพลง (ประเภท)</label><select id="genre"><option value="">— เลือกแนวเพลง —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select></div>
           <div class="form-group">
             <label>นักร้อง</label>
             <div class="singer-pills">
@@ -257,7 +257,7 @@
 
     var prompt = 'ฉันมีเพลงชื่อ "' + songName + '"' + (artist ? ' ของศิลปิน "' + artist + '"' : '')
       + '\nช่วยบอกข้อมูลเพลงนี้โดยตอบเป็น JSON เท่านั้น (ไม่ต้องมี markdown):'
-      + '\n{"key":"คีย์เพลง เช่น C, 1#, 2b","bpm":ตัวเลข BPM,"mood":"เลือก 1 จาก: มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่","era":"เลือก 1 จาก: 80s, 90s, 2000s, 2010s, 2020s","tags":"เลือก 1 จาก: ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, สากลเก่า, สากลปัจจุบัน, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้","singer":"เลือก 1 จาก: ชาย, หญิง, ชาย/หญิง"}'
+      + '\n{"key":"คีย์เพลง เช่น C, 1#, 2b","bpm":ตัวเลข BPM,"mood":"เลือก 1 จาก: มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่","era":"เลือก 1 จาก: 80s, 90s, 2000s, 2010s, 2020s","tags":"เลือก 1 จาก: ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้","singer":"เลือก 1 จาก: ชาย, หญิง, ชาย/หญิง"}'
       + '\nตอบเฉพาะ JSON เท่านั้น ไม่ต้องอธิบาย ถ้าไม่แน่ใจให้เดาจากข้อมูลที่มี';
 
     fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + encodeURIComponent(_geminiKey), {
