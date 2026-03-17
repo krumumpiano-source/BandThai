@@ -35,6 +35,7 @@
   }
 
   // ── Best match by artist name ─────────────────────────
+  function hasThai(s) { return /[\u0E00-\u0E7F]/.test(s || ''); }
   function normalizeStr(s) {
     return (s || '').toLowerCase().replace(/[^a-z0-9\u0E00-\u0E7F]/g, '');
   }
@@ -81,7 +82,7 @@
     var term = ((artist || '') + ' ' + name).trim();
     if (!term) { callback(null, 'กรุณาระบุชื่อเพลง'); return; }
     var url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(term)
-            + '&country=TH&media=music&limit=10';
+            + '&country=TH&media=music&limit=10' + (hasThai(term) ? '&lang=th_th' : '');
 
     fetch(url)
       .then(function(r) { return r.json(); })
@@ -90,7 +91,7 @@
           // Retry with song name only if combined search fails
           if (artist && name) {
             var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(name)
-                     + '&country=TH&media=music&limit=10';
+                     + '&country=TH&media=music&limit=10' + (hasThai(name) ? '&lang=th_th' : '');
             return fetch(url2).then(function(r2) { return r2.json(); });
           }
           callback(null, 'ไม่พบเพลงนี้ใน iTunes');
@@ -122,7 +123,7 @@
     var term = ((artist || '') + ' ' + name).trim();
     if (!term) { callback(null, 'กรุณาระบุชื่อเพลง'); return; }
     var url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(term)
-            + '&country=TH&media=music&limit=15';
+            + '&country=TH&media=music&limit=15' + (hasThai(term) ? '&lang=th_th' : '');
 
     fetch(url)
       .then(function(r) { return r.json(); })
@@ -130,7 +131,7 @@
         if (!data.results || !data.results.length) {
           if (artist && name) {
             var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(name)
-                     + '&country=TH&media=music&limit=15';
+                     + '&country=TH&media=music&limit=15' + (hasThai(name) ? '&lang=th_th' : '');
             return fetch(url2).then(function(r2) { return r2.json(); });
           }
           callback(null, 'ไม่พบเพลงนี้ใน iTunes');
