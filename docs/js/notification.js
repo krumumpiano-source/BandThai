@@ -159,11 +159,18 @@
   function initNotifications() {
     if (!isSupported()) return;
     var status = getPermissionStatus();
-    // ถ้า iOS ยังไม่ได้ add to home screen → จัดการใน showNotificationPrompt
     if (status === 'granted') {
-      // ตรวจว่า subscription ยังใช้ได้
+      // ตรวจว่า subscription ยังใช้ได้ — ถ้าหายให้ re-subscribe เงียบๆ
       checkCurrentSubscription(function (sub) {
-        if (!sub) subscribePush(null); // re-subscribe ถ้าหายไป
+        if (!sub) {
+          // บน iOS permission อาจ granted แต่ subscription หมดอายุ
+          // เรียก requestPermission อีกครั้งเพื่อให้ iOS ยืนยันก่อน subscribe
+          Notification.requestPermission().then(function (perm) {
+            if (perm === 'granted') subscribePush(null);
+          }).catch(function () {
+            subscribePush(null); // fallback สำหรับ browser เก่า
+          });
+        }
       });
     }
   }
@@ -175,15 +182,24 @@
     if (!container) return;
 
     var status = getPermissionStatus();
-    if (status === 'granted') return; // มีอยู่แล้ว ไม่แสดง
-
-    /* ถ้า permission ยังเป็น 'default' (ยังไม่เคยตอบ) → รีเซ็ต dismissed
-       เพราะอาจถูก set ผิดพลาดจาก session ก่อน */
-    if (status === 'default') {
-      localStorage.removeItem('notif_dismissed');
+    if (status === 'granted') {
+      // มี permission แล้ว — ตรวจ subscription เงียบๆ ถ้าหายให้ re-subscribe
+      checkCurrentSubscription(function (sub) {
+        if (!sub) subscribePush(null);
+      });
+      return;
     }
 
-    if (localStorage.getItem('notif_dismissed') === '1') return;
+    // ไม่รองรับ push เลย (browser เก่า/iOS ไม่ได้ติดตั้ง PWA) → ไม่แสดง banner
+    if (status === 'unsupported' || status === 'denied') return;
+
+    // ถ้า iOS ยังไม่ได้ add to home screen → แสดง hint เฉพาะ
+    // (status === 'ios-not-installed') — ผ่านไปแสดง banner ด้านล่าง
+
+    // ตรวจ dismiss: ใช้ timestamp เพื่อ re-prompt หลัง 30 วัน
+    var dismissedAt = parseInt(localStorage.getItem('notif_dismissed_at') || '0', 10);
+    var thirtyDays  = 30 * 24 * 60 * 60 * 1000;
+    if (dismissedAt && (Date.now() - dismissedAt < thirtyDays)) return;
 
     var banner = document.createElement('div');
     banner.id = 'notifPromptBanner';
@@ -201,7 +217,7 @@
         '<div style="font-size:12px;opacity:.85;margin-top:3px">' +
         'แตะ <strong>Share</strong> →  <strong>Add to Home Screen</strong> บน Safari</div>' +
         '</div>' +
-        '<button onclick="document.getElementById(\'notifPromptBanner\').style.display=\'none\';localStorage.setItem(\'notif_dismissed\',\'1\')" ' +
+        '<button onclick="document.getElementById(\'notifPromptBanner\').style.display=\'none\';localStorage.setItem(\'notif_dismissed_at\',Date.now())" ' +
         'style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;white-space:nowrap">ตกลง</button>';
     } else {
       msg = '<div style="flex:1;min-width:200px">' +
@@ -210,7 +226,7 @@
         '</div>' +
         '<div style="display:flex;gap:8px;flex-shrink:0">' +
         '<button onclick="handleEnableNotif(this)" style="background:#fff;color:#1e3a8a;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">เปิด</button>' +
-        '<button onclick="document.getElementById(\'notifPromptBanner\').style.display=\'none\';localStorage.setItem(\'notif_dismissed\',\'1\')" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">ไว้ทีหลัง</button>' +
+        '<button onclick="document.getElementById(\'notifPromptBanner\').style.display=\'none\';localStorage.setItem(\'notif_dismissed_at\',Date.now())" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer">ไว้ทีหลัง</button>' +
         '</div>';
     }
     banner.innerHTML = msg;
@@ -226,6 +242,7 @@
       var banner = document.getElementById('notifPromptBanner');
       if (r && r.success) {
         if (banner) banner.style.display = 'none';
+        localStorage.removeItem('notif_dismissed_at'); // reset dismiss เมื่อสำเร็จ
         if (typeof global.showToast === 'function') global.showToast('✅ เปิดการแจ้งเตือนแล้ว');
       } else {
         /* ไม่ set notif_dismissed — ให้แสดง banner ใหม่ได้ครั้งหน้า */
