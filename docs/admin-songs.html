@@ -1996,7 +1996,7 @@ function itunesLookup(songId) {
     var tableRows = '';
     _AS_ITUNES_FIELDS.forEach(function(fd) {
       var sug = result[fd.f] || '';
-      if (!sug && fd.f !== 'bpm' && fd.f !== 'singer' && fd.f !== 'key' && fd.f !== 'mood') return;
+      if (!sug && fd.f !== 'bpm') return;
       if (fd.f === 'bpm' && !result.bpm) return;
       var curEl = row ? row.querySelector('[data-field="' + fd.f + '"]') : null;
       var cur = curEl ? (curEl.value || '') : (song[fd.f] || '');
