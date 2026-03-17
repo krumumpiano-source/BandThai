@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <script src="js/app.js"></script>
-  <script src="js/nav.js"></script>
+  <script src="js/nav.js?v=20260317"></script>
   <script src="js/i18n.js"></script>
   <script src="js/key-utils.js"></script>
   <style>
@@ -1829,8 +1829,8 @@ function autoLoadPlaylistForSlot() {
 window.onload = function() {
   if (typeof requireAuth === 'function') requireAuth();
       checkAdGate();
-  if (typeof renderMainNav === 'function') renderMainNav('mainNav');
-  if (typeof applyTranslations === 'function') applyTranslations();
+  try { if (typeof renderMainNav === 'function') renderMainNav('mainNav'); } catch(e) { console.error('[Songs] renderMainNav error:', e); }
+  try { if (typeof applyTranslations === 'function') applyTranslations(); } catch(e) {}
   // แสดงชื่อวงใน header
   var libTitle = document.getElementById('songLibTitle');
   if (libTitle) { var bn = localStorage.getItem('bandName'); libTitle.textContent = 'คลังเพลง' + (bn ? ' ' + bn : ''); }
