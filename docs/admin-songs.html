@@ -1785,17 +1785,22 @@ function ensureArtistExists(name, cb) {
 
 // ─── Keyboard shortcuts ───────────────────────────────────────────
 document.addEventListener('keydown', function(e) {
-  // Prevent Backspace/Delete from navigating back when iTunes popover is open
+  var tag = (e.target.tagName || '').toLowerCase();
+  var isEditable = (tag === 'input' || tag === 'textarea' || tag === 'select')
+                || e.target.isContentEditable;
+
+  // Prevent Backspace/Delete from triggering browser back-navigation
+  // (Firefox and some browsers still support this shortcut)
+  if ((e.key === 'Backspace' || e.key === 'Delete') && !isEditable) {
+    e.preventDefault();
+  }
+
+  // iTunes popover: Escape closes it
   var itunesOpen = document.getElementById('itunesPopoverWrap').style.display !== 'none';
   if (itunesOpen) {
     if (e.key === 'Escape') { closeItunesPopover(); return; }
-    var tag = (e.target.tagName || '').toLowerCase();
-    var isInput = (tag === 'input' || tag === 'textarea' || tag === 'select');
-    if ((e.key === 'Backspace' || e.key === 'Delete') && !isInput) {
-      e.preventDefault();
-      return;
-    }
   }
+
   if (e.key === 'Escape') {
     closeAddModal();
     closeImportModal();
