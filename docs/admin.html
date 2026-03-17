@@ -349,7 +349,7 @@
   </main>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/itunes-api.js?v=20260317b"></script>
+  <script src="js/itunes-api.js?v=20260317c"></script>
   <script src="js/nav.js?v=20260317"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -645,7 +645,7 @@
           + '</select>';
       } else {
         inputHtml = '<input id="'+inputId+'" value="'+escapeHtml(sug)+'" '+(f==='bpm'?'type="number" ':'')
-          + 'style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit;min-width:80px;max-width:150px">';
+          + 'style="border:1px solid #d1d5db;border-radius:5px;padding:2px 6px;font-size:.78rem;background:#fff;color:#111;font-family:inherit;width:100%;max-width:200px;box-sizing:border-box">';
       }
       rows += '<tr>'
         + '<td style="padding:3px 6px;white-space:nowrap"><input type="checkbox" id="'+chkId+'" '+(isDiff?'checked':'')+' onclick="event.stopPropagation()" style="accent-color:#16a34a;cursor:pointer"><label for="'+chkId+'" style="font-size:.78rem;font-weight:700;color:#374151;cursor:pointer;margin-left:4px">'+_SD_FIELD_ICONS[f]+' '+escapeHtml(_SD_FIELD_LABELS[f]||f)+'</label></td>'
@@ -661,15 +661,20 @@
     }
 
     var sid = s.id;
-    return '<div style="margin-top:6px;background:#fafafa;border:1.5px solid #7dd3fc;border-radius:8px;overflow:hidden" onclick="event.stopPropagation()">'
-      + '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:6px 12px;display:flex;align-items:center;gap:8px">'
-      + '<span style="color:#fff;font-size:.82rem;font-weight:700">🎵 iTunes แนะนำ</span>'
-      + (ai.notes ? '<span style="color:#e0f2fe;font-size:.7rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— '+escapeHtml(ai.notes)+'</span>' : '<span style="flex:1"></span>')
-      + '<button onclick="sdItunesEnrich(\''+sid+'\',true)" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:2px 7px;font-size:.68rem;cursor:pointer">🔄</button>'
+    return '<div style="margin-top:6px;background:#fafafa;border:1.5px solid #7dd3fc;border-radius:8px;overflow:hidden;width:100%;box-sizing:border-box" onclick="event.stopPropagation()">'
+      + '<div style="background:linear-gradient(135deg,#0ea5e9,#6366f1);padding:6px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">'
+      + '<span style="color:#fff;font-size:.82rem;font-weight:700;white-space:nowrap">🎵 iTunes แนะนำ</span>'
+      + (ai.notes ? '<span style="color:#e0f2fe;font-size:.7rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— '+escapeHtml(ai.notes)+'</span>' : '<span style="flex:1"></span>')
+      + '<button onclick="event.stopPropagation();sdToggleSearch(\''+sid+'\')" style="background:rgba(255,255,255,.25);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:4px;padding:2px 7px;font-size:.68rem;cursor:pointer;white-space:nowrap">🔁 \u0E04\u0E49\u0E19\u0E43\u0E2B\u0E21\u0E48</button>'
+      + '</div>'
+      + '<div id="sd-csearch-row-'+sid+'" style="display:none;padding:6px 12px;background:#f0f9ff;gap:6px;align-items:center;flex-wrap:wrap" onclick="event.stopPropagation()">'
+      + '<input id="sd-csearch-name-'+sid+'" value="'+escapeHtml(s.name)+'" placeholder="\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07" style="flex:1;min-width:80px;border:1px solid #bae6fd;border-radius:4px;padding:3px 8px;font-size:.78rem;font-family:inherit">'
+      + '<input id="sd-csearch-artist-'+sid+'" value="'+escapeHtml(s.artist||'')+'" placeholder="\u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19" style="flex:1;min-width:60px;border:1px solid #bae6fd;border-radius:4px;padding:3px 8px;font-size:.78rem;font-family:inherit">'
+      + '<button onclick="event.stopPropagation();sdCustomSearch(\''+sid+'\')" style="background:#0ea5e9;color:#fff;border:none;border-radius:4px;padding:4px 12px;font-size:.78rem;cursor:pointer;white-space:nowrap;font-family:inherit">\uD83D\uDD0D \u0E04\u0E49\u0E19\u0E2B\u0E32</button>'
       + '</div>'
       + '<div style="padding:8px 10px">'
       + '<div style="font-size:.72rem;color:#6b7280;margin-bottom:4px">☑️ เลือก field ที่ต้องการ แก้ค่าถ้าต้องการ แล้วกด <strong>นำไปใช้</strong></div>'
-      + '<div style="overflow-x:auto"><table style="border-collapse:collapse;min-width:280px;width:100%">'+rows+'</table></div>'
+      + '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%">'+rows+'</table></div>'
       + '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'
       + '<button onclick="event.stopPropagation();sdApplySelectedEnrich(\''+sid+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:.78rem;cursor:pointer;font-weight:700">✅ นำไปใช้ที่เลือก</button>'
       + '<button onclick="event.stopPropagation();sdCheckAllItunes(\''+sid+'\',true)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:.72rem;cursor:pointer">☑️ ทั้งหมด</button>'
@@ -688,7 +693,7 @@
       var isSel = (selected && selected.notes === r.notes);
       var bg = isSel ? 'background:#dbeafe;border:2px solid #3b82f6' : 'background:#f8fafc;border:1px solid #e2e8f0;cursor:pointer';
       return '<div onclick="event.stopPropagation();sdPickItunesResult(\''+s.id+'\','+idx+')" '
-        + 'style="'+bg+';border-radius:6px;padding:5px 8px;min-width:140px;max-width:200px;flex-shrink:0" '
+        + 'style="'+bg+';border-radius:6px;padding:5px 8px;min-width:120px;max-width:180px;flex-shrink:0" '
         + 'title="'+(isSel?'กำลังใช้อยู่':'คลิกเพื่อเลือกผลลัพธ์นี้')+'">'
         + (r.albumArt ? '<img src="'+escapeHtml(r.albumArt)+'" style="width:36px;height:36px;border-radius:4px;float:left;margin-right:6px" onerror="this.style.display=\'none\'">' : '')
         + '<div style="font-size:.72rem;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(r.trackName||r.name)+'</div>'
@@ -1210,6 +1215,31 @@
       var sugEl = document.getElementById('sd-suggest-' + songId);
       if (sugEl) sugEl.innerHTML = _sdInlineSuggestion(song);
     }
+  }
+  function sdToggleSearch(songId) {
+    var row = document.getElementById('sd-csearch-row-' + songId);
+    if (row) row.style.display = row.style.display === 'none' ? 'flex' : 'none';
+  }
+  function sdCustomSearch(songId) {
+    var nameEl = document.getElementById('sd-csearch-name-' + songId);
+    var artistEl = document.getElementById('sd-csearch-artist-' + songId);
+    if (!nameEl) return;
+    var name = nameEl.value.trim();
+    var artist = (artistEl ? artistEl.value.trim() : '');
+    if (!name && !artist) { showToast('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E0A\u0E37\u0E48\u0E2D\u0E40\u0E1E\u0E25\u0E07\u0E2B\u0E23\u0E37\u0E2D\u0E28\u0E34\u0E25\u0E1B\u0E34\u0E19', 'error'); return; }
+    var sugEl = document.getElementById('sd-suggest-' + songId);
+    if (sugEl) sugEl.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83C\uDFB5 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32...</div>';
+    _sdSearchItunes(name, artist, function(results, errText) {
+      if (!results) {
+        if (sugEl) sugEl.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
+          + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span></div>';
+        return;
+      }
+      _sdEnrichAll[songId] = results;
+      _sdEnrichCache[songId] = results[0];
+      var song = _sdAllSongs.find(function(x) { return x.id === songId; });
+      if (song && sugEl) sugEl.innerHTML = _sdInlineSuggestion(song);
+    });
   }
   function sdItunesEnrichBatch() {
     if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
