@@ -62,6 +62,34 @@
     return match > 0 ? (match / bw.length) * 60 : 0;
   }
 
+  // ── Song name similarity score ──────────────────────
+  function nameScore(result, inputName) {
+    if (!inputName) return 0;
+    var a = normalizeStr(result.trackName);
+    var b = normalizeStr(inputName);
+    if (!a || !b) return 0;
+    if (a === b) return 100;
+    if (a.indexOf(b) !== -1 || b.indexOf(a) !== -1) return 80;
+    // Check digit+word overlap (e.g. "7นาที" vs "7 นาที")
+    var aw = a.replace(/(\d+)/g, ' $1 ').trim().split(/\s+/);
+    var bw = b.replace(/(\d+)/g, ' $1 ').trim().split(/\s+/);
+    var match = 0;
+    for (var i = 0; i < bw.length; i++) {
+      for (var j = 0; j < aw.length; j++) {
+        if (aw[j] === bw[i]) { match++; break; }
+      }
+    }
+    return bw.length > 0 ? (match / bw.length) * 60 : 0;
+  }
+
+  // ── Combined score: name is weighted higher than artist ──
+  function combinedScore(result, inputName, inputArtist) {
+    var ns = nameScore(result, inputName);
+    var as = artistScore(result, inputArtist);
+    // Name match is most important (70%), artist is secondary (30%)
+    return ns * 0.7 + as * 0.3;
+  }
+
   function mapResult(t) {
     return {
       name:      t.trackName || '',
@@ -110,13 +138,16 @@
           if (data !== undefined) callback(null, 'ไม่พบเพลงนี้ใน iTunes');
           return;
         }
-        // Pick best match by artist similarity
+        // Pick best match by combined name + artist score
         var best = data.results[0], bestScore = -1;
-        if (artist) {
-          for (var i = 0; i < data.results.length; i++) {
-            var sc = artistScore(data.results[i], artist);
-            if (sc > bestScore) { bestScore = sc; best = data.results[i]; }
-          }
+        for (var i = 0; i < data.results.length; i++) {
+          var sc = combinedScore(data.results[i], name, artist);
+          if (sc > bestScore) { bestScore = sc; best = data.results[i]; }
+        }
+        // If song name doesn't match at all → likely wrong result
+        if (nameScore(best, name) === 0) {
+          callback(null, 'ไม่พบเพลง "' + name + '" ใน iTunes (พบเฉพาะเพลงอื่น)');
+          return;
         }
         var result = mapResult(best);
         // If original artist is Thai but iTunes returns Latin name → keep Thai
@@ -155,7 +186,7 @@
           if (data !== undefined) callback(null, 'ไม่พบเพลงนี้ใน iTunes');
           return;
         }
-        // Deduplicate by trackName+artistName, sort by artist score
+        // Deduplicate by trackName+artistName, sort by combined score
         var seen = {};
         var unique = data.results.filter(function(t) {
           var key = normalizeStr(t.trackName) + '||' + normalizeStr(t.artistName);
@@ -164,7 +195,7 @@
           return true;
         });
         unique.sort(function(a, b) {
-          return artistScore(b, artist) - artistScore(a, artist);
+          return combinedScore(b, name, artist) - combinedScore(a, name, artist);
         });
         var mapped = unique.slice(0, limit).map(function(t) {
           var result = mapResult(t);
