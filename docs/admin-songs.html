@@ -160,6 +160,23 @@
     /* ── Suggestion Review ── */
     .sug-badge{display:inline-flex;align-items:center;justify-content:center;background:#7c3aed;color:#fff;font-size:11px;font-weight:700;border-radius:99px;min-width:22px;height:22px;padding:0 7px;margin-left:8px;cursor:pointer;transition:transform .15s}
     .sug-badge:hover{transform:scale(1.1)}
+
+    /* ── Song Status Badges ── */
+    .status-cell{text-align:center;min-width:50px;white-space:nowrap}
+    .status-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;cursor:default}
+    .badge-complete{background:#D1FAE5;color:#065F46}
+    .badge-partial{background:#FEF3C7;color:#92400E}
+    .badge-missing{background:#FEE2E2;color:#991B1B}
+    .badge-verified{background:#DBEAFE;color:#1E40AF;border:1px solid #93C5FD}
+    .btn-verify{background:transparent;border:1.5px solid #D1D5DB;border-radius:6px;padding:2px 6px;font-size:12px;cursor:pointer;transition:all .15s;line-height:1}
+    .btn-verify:hover{border-color:#60A5FA;background:#EFF6FF}
+    .btn-verify.verified{border-color:#3B82F6;background:#DBEAFE}
+    .row-recent td{background:#EFF6FF !important}
+    .edit-info{font-size:9px;color:#9CA3AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+    .completeness-bar{display:flex;align-items:center;gap:8px;margin-top:4px}
+    .completeness-track{flex:1;height:6px;background:#E5E7EB;border-radius:99px;overflow:hidden}
+    .completeness-fill{height:100%;border-radius:99px;transition:width .3s}
+    .completeness-text{font-size:11px;color:#6B7280;white-space:nowrap}
     .sug-panel{display:none;margin-bottom:20px}
     .sug-list{display:flex;flex-direction:column;gap:12px}
     .sug-card{background:#fff;border:1.5px solid #e2e8f0;border-radius:12px;padding:16px;transition:border-color .15s}
@@ -304,7 +321,14 @@
     <div class="stat-box"><div class="stat-num" id="statMale">—</div><div class="stat-lbl">ชาย</div></div>
     <div class="stat-box"><div class="stat-num" id="statFemale">—</div><div class="stat-lbl">หญิง</div></div>
     <div class="stat-box"><div class="stat-num" id="statDuet">—</div><div class="stat-lbl">คู่</div></div>
+    <div class="stat-box" style="cursor:pointer" onclick="document.getElementById('asStatus').value='complete';filterTable()" title="คลิกเพื่อดูเพลงข้อมูลครบ"><div class="stat-num" id="statComplete">—</div><div class="stat-lbl">ข้อมูลครบ</div></div>
+    <div class="stat-box" style="cursor:pointer" onclick="document.getElementById('asStatus').value='verified';filterTable()" title="คลิกเพื่อดูเพลงที่ยืนยันแล้ว"><div class="stat-num" id="statVerified">—</div><div class="stat-lbl">ยืนยันแล้ว</div></div>
     <div class="stat-box" style="cursor:pointer" onclick="location.href='song-insights.html'" title="ดูสถิติเพลงจากประวัติ"><div class="stat-num">📋</div><div class="stat-lbl">สถิติ History</div></div>
+  </div>
+  <!-- Completeness Bar -->
+  <div class="completeness-bar" id="completenessBar" style="max-width:600px;margin:0 auto;padding:0 16px">
+    <span class="completeness-text" id="completenessText">—</span>
+    <div class="completeness-track"><div class="completeness-fill" id="completenessFill" style="width:0%;background:#10B981"></div></div>
   </div>
 
   <!-- Toolbar -->
@@ -357,6 +381,14 @@
       <option>นิ่ง / ผ่อนคลาย</option>
       <option>ฮึกเหิม / ยิ่งใหญ่</option>
     </select>
+    <select id="asStatus" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกสถานะ</option>
+      <option value="complete">🟢 ข้อมูลครบ</option>
+      <option value="partial">🟡 ขาดบางอย่าง</option>
+      <option value="missing">🔴 ขาดเยอะ</option>
+      <option value="verified">✅ ยืนยันแล้ว</option>
+      <option value="unverified">⬜ ยังไม่ยืนยัน</option>
+    </select>
     <button id="keyModeToggle" class="btn-add" onclick="toggleKeyMode()" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
     <button class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
     <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
@@ -391,11 +423,12 @@
             <th id="th-era" class="sortable hide-sm" onclick="sortBy('era',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ยุค<i class="sort-icon">↕</i></th>
             <th id="th-tags" class="sortable hide-lg" onclick="sortBy('tags',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">แนวเพลง<i class="sort-icon">↕</i></th>
             <th id="th-mood" class="sortable hide-lg" onclick="sortBy('mood',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">อารมณ์<i class="sort-icon">↕</i></th>
+            <th class="hide-sm" style="text-align:center;min-width:56px">สถานะ</th>
             <th style="text-align:center">จัดการ</th>
           </tr>
         </thead>
         <tbody id="songTbody">
-          <tr><td colspan="9"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
+          <tr><td colspan="10"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -517,6 +550,8 @@ var _selectedArtistFilter = ''; // currently selected artist for filter
 var _presenceChannel = null; // Supabase Presence channel
 var _myActivity = 'ดูรายการ'; // current user activity description
 var _hiddenHistSongs = {}; // hidden history song keys (lowercase name → true)
+var _verifiedSongs = {}; // songId → { by: name, at: ISO timestamp }
+var _COMPLETENESS_FIELDS = ['name','artist','key','bpm','singer','era','tags','mood'];
 
 // ─── Init ─────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
@@ -689,6 +724,9 @@ function loadSongs() {
   var bandName = localStorage.getItem('bandName') || '';
   var reqId = ++_loadSongsReqId;
 
+  // Load verified songs data alongside songs
+  loadVerifiedSongs();
+
   apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
     if (reqId !== _loadSongsReqId) return;
     setBodyLoading(false);
@@ -708,7 +746,7 @@ function loadSongs() {
 function setBodyLoading(on) {
   var tb = document.getElementById('songTbody');
   if (!tb) return;
-  if (on) tb.innerHTML = '<tr><td colspan="9"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>';
+  if (on) tb.innerHTML = '<tr><td colspan="10"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>';
 }
 
 // ─── Populate Artist Filter ───────────────────────────────────────
@@ -726,6 +764,7 @@ function filterTable() {
   var era     = document.getElementById('asEra').value;
   var genre   = document.getElementById('asGenre').value;
   var mood    = document.getElementById('asMood').value;
+  var status  = (document.getElementById('asStatus') || {}).value || '';
 
   _filtered = _allSongs.filter(function(s) {
     // Source filter
@@ -744,6 +783,16 @@ function filterTable() {
     if (era && s.era !== era) return false;
     if (genre && (s.tags || '') !== genre) return false;
     if (mood && (s.mood || '').indexOf(mood) < 0) return false;
+    // Status filter
+    if (status) {
+      var lvl = completenessLevel(s);
+      var isV = !!_verifiedSongs[s.id];
+      if (status === 'complete' && lvl !== 'complete') return false;
+      if (status === 'partial'  && lvl !== 'partial')  return false;
+      if (status === 'missing'  && lvl !== 'missing')  return false;
+      if (status === 'verified'   && !isV) return false;
+      if (status === 'unverified' && isV)  return false;
+    }
     return true;
   });
 
@@ -936,6 +985,62 @@ function _buildSel(field, opts, cur, cls, labelMap, strict) {
   return h + '</select>';
 }
 
+// ─── Song Completeness & Verified ─────────────────────────────────
+function songCompleteness(s) {
+  var filled = 0;
+  _COMPLETENESS_FIELDS.forEach(function(f) {
+    var v = s[f];
+    if (v !== undefined && v !== null && v !== '' && v !== 0) filled++;
+  });
+  return filled;
+}
+
+function completenessLevel(s) {
+  var n = songCompleteness(s);
+  var total = _COMPLETENESS_FIELDS.length;
+  if (n >= total) return 'complete';
+  if (n >= total - 2) return 'partial';
+  return 'missing';
+}
+
+function missingFields(s) {
+  var miss = [];
+  var labels = {name:'ชื่อเพลง',artist:'ศิลปิน',key:'คีย์',bpm:'BPM',singer:'นักร้อง',era:'ยุค',tags:'แนวเพลง',mood:'อารมณ์'};
+  _COMPLETENESS_FIELDS.forEach(function(f) {
+    var v = s[f];
+    if (v === undefined || v === null || v === '' || v === 0) miss.push(labels[f] || f);
+  });
+  return miss;
+}
+
+function loadVerifiedSongs(cb) {
+  apiCall('getBandSettings', {}, function(r) {
+    var settings = (r && r.success && r.data) || {};
+    _verifiedSongs = settings.verifiedSongs || {};
+    if (_allSongs.length) refilterKeepPage();
+    if (cb) cb();
+  });
+}
+
+function toggleVerified(songId) {
+  var userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'unknown';
+  if (_verifiedSongs[songId]) {
+    delete _verifiedSongs[songId];
+  } else {
+    _verifiedSongs[songId] = { by: userName, at: new Date().toISOString() };
+  }
+  saveVerifiedSongs();
+  refilterKeepPage();
+}
+
+function saveVerifiedSongs() {
+  apiCall('getBandSettings', {}, function(r) {
+    var existing = (r && r.success && r.data) || {};
+    existing.verifiedSongs = _verifiedSongs;
+    apiCall('saveBandSettings', existing, function() {});
+  });
+}
+
 function renderTable() {
   var tb = document.getElementById('songTbody');
   if (!tb) return;
@@ -949,7 +1054,7 @@ function renderTable() {
   document.getElementById('nextBtn').disabled = _page >= maxPage;
 
   if (pageRows.length === 0) {
-    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
+    tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
     return;
   }
 
@@ -979,7 +1084,27 @@ function renderTable() {
         return '<option value="' + esc(v) + '"' + (dSinger === v ? ' selected' : '') + '>' + (v || '—') + '</option>';
       }).join('') + '</select>';
 
-    html += '<tr data-id="' + id + '"' + (isDirty ? ' class="row-dirty"' : '') + '>' +
+    // Status column: completeness + verified
+    var level = completenessLevel(s);
+    var vInfo = _verifiedSongs[s.id];
+    var badgeMap = { complete: '🟢', partial: '🟡', missing: '🔴' };
+    var miss = missingFields(s);
+    var missTitle = miss.length ? 'ขาด: ' + miss.join(', ') : 'ข้อมูลครบ';
+    var verBtn = '<button class="btn-verify' + (vInfo ? ' verified' : '') + '" onclick="toggleVerified(\'' + id + '\')" title="' +
+      (vInfo ? 'ยืนยันโดย ' + esc(vInfo.by) + ' เมื่อ ' + new Date(vInfo.at).toLocaleDateString('th-TH') + ' — คลิกเพื่อยกเลิก' : 'คลิกเพื่อยืนยันว่าข้อมูลถูกต้อง') + '">' +
+      (vInfo ? '✅' : '⬜') + '</button>';
+    var statusHtml = '<span class="status-badge badge-' + level + '" title="' + esc(missTitle) + '">' + badgeMap[level] + '</span> ' + verBtn;
+    // Recent edit info
+    var editInfo = '';
+    if (s.updatedBy && s.updatedAt) {
+      var diffH = (Date.now() - new Date(s.updatedAt).getTime()) / 3600000;
+      if (diffH < 24) editInfo = '<div class="edit-info" title="แก้ไขล่าสุดโดย ' + esc(s.updatedBy) + '">' + esc(s.updatedBy) + '</div>';
+    }
+    // Row class
+    var rowClass = isDirty ? 'row-dirty' : '';
+    if (!isDirty && s.updatedAt && (Date.now() - new Date(s.updatedAt).getTime()) < 86400000) rowClass = 'row-recent';
+
+    html += '<tr data-id="' + id + '"' + (rowClass ? ' class="' + rowClass + '"' : '') + '>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
@@ -988,6 +1113,7 @@ function renderTable() {
       '<td class="hide-sm">' + _buildSel('era',  _ERA_OPTS,   dEra,  'il-era',   _ERA_LABELS, true)  + '</td>' +
       '<td class="hide-lg">' + _buildSel('tags', _GENRE_OPTS, dTags, 'il-genre', null,        true)  + '</td>' +
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
+      '<td class="hide-sm status-cell">' + statusHtml + editInfo + '</td>' +
       '<td><div class="td-actions">' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
@@ -1004,18 +1130,30 @@ function updateStats() {
   document.getElementById('statTotal').textContent    = all.length;
   document.getElementById('statFiltered').textContent = flt.length;
   var male = 0, female = 0, duet = 0, globalCnt = 0, bandCnt = 0;
+  var completeCnt = 0, verifiedCnt = 0;
   all.forEach(function(s) {
     if (s.source === 'band') bandCnt++; else globalCnt++;
     var sv = (s.singer||'').toLowerCase();
     if (sv === 'ชาย'||sv === 'male') male++;
     else if (sv === 'หญิง'||sv === 'female') female++;
     else if (sv === 'คู่'||sv === 'duet'||sv === 'ชาย/หญิง') duet++;
+    if (completenessLevel(s) === 'complete') completeCnt++;
+    if (_verifiedSongs[s.id]) verifiedCnt++;
   });
   document.getElementById('statMale').textContent    = male;
   document.getElementById('statFemale').textContent  = female;
   document.getElementById('statDuet').textContent    = duet;
   document.getElementById('statGlobal').textContent  = globalCnt;
   document.getElementById('statBand').textContent    = bandCnt;
+  document.getElementById('statComplete').textContent  = completeCnt;
+  document.getElementById('statVerified').textContent  = verifiedCnt;
+  // Update completeness bar
+  var pct = all.length ? Math.round(completeCnt / all.length * 100) : 0;
+  var fill = document.getElementById('completenessFill');
+  var txt  = document.getElementById('completenessText');
+  if (fill) fill.style.width = pct + '%';
+  if (fill) fill.style.background = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
+  if (txt)  txt.textContent = 'ข้อมูลครบ ' + completeCnt + '/' + all.length + ' เพลง (' + pct + '%)';
 }
 
 function esc(str) {
@@ -1208,9 +1346,15 @@ function saveRow(songId) {
       var row = document.querySelector('tr[data-id="' + songId + '"]');
       if (row) row.classList.remove('row-dirty');
       var idx = _allSongs.findIndex(function(s){ return s.id === songId; });
-      if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood });
+      if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood, updatedBy: localStorage.getItem('userName') || '', updatedAt: new Date().toISOString() });
+      // Reset verified status on edit
+      if (_verifiedSongs[songId]) {
+        delete _verifiedSongs[songId];
+        saveVerifiedSongs();
+      }
       updateSaveAllBtn();
       clearSongsCache();
+      refilterKeepPage();
       apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
       showToast('✅ บันทึก "' + data.name + '" แล้ว', 'success');
     } else {
