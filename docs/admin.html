@@ -495,16 +495,14 @@
   function _sdSongRow(s, label, opts) {
     opts = opts || {};
     var isKeep = label === 'KEEP';
-    var bgColor = isKeep ? '#f0fdf4' : '#fef2f2';
-    var lblBg = isKeep ? '#16a34a' : '#dc2626';
-    var chkHtml = '';
-    if (!isKeep && opts.keepId) {
-      var isChecked = _sdSelected[opts.keepId] && _sdSelected[opts.keepId].indexOf(s.id) !== -1;
-      chkHtml = '<input type="checkbox" data-keep="'+opts.keepId+'" data-del="'+s.id+'" '
-        + (isChecked ? 'checked ' : '')
-        + 'onchange="sdToggle(\''+opts.keepId+'\',\''+s.id+'\',this.checked)" '
-        + 'style="accent-color:#dc2626;width:15px;height:15px;cursor:pointer">';
-    }
+    var isChecked = !!_sdSelected[s.id];
+    var bgColor = isChecked ? '#fef2f2' : (isKeep ? '#f0fdf4' : '#fffbeb');
+    var lblBg = isChecked ? '#dc2626' : (isKeep ? '#16a34a' : '#d97706');
+    var lblText = isChecked ? 'DEL' : (isKeep ? 'KEEP' : '—');
+    var chkHtml = '<input type="checkbox" data-sid="'+s.id+'" '
+      + (isChecked ? 'checked ' : '')
+      + 'onchange="sdToggle(\''+s.id+'\',this.checked)" '
+      + 'style="accent-color:#dc2626;width:16px;height:16px;cursor:pointer">';
     var score = _sdScore(s);
     var pct = Math.round(score / _SD_FIELDS.length * 100);
     var scoreC = pct >= 75 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626';
@@ -512,10 +510,8 @@
     var btns = '';
     btns += '<button onclick="event.stopPropagation();sdItunesEnrich(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem'+(hasCache?';color:#16a34a':'')+'" title="\u0E04\u0E49\u0E19\u0E2B\u0E32 iTunes">'+(hasCache?'\u2705':'\uD83D\uDD0D')+'</button>';
     btns += '<button onclick="event.stopPropagation();sdEditSong(\''+s.id+'\')" style="background:transparent;border:none;cursor:pointer;font-size:.82rem" title="\u0E41\u0E01\u0E49\u0E44\u0E02">\u270F\uFE0F</button>';
-    // Clickable KEEP/DEL label to swap
-    var lblClick = (opts.groupIdx !== undefined)
-      ? ' onclick="event.stopPropagation();sdSwapKeep('+opts.groupIdx+',\''+s.id+'\')" style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;cursor:pointer;border:none;display:inline-block" title="คลิกเพื่อสลับ KEEP/DEL"'
-      : ' style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap"';
+    // Clickable label toggles selection (mark for delete)
+    var lblClick = ' onclick="event.stopPropagation();sdToggle(\''+s.id+'\','+(!isChecked)+')" style="background:'+lblBg+';color:#fff;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;cursor:pointer;border:none;display:inline-block" title="คลิกเพื่อเลือก/ยกเลิก ลบ"';
     // Inline editable cells
     function cellEdit(field, val) {
       var sid = s.id;
@@ -524,7 +520,7 @@
     }
     var mainRow = '<tr style="background:'+bgColor+';border-bottom:1px solid #f1f5f9">'
       + '<td style="text-align:center;padding:5px 4px;width:30px">'+chkHtml+'</td>'
-      + '<td style="text-align:center;padding:5px 3px;width:50px"><button'+lblClick+'>'+label+'</button></td>'
+      + '<td style="text-align:center;padding:5px 3px;width:50px"><button'+lblClick+'>'+lblText+'</button></td>'
       + '<td style="padding:5px 6px;font-weight:600;font-size:.84rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('name',s.name)+'</td>'
       + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('singer',s.singer)+'</td>'
       + '<td style="padding:5px 6px;font-size:.8rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cellEdit('artist',s.artist)+'</td>'
@@ -1006,45 +1002,36 @@
     var allSongs = [g.keep].concat(g.dels);
     var newKeep = allSongs.find(function(s) { return s.id === newKeepId; });
     if (!newKeep || newKeep.id === g.keep.id) return;
-    delete _sdSelected[g.keep.id];
     g.keep = newKeep;
     g.dels = allSongs.filter(function(s) { return s.id !== newKeepId; });
     sdUpdateCount();
     sdRender();
   }
 
-  function sdToggle(keepId, delId, checked) {
-    if (!_sdSelected[keepId]) _sdSelected[keepId] = [];
-    if (checked) {
-      if (_sdSelected[keepId].indexOf(delId) === -1) _sdSelected[keepId].push(delId);
-    } else {
-      _sdSelected[keepId] = _sdSelected[keepId].filter(function(id) { return id !== delId; });
-      if (!_sdSelected[keepId].length) delete _sdSelected[keepId];
-    }
+  function sdToggle(songId, checked) {
+    if (checked) { _sdSelected[songId] = true; } else { delete _sdSelected[songId]; }
     sdUpdateCount();
+    sdRender();
   }
 
   function sdSelectGroup(keepId, delIds) {
-    if (!_sdSelected[keepId]) _sdSelected[keepId] = [];
-    delIds.forEach(function(id) {
-      if (_sdSelected[keepId].indexOf(id) === -1) _sdSelected[keepId].push(id);
-      var chk = document.querySelector('input[data-keep="'+keepId+'"][data-del="'+id+'"]');
-      if (chk) chk.checked = true;
-    });
+    delIds.forEach(function(id) { _sdSelected[id] = true; });
     sdUpdateCount();
+    sdRender();
   }
 
   function sdSelectAll() {
     var groups = _sdGroups[_sdTab] || [];
     if (_sdTab === 'diff') return;
     groups.forEach(function(g) {
-      sdSelectGroup(g.keep.id, g.dels.map(function(d) { return d.id; }));
+      g.dels.forEach(function(d) { _sdSelected[d.id] = true; });
     });
     sdUpdateCount();
+    sdRender();
   }
 
   function sdUpdateCount() {
-    var total = Object.values(_sdSelected).reduce(function(s, arr) { return s + arr.length; }, 0);
+    var total = Object.keys(_sdSelected).length;
     document.getElementById('sd-sel-count').textContent = total;
     document.getElementById('sd-btn-exec').disabled = total === 0;
   }
@@ -1059,21 +1046,42 @@
   }
 
   function sdExecuteMerge() {
-    var total = Object.values(_sdSelected).reduce(function(s, arr) { return s + arr.length; }, 0);
+    var delIds = Object.keys(_sdSelected);
+    var total = delIds.length;
     if (!total) return;
+    // Validate: each group must have at least 1 unchecked song
+    var groups = _sdGroups[_sdTab] || [];
+    var badGroups = [];
+    groups.forEach(function(g) {
+      var all = [g.keep].concat(g.dels);
+      var allChecked = all.every(function(s) { return !!_sdSelected[s.id]; });
+      if (allChecked) badGroups.push(g.name);
+    });
+    if (badGroups.length) {
+      alert('\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E25\u0E1A\u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14\u0E43\u0E19\u0E01\u0E25\u0E38\u0E48\u0E21:\n\n- ' + badGroups.join('\n- ') + '\n\n\u0E15\u0E49\u0E2D\u0E07\u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E44\u0E27\u0E49\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E19\u0E49\u0E2D\u0E22 1 \u0E40\u0E1E\u0E25\u0E07');
+      return;
+    }
     if (!confirm('\u0E25\u0E1A\u0E40\u0E1E\u0E25\u0E07\u0E0B\u0E49\u0E33 '+total+' \u0E40\u0E1E\u0E25\u0E07?\n\n\u0E23\u0E30\u0E1A\u0E1A\u0E08\u0E30 redirect \u0E04\u0E25\u0E31\u0E07\u0E40\u0E1E\u0E25\u0E07\u0E27\u0E07\u0E01\u0E48\u0E2D\u0E19 \u2014 \u0E27\u0E07\u0E17\u0E35\u0E48\u0E40\u0E04\u0E22\u0E21\u0E35\u0E40\u0E1E\u0E25\u0E07\u0E0B\u0E49\u0E33\u0E08\u0E30\u0E16\u0E39\u0E01\u0E1B\u0E23\u0E31\u0E1A\u0E42\u0E14\u0E22\u0E2D\u0E31\u0E15\u0E42\u0E19\u0E21\u0E31\u0E15\u0E34')) return;
 
     var btn = document.getElementById('sd-btn-exec');
     btn.disabled = true;
     btn.innerHTML = '\u23F3 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E14\u0E33\u0E40\u0E19\u0E34\u0E19\u0E01\u0E32\u0E23... <span id="sd-merge-prog">0/'+total+'</span>';
 
-    var keepIds = Object.keys(_sdSelected);
-    var done = 0, failed = 0;
-    var total_groups = keepIds.length;
-    var progEl = document.getElementById('sd-merge-prog');
+    // Build per-group merge tasks: pick best unchecked song as keepId
+    var tasks = [];
+    groups.forEach(function(g) {
+      var all = [g.keep].concat(g.dels);
+      var checked = all.filter(function(s) { return !!_sdSelected[s.id]; });
+      var unchecked = all.filter(function(s) { return !_sdSelected[s.id]; });
+      if (!checked.length) return;
+      var bestKeep = unchecked.sort(function(a, b) { return _sdScore(b) - _sdScore(a); })[0];
+      tasks.push({ keepId: bestKeep.id, deleteIds: checked.map(function(s) { return s.id; }) });
+    });
 
+    var done = 0, failed = 0;
+    var progEl = document.getElementById('sd-merge-prog');
     function next(i) {
-      if (i >= total_groups) {
+      if (i >= tasks.length) {
         showToast('\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E2A\u0E34\u0E49\u0E19: \u0E25\u0E1A '+(total - failed)+' \u0E40\u0E1E\u0E25\u0E07'+(failed ? ' | \u0E25\u0E49\u0E21\u0E40\u0E2B\u0E25\u0E27 '+failed : ''), failed ? 'warning' : 'success');
         btn.innerHTML = '\u26A1 \u0E25\u0E1A\u0E17\u0E35\u0E48\u0E40\u0E25\u0E37\u0E2D\u0E01 (<span id="sd-sel-count">0</span>)';
         _sdSelected = {};
@@ -1081,11 +1089,10 @@
         loadSongDupPanel(true);
         return;
       }
-      var keepId = keepIds[i];
-      var delIds = _sdSelected[keepId];
-      apiCall('mergeDuplicateSongs', { keepId: keepId, deleteIds: delIds }, function(r) {
-        if (r && r.success) done += delIds.length;
-        else { failed += delIds.length; showToast('\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: '+((r && r.message) || 'unknown'), 'error'); }
+      var t = tasks[i];
+      apiCall('mergeDuplicateSongs', { keepId: t.keepId, deleteIds: t.deleteIds }, function(r) {
+        if (r && r.success) done += t.deleteIds.length;
+        else { failed += t.deleteIds.length; showToast('\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: '+((r && r.message) || 'unknown'), 'error'); }
         if (progEl) progEl.textContent = (done + failed)+'/'+total;
         next(i + 1);
       });
