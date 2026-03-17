@@ -1508,12 +1508,13 @@ var _plExistingForDate = []; // existing playlists for selected date
 function loadBandSettings() {
   var bandId = localStorage.getItem('bandId') || '';
   var bandName = localStorage.getItem('bandName') || '';
-  if (!bandId && !bandName) return;
+  if (!bandId && !bandName) { console.warn('[Songs] No bandId/bandName — skip loadBandSettings'); return; }
   var SKEY = 'band_settings_' + (bandId || bandName);
   var cached = null;
   try { cached = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch(e) {}
 
-  function applySettings(s) {
+  function applySettings(s, source) {
+    console.log('[Songs] applySettings from:', source, 'venues:', (s && s.venues) ? s.venues.length : 0, 'schedule keys:', s && s.schedule ? Object.keys(s.schedule) : []);
     _plBandSettings = s;
     // ตรวจสอบ role → ถ้าเป็น admin/manager หรืออยู่ใน songManagers ถือว่าจัดการเพลงได้
     var _smRole = localStorage.getItem('userRole') || 'member';
@@ -1525,7 +1526,7 @@ function loadBandSettings() {
       _isSongManager = _smManagers.indexOf(_smUserId) !== -1;
     }
     var venueEl = document.getElementById('venue');
-    if (!venueEl) return;
+    if (!venueEl) { console.warn('[Songs] #venue element not found'); return; }
     // เติม venues
     var venues = (s && s.venues) || [];
     venueEl.innerHTML = '<option value="">เลือกร้าน</option>';
@@ -1543,13 +1544,38 @@ function loadBandSettings() {
     onPlaylistDateChange();
   }
 
+  // Fallback: read from localStorage (band-settings.js saves here)
+  function getLocalFallback() {
+    try {
+      var ls = JSON.parse(localStorage.getItem('bandSettings') || 'null');
+      if (ls && ls.venues && ls.venues.length > 0) return ls;
+    } catch(e) {}
+    return null;
+  }
+
   if (cached && cached.ts && (Date.now() - cached.ts) < 10*60*1000 && cached.data) {
-    applySettings(cached.data); return;
+    // ถ้า cached ไม่มี venues → ลอง merge กับ localStorage
+    if ((!cached.data.venues || cached.data.venues.length === 0)) {
+      var ls = getLocalFallback();
+      if (ls) { applySettings(ls, 'localStorage-fallback'); return; }
+    }
+    applySettings(cached.data, 'sessionCache'); return;
   }
   apiCall('getBandSettings', { bandId: bandId }, function(r) {
     if (r && r.success && r.data) {
       try { sessionStorage.setItem(SKEY, JSON.stringify({ ts: Date.now(), data: r.data })); } catch(e) {}
-      applySettings(r.data);
+      // ถ้า API คืน venues ว่าง → ลอง localStorage
+      if ((!r.data.venues || r.data.venues.length === 0)) {
+        var ls = getLocalFallback();
+        if (ls) { applySettings(ls, 'localStorage-after-api'); return; }
+      }
+      applySettings(r.data, 'api');
+    } else {
+      console.warn('[Songs] getBandSettings failed:', r && r.message);
+      // Fallback to localStorage
+      var ls = getLocalFallback();
+      if (ls) { applySettings(ls, 'localStorage-error-fallback'); }
+      else { onPlaylistDateChange(); } // still try to refresh slots
     }
   });
 }
