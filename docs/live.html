@@ -755,6 +755,12 @@ var _date      = _params.get('date') || '';
 var _venue     = _params.get('venue') || '';
 var _timeSlot  = _params.get('timeSlot') || '';
 var _guestToken = _params.get('token') || '';
+
+// Default to today if no date in URL
+if (!_date) {
+  var _td = new Date();
+  _date = _td.getFullYear() + '-' + String(_td.getMonth()+1).padStart(2,'0') + '-' + String(_td.getDate()).padStart(2,'0');
+}
 // guest mode: URL has guest=1&token=XXX&band=XXX
 if (_params.get('guest') === '1') {
   _isGuest = true;
@@ -892,9 +898,20 @@ function loadPlaylist() {
     // filter by venue+timeSlot if provided
     var row = null;
     if (_venue || _timeSlot) {
+      // Exact match first
       row = rows.find(function(x) {
         return x.venue === _venue && x.timeSlot === _timeSlot;
-      }) || rows[0];
+      });
+      // Partial match: venue only
+      if (!row && _venue) {
+        row = rows.find(function(x) { return x.venue === _venue; });
+      }
+      // Partial match: timeSlot only
+      if (!row && _timeSlot) {
+        row = rows.find(function(x) { return x.timeSlot === _timeSlot; });
+      }
+      // Fallback to first available
+      if (!row) row = rows[0];
     } else {
       row = rows[0];
     }
@@ -904,6 +921,15 @@ function loadPlaylist() {
       showWaitingForSync();
       initRealtime();
       return;
+    }
+    // Update venue/timeSlot from loaded row if not specified in URL
+    if (!_venue && row.venue) {
+      _venue = row.venue;
+      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+    }
+    if (!_timeSlot && row.timeSlot) {
+      _timeSlot = row.timeSlot;
+      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
     }
     _playlist = row.songs.map(function(s) {
       return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0,

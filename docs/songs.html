@@ -508,6 +508,50 @@ html{scroll-behavior:smooth}
   .tp-btn:active,.move-btn:active,.del:active{opacity:.7}
 }
 
+/* ── Playlist Controls Grid (date/venue/time) ── */
+.pl-ctrl-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:10px;
+  margin-bottom:12px;
+}
+.pl-ctrl-item{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.pl-ctrl-label{
+  font-size:11px;
+  font-weight:700;
+  color:var(--premium-text-muted);
+  letter-spacing:.02em;
+}
+.pl-ctrl-item select,
+.pl-ctrl-item input[type="date"]{
+  width:100%;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  border:1.5px solid var(--premium-border);
+  background:#fff;
+  color:var(--premium-text);
+  font-size:var(--text-sm);
+  font-family:var(--font-family-body);
+  transition:border-color .18s;
+  min-height:44px;
+}
+.pl-ctrl-item select:focus,
+.pl-ctrl-item input[type="date"]:focus{
+  outline:none;
+  border-color:var(--premium-gold);
+  box-shadow:0 0 0 3px rgba(246,173,85,.15);
+}
+@media(max-width:599px){
+  .pl-ctrl-grid{grid-template-columns:1fr;gap:8px}
+}
+@media(min-width:600px) and (max-width:899px){
+  .pl-ctrl-grid{grid-template-columns:1fr 1fr;gap:8px}
+}
+
 /* ── Select mode ── */
 .result-item.selected{background:#fffbeb;border-color:var(--premium-gold)}
 .tap-add:active{background:#fef3c7;transform:scale(.98)}
@@ -765,16 +809,23 @@ html{scroll-behavior:smooth}
   <!-- Badge: existing playlists for selected date -->
   <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:12px 14px;border-radius:var(--radius-md);background:#f7fff9;border:1.5px solid #c6f6d5"></div>
 
-  <div class="filters" style="margin-bottom:10px">
-    <input type="date" id="useDate" onchange="onPlaylistDateChange()">
-
-    <select id="venue" onchange="onPlaylistVenueChange()">
-      <option value="">เลือกร้าน</option>
-    </select>
-
-    <select id="timeSlot" onchange="autoLoadPlaylistForSlot()">
-      <option value="">ช่วงเวลา</option>
-    </select>
+  <div class="pl-ctrl-grid">
+    <div class="pl-ctrl-item">
+      <label class="pl-ctrl-label">📅 วันที่</label>
+      <input type="date" id="useDate" onchange="onPlaylistDateChange()">
+    </div>
+    <div class="pl-ctrl-item">
+      <label class="pl-ctrl-label">📍 ชื่อร้าน</label>
+      <select id="venue" onchange="onPlaylistVenueChange()">
+        <option value="">เลือกร้าน</option>
+      </select>
+    </div>
+    <div class="pl-ctrl-item">
+      <label class="pl-ctrl-label">🕐 ช่วงเวลา</label>
+      <select id="timeSlot" onchange="autoLoadPlaylistForSlot()">
+        <option value="">ช่วงเวลา</option>
+      </select>
+    </div>
   </div>
 
   <div class="action-buttons" style="display:flex;gap:10px;margin:10px 0;flex-wrap:wrap">
@@ -1546,7 +1597,7 @@ function plGetSlotsForDate() {
 /* ── When date changes → refresh time slots & check existing playlists ── */
 function onPlaylistDateChange() {
   refreshTimeSlots();
-  checkExistingPlaylists();
+  checkExistingPlaylists(true);
 }
 
 /* ── When venue changes → refresh time slots (re-filter by venue) ── */
@@ -1591,7 +1642,7 @@ function refreshTimeSlots() {
 }
 
 /* ── Check which slots already have playlists for selected date ── */
-function checkExistingPlaylists() {
+function checkExistingPlaylists(autoLoad) {
   var dateEl = document.getElementById('useDate');
   var bandId = localStorage.getItem('bandId') || '';
   if (!dateEl || !dateEl.value || !bandId) { _plExistingForDate = []; return; }
@@ -1601,6 +1652,22 @@ function checkExistingPlaylists() {
     refreshTimeSlotsLabels();
     // Show existing playlists summary
     renderExistingPlaylistsBadge();
+    // Auto-load first saved playlist if playlist is empty and this is a date change
+    if (autoLoad && playlistData.length === 0 && _plExistingForDate.length > 0) {
+      // Try to match selected venue + timeSlot first
+      var venueEl = document.getElementById('venue');
+      var timeEl  = document.getElementById('timeSlot');
+      var vName = venueEl ? venueEl.value : '';
+      var tSlot = timeEl ? timeEl.value : '';
+      var idx = -1;
+      if (vName || tSlot) {
+        idx = _plExistingForDate.findIndex(function(e) {
+          return (!vName || e.venue === vName) && (!tSlot || e.timeSlot === tSlot);
+        });
+      }
+      if (idx === -1) idx = 0; // fallback to first
+      loadExistingPlaylist(idx, true);
+    }
   });
 }
 
@@ -1691,10 +1758,10 @@ function deleteExistingPlaylist(idx) {
 }
 
 /* ── Load an existing playlist into the editable list ── */
-function loadExistingPlaylist(idx) {
+function loadExistingPlaylist(idx, silent) {
   var p = _plExistingForDate[idx];
   if (!p) return;
-  if (playlistData.length > 0 && !confirm('แทนที่ลิสปัจจุบัน ' + playlistData.length + ' เพลง ด้วยลิสที่เลือก?')) return;
+  if (!silent && playlistData.length > 0 && !confirm('แทนที่ลิสปัจจุบัน ' + playlistData.length + ' เพลง ด้วยลิสที่เลือก?')) return;
   playlistData = (p.songs || []).map(function(s) {
     return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
   });
@@ -1712,7 +1779,9 @@ function loadExistingPlaylist(idx) {
       if (timeEl.options[j].value === p.timeSlot) { timeEl.selectedIndex = j; break; }
     }
   }
-  showSongsAlert('✅ โหลดลิส ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' แล้ว (' + playlistData.length + ' เพลง)');
+  if (!silent) {
+    showSongsAlert('✅ โหลดลิส ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' แล้ว (' + playlistData.length + ' เพลง)');
+  }
 }
 
 /* ── Auto-load when user picks a time slot that already has a saved playlist ── */
@@ -2170,6 +2239,24 @@ function _doCopyAndSave(){
 
 function copyPlaylist(){
   if(playlistData.length === 0){ showSongsAlert('⚠️ ไม่มีเพลงในลิส'); return; }
+  // เตือนถ้ายังไม่เลือกช่วงเวลา (ทำให้ลิสที่2 ทับลิสที่1)
+  var timeEl = document.getElementById('timeSlot');
+  var venueEl = document.getElementById('venue');
+  var slots = plGetSlotsForDate();
+  if (slots.length > 0 && timeEl && !timeEl.value) {
+    showSongsAlert('⚠️ กรุณาเลือกช่วงเวลาก่อนบันทึก เพื่อไม่ให้ลิสทับกัน');
+    timeEl.focus();
+    timeEl.style.borderColor = '#e53e3e';
+    setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
+    return;
+  }
+  if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
+    showSongsAlert('⚠️ กรุณาเลือกร้านก่อนบันทึก');
+    venueEl.focus();
+    venueEl.style.borderColor = '#e53e3e';
+    setTimeout(function(){ venueEl.style.borderColor = ''; }, 3000);
+    return;
+  }
   checkPlaylistLimit(function() { _doCopyAndSave(); });
 }
 
