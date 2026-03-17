@@ -12,19 +12,19 @@
   // ── Genre → tag (ต้องตรงกับ _GENRE_OPTS ของระบบ) ────
   function genreToTag(genre) {
     var g = (genre || '').toLowerCase();
-    if (g.indexOf('rock') !== -1 || g.indexOf('metal') !== -1 || g.indexOf('punk') !== -1) return 'ร็อค';
-    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'แร๊ฟ/ฮิปฮอป';
-    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1 || g.indexOf('house') !== -1 || g.indexOf('techno') !== -1) return 'ดิสโก้';
-    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1) return 'อาร์แอนด์บี';
-    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'แจ๊ส / บลูส์';
-    if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1) return 'เรกเก้';
-    if (g.indexOf('indie') !== -1 || g.indexOf('alternative') !== -1) return 'อินดี้';
-    if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1) return 'ลูกทุ่ง / อีสาน';
-    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1) return 'เพื่อชีวิต';
-    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'สากลเก่า';
-    if (g.indexOf('thai') !== -1 || g.indexOf('t-pop') !== -1) return 'ป๊อป';
-    if (g.indexOf('pop') !== -1) return 'ป๊อป';
-    if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1 || g.indexOf('latin') !== -1) return 'ป๊อป';
+    if (g.indexOf('rock') !== -1 || g.indexOf('metal') !== -1 || g.indexOf('punk') !== -1 || g.indexOf('ร็อ') !== -1 || g.indexOf('เมทัล') !== -1 || g.indexOf('พังก์') !== -1) return 'ร็อค';
+    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1 || g.indexOf('ฮิปฮอป') !== -1 || g.indexOf('แร็พ') !== -1 || g.indexOf('แร๊พ') !== -1) return 'แร๊ฟ/ฮิปฮอป';
+    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1 || g.indexOf('house') !== -1 || g.indexOf('techno') !== -1 || g.indexOf('แดนซ์') !== -1 || g.indexOf('ดิสโก') !== -1 || g.indexOf('อิเล็กทรอนิก') !== -1) return 'ดิสโก้';
+    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1 || g.indexOf('rnb') !== -1 || g.indexOf('อาร์แอนด์บี') !== -1 || g.indexOf('โซล') !== -1) return 'อาร์แอนด์บี';
+    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1 || g.indexOf('แจ๊ส') !== -1 || g.indexOf('บลูส์') !== -1) return 'แจ๊ส / บลูส์';
+    if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1 || g.indexOf('เรกเก') !== -1 || g.indexOf('สกา') !== -1) return 'เรกเก้';
+    if (g.indexOf('indie') !== -1 || g.indexOf('alternative') !== -1 || g.indexOf('อินดี') !== -1 || g.indexOf('ออลเทอร์') !== -1) return 'อินดี้';
+    if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('คันทรี') !== -1 || g.indexOf('โฟล์ก') !== -1 || g.indexOf('ลูกทุ่ง') !== -1 || g.indexOf('อีสาน') !== -1 || g.indexOf('หมอลำ') !== -1) return 'ลูกทุ่ง / อีสาน';
+    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('เพื่อชีวิต') !== -1) return 'เพื่อชีวิต';
+    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1 || g.indexOf('คลาสสิก') !== -1) return 'สากลเก่า';
+    if (g.indexOf('thai') !== -1 || g.indexOf('t-pop') !== -1 || g.indexOf('ไทย') !== -1 || g.indexOf('ที-ป็อป') !== -1) return 'ป๊อป';
+    if (g.indexOf('pop') !== -1 || g.indexOf('ป็อป') !== -1 || g.indexOf('ป๊อป') !== -1) return 'ป๊อป';
+    if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1 || g.indexOf('latin') !== -1 || g.indexOf('เวิลด์') !== -1 || g.indexOf('เอเชีย') !== -1 || g.indexOf('ละติน') !== -1) return 'ป๊อป';
     return 'สากลปัจจุบัน';
   }
 
