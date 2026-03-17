@@ -8,6 +8,7 @@
  * เรียกก่อน renderMainNav เพื่อให้ CSS พร้อมก่อน render
  */
 function initAccessibility() {
+  if (!document.body) return; // body not ready yet (script in <head>)
   var scale = localStorage.getItem('accessibility_text_scale') || '';
   var contrast = localStorage.getItem('accessibility_high_contrast') || '';
   var simpleMenu = localStorage.getItem('accessibility_simple_menu') || '';
@@ -19,8 +20,9 @@ function initAccessibility() {
   // Apply high contrast
   if (contrast === '1') document.body.classList.add('high-contrast');
 }
-// Auto-run immediately
-initAccessibility();
+// Auto-run: defer if body not ready
+if (document.body) { initAccessibility(); }
+else { document.addEventListener('DOMContentLoaded', initAccessibility); }
 
 function renderMainNav(containerId) {
   if (typeof ensureDemoSession === 'function') ensureDemoSession();
