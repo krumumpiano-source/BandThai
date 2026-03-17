@@ -460,10 +460,11 @@
   var _sdEnrichCache = {};
   var _sdIgnored = {};
   var _sdShowIgnored = false;
-  function _sdLoadIgnored() { try { _sdIgnored = JSON.parse(localStorage.getItem('sd_ignored') || '{}'); } catch(e) { _sdIgnored = {}; } }
+  function _sdLoadIgnored() { try { _sdIgnored = JSON.parse(localStorage.getItem('sd_ignored') || '{}'); Object.keys(_sdIgnored).forEach(function(k){ if(_sdIgnored[k]===true) _sdIgnored[k]='ignore'; }); } catch(e) { _sdIgnored = {}; } }
   function _sdSaveIgnored() { localStorage.setItem('sd_ignored', JSON.stringify(_sdIgnored)); }
   function _sdGetIgnored() { if (!Object.keys(_sdIgnored).length) _sdLoadIgnored(); return _sdIgnored; }
-  function sdIgnoreGroup(gKey) { _sdIgnored[gKey] = true; _sdSaveIgnored(); sdRender(); }
+  function sdIgnoreGroup(gKey) { _sdIgnored[gKey] = 'ignore'; _sdSaveIgnored(); sdRender(); }
+  function sdDoneGroup(gKey) { _sdIgnored[gKey] = 'done'; _sdSaveIgnored(); sdRender(); showToast('\u2705 \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E27\u0E48\u0E32\u0E08\u0E31\u0E14\u0E01\u0E32\u0E23\u0E41\u0E25\u0E49\u0E27','success'); }
   function sdUnignoreGroup(gKey) { delete _sdIgnored[gKey]; _sdSaveIgnored(); sdRender(); }
   function sdToggleShowIgnored() { _sdShowIgnored = !_sdShowIgnored; sdRender(); }
   function sdClearAllIgnored() { _sdIgnored = {}; _sdSaveIgnored(); sdRender(); }
@@ -939,14 +940,19 @@
     groups.forEach(function(g, gi) {
       var gKey = _sdTab + ':' + _sdNormalize(g.name);
       if (ignored[gKey] && !_sdShowIgnored) { ignoredCount++; return; }
-      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: !!ignored[gKey] });
+      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: ignored[gKey] || false });
     });
+    var doneCount = 0, skipCount = 0;
+    Object.keys(ignored).forEach(function(k) { if(k.indexOf(_sdTab+':')===0){ if(ignored[k]==='done') doneCount++; else skipCount++; } });
     var ignoreNotice = '';
     if (ignoredCount > 0) {
+      var parts = [];
+      if (doneCount) parts.push('\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27 <b>'+doneCount+'</b>');
+      if (skipCount) parts.push('\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19 <b>'+skipCount+'</b>');
       ignoreNotice = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:.82rem;color:#6b21a8">'
-        + '\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 <b>'+ignoredCount+'</b> \u0E01\u0E25\u0E38\u0E48\u0E21 '
+        + parts.join(' · ') + ' \u0E01\u0E25\u0E38\u0E48\u0E21 '
         + '<button onclick="sdToggleShowIgnored()" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">'
-        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19' : '\u0E41\u0E2A\u0E14\u0E07\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</button></div>';
+        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19' : '\u0E41\u0E2A\u0E14\u0E07')+'</button></div>';
     }
     if (!shownGroups.length && ignoredCount > 0) {
       list.innerHTML = ignoreNotice + '<div style="text-align:center;color:var(--premium-text-muted);padding:20px">\u0E17\u0E38\u0E01\u0E01\u0E25\u0E38\u0E48\u0E21\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27</div>';
@@ -956,19 +962,27 @@
       var g = item.g, gi = item.gi, gKey = item.gKey;
       var headerBg = isDiff ? '#fffbeb' : 'var(--premium-off-white)';
       var isIgn = item.ignored;
+      var ignType = isIgn; // 'ignore', 'done', or false
       var artistsData = (g.keep.artist||'').toLowerCase() + ' ' + g.dels.map(function(d) { return (d.artist||'').toLowerCase(); }).join(' ');
       var keepRow = _sdSongRow(g.keep, 'KEEP', { groupIdx: gi });
       var delRows = g.dels.map(function(d) {
         return _sdSongRow(d, 'DEL', { keepId: g.keep.id, groupIdx: gi });
       }).join('');
+      var statusBtns = '';
+      if (ignType) {
+        var restoreLabel = ignType === 'done' ? '\u21A9 \u0E22\u0E49\u0E2D\u0E19\u0E01\u0E25\u0E31\u0E1A' : '\u21A9 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A';
+        statusBtns = '<span style="font-size:.66rem;padding:2px 6px;border-radius:4px;'+(ignType==='done'?'background:#dcfce7;color:#16a34a':'background:#f3e8ff;color:#7c3aed')+'">'+(ignType==='done'?'\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27':'\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</span>'
+          + '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">'+restoreLabel+'</button>';
+      } else {
+        statusBtns = '<button onclick="sdDoneGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27</button>'
+          + '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>';
+      }
       return '<div class="sd-group" data-name="'+escapeHtml(g.name.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid var(--premium-border);border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
         + '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:'+headerBg+'">'
         + '<span style="font-weight:700;color:var(--premium-text);flex:1;font-size:.92rem">'+escapeHtml(g.name)+'</span>'
         + '<span style="background:'+(isDiff?'#dbeafe':'#fee2e2')+';color:'+(isDiff?'#1d4ed8':'#dc2626')+';font-size:.68rem;padding:2px 8px;border-radius:12px;font-weight:600">'+g.count+'x</span>'
         + '<button onclick="sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
-        + (isIgn
-          ? '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A</button>'
-          : '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>')
+        + statusBtns
         + '</div>'
         + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">'
         + _sdTblHead + '<tbody>' + keepRow + delRows + '</tbody></table></div></div>';
@@ -983,14 +997,19 @@
     groups.forEach(function(g, gi) {
       var gKey = 'fuzzy:' + _sdNormalize(g.nameA) + '||' + _sdNormalize(g.nameB);
       if (ignored[gKey] && !_sdShowIgnored) { ignoredCount++; return; }
-      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: !!ignored[gKey] });
+      shownGroups.push({ g: g, gi: gi, gKey: gKey, ignored: ignored[gKey] || false });
     });
+    var doneCount = 0, skipCount = 0;
+    Object.keys(ignored).forEach(function(k) { if(k.indexOf('fuzzy:')===0){ if(ignored[k]==='done') doneCount++; else skipCount++; } });
     var ignoreNotice = '';
     if (ignoredCount > 0) {
+      var parts = [];
+      if (doneCount) parts.push('\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27 <b>'+doneCount+'</b>');
+      if (skipCount) parts.push('\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19 <b>'+skipCount+'</b>');
       ignoreNotice = '<div style="text-align:center;padding:8px;margin-bottom:8px;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;font-size:.82rem;color:#6b21a8">'
-        + '\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27 <b>'+ignoredCount+'</b> \u0E04\u0E39\u0E48 '
+        + parts.join(' \u00b7 ') + ' \u0E04\u0E39\u0E48 '
         + '<button onclick="sdToggleShowIgnored()" style="background:#7c3aed;color:#fff;border:none;border-radius:4px;padding:2px 10px;font-size:.78rem;cursor:pointer;margin-left:4px">'
-        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19' : '\u0E41\u0E2A\u0E14\u0E07\u0E17\u0E35\u0E48\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</button></div>';
+        + (_sdShowIgnored ? '\u0E0B\u0E48\u0E2D\u0E19' : '\u0E41\u0E2A\u0E14\u0E07')+'</button></div>';
     }
     if (!shownGroups.length && ignoredCount > 0) {
       list.innerHTML = ignoreNotice + '<div style="text-align:center;color:var(--premium-text-muted);padding:20px">\u0E17\u0E38\u0E01\u0E04\u0E39\u0E48\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E27\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27</div>';
@@ -999,21 +1018,29 @@
     var html = ignoreNotice + shownGroups.map(function(item) {
       var g = item.g, gi = item.gi, gKey = item.gKey;
       var isIgn = item.ignored;
+      var ignType = isIgn;
       var artistsData = g.songs.map(function(s) { return (s.artist||'').toLowerCase(); }).join(' ');
       var keepRow = _sdSongRow(g.keep, 'KEEP', { groupIdx: gi });
       var delRows = g.dels.map(function(d) {
         return _sdSongRow(d, 'DEL', { keepId: g.keep.id, groupIdx: gi });
       }).join('');
       var matchLabel = g.matchType === 'norm' ? '\u0E40\u0E27\u0E49\u0E19\u0E27\u0E23\u0E23\u0E04/\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2D\u0E07\u0E2B\u0E21\u0E32\u0E22' : '\u0E15\u0E48\u0E32\u0E07 '+g.distance+' \u0E15\u0E31\u0E27';
+      var statusBtns = '';
+      if (ignType) {
+        var restoreLabel = ignType === 'done' ? '\u21A9 \u0E22\u0E49\u0E2D\u0E19\u0E01\u0E25\u0E31\u0E1A' : '\u21A9 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A';
+        statusBtns = '<span style="font-size:.66rem;padding:2px 6px;border-radius:4px;'+(ignType==='done'?'background:#dcfce7;color:#16a34a':'background:#f3e8ff;color:#7c3aed')+'">'+(ignType==='done'?'\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27':'\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19')+'</span>'
+          + '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#6b7280;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">'+restoreLabel+'</button>';
+      } else {
+        statusBtns = '<button onclick="sdDoneGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27</button>'
+          + '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>';
+      }
       return '<div class="sd-group" data-name="'+escapeHtml(g.nameA.toLowerCase()+' '+g.nameB.toLowerCase())+'" data-artists="'+escapeHtml(artistsData)+'" style="border:1px solid #c4b5fd;border-radius:8px;margin-bottom:10px;overflow:hidden'+(isIgn?';opacity:.5':'')+'">'
         + '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:#f5f3ff">'
         + '<span style="font-weight:700;color:var(--premium-text);flex:1;font-size:.9rem">'
         + escapeHtml(g.nameA)+' <span style="color:#7c3aed">\u2194</span> '+escapeHtml(g.nameB)+'</span>'
         + '<span style="background:#ede9fe;color:#7c3aed;font-size:.66rem;padding:2px 8px;border-radius:12px;font-weight:600;white-space:nowrap">'+matchLabel+'</span>'
         + '<button onclick="sdSelectGroup(\''+g.keep.id+'\','+JSON.stringify(g.dels.map(function(d){return d.id;}))+');sdUpdateCount()" style="background:#334155;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2611 DEL</button>'
-        + (isIgn
-          ? '<button onclick="sdUnignoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\u2705 \u0E04\u0E37\u0E19\u0E01\u0E25\u0E31\u0E1A</button>'
-          : '<button onclick="sdIgnoreGroup(\''+gKey.replace(/'/g,"\\'")+'\')" style="background:#9ca3af;color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.68rem;cursor:pointer">\uD83D\uDEAB \u0E22\u0E01\u0E40\u0E27\u0E49\u0E19</button>')
+        + statusBtns
         + '</div>'
         + '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.82rem">'
         + _sdTblHead + '<tbody>' + keepRow + delRows + '</tbody></table></div></div>';
