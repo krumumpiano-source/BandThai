@@ -884,6 +884,10 @@
         var a = keys[i], b = keys[j];
         if (Math.abs(a.length - b.length) > 3) continue;
         if (a.length < 2 || b.length < 2) continue;
+        // Skip if the only difference is numbers (e.g. "4 นาที" vs "5นาที")
+        var aBase = a.replace(/[0-9\u0E50-\u0E59]/g, '').replace(/\s+/g, ' ').trim();
+        var bBase = b.replace(/[0-9\u0E50-\u0E59]/g, '').replace(/\s+/g, ' ').trim();
+        if (aBase === bBase && a !== b) continue;
         var pairKey = a < b ? a+'||'+b : b+'||'+a;
         if (fuzzyUsed[pairKey]) continue;
         var dist = _levenshtein(a, b);
