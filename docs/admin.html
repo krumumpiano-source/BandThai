@@ -349,7 +349,7 @@
   </main>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/itunes-api.js"></script>
+  <script src="js/itunes-api.js?v=20260317b"></script>
   <script src="js/nav.js?v=20260317"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -673,7 +673,32 @@
       + '<button onclick="event.stopPropagation();sdApplySelectedEnrich(\''+sid+'\')" style="background:#16a34a;color:#fff;border:none;border-radius:6px;padding:5px 14px;font-size:.78rem;cursor:pointer;font-weight:700">✅ นำไปใช้ที่เลือก</button>'
       + '<button onclick="event.stopPropagation();sdCheckAllItunes(\''+sid+'\',true)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:.72rem;cursor:pointer">☑️ ทั้งหมด</button>'
       + '<button onclick="event.stopPropagation();sdCheckAllItunes(\''+sid+'\',false)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:6px;padding:5px 10px;font-size:.72rem;cursor:pointer">☐ ยกเลิกหมด</button>'
-      + '</div></div></div>';
+      + '</div>'
+      + _sdAltResults(s)
+      + '</div></div>';
+  }
+
+  // ── Alternative iTunes results strip ─────────────────
+  function _sdAltResults(s) {
+    var all = _sdEnrichAll[s.id];
+    if (!all || all.length <= 1) return '';
+    var selected = _sdEnrichCache[s.id];
+    var cards = all.map(function(r, idx) {
+      var isSel = (selected && selected.notes === r.notes);
+      var bg = isSel ? 'background:#dbeafe;border:2px solid #3b82f6' : 'background:#f8fafc;border:1px solid #e2e8f0;cursor:pointer';
+      return '<div onclick="event.stopPropagation();sdPickItunesResult(\''+s.id+'\','+idx+')" '
+        + 'style="'+bg+';border-radius:6px;padding:5px 8px;min-width:140px;max-width:200px;flex-shrink:0" '
+        + 'title="'+(isSel?'กำลังใช้อยู่':'คลิกเพื่อเลือกผลลัพธ์นี้')+'">'
+        + (r.albumArt ? '<img src="'+escapeHtml(r.albumArt)+'" style="width:36px;height:36px;border-radius:4px;float:left;margin-right:6px" onerror="this.style.display=\'none\'">' : '')
+        + '<div style="font-size:.72rem;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(r.trackName||r.name)+'</div>'
+        + '<div style="font-size:.66rem;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escapeHtml(r.artist)+'</div>'
+        + '<div style="font-size:.62rem;color:#94a3b8">'+escapeHtml(r.year||'')+' · '+escapeHtml(r.genre||r.tags||'')+'</div>'
+        + (isSel ? '<div style="font-size:.6rem;color:#3b82f6;font-weight:700;clear:both">✓ เลือกอยู่</div>' : '')
+        + '<div style="clear:both"></div></div>';
+    }).join('');
+    return '<div style="margin-top:10px;border-top:1px solid #e2e8f0;padding-top:8px">'
+      + '<div style="font-size:.72rem;color:#6b7280;margin-bottom:4px;font-weight:600">🔀 ผลลัพธ์อื่นจาก iTunes (คลิกเพื่อเปลี่ยน):</div>'
+      + '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">'+cards+'</div></div>';
   }
 
   function sdCheckAllItunes(songId, check) {
@@ -1101,11 +1126,20 @@
   }
 
   // ── iTunes Search (via itunes-api.js) ────────────────────────────────────
+  var _sdEnrichAll = {};   // songId → array of all iTunes results
+
   function _sdSearchItunes(name, artist, callback) {
-    itunesSearch(name, artist, function(result, errText) {
-      if (!result) { callback(null, errText); return; }
-      callback(result, null);
-    });
+    if (typeof itunesSearchMulti === 'function') {
+      itunesSearchMulti(name, artist, function(results, errText) {
+        if (!results || !results.length) { callback(null, errText); return; }
+        callback(results, null);
+      });
+    } else {
+      itunesSearch(name, artist, function(result, errText) {
+        if (!result) { callback(null, errText); return; }
+        callback([result], null);
+      });
+    }
   }
   function sdItunesEnrich(songId, forceRetry) {
     var el = document.getElementById('sd-enrich-' + songId);
@@ -1123,17 +1157,24 @@
     if (detailRow) detailRow.style.display = '';
     el.style.display = '';
     el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83C\uDFB5 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
-    _sdSearchItunes(song.name, song.artist || song.singer, function(result, errText) {
-      if (!result) {
+    _sdSearchItunes(song.name, song.artist || song.singer, function(results, errText) {
+      if (!results) {
         el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
           + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span>'
           + '<button onclick="sdItunesEnrich(\'' + songId + '\',true)" style="margin-left:8px;background:#6366f1;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:.76rem;cursor:pointer">\uD83D\uDD04 \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48</button></div>';
         return;
       }
-      _sdEnrichCache[songId] = result;
+      _sdEnrichAll[songId] = results;
+      _sdEnrichCache[songId] = results[0];
       el.style.display = 'none';
       sdRender();
     });
+  }
+  function sdPickItunesResult(songId, idx) {
+    var all = _sdEnrichAll[songId];
+    if (!all || !all[idx]) return;
+    _sdEnrichCache[songId] = all[idx];
+    sdRender();
   }
   function sdItunesEnrichBatch() {
     if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
@@ -1150,8 +1191,8 @@
       }
       if (btn) btn.textContent = '\uD83D\uDD0D ' + i + '/' + incomplete.length + '...';
       var s = incomplete[i];
-      _sdSearchItunes(s.name, s.artist || s.singer, function(result) {
-        if (result) { _sdEnrichCache[s.id] = result; done++; }
+      _sdSearchItunes(s.name, s.artist || s.singer, function(results) {
+        if (results && results.length) { _sdEnrichAll[s.id] = results; _sdEnrichCache[s.id] = results[0]; done++; }
         setTimeout(function() { next(i + 1); }, 400);
       });
     }
