@@ -21,11 +21,11 @@
     if (g.indexOf('indie') !== -1 || g.indexOf('alternative') !== -1 || g.indexOf('อินดี') !== -1 || g.indexOf('ออลเทอร์') !== -1) return 'อินดี้';
     if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('คันทรี') !== -1 || g.indexOf('โฟล์ก') !== -1 || g.indexOf('ลูกทุ่ง') !== -1 || g.indexOf('อีสาน') !== -1 || g.indexOf('หมอลำ') !== -1) return 'ลูกทุ่ง / อีสาน';
     if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('เพื่อชีวิต') !== -1) return 'เพื่อชีวิต';
-    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1 || g.indexOf('คลาสสิก') !== -1) return 'สากลเก่า';
+    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1 || g.indexOf('คลาสสิก') !== -1) return 'ป๊อป';
     if (g.indexOf('thai') !== -1 || g.indexOf('t-pop') !== -1 || g.indexOf('ไทย') !== -1 || g.indexOf('ที-ป็อป') !== -1) return 'ป๊อป';
     if (g.indexOf('pop') !== -1 || g.indexOf('ป็อป') !== -1 || g.indexOf('ป๊อป') !== -1) return 'ป๊อป';
     if (g.indexOf('world') !== -1 || g.indexOf('asia') !== -1 || g.indexOf('latin') !== -1 || g.indexOf('เวิลด์') !== -1 || g.indexOf('เอเชีย') !== -1 || g.indexOf('ละติน') !== -1) return 'ป๊อป';
-    return 'สากลปัจจุบัน';
+    return 'ป๊อป';
   }
 
   // ── Year → era (ต้องตรงกับ _ERA_OPTS: 80s,90s,2000s,2010s,2020s) ──
