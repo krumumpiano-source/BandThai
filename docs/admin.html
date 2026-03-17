@@ -1157,7 +1157,10 @@
     if (detailRow) detailRow.style.display = '';
     el.style.display = '';
     el.innerHTML = '<div style="padding:10px;text-align:center;color:#0ea5e9;font-size:.84rem">\uD83C\uDFB5 \u0E01\u0E33\u0E25\u0E31\u0E07\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E43\u0E19 iTunes...</div>';
-    _sdSearchItunes(song.name, song.artist || song.singer, function(results, errText) {
+    // Don't pass singer gender (ชาย/หญิง) as artist — it pollutes iTunes search
+    var searchArtist = song.artist || '';
+    if (!searchArtist || searchArtist === 'ชาย' || searchArtist === 'หญิง' || searchArtist === 'ชาย/หญิง') searchArtist = '';
+    _sdSearchItunes(song.name, searchArtist, function(results, errText) {
       if (!results) {
         el.innerHTML = '<div style="padding:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;font-size:.82rem">'
           + '<span style="color:#dc2626;font-weight:600">\u26A0\uFE0F ' + escapeHtml(errText || '\u0E04\u0E49\u0E19\u0E2B\u0E32\u0E44\u0E21\u0E48\u0E1E\u0E1A') + '</span>'
@@ -1174,7 +1177,12 @@
     var all = _sdEnrichAll[songId];
     if (!all || !all[idx]) return;
     _sdEnrichCache[songId] = all[idx];
-    sdRender();
+    // Update suggestion panel in-place (no full re-render)
+    var song = _sdAllSongs.find(function(x) { return x.id === songId; });
+    if (song) {
+      var sugEl = document.getElementById('sd-suggest-' + songId);
+      if (sugEl) sugEl.innerHTML = _sdInlineSuggestion(song);
+    }
   }
   function sdItunesEnrichBatch() {
     if (!_sdAllSongs.length) { showToast('\u0E42\u0E2B\u0E25\u0E14\u0E40\u0E1E\u0E25\u0E07\u0E01\u0E48\u0E2D\u0E19', 'error'); return; }
@@ -1191,7 +1199,9 @@
       }
       if (btn) btn.textContent = '\uD83D\uDD0D ' + i + '/' + incomplete.length + '...';
       var s = incomplete[i];
-      _sdSearchItunes(s.name, s.artist || s.singer, function(results) {
+      var batchArtist = s.artist || '';
+      if (!batchArtist || batchArtist === 'ชาย' || batchArtist === 'หญิง' || batchArtist === 'ชาย/หญิง') batchArtist = '';
+      _sdSearchItunes(s.name, batchArtist, function(results) {
         if (results && results.length) { _sdEnrichAll[s.id] = results; _sdEnrichCache[s.id] = results[0]; done++; }
         setTimeout(function() { next(i + 1); }, 400);
       });
