@@ -115,6 +115,7 @@ function renderMainNav(containerId) {
     : '';
 
   memberLinks += upgradeLink;
+  memberLinks += navLink('user-manual', '📖 คู่มือใช้งาน', 'วิธีใช้งานระบบอย่างละเอียด');
 
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
