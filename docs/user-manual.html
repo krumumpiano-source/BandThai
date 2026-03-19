@@ -17,22 +17,36 @@
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
   <style>
-    .manual-layout{display:grid;grid-template-columns:240px 1fr;gap:var(--spacing-xl)}
-    @media(max-width:1100px){.manual-layout{grid-template-columns:1fr}}
-    .manual-toc{position:sticky;top:calc(80px + env(safe-area-inset-top,0px))}
-    .toc-item{padding:var(--spacing-xs) var(--spacing-md);border-left:3px solid transparent;font-size:var(--text-sm);color:var(--premium-text-muted);cursor:pointer;transition:all .15s;display:block;text-decoration:none}
-    .toc-item:hover,.toc-item.active{border-left-color:var(--premium-gold);color:var(--premium-gold);background:var(--premium-off-white)}
-    .manual-section{margin-bottom:var(--spacing-2xl)}
-    .manual-section h2{font-size:var(--text-xl);font-weight:700;border-bottom:2px solid var(--premium-gold);padding-bottom:var(--spacing-sm);margin-bottom:var(--spacing-lg)}
-    .manual-section h3{font-size:var(--text-base);font-weight:600;color:var(--premium-gold);margin-top:var(--spacing-lg);margin-bottom:var(--spacing-sm)}
-    .manual-section p,.manual-section li{font-size:var(--text-base);line-height:1.8;color:var(--premium-text)}
-    .manual-section ul{padding-left:var(--spacing-xl)}
+    .manual-layout{display:grid;grid-template-columns:260px 1fr;gap:32px}
+    @media(max-width:1100px){.manual-layout{grid-template-columns:1fr}.manual-toc{display:none}}
+    .manual-toc{position:sticky;top:calc(80px + env(safe-area-inset-top,0px));max-height:calc(100vh - 100px);overflow-y:auto}
+    .toc-section{font-weight:700;font-size:12px;color:#f6ad55;padding:10px 16px 4px;text-transform:uppercase;letter-spacing:.5px}
+    .toc-item{display:block;padding:6px 16px;border-left:3px solid transparent;font-size:13px;color:#6b7280;cursor:pointer;transition:.15s;text-decoration:none}
+    .toc-item:hover,.toc-item.active{border-left-color:#f6ad55;color:#f6ad55;background:#fffbf0}
+    .manual-content{min-width:0}
+    .m-section{margin-bottom:48px;scroll-margin-top:80px}
+    .m-section h2{font-family:Kanit,sans-serif;font-size:1.35rem;font-weight:700;border-bottom:2px solid #f6ad55;padding-bottom:8px;margin:0 0 20px;display:flex;align-items:center;gap:8px}
+    .m-section h3{font-size:1rem;font-weight:600;color:#f6ad55;margin:20px 0 8px}
+    .m-section p,.m-section li{font-size:.95rem;line-height:1.8;color:#374151}
+    .m-section ul,.m-section ol{padding-left:24px}
     .step-list{counter-reset:step;list-style:none;padding:0}
-    .step-list li{counter-increment:step;padding:var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 48px;margin-bottom:var(--spacing-sm);background:var(--premium-off-white);border-radius:var(--radius-md);position:relative}
-    .step-list li::before{content:counter(step);position:absolute;left:12px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-    .tip-box{background:#ebf8ff;border-left:4px solid #3182ce;border-radius:0 var(--radius-md) var(--radius-md) 0;padding:var(--spacing-md);margin:var(--spacing-md) 0;font-size:var(--text-sm)}
-    .warn-box{background:#fffbeb;border-left:4px solid var(--premium-gold);border-radius:0 var(--radius-md) var(--radius-md) 0;padding:var(--spacing-md);margin:var(--spacing-md) 0;font-size:var(--text-sm)}
-    kbd{background:var(--premium-off-white);border:1px solid var(--premium-medium-gray);border-radius:4px;padding:1px 6px;font-size:var(--text-xs);font-family:monospace}
+    .step-list li{counter-increment:step;padding:10px 16px 10px 52px;margin-bottom:8px;background:#f9fafb;border-radius:12px;position:relative;font-size:.95rem}
+    .step-list li::before{content:counter(step);position:absolute;left:14px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f6ad55,#ed8936);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+    .tip-box{background:#ebf8ff;border-left:4px solid #3182ce;border-radius:0 12px 12px 0;padding:12px 16px;margin:12px 0;font-size:.88rem}
+    .warn-box{background:#fffbeb;border-left:4px solid #f6ad55;border-radius:0 12px 12px 0;padding:12px 16px;margin:12px 0;font-size:.88rem}
+    .role-table{width:100%;border-collapse:collapse;font-size:.85rem;margin:16px 0}
+    .role-table th,.role-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:left}
+    .role-table th{background:#f9fafb;font-weight:600;position:sticky;top:0}
+    .role-table td:nth-child(n+2){text-align:center}
+    .role-table th:nth-child(n+2){text-align:center}
+    .feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:16px 0}
+    .feat-card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;transition:.2s}
+    .feat-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.08);border-color:#f6ad55}
+    .feat-card h4{font-size:.95rem;font-weight:700;margin:0 0 8px;display:flex;align-items:center;gap:6px}
+    .feat-card p{font-size:.85rem;color:#6b7280;margin:0;line-height:1.6}
+    .svg-illust{display:block;margin:20px auto;max-width:100%;border-radius:16px;overflow:hidden}
+    kbd{background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;padding:1px 6px;font-size:12px;font-family:monospace}
+    @media print{.manual-toc,.page-header button{display:none!important}.manual-layout{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -40,148 +54,618 @@
   <div id="toast"></div>
   <main>
     <div class="container">
-      <div class="page-header"><h1 class="page-title">📖 <span data-i18n="nav_manual">คู่มือการใช้งาน</span></h1>
+      <div class="page-header">
+        <h1 class="page-title">📖 คู่มือการใช้งาน BandThai</h1>
         <button class="btn btn-secondary" onclick="window.print()">🖨️ พิมพ์</button>
       </div>
+
       <div class="manual-layout">
-        <!-- TOC -->
+        <!-- ============ TOC ============ -->
         <div>
-          <div class="card manual-toc">
-            <div class="card-header" style="padding-bottom:var(--spacing-sm)"><h3 class="card-title" style="font-size:var(--text-sm)">สารบัญ</h3></div>
-            <a class="toc-item" href="#sec-start">เริ่มต้นใช้งาน</a>
-            <a class="toc-item" href="#sec-members">สมาชิกวง</a>
+          <div class="card manual-toc" id="tocNav">
+            <div style="padding:12px 16px 4px;font-family:Kanit,sans-serif;font-weight:700;font-size:.9rem">📑 สารบัญ</div>
+            <div class="toc-section">เริ่มต้น</div>
+            <a class="toc-item" href="#sec-overview">ภาพรวมระบบ</a>
+            <a class="toc-item" href="#sec-register">สมัครสมาชิก</a>
+            <a class="toc-item" href="#sec-login">เข้าสู่ระบบ</a>
+            <a class="toc-item" href="#sec-dashboard">แดชบอร์ด</a>
+            <div class="toc-section">สมาชิกวง</div>
+            <a class="toc-item" href="#sec-songs">คลังเพลง</a>
+            <a class="toc-item" href="#sec-add-song">เพิ่ม/แก้ไขเพลง</a>
+            <a class="toc-item" href="#sec-setlist">เซ็ตลิสต์</a>
+            <a class="toc-item" href="#sec-live">Live Mode</a>
+            <a class="toc-item" href="#sec-checkin">ลงเวลาเข้างาน</a>
             <a class="toc-item" href="#sec-schedule">ตารางงาน</a>
-            <a class="toc-item" href="#sec-payroll">เบิกค่าตัว</a>
-            <a class="toc-item" href="#sec-songs">เพลง / เซ็ตลิสต์</a>
+            <a class="toc-item" href="#sec-stats">รายได้รวม</a>
+            <a class="toc-item" href="#sec-fund">กองกลางวง</a>
+            <a class="toc-item" href="#sec-equipment">อุปกรณ์วง</a>
+            <a class="toc-item" href="#sec-bandinfo">ข้อมูลวง</a>
+            <a class="toc-item" href="#sec-profile">ข้อมูลส่วนตัว</a>
+            <a class="toc-item" href="#sec-games">เกมส์ดนตรี</a>
+            <div class="toc-section">ผู้จัดการวง</div>
+            <a class="toc-item" href="#sec-payroll">เบิกจ่าย/ลงเวลา</a>
+            <a class="toc-item" href="#sec-extpay">เบิกจ่ายงานนอก</a>
+            <a class="toc-item" href="#sec-jobhist">ประวัติงานนอก</a>
+            <a class="toc-item" href="#sec-jobcalc">คำนวณราคางาน</a>
             <a class="toc-item" href="#sec-quotation">ใบเสนอราคา</a>
-            <a class="toc-item" href="#sec-equipment">อุปกรณ์</a>
-            <a class="toc-item" href="#sec-clients">ลูกค้า</a>
-            <a class="toc-item" href="#sec-fund">กองกลาง</a>
+            <a class="toc-item" href="#sec-contract">สัญญาจ้าง</a>
+            <a class="toc-item" href="#sec-settings">ตั้งค่าวง</a>
+            <div class="toc-section">อื่นๆ</div>
+            <a class="toc-item" href="#sec-upgrade">อัปเกรดแพ็กเกจ</a>
+            <a class="toc-item" href="#sec-roles">สิทธิ์การเข้าถึง</a>
             <a class="toc-item" href="#sec-faq">คำถามที่พบบ่อย</a>
           </div>
         </div>
-        <!-- Content -->
-        <div>
-          <div class="card">
-            <section class="manual-section" id="sec-start">
-              <h2>🚀 เริ่มต้นใช้งาน</h2>
-              <h3>1. Setup ระบบครั้งแรก</h3>
-              <ol class="step-list">
-                <li>เปิด Google Sheets Spreadsheet ของระบบ</li>
-                <li>คลิก เมนู <strong>"🎵 BandThai"</strong> → <strong>"Setup ระบบ"</strong></li>
-                <li>รอระบบสร้างชีตข้อมูลทั้งหมดให้อัตโนมัติ</li>
-                <li>กลับมาที่เมนู → <strong>"เปิด Web App"</strong></li>
-                <li>สมัครบัญชีผู้ใช้งานครั้งแรก พร้อมตั้งชื่อวง</li>
-              </ol>
-              <div class="tip-box">💡 การ Setup ต้องทำครั้งเดียวเท่านั้น ระบบจะจำข้อมูลทั้งหมดใน Google Sheets</div>
-              <h3>2. การล็อกอิน</h3>
-              <p>ใช้อีเมลและรหัสผ่านที่สมัครไว้เพื่อเข้าสู่ระบบ หรือเลือก <kbd>เข้าโหมดทดสอบ</kbd> เพื่อทดลองใช้งาน</p>
-            </section>
 
-            <section class="manual-section" id="sec-members">
-              <h2>👥 สมาชิกวง</h2>
-              <p>ระบบสมาชิกช่วยให้คุณบันทึกข้อมูลนักดนตรีทุกคนในวง</p>
-              <h3>เพิ่มสมาชิก</h3>
-              <ol class="step-list">
-                <li>ไปที่เมนู <strong>ข้อมูลวงดนตรี</strong></li>
-                <li>กดปุ่ม <strong>+ เพิ่มสมาชิก</strong></li>
-                <li>กรอกชื่อ, ตำแหน่ง, เบอร์โทร, อีเมล และอัตราค่าตัว</li>
-                <li>กด <strong>บันทึก</strong></li>
-              </ol>
-              <div class="warn-box">⚠️ อัตราค่าตัวที่ตั้งไว้จะใช้เป็นค่าเริ่มต้นในการคำนวณ สามารถปรับเปลี่ยนได้ต่องาน</div>
-            </section>
+        <!-- ============ CONTENT ============ -->
+        <div class="manual-content">
 
-            <section class="manual-section" id="sec-schedule">
-              <h2>📅 ตารางงาน</h2>
-              <p>บันทึกและติดตามงานแสดงทั้งหมดในปฏิทิน</p>
-              <ul>
-                <li>คลิกที่วันในปฏิทินเพื่อ<strong>เพิ่มงานใหม่</strong></li>
-                <li>คลิกที่ชื่องานที่มีอยู่เพื่อ<strong>แก้ไข</strong></li>
-                <li>ตั้งสถานะงานเป็น: ยืนยัน / รอการยืนยัน / ยกเลิก</li>
-              </ul>
-            </section>
+          <!-- === ภาพรวม === -->
+          <section class="m-section" id="sec-overview">
+            <h2>🎵 ภาพรวมระบบ</h2>
+            <p><strong>BandThai</strong> คือระบบจัดการวงดนตรีครบวงจร ออกแบบมาเพื่อวงดนตรีไทยโดยเฉพาะ ช่วยจัดการเพลง ตารางงาน การเงิน สมาชิก อุปกรณ์ และอื่นๆ ผ่านเว็บแอปที่ใช้ได้ทั้งมือถือและคอมพิวเตอร์</p>
+            <!-- SVG: System Overview -->
+            <svg class="svg-illust" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+              <defs><linearGradient id="gGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f6ad55"/><stop offset="100%" stop-color="#ed8936"/></linearGradient></defs>
+              <rect width="700" height="200" rx="16" fill="#111827"/>
+              <text x="350" y="30" text-anchor="middle" fill="#f6ad55" font-family="Kanit" font-size="16" font-weight="700">🎵 BandThai — ระบบจัดการวงดนตรี</text>
+              <g transform="translate(30,50)"><rect width="120" height="60" rx="12" fill="#1f2937" stroke="#f6ad55" stroke-width="1.5"/><text x="60" y="25" text-anchor="middle" fill="#f6ad55" font-size="20">🎼</text><text x="60" y="45" text-anchor="middle" fill="#e5e7eb" font-family="Sarabun" font-size="11">คลังเพลง</text></g>
+              <g transform="translate(170,50)"><rect width="120" height="60" rx="12" fill="#1f2937" stroke="#f6ad55" stroke-width="1.5"/><text x="60" y="25" text-anchor="middle" fill="#f6ad55" font-size="20">📅</text><text x="60" y="45" text-anchor="middle" fill="#e5e7eb" font-family="Sarabun" font-size="11">ตารางงาน</text></g>
+              <g transform="translate(310,50)"><rect width="120" height="60" rx="12" fill="#1f2937" stroke="#f6ad55" stroke-width="1.5"/><text x="60" y="25" text-anchor="middle" fill="#f6ad55" font-size="20">💰</text><text x="60" y="45" text-anchor="middle" fill="#e5e7eb" font-family="Sarabun" font-size="11">การเงิน</text></g>
+              <g transform="translate(450,50)"><rect width="120" height="60" rx="12" fill="#1f2937" stroke="#f6ad55" stroke-width="1.5"/><text x="60" y="25" text-anchor="middle" fill="#f6ad55" font-size="20">🎤</text><text x="60" y="45" text-anchor="middle" fill="#e5e7eb" font-family="Sarabun" font-size="11">Live Mode</text></g>
+              <g transform="translate(30,130)"><rect width="120" height="50" rx="10" fill="#1e3a5f"/><text x="60" y="30" text-anchor="middle" fill="#93c5fd" font-family="Sarabun" font-size="11">🎸 อุปกรณ์</text></g>
+              <g transform="translate(170,130)"><rect width="120" height="50" rx="10" fill="#1e3a5f"/><text x="60" y="30" text-anchor="middle" fill="#93c5fd" font-family="Sarabun" font-size="11">👥 สมาชิก</text></g>
+              <g transform="translate(310,130)"><rect width="120" height="50" rx="10" fill="#1e3a5f"/><text x="60" y="30" text-anchor="middle" fill="#93c5fd" font-family="Sarabun" font-size="11">📄 ใบเสนอราคา</text></g>
+              <g transform="translate(450,130)"><rect width="120" height="50" rx="10" fill="#1e3a5f"/><text x="60" y="30" text-anchor="middle" fill="#93c5fd" font-family="Sarabun" font-size="11">🎮 เกมส์ดนตรี</text></g>
+              <g transform="translate(590,50)"><rect width="80" height="130" rx="12" fill="url(#gGold)" opacity=".15" stroke="#f6ad55" stroke-width="1"/><text x="40" y="50" text-anchor="middle" fill="#f6ad55" font-size="28">📱</text><text x="40" y="75" text-anchor="middle" fill="#fde68a" font-family="Kanit" font-size="10">PWA</text><text x="40" y="90" text-anchor="middle" fill="#d1d5db" font-family="Sarabun" font-size="9">ติดตั้งมือถือ</text><text x="40" y="105" text-anchor="middle" fill="#d1d5db" font-family="Sarabun" font-size="9">ได้เลย!</text></g>
+            </svg>
+            <div class="feat-grid">
+              <div class="feat-card"><h4>🎼 จัดการเพลง</h4><p>คลังเพลง เซ็ตลิสต์ สถิติ AI Auto-Tag</p></div>
+              <div class="feat-card"><h4>📅 ตารางงาน</h4><p>ตารางรายสัปดาห์ งานนอก ปฏิทิน</p></div>
+              <div class="feat-card"><h4>💰 การเงิน</h4><p>เบิกจ่าย กองกลาง รายได้ ใบเสนอราคา</p></div>
+              <div class="feat-card"><h4>🎤 Live Mode</h4><p>หน้าจอเวที เปลี่ยนเพลง ขอเพลง</p></div>
+              <div class="feat-card"><h4>📜 สัญญาจ้าง</h4><p>สร้างสัญญา Preview พิมพ์ PDF</p></div>
+              <div class="feat-card"><h4>🎮 เกมส์ดนตรี</h4><p>5 เกม: ทายเพลง คีย์ BPM จังหวะ ต่อเพลง</p></div>
+            </div>
+          </section>
 
-            <section class="manual-section" id="sec-payroll">
-              <h2>💳 เบิก-จ่ายค่าตัว</h2>
-              <ol class="step-list">
-                <li>เลือกงานจากรายการ Dropdown</li>
-                <li>ทำเครื่องหมายว่าใครมา/ขาด/มาแทน</li>
-                <li>ระบบคำนวณค่าตัวต่อคนให้อัตโนมัติ</li>
-                <li>กด <strong>บันทึก</strong> เพื่อเก็บประวัติ</li>
-              </ol>
-            </section>
+          <!-- === สมัครสมาชิก === -->
+          <section class="m-section" id="sec-register">
+            <h2>📝 สมัครสมาชิก</h2>
+            <!-- SVG: Registration Flow -->
+            <svg class="svg-illust" viewBox="0 0 700 100" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="100" rx="16" fill="#111827"/>
+              <g transform="translate(50,20)"><circle cx="30" cy="30" r="28" fill="#1f2937" stroke="#f6ad55" stroke-width="2"/><text x="30" y="25" text-anchor="middle" fill="#f6ad55" font-size="18">1</text><text x="30" y="40" text-anchor="middle" fill="#e5e7eb" font-size="8">รหัสวง</text></g>
+              <line x1="110" y1="50" x2="220" y2="50" stroke="#f6ad55" stroke-width="2" stroke-dasharray="6,4"/>
+              <g transform="translate(230,20)"><circle cx="30" cy="30" r="28" fill="#1f2937" stroke="#f6ad55" stroke-width="2"/><text x="30" y="25" text-anchor="middle" fill="#f6ad55" font-size="18">2</text><text x="30" y="40" text-anchor="middle" fill="#e5e7eb" font-size="8">ข้อมูลส่วนตัว</text></g>
+              <line x1="290" y1="50" x2="400" y2="50" stroke="#f6ad55" stroke-width="2" stroke-dasharray="6,4"/>
+              <g transform="translate(410,20)"><circle cx="30" cy="30" r="28" fill="#1f2937" stroke="#f6ad55" stroke-width="2"/><text x="30" y="25" text-anchor="middle" fill="#f6ad55" font-size="18">3</text><text x="30" y="40" text-anchor="middle" fill="#e5e7eb" font-size="8">สร้างบัญชี</text></g>
+              <line x1="470" y1="50" x2="560" y2="50" stroke="#10b981" stroke-width="2"/>
+              <g transform="translate(570,20)"><circle cx="30" cy="30" r="28" fill="#065f46" stroke="#10b981" stroke-width="2"/><text x="30" y="35" text-anchor="middle" fill="#10b981" font-size="22">✓</text></g>
+              <text x="600" y="80" text-anchor="middle" fill="#6ee7b7" font-family="Sarabun" font-size="10">เสร็จสิ้น!</text>
+            </svg>
+            <ol class="step-list">
+              <li><strong>กรอกรหัสวง</strong> (6 หลัก) — ขอจากผู้จัดการวงของคุณ ระบบจะแสดงชื่อวงเพื่อยืนยัน</li>
+              <li><strong>กรอกข้อมูลส่วนตัว</strong> — คำนำหน้า ชื่อ นามสกุล ชื่อเล่น และเลือกตำแหน่ง/เครื่องดนตรี</li>
+              <li><strong>สร้างบัญชี</strong> — กรอกอีเมล ตั้งรหัสผ่าน (8 ตัวขึ้นไป) ตรวจสอบข้อมูลแล้วกด <kbd>ยืนยัน</kbd></li>
+            </ol>
+            <div class="tip-box">💡 <strong>สร้างวงใหม่?</strong> ไปที่ลิงก์ "ขอสร้างวงใหม่" ในหน้าล็อกอิน กรอกข้อมูลวง + ผู้จัดการ → รอแอดมินอนุมัติ (ไม่เกิน 24 ชม.) → ได้รหัสวงแจกสมาชิก</div>
+          </section>
 
-            <section class="manual-section" id="sec-songs">
-              <h2>🎼 เพลง / เซ็ตลิสต์</h2>
-              <p>จัดการคลังเพลงของวงและสร้างเซ็ตลิสต์สำหรับแต่ละงาน</p>
-              <ul>
-                <li><strong>รายการเพลง</strong>: เพิ่ม/แก้ไข/ลบเพลง พร้อม Chord, Key, Tempo</li>
-                <li><strong>เซ็ตลิสต์</strong>: ลากเพลงมาจัดเซ็ต 1-3 ตามงาน</li>
-                <li><strong>วิเคราะห์เพลง</strong>: ดูกราฟสัดส่วน Key/Tempo/Genre</li>
-              </ul>
-            </section>
+          <!-- === เข้าสู่ระบบ === -->
+          <section class="m-section" id="sec-login">
+            <h2>🔐 เข้าสู่ระบบ</h2>
+            <ol class="step-list">
+              <li>เปิดเว็บแอป BandThai → หน้าล็อกอิน</li>
+              <li>กรอก <strong>อีเมล</strong> และ <strong>รหัสผ่าน</strong> ที่สมัครไว้</li>
+              <li>กด <kbd>เข้าสู่ระบบ</kbd> → ไปหน้าแดชบอร์ด</li>
+            </ol>
+            <div class="tip-box">💡 ลืมรหัสผ่าน? กด "ลืมรหัสผ่าน" แล้วกรอกอีเมลเพื่อรับลิงก์รีเซ็ต ❘ ลืมอีเมล? กด "ลืมอีเมล" แล้วใช้ชื่อเล่นหรือเบอร์โทรค้นหา</div>
+            <div class="warn-box">⚠️ เปิดจาก LINE/Facebook ในตัว? แนะนำให้กดเปิดใน Safari/Chrome เพื่อประสบการณ์ที่ดีที่สุด</div>
+          </section>
 
-            <section class="manual-section" id="sec-quotation">
-              <h2>📄 ใบเสนอราคา</h2>
-              <ol class="step-list">
-                <li>ไปที่เมนู <strong>ใบเสนอราคา</strong></li>
-                <li>กด <strong>+ ใบเสนอราคาใหม่</strong></li>
-                <li>กรอกข้อมูลลูกค้า, วันที่, รายการ, ราคา</li>
-                <li>ระบบคำนวณ VAT และยอดรวมให้อัตโนมัติ</li>
-                <li>กด <strong>📄 PDF</strong> เพื่อสร้าง PDF บน Google Drive</li>
-              </ol>
-            </section>
+          <!-- === แดชบอร์ด === -->
+          <section class="m-section" id="sec-dashboard">
+            <h2>🏠 แดชบอร์ด</h2>
+            <p>หน้าแรกหลังล็อกอิน รวมข้อมูลสำคัญทุกอย่างไว้ในที่เดียว:</p>
+            <!-- SVG: Dashboard Layout -->
+            <svg class="svg-illust" viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="220" rx="16" fill="#f7fafc"/>
+              <rect x="10" y="10" width="680" height="40" rx="10" fill="linear-gradient(90deg,#f6ad55,#ed8936)"/>
+              <rect x="10" y="10" width="680" height="40" rx="10" fill="#f6ad55"/>
+              <text x="30" y="37" fill="#fff" font-family="Kanit" font-size="14" font-weight="700">👋 สวัสดี, ชื่อเล่น — วงดนตรี ABC</text>
+              <rect x="10" y="60" width="220" height="70" rx="12" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="25" y="82" fill="#f6ad55" font-size="14">⏰</text><text x="45" y="83" fill="#374151" font-family="Sarabun" font-size="12" font-weight="600">ลงเวลาด่วน</text>
+              <text x="25" y="105" fill="#6b7280" font-family="Sarabun" font-size="10">เลือกวัน → สถานที่ → รอบเวลา</text>
+              <rect x="30" y="112" width="80" height="12" rx="6" fill="#10b981"/><text x="40" y="122" fill="#fff" font-size="7" font-family="Sarabun">✅ ยืนยัน</text>
+              <rect x="245" y="60" width="220" height="70" rx="12" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="260" y="82" fill="#f6ad55" font-size="14">📊</text><text x="280" y="83" fill="#374151" font-family="Sarabun" font-size="12" font-weight="600">สรุปรายได้</text>
+              <text x="260" y="102" fill="#10b981" font-family="Kanit" font-size="16" font-weight="700">฿12,500</text>
+              <text x="260" y="118" fill="#9ca3af" font-family="Sarabun" font-size="9">สัปดาห์นี้ • 18 ชม.</text>
+              <rect x="480" y="60" width="210" height="70" rx="12" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="495" y="82" fill="#f6ad55" font-size="14">📅</text><text x="515" y="83" fill="#374151" font-family="Sarabun" font-size="12" font-weight="600">งานที่กำลังจะมา</text>
+              <text x="495" y="102" fill="#374151" font-family="Sarabun" font-size="10">พ. 20 มี.ค. — ร้าน XYZ</text>
+              <text x="495" y="116" fill="#9ca3af" font-family="Sarabun" font-size="9">21:00–01:00 • 3 เซ็ต</text>
+              <rect x="10" y="145" width="680" height="65" rx="12" fill="#fff" stroke="#e5e7eb" stroke-width="1"/>
+              <text x="30" y="167" fill="#374151" font-family="Sarabun" font-size="12" font-weight="600">⚡ ทางลัด</text>
+              <g transform="translate(30,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">📅 ตารางงาน</text></g>
+              <g transform="translate(130,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">💰 เบิกเงิน</text></g>
+              <g transform="translate(230,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">🎼 รายการเพลง</text></g>
+              <g transform="translate(330,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">📄 ใบเสนอราคา</text></g>
+              <g transform="translate(430,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">👥 ข้อมูลวง</text></g>
+              <g transform="translate(530,175)"><rect width="90" height="24" rx="8" fill="#fffbf0" stroke="#f6ad55" stroke-width=".5"/><text x="45" y="16" text-anchor="middle" fill="#92400e" font-family="Sarabun" font-size="9">🎸 อุปกรณ์</text></g>
+            </svg>
+            <ul>
+              <li><strong>⏰ ลงเวลาด่วน</strong> — เลือกวันที่ สถานที่ รอบเวลา แล้วกดยืนยัน (ลาได้ พร้อมระบุคนแทน)</li>
+              <li><strong>📊 สรุปรายได้</strong> — แสดง tabs สัปดาห์/เดือน/ปี พร้อมชั่วโมงและรายได้</li>
+              <li><strong>📅 งานที่จะมา</strong> — งานปกติ + งานนอก ที่ใกล้ถึง</li>
+              <li><strong>🎤 งานนอก</strong> — แสดงงานนอกถัดไปพร้อมรายละเอียด</li>
+              <li><strong>📋 เพลย์ลิสต์วันนี้</strong> — ลิสต์เพลงของวันนี้ (ถ้ามี)</li>
+              <li><strong>⚡ ทางลัด</strong> — 6 ปุ่มเข้าถึงหน้าสำคัญอย่างรวดเร็ว</li>
+            </ul>
+            <div class="tip-box">💡 ผู้จัดการวงจะเห็นเพิ่มเติม: รายชื่อ<strong>สมาชิกรอการอนุมัติ</strong> + <strong>Admin Online Panel</strong> แสดงคนที่ออนไลน์อยู่</div>
+          </section>
 
-            <section class="manual-section" id="sec-equipment">
-              <h2>🎸 อุปกรณ์/เครื่องดนตรี</h2>
-              <p>ติดตามสถานะอุปกรณ์ทุกชิ้นในวง</p>
-              <ul>
-                <li>กรองตามประเภท: เครื่องดนตรี, เสียง/PA, แสง, อุปกรณ์เสริม</li>
-                <li>บันทึกสถานะ: ปกติ / ซ่อม / เสียหาย</li>
-                <li>เก็บ Serial Number และราคาซื้อเพื่อประกัน</li>
-              </ul>
-            </section>
+          <!-- ============================== -->
+          <!-- สมาชิกวง SECTION                -->
+          <!-- ============================== -->
 
-            <section class="manual-section" id="sec-clients">
-              <h2>🤝 ลูกค้า/ผู้จ้าง</h2>
-              <p>ฐานข้อมูลลูกค้าที่เคยหรือกำลังจะจ้างวง</p>
-              <ul>
-                <li>เก็บข้อมูลติดต่อ: โทร, อีเมล, LINE ID</li>
-                <li>ระบบนับจำนวนงานและรายรับรวมต่อลูกค้าอัตโนมัติ</li>
-              </ul>
-            </section>
+          <!-- === คลังเพลง === -->
+          <section class="m-section" id="sec-songs">
+            <h2>🎼 คลังเพลง</h2>
+            <p>รวมเพลงทั้งหมดของวง แสดงเป็นตาราง Grid พร้อมระบบค้นหาและกรอง</p>
+            <ul>
+              <li><strong>🔍 ค้นหา</strong> — พิมพ์ชื่อเพลง/ศิลปิน ค้นหาแบบ real-time</li>
+              <li><strong>🏷️ ตัวกรอง</strong> — กรองตามคีย์ แนวเพลง นักร้อง อารมณ์ ยุค ฯลฯ</li>
+              <li><strong>การ์ดเพลง</strong> — แสดงชื่อเพลง ศิลปิน คีย์ แนวเพลง ประเภทนักร้อง (ชาย🔵/หญิง🩷/คู่🟢)</li>
+              <li><strong>+ เพิ่มเพลง</strong> — กดปุ่มเพื่อไปหน้าเพิ่มเพลงใหม่</li>
+            </ul>
+            <div class="tip-box">💡 มีเพลงจำนวนมาก? ใช้ <strong>"เพิ่มจากคลังกลาง"</strong> เพื่อเลือกหลายเพลงจากฐานข้อมูลกลางพร้อมกัน ง่ายกว่าเพิ่มทีละเพลง!</div>
+          </section>
 
-            <section class="manual-section" id="sec-fund">
-              <h2>🏦 กองกลางวง</h2>
-              <p>จัดการรายรับ-รายจ่ายของกองกลางวงดนตรี</p>
-              <ul>
-                <li>เพิ่มรายการรายรับ (เงินกองกลางจากงาน)</li>
-                <li>เพิ่มรายการรายจ่าย (ค่าซ้อม, อุปกรณ์, ค่าเดินทาง)</li>
-                <li>ดูยอดคงเหลือปัจจุบัน</li>
-              </ul>
-            </section>
+          <!-- === เพิ่ม/แก้ไขเพลง === -->
+          <section class="m-section" id="sec-add-song">
+            <h2>➕ เพิ่ม/แก้ไขเพลง</h2>
+            <ol class="step-list">
+              <li>กรอก <strong>ชื่อเพลง</strong> (จำเป็น) และ <strong>ศิลปิน</strong> (autocomplete)</li>
+              <li>เลือก <strong>คีย์</strong> (C/Am, 1#-7#, 1b-7b) และกรอก <strong>BPM</strong></li>
+              <li>เลือก <strong>ยุค</strong> (80s-2020s), <strong>อารมณ์เพลง</strong> (มัน/หวาน/เศร้า/นิ่ง/ฮึกเหิม) และ <strong>แนวเพลง</strong></li>
+              <li>เลือก <strong>ประเภทนักร้อง</strong> — ชาย 🔵 / หญิง 🩷 / คู่ 🟢</li>
+              <li>กด <kbd>💾 บันทึก</kbd></li>
+            </ol>
+            <div class="tip-box">💡 กดปุ่ม <strong>🤖 AI Auto-Tag</strong> เพื่อให้ AI ช่วยกรอกข้อมูล (คีย์, BPM, แนวเพลง, อารมณ์, ยุค) ให้อัตโนมัติ!</div>
+          </section>
 
-            <section class="manual-section" id="sec-faq">
-              <h2>❓ คำถามที่พบบ่อย</h2>
-              <h3>ข้อมูลหายหลัง Session หมดอายุ?</h3>
-              <p>ข้อมูลทั้งหมดบันทึกใน Supabase ตลอดเวลา ไม่มีการหายแน่นอน ลองล็อกอินใหม่</p>
-              <h3>PDF ออกมาไม่ถูกต้อง?</h3>
-              <p>ตรวจสอบข้อมูลในฟอร์มและลองสร้าง PDF อีกครั้ง</p>
-              <h3>ต้องการเพิ่ม Admin คนใหม่?</h3>
-              <p>ไปที่ <strong>Admin Panel</strong> → จัดการผู้ใช้ → เปลี่ยน Role</p>
-            </section>
-          </div>
-        </div>
-      </div>
+          <!-- === เซ็ตลิสต์ === -->
+          <section class="m-section" id="sec-setlist">
+            <h2>📋 เซ็ตลิสต์</h2>
+            <p>สร้างลิสต์เพลงสำหรับแต่ละงาน แบ่งเป็นเซ็ต 1, 2, 3...</p>
+            <!-- SVG: Setlist Builder -->
+            <svg class="svg-illust" viewBox="0 0 700 160" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="160" rx="16" fill="#111827"/>
+              <text x="20" y="28" fill="#f6ad55" font-family="Kanit" font-size="13" font-weight="700">🎵 Song Pool</text>
+              <rect x="10" y="38" width="180" height="110" rx="10" fill="#1f2937"/>
+              <rect x="20" y="48" width="160" height="22" rx="6" fill="#374151"/><text x="30" y="63" fill="#d1d5db" font-family="Sarabun" font-size="10">🎵 ลมหนาว</text>
+              <rect x="20" y="76" width="160" height="22" rx="6" fill="#374151"/><text x="30" y="91" fill="#d1d5db" font-family="Sarabun" font-size="10">🎵 คนมีเสน่ห์</text>
+              <rect x="20" y="104" width="160" height="22" rx="6" fill="#374151"/><text x="30" y="119" fill="#d1d5db" font-family="Sarabun" font-size="10">🎵 ใจความสำคัญ</text>
+              <text x="210" y="28" fill="#f6ad55" font-family="Kanit" font-size="13" font-weight="700">📋 เซ็ตที่ 1</text>
+              <g><rect x="200" y="38" width="240" height="110" rx="10" fill="#1f2937"/>
+              <rect x="210" y="48" width="220" height="28" rx="8" fill="#2d3748" stroke="#f6ad55" stroke-width="1"/><text x="225" y="60" fill="#f6ad55" font-size="10" font-weight="700">1</text><text x="245" y="60" fill="#fde68a" font-family="Sarabun" font-size="10">ปล่อย — Palmy</text><text x="385" y="60" fill="#9ca3af" font-size="9">Cm</text><text x="225" y="72" fill="#6b7280" font-family="Sarabun" font-size="8">Pop • 120 BPM</text>
+              <rect x="210" y="80" width="220" height="28" rx="8" fill="#2d3748" stroke="#374151" stroke-width="1"/><text x="225" y="92" fill="#f6ad55" font-size="10" font-weight="700">2</text><text x="245" y="92" fill="#e5e7eb" font-family="Sarabun" font-size="10">ใกล้รุ่ง — Carabao</text><text x="385" y="92" fill="#9ca3af" font-size="9">Am</text><text x="225" y="104" fill="#6b7280" font-family="Sarabun" font-size="8">เพื่อชีวิต • 110 BPM</text>
+              <rect x="210" y="112" width="220" height="28" rx="8" fill="#2d3748" stroke="#374151" stroke-width="1"/><text x="225" y="124" fill="#f6ad55" font-size="10" font-weight="700">3</text><text x="245" y="124" fill="#e5e7eb" font-family="Sarabun" font-size="10">ขอเวลาลืม — Auct.</text><text x="385" y="124" fill="#9ca3af" font-size="9">Eb</text></g>
+              <text x="460" y="28" fill="#10b981" font-family="Kanit" font-size="13" font-weight="700">📋 เซ็ตที่ 2</text>
+              <rect x="450" y="38" width="240" height="110" rx="10" fill="#1f2937"/>
+              <rect x="460" y="48" width="220" height="28" rx="8" fill="#2d3748" stroke="#374151" stroke-width="1"/><text x="475" y="60" fill="#10b981" font-size="10" font-weight="700">1</text><text x="495" y="60" fill="#e5e7eb" font-family="Sarabun" font-size="10">กอดจริงๆ สักที</text>
+              <text x="530" y="105" text-anchor="middle" fill="#4b5563" font-family="Sarabun" font-size="11">ลากเพลงมาวาง...</text>
+            </svg>
+            <ol class="step-list">
+              <li>เลือก <strong>วันที่</strong> และ <strong>สถานที่</strong> ด้านบน</li>
+              <li>กดเพลงจาก <strong>Song Pool</strong> (ซ้าย) เพื่อเพิ่มเข้าเซ็ต</li>
+              <li><strong>ลากเพลง</strong> เพื่อจัดลำดับ หรือกดลูกศรขึ้น/ลง</li>
+              <li>เพิ่มเซ็ตใหม่ด้วยปุ่ม <kbd>+</kbd></li>
+              <li>กด <kbd>💾 บันทึก</kbd> → เซ็ตลิสต์พร้อมใช้ใน Live Mode</li>
+            </ol>
+            <div class="tip-box">💡 <strong>Quota Bar</strong> แสดงจำนวนเพลงที่ใช้/ที่กำหนด เพื่อดูว่าเซ็ตเต็มหรือยัง + <strong>Duration Bar</strong> แสดงเวลารวม</div>
+          </section>
+
+          <!-- === Live Mode === -->
+          <section class="m-section" id="sec-live">
+            <h2>🎤 Live Mode — หน้าจอสำหรับเวที</h2>
+            <p>หน้าจอโหมดมืดเต็มจอ ออกแบบมาใช้ขณะแสดงดนตรีสดบนเวที</p>
+            <!-- SVG: Live Mode -->
+            <svg class="svg-illust" viewBox="0 0 700 200" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="200" rx="16" fill="#0a0a15"/>
+              <rect x="10" y="10" width="680" height="30" rx="8" fill="#1a1a2e"/>
+              <text x="25" y="30" fill="#9ca3af" font-family="monospace" font-size="11">21:45</text>
+              <text x="350" y="30" text-anchor="middle" fill="#a78bfa" font-family="Sarabun" font-size="10">🎵 เพลง 5/18</text>
+              <text x="660" y="30" text-anchor="end" fill="#9ca3af" font-family="Sarabun" font-size="10">ร้าน XYZ</text>
+              <text x="350" y="75" text-anchor="middle" fill="#fde68a" font-family="Kanit" font-size="28" font-weight="700">ลมหนาว</text>
+              <rect x="280" y="88" width="60" height="30" rx="8" fill="#2d3748" stroke="#f6ad55" stroke-width="1.5"/>
+              <text x="310" y="108" text-anchor="middle" fill="#fde68a" font-family="Kanit" font-size="16" font-weight="700">Cm</text>
+              <text x="360" y="108" fill="#9ca3af" font-family="Sarabun" font-size="11">120 BPM • 🎤 หญิง</text>
+              <g transform="translate(50,130)"><rect width="42" height="42" rx="21" fill="#1f2937" stroke="#4b5563" stroke-width="1"/><text x="21" y="26" text-anchor="middle" fill="#9ca3af" font-size="16">◀</text></g>
+              <g transform="translate(608,130)"><rect width="42" height="42" rx="21" fill="#1f2937" stroke="#4b5563" stroke-width="1"/><text x="21" y="26" text-anchor="middle" fill="#9ca3af" font-size="16">▶</text></g>
+              <text x="350" y="155" text-anchor="middle" fill="#4b5563" font-family="Sarabun" font-size="10">ถัดไป: คนมีเสน่ห์ — Getsunova</text>
+              <rect x="10" y="180" width="680" height="15" rx="7" fill="#1a1a2e"/>
+              <text x="20" y="192" fill="#9ca3af" font-size="9">💬 พิมพ์ชื่อเพลงเพื่อขอเพลง...</text>
+            </svg>
+            <h3>ฟีเจอร์หลัก</h3>
+            <ul>
+              <li><strong>เปลี่ยนเพลง</strong> — กดลูกศร ◀ ▶ หรือ<strong>ปัดนิ้ว</strong>ซ้าย-ขวา</li>
+              <li><strong>ข้าม/เพิ่มเพลง</strong> — ปัดซ้าย = ลบ, ปัดขวา = เพิ่ม หรือใช้ Context Menu</li>
+              <li><strong>Transpose คีย์</strong> — กดที่กล่องคีย์เพื่อเลื่อนคีย์ขึ้น/ลง</li>
+              <li><strong>Metronome</strong> — เปิดจังหวะนับ + เปิด/ปิดเสียง</li>
+              <li><strong>ขอเพลง</strong> — แถบด้านล่าง พิมพ์ชื่อเพลง (autocomplete) แล้วส่ง</li>
+              <li><strong>ปรับขนาดตัวอักษร</strong> — ปุ่ม A+/A- ด้านบนขวา</li>
+              <li><strong>Badges</strong> — 🟣 ขอเพลง 🔵 อังกอร์ 🟡 วันเกิด</li>
+            </ul>
+            <div class="warn-box">⚠️ ครั้งแรกที่เปิด Live Mode จะมี <strong>Gesture Tutorial</strong> แสดงวิธีใช้ท่าทางต่างๆ สามารถปิดได้หลังดูเสร็จ</div>
+          </section>
+
+          <!-- === ลงเวลา === -->
+          <section class="m-section" id="sec-checkin">
+            <h2>⏰ ลงเวลาเข้างาน</h2>
+            <ol class="step-list">
+              <li>เลือก <strong>วันที่</strong> (เลื่อนซ้าย-ขวา หรือเลือกจาก date picker)</li>
+              <li>เลือก <strong>สถานที่</strong> จาก dropdown</li>
+              <li>เลือก <strong>รอบเวลา</strong> ที่ทำงาน (อิงตามตารางที่สร้างไว้)</li>
+              <li>กด <kbd>✅ ยืนยันลงเวลา</kbd></li>
+            </ol>
+            <h3>กรณีพิเศษ</h3>
+            <ul>
+              <li><strong>🚫 ลา</strong> — เลือก "ลาทั้งวัน" หรือ "ลาบางรอบ" + ระบุชื่อคนแทน (ถ้ามี)</li>
+              <li><strong>🔄 ลงเวลาแทน</strong> — เปิด Toggle "ลงเวลาแทนคนอื่น" กรอกชื่อ + เบอร์ติดต่อ</li>
+              <li><strong>✏️ แก้ไข</strong> — หากลงเวลาแล้วสามารถกดแก้ไขหรือยกเลิกได้</li>
+            </ul>
+          </section>
+
+          <!-- === ตารางงาน === -->
+          <section class="m-section" id="sec-schedule">
+            <h2>📅 ตารางงาน</h2>
+            <p>ดูตารางงานแบบรายสัปดาห์ แต่ละวันแสดง slot ที่กำหนดไว้ (เวลา สถานที่ สมาชิก)</p>
+            <ul>
+              <li><strong>📅 ตาราง Weekly</strong> — Grid 7 คอลัมน์ (อา.-ส.) วันนี้หลักจะเด่นด้วยขอบสีทอง</li>
+              <li><strong>📊 สรุปสถิติ</strong> — งานทั้งหมด, งานปกติ, งานนอก, รายได้รวม</li>
+              <li><strong>🔍 ตัวกรอง</strong> — ทั้งวง/รายคน + ช่วงเวลา (รายวัน/สัปดาห์/ย้อนหลัง)</li>
+              <li><strong>➕ เพิ่มงานนอก</strong> (ผู้จัดการ) — กรอกวันที่ เวลา สถานที่ ค่าตัว สมาชิก</li>
+            </ul>
+          </section>
+
+          <!-- === รายได้ === -->
+          <section class="m-section" id="sec-stats">
+            <h2>📊 รายได้รวม</h2>
+            <p>สรุปรายได้และชั่วโมงทำงาน พร้อมกราฟ 4 แบบ</p>
+            <ul>
+              <li><strong>Tabs ช่วงเวลา</strong> — รายวัน / สัปดาห์ / เดือน / ปี + ลูกศรเลื่อน</li>
+              <li><strong>กราฟ</strong> — 📈 รายได้, ⏱️ ชั่วโมง, 🚫 วันลา, 🔄 ค่าจ้างคนแทน</li>
+              <li><strong>รายละเอียดรายวัน</strong> — ตาราง (วันที่, สถานะ, เบรค, ชม., รายได้, คนแทน)</li>
+              <li><strong>ผู้จัดการ</strong> — สามารถเลือกดูสมาชิกเฉพาะคน + ดูสรุปทุกคน</li>
+            </ul>
+          </section>
+
+          <!-- === กองกลาง === -->
+          <section class="m-section" id="sec-fund">
+            <h2>🏦 กองกลางวง</h2>
+            <!-- SVG: Fund Summary -->
+            <svg class="svg-illust" viewBox="0 0 700 80" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="80" rx="16" fill="#f7fafc"/>
+              <rect x="10" y="10" width="220" height="60" rx="12" fill="#111827"/>
+              <text x="25" y="30" fill="#9ca3af" font-family="Sarabun" font-size="10">ยอดคงเหลือ</text>
+              <text x="25" y="55" fill="#fde68a" font-family="Kanit" font-size="20" font-weight="700">฿ 45,200</text>
+              <rect x="245" y="10" width="220" height="60" rx="12" fill="#f0fff4" stroke="#c6f6d5" stroke-width="1"/>
+              <text x="260" y="30" fill="#38a169" font-family="Sarabun" font-size="10">รายรับทั้งหมด</text>
+              <text x="260" y="55" fill="#276749" font-family="Kanit" font-size="20" font-weight="700">฿ 85,000</text>
+              <rect x="480" y="10" width="210" height="60" rx="12" fill="#fff5f5" stroke="#fed7d7" stroke-width="1"/>
+              <text x="495" y="30" fill="#e53e3e" font-family="Sarabun" font-size="10">รายจ่ายทั้งหมด</text>
+              <text x="495" y="55" fill="#9b2c2c" font-family="Kanit" font-size="20" font-weight="700">฿ 39,800</text>
+            </svg>
+            <h3>3 แท็บ</h3>
+            <ul>
+              <li><strong>📒 บัญชีรายการ</strong> — ตาราง Ledger (วันที่ ประเภท หมวด รายละเอียด ผู้บันทึก เงิน ยอดสะสม) + กรองตามเดือน/ประเภท</li>
+              <li><strong>⏳ รออนุมัติ</strong> — รายการที่สมาชิกบันทึก รอผู้จัดการอนุมัติ/ปฏิเสธ</li>
+              <li><strong>➕ บันทึกรายการ</strong> — เลือกรายรับ/รายจ่าย กรอกจำนวนเงิน วันที่ หมวดหมู่</li>
+            </ul>
+            <div class="tip-box">💡 สมาชิกทั่วไปบันทึกรายการได้ แต่ต้อง<strong>รอผู้จัดการอนุมัติ</strong>ก่อนยอดจะเข้าบัญชี</div>
+          </section>
+
+          <!-- === อุปกรณ์ === -->
+          <section class="m-section" id="sec-equipment">
+            <h2>🎸 อุปกรณ์วง</h2>
+            <p>ติดตามอุปกรณ์ทุกชิ้น: เครื่องดนตรี PA แสง และอื่นๆ</p>
+            <ul>
+              <li><strong>Tabs กรอง</strong> — ทั้งหมด / 🎸 เครื่องดนตรี / 🔊 เสียง-PA / 💡 แสง / 🎒 เสริม / 📦 อื่นๆ</li>
+              <li><strong>Card แต่ละชิ้น</strong> — รูปภาพ ชื่อ สถานะ (ปกติ🟢 / ซ่อม🟡 / เสียหาย🔴) ราคา</li>
+              <li><strong>เพิ่มอุปกรณ์</strong> — อัปโหลดรูป กรอกชื่อ ประเภท ราคา Serial No. เจ้าของ ฯลฯ</li>
+            </ul>
+          </section>
+
+          <!-- === ข้อมูลวง === -->
+          <section class="m-section" id="sec-bandinfo">
+            <h2>👥 ข้อมูลวงดนตรี</h2>
+            <ul>
+              <li><strong>Header วง</strong> — ชื่อวง จังหวัด ผู้จัดการ สถิติ (จำนวนสมาชิก, จำนวนร้าน, slots/สัปดาห์)</li>
+              <li><strong>🏪 ร้านที่เล่น</strong> — Card แต่ละร้าน: ชื่อ ที่อยู่ + ตาราง (วัน เวลา สมาชิก)</li>
+              <li><strong>👤 สมาชิก</strong> — ค้นหา/กรอง → Card แสดงชื่อ ตำแหน่ง เบอร์ อีเมล สถานะ</li>
+            </ul>
+          </section>
+
+          <!-- === ข้อมูลส่วนตัว === -->
+          <section class="m-section" id="sec-profile">
+            <h2>👤 ข้อมูลส่วนตัว</h2>
+            <p>แก้ไขโปรไฟล์และตั้งค่าช่องทางรับเงิน</p>
+            <ul>
+              <li><strong>📝 ข้อมูลส่วนตัว</strong> — คำนำหน้า ชื่อ นามสกุล ชื่อเล่น ตำแหน่ง เบอร์โทร</li>
+              <li><strong>💳 ช่องทางรับเงิน</strong> — พร้อมเพย์ ทรูมันนี่ ธนาคาร 7 แห่ง (กสิกร ไทยพาณิชย์ กรุงเทพ กรุงไทย กรุงศรี ทหารไทยธนชาต ออมสิน) + เลขบัญชี</li>
+              <li><strong>🪪 ข้อมูลบัตรประชาชน</strong> — วันเกิด ที่อยู่ (เข้าถึงผ่าน PIN)</li>
+            </ul>
+          </section>
+
+          <!-- === เกมส์ === -->
+          <section class="m-section" id="sec-games">
+            <h2>🎮 เกมส์ดนตรี</h2>
+            <p>5 เกมฝึกทักษะดนตรี เล่นกับสมาชิกในวง มี Leaderboard อันดับ!</p>
+            <div class="feat-grid">
+              <div class="feat-card"><h4>🎵 ทายเพลง</h4><p>ดูคำใบ้แล้วทายว่าเพลงอะไร</p></div>
+              <div class="feat-card"><h4>🎹 ทายคีย์</h4><p>บอกชื่อเพลง ทายว่าคีย์อะไร</p></div>
+              <div class="feat-card"><h4>🥁 จับจังหวะ</h4><p>ฟังจังหวะแล้วเคาะตาม ดูความแม่นยำ</p></div>
+              <div class="feat-card"><h4>🔤 ต่อชื่อเพลง</h4><p>ต่อคำด้วยพยัญชนะตัวสุดท้าย</p></div>
+              <div class="feat-card"><h4>🎯 ทาย BPM</h4><p>ฟัง metronome แล้วทายความเร็ว</p></div>
+            </div>
+          </section>
+
+          <!-- ============================== -->
+          <!-- ผู้จัดการวง SECTION              -->
+          <!-- ============================== -->
+
+          <!-- === เบิกจ่าย === -->
+          <section class="m-section" id="sec-payroll">
+            <h2>💳 เบิกจ่าย & ลงเวลา <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <!-- SVG: Payroll -->
+            <svg class="svg-illust" viewBox="0 0 700 130" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="130" rx="16" fill="#111827"/>
+              <text x="20" y="25" fill="#f6ad55" font-family="Kanit" font-size="12" font-weight="700">📋 ตารางเข้างาน — มี.ค. สัปดาห์ 3</text>
+              <rect x="10" y="35" width="680" height="85" rx="10" fill="#1f2937"/>
+              <line x1="120" y1="35" x2="120" y2="120" stroke="#374151" stroke-width="1"/>
+              <text x="20" y="60" fill="#e5e7eb" font-family="Sarabun" font-size="10">👤 สมชาย</text>
+              <text x="20" y="85" fill="#e5e7eb" font-family="Sarabun" font-size="10">👤 สมหญิง</text>
+              <text x="20" y="110" fill="#e5e7eb" font-family="Sarabun" font-size="10">👤 สมศักดิ์</text>
+              <text x="155" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">จ.17</text>
+              <text x="225" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">อ.18</text>
+              <text x="295" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">พ.19</text>
+              <text x="365" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">พฤ.20</text>
+              <text x="435" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">ศ.21</text>
+              <text x="505" y="48" text-anchor="middle" fill="#9ca3af" font-family="Sarabun" font-size="9">ส.22</text>
+              <text x="155" y="62" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="225" y="62" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="295" y="62" text-anchor="middle" fill="#f59e0b" font-size="12">⏳</text>
+              <text x="365" y="62" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="155" y="87" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="225" y="87" text-anchor="middle" fill="#ef4444" font-size="10">ลา</text>
+              <text x="295" y="87" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="365" y="87" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="155" y="112" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="225" y="112" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="295" y="112" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <text x="365" y="112" text-anchor="middle" fill="#10b981" font-size="12">✅</text>
+              <rect x="570" y="55" width="100" height="55" rx="8" fill="#2d3748"/>
+              <text x="620" y="72" text-anchor="middle" fill="#f6ad55" font-family="Sarabun" font-size="9">💰 ยอดจ่ายรวม</text>
+              <text x="620" y="95" text-anchor="middle" fill="#fde68a" font-family="Kanit" font-size="16" font-weight="700">฿28,500</text>
+            </svg>
+            <ol class="step-list">
+              <li>ตั้งค่าประเภท (รายวัน/สัปดาห์/เดือน) + ช่วงวันที่ + สถานที่ → กด <kbd>▶ โหลดตาราง</kbd></li>
+              <li>ดู <strong>ตารางเข้างาน</strong> — ✅ confirmed, ⏳ pending, █ อยู่ในตารางแต่ยังไม่ลงเวลา</li>
+              <li>ดู <strong>ตารางจ่ายเงิน</strong> — คำนวณจาก attendance × อัตราค่าจ้าง</li>
+              <li>กด <kbd>🧾 ออกใบเบิกร้าน</kbd> หรือ <kbd>🧾 ใบแจ้งจ่ายรายคน</kbd> เพื่อสร้างใบเสร็จ</li>
+            </ol>
+          </section>
+
+          <!-- === เบิกจ่ายงานนอก === -->
+          <section class="m-section" id="sec-extpay">
+            <h2>💵 เบิกจ่ายงานนอก <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <h3>Tab 1: 🎤 งานนอก</h3>
+            <ul>
+              <li>เลือกงานจากรายการ → ดูสรุปค่าตัว (ค่าตัวรวม ต่อคน ค่าใช้จ่าย กำไร)</li>
+              <li>กด <kbd>จ่าย</kbd> ที่สมาชิกแต่ละคน → เลือกวิธีจ่าย (โอน/เงินสด/พร้อมเพย์)</li>
+            </ul>
+            <h3>Tab 2: 👤 จ่ายคนนอกวง</h3>
+            <ul>
+              <li>กรอกชื่อผู้รับ ประเภท (นักดนตรีเกสต์/นักร้อง/เทคนิเชียน) ค่าตัว</li>
+              <li>ดูประวัติการจ่ายด้านล่าง</li>
+            </ul>
+          </section>
+
+          <!-- === ประวัติงานนอก === -->
+          <section class="m-section" id="sec-jobhist">
+            <h2>📁 ประวัติงานนอก <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <ul>
+              <li><strong>Stat Chips</strong> — งานทั้งหมด / จ่ายครบ / จ่ายบางส่วน / รอเบิก</li>
+              <li><strong>ค้นหา & กรอง</strong> — ชื่องาน, สถานที่, สถานะ, ปี, เดือน</li>
+              <li><strong>Card งาน</strong> — วันที่ ชื่องาน สถานะ ค่าตัวรวม + กดเปิดรายละเอียด</li>
+            </ul>
+          </section>
+
+          <!-- === คำนวณราคา === -->
+          <section class="m-section" id="sec-jobcalc">
+            <h2>🧮 คำนวณราคางาน <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <p>คำนวณราคารับงานนอก แบ่งเป็น 4 ส่วน:</p>
+            <ol class="step-list">
+              <li><strong>ข้อมูลงาน</strong> — ชื่องาน ลูกค้า เบอร์โทร Line วัน/เวลา สถานที่</li>
+              <li><strong>สมาชิกที่ร่วม</strong> — เลือกคนเล่น + ตั้งค่าตัว (เท่ากัน/กำหนดเอง)</li>
+              <li><strong>รายละเอียด</strong> — ชั่วโมง จำนวนรอบ เวลาพัก หมายเหตุ</li>
+              <li><strong>การเดินทาง</strong> — ต้นทาง ปลายทาง ค่าน้ำมัน ยานพาหนะ + ค่าใช้จ่ายเพิ่มเติม</li>
+            </ol>
+            <p>ด้านขวาแสดง <strong>Summary Panel</strong> สรุปยอดรวมแบบ real-time → กดส่งต่อไปหน้าใบเสนอราคาได้เลย</p>
+          </section>
+
+          <!-- === ใบเสนอราคา === -->
+          <section class="m-section" id="sec-quotation">
+            <h2>📄 ใบเสนอราคา <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <ol class="step-list">
+              <li>กด <kbd>+ ใบเสนอราคาใหม่</kbd></li>
+              <li>กรอกข้อมูลลูกค้า สมาชิก วัน/เวลา สถานที่</li>
+              <li>เพิ่มรายการ (description / จำนวน / ราคา) — เพิ่ม/ลบแถวได้</li>
+              <li>ตั้งส่วนลด VAT เงื่อนไขชำระ สถานะ</li>
+              <li>กด <kbd>🖨️ พิมพ์</kbd> หรือ <kbd>📄 PDF</kbd> เพื่อสร้างเอกสาร</li>
+            </ol>
+            <p><strong>สถานะ:</strong> Draft (เทา) → Sent (น้ำเงิน) → Approved (เขียว) / Cancelled (แดง)</p>
+          </section>
+
+          <!-- === สัญญาจ้าง === -->
+          <section class="m-section" id="sec-contract">
+            <h2>📜 สัญญาจ้าง <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <p>สร้างสัญญาจ้างวงดนตรีอย่างเป็นทางการ พร้อม Live Preview ด้านขวา</p>
+            <ul>
+              <li><strong>📋 ข้อมูลทั่วไป</strong> — วันที่ สถานที่</li>
+              <li><strong>🎤 ฝ่ายผู้ว่าจ้าง</strong> — ชื่อ ที่อยู่ เลขบัตร เบอร์โทร</li>
+              <li><strong>🎸 ฝ่ายผู้รับจ้าง</strong> — ชื่อวง ตัวแทน ที่อยู่</li>
+              <li><strong>🎵 รายละเอียดงาน</strong> — ชื่องาน วัน/เวลา สถานที่ จำนวนสมาชิก</li>
+              <li><strong>💰 การชำระ</strong> — ยอดรวม มัดจำ งวดถัดไป วิธีจ่าย บัญชีธนาคาร</li>
+              <li><strong>🎛️ สิ่งที่ต้องจัดเตรียม</strong> — PA มิค เวที ไฟ จอ LED ห้องพัก อาหาร ฯลฯ</li>
+            </ul>
+            <p>กด <kbd>✅ ยืนยัน & สร้างงานนอก</kbd> เพื่อสร้างสัญญาและสร้างงานนอกในระบบพร้อมกัน</p>
+          </section>
+
+          <!-- === ตั้งค่าวง === -->
+          <section class="m-section" id="sec-settings">
+            <h2>⚙️ ตั้งค่าวง <span style="font-size:.7em;color:#6b7280">(ผู้จัดการ)</span></h2>
+            <!-- SVG: Invite Code -->
+            <svg class="svg-illust" viewBox="0 0 700 80" xmlns="http://www.w3.org/2000/svg">
+              <rect width="700" height="80" rx="16" fill="#111827"/>
+              <text x="20" y="30" fill="#f6ad55" font-family="Kanit" font-size="12" font-weight="700">🔑 รหัสประจำวง</text>
+              <text x="20" y="55" fill="#9ca3af" font-family="Sarabun" font-size="10">แจกสมาชิกใหม่เพื่อสมัครเข้าวง:</text>
+              <rect x="230" y="20" width="200" height="45" rx="10" fill="#1f2937" stroke="#f6ad55" stroke-width="2"/>
+              <text x="330" y="50" text-anchor="middle" fill="#fde68a" font-family="monospace" font-size="24" font-weight="700" letter-spacing="8">A7X92K</text>
+              <rect x="445" y="30" width="70" height="26" rx="8" fill="#f6ad55"/><text x="480" y="47" text-anchor="middle" fill="#fff" font-family="Sarabun" font-size="10" font-weight="600">📋 คัดลอก</text>
+              <rect x="525" y="30" width="70" height="26" rx="8" fill="#374151"/><text x="560" y="47" text-anchor="middle" fill="#d1d5db" font-family="Sarabun" font-size="10">🔄 สร้างใหม่</text>
+            </svg>
+            <ul>
+              <li><strong>📦 Plan Status</strong> — แพ็กเกจปัจจุบัน + ปุ่มอัปเกรด</li>
+              <li><strong>🎸 ข้อมูลวง</strong> — แก้ไขชื่อวง ชื่อผู้จัดการ</li>
+              <li><strong>🔑 รหัสวง</strong> — แสดงรหัส 6 หลัก คัดลอก/สร้างใหม่ได้ (แจกสมาชิกใหม่)</li>
+              <li><strong>👥 สมาชิกรอการอนุมัติ</strong> — อนุมัติ/ปฏิเสธสมาชิกใหม่</li>
+              <li><strong>🏪 สถานที่เล่น</strong> — เพิ่ม/ลบร้าน</li>
+              <li><strong>💰 ค่าจ้าง</strong> — กำหนดอัตราค่าจ้าง</li>
+              <li><strong>📅 ตารางงาน</strong> — ตาราง Timeline คลิกเพิ่ม slot กำหนดวัน เวลา สถานที่ สมาชิก</li>
+            </ul>
+          </section>
+
+          <!-- ============================== -->
+          <!-- อื่นๆ SECTION                   -->
+          <!-- ============================== -->
+
+          <!-- === อัปเกรด === -->
+          <section class="m-section" id="sec-upgrade">
+            <h2>⬆️ อัปเกรดแพ็กเกจ</h2>
+            <div class="feat-grid">
+              <div class="feat-card" style="border-color:#3b82f6">
+                <h4>🎵 Lite — ฿99/เดือน</h4>
+                <p>ไม่มีโฆษณา • เพลงไม่จำกัด • สมาชิก 5 คน • สถิติพื้นฐาน</p>
+              </div>
+              <div class="feat-card" style="border-color:#f6ad55;background:#fffdf7">
+                <h4>👑 Pro — ฿199/เดือน <span style="background:#f6ad55;color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">แนะนำ</span></h4>
+                <p>ทุกอย่างใน Lite + สมาชิกไม่จำกัด • สถิติขั้นสูง • ส่งออก PDF/Excel • Priority Support</p>
+              </div>
+            </div>
+            <ol class="step-list">
+              <li>เลือกว่าซื้อให้ <strong>ทั้งวง</strong> หรือ <strong>รายคน</strong></li>
+              <li>เลือกแพ็กเกจ <strong>Lite</strong> หรือ <strong>Pro</strong></li>
+              <li>เลือกระยะเวลา (1/3/6/12 เดือน — ซื้อนานลดมากกว่า)</li>
+              <li>ใส่ <strong>Promo Code</strong> (ถ้ามี) → กด <kbd>💳 ชำระเงิน</kbd></li>
+            </ol>
+            <div class="tip-box">💡 ชำระผ่าน Omise — ข้อมูลบัตรไม่ผ่านเซิร์ฟเวอร์ของเรา ปลอดภัย 100%</div>
+          </section>
+
+          <!-- === ตาราง Role === -->
+          <section class="m-section" id="sec-roles">
+            <h2>🔐 สิทธิ์การเข้าถึงแต่ละ Role</h2>
+            <div style="overflow-x:auto">
+              <table class="role-table">
+                <thead>
+                  <tr><th>หน้า</th><th>สมาชิก</th><th>ผู้จัดการ</th><th>แอดมิน</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>แดชบอร์ด</td><td>✅</td><td>✅+</td><td>✅</td></tr>
+                  <tr><td>คลังเพลง / เซ็ตลิสต์</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>Live Mode</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>ลงเวลา / ตารางงาน</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>รายได้รวม</td><td>✅ ตัวเอง</td><td>✅ ทุกคน</td><td>✅</td></tr>
+                  <tr><td>กองกลางวง</td><td>✅ รอ approve</td><td>✅ อนุมัติ</td><td>✅</td></tr>
+                  <tr><td>อุปกรณ์ / ข้อมูลวง</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>เกมส์ดนตรี</td><td>✅</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>เบิกจ่าย / ลงเวลา</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>เบิกจ่ายงานนอก</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>คำนวณราคางาน</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>ใบเสนอราคา</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>สัญญาจ้าง</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>ตั้งค่าวง</td><td>❌</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>ส่วนแบ่งรายได้</td><td>❌</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>Admin Panel</td><td>❌</td><td>❌</td><td>✅</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- === FAQ === -->
+          <section class="m-section" id="sec-faq">
+            <h2>❓ คำถามที่พบบ่อย</h2>
+
+            <h3>ข้อมูลจะหายไหมถ้าล็อกเอาท์?</h3>
+            <p>ไม่หาย! ข้อมูลทั้งหมดบันทึกบน Cloud (Supabase) ตลอดเวลา ล็อกอินใหม่ก็เห็นเหมือนเดิม</p>
+
+            <h3>ติดตั้งเป็นแอปบนมือถือได้ไหม?</h3>
+            <p>ได้! เปิดเว็บใน Safari (iOS) หรือ Chrome (Android) → กดเมนู → <strong>"เพิ่มลงหน้าจอหลัก"</strong> หรือ <strong>"ติดตั้งแอป"</strong></p>
+
+            <h3>สมาชิกใหม่จะเข้าวงอย่างไร?</h3>
+            <p>ผู้จัดการไปที่ <strong>ตั้งค่าวง</strong> → คัดลอก <strong>รหัสวง 6 หลัก</strong> → ส่งให้สมาชิกใหม่ → สมาชิกใหม่ไปสมัครที่หน้า "สมัครสมาชิก" แล้วกรอกรหัสวง</p>
+
+            <h3>ใช้งานฟรีได้ไหม?</h3>
+            <p>ได้! แพ็กเกจ Free ใช้งานได้ทุกฟีเจอร์หลัก แต่มีโฆษณา 30 วินาทีทุก 75 นาที อัปเกรดเป็น Lite/Pro เพื่อปิดโฆษณาและปลดล็อกฟีเจอร์เพิ่มเติม</p>
+
+            <h3>ลืมรหัสผ่าน ทำอย่างไร?</h3>
+            <p>หน้าล็อกอิน → กด <strong>"ลืมรหัสผ่าน?"</strong> → กรอกอีเมล → ตรวจสอบกล่องจดหมาย → กดลิงก์รีเซ็ต → ตั้งรหัสใหม่</p>
+
+            <h3>จะเปลี่ยน Role สมาชิกได้อย่างไร?</h3>
+            <p>ต้องให้ admin ไปที่ <strong>Admin Panel → จัดการผู้ใช้งาน</strong> → ค้นหาสมาชิก → เปลี่ยน Role</p>
+
+            <h3>เปิดจาก LINE/Facebook แล้วใช้งานไม่ได้?</h3>
+            <p>In-App Browser มีข้อจำกัด → กดเมนู <strong>"เปิดใน Safari/Chrome"</strong> ระบบจะแสดง Banner แนะนำให้อัตโนมัติ</p>
+          </section>
+
+        </div><!-- /manual-content -->
+      </div><!-- /manual-layout -->
     </div>
   </main>
+
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/nav.js?v=20260317"></script>
+  <script src="js/nav.js?v=20260319"></script>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
-    requireAuth();
-      checkAdGate(); renderMainNav('mainNav'); applyTranslations();
+    var isLoggedIn = !!localStorage.getItem('auth_token');
+    if (isLoggedIn) {
+      renderMainNav('mainNav');
+      if (typeof checkAdGate === 'function') checkAdGate();
+      applyTranslations();
+    } else {
+      document.getElementById('mainNav').innerHTML =
+        '<div style="background:#111827;color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;font-family:Kanit,sans-serif">' +
+        '<span style="font-size:1.1rem;font-weight:700;color:#f6ad55">\uD83C\uDFB5 BandThai</span>' +
+        '<a href="index.html" style="color:#f6ad55;text-decoration:none;font-size:.9rem">\u2190 \u0E01\u0E25\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E23\u0E30\u0E1A\u0E1A</a>' +
+        '</div>';
+    }
+    // TOC scroll tracking
+    var sections = document.querySelectorAll('.m-section');
+    var tocItems = document.querySelectorAll('.toc-item');
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          tocItems.forEach(function(t) { t.classList.remove('active'); });
+          var active = document.querySelector('.toc-item[href="#' + e.target.id + '"]');
+          if (active) active.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-80px 0px -70% 0px' });
+    sections.forEach(function(s) { observer.observe(s); });
   });
   </script>
 </body>
