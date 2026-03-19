@@ -203,7 +203,7 @@
               <li><strong>📋 เพลย์ลิสต์วันนี้</strong> — ลิสต์เพลงของวันนี้ (ถ้ามี)</li>
               <li><strong>⚡ ทางลัด</strong> — 6 ปุ่มเข้าถึงหน้าสำคัญอย่างรวดเร็ว</li>
             </ul>
-            <div class="tip-box">💡 ผู้จัดการวงจะเห็นเพิ่มเติม: รายชื่อ<strong>สมาชิกรอการอนุมัติ</strong> + <strong>Admin Online Panel</strong> แสดงคนที่ออนไลน์อยู่</div>
+            <div class="tip-box">💡 ผู้จัดการวงจะเห็นเพิ่มเติม: รายชื่อ<strong>สมาชิกรอการอนุมัติ</strong> + <strong>สถานะออนไลน์</strong>แสดงคนที่ออนไลน์อยู่</div>
           </section>
 
           <!-- ============================== -->
@@ -581,25 +581,23 @@
             <div style="overflow-x:auto">
               <table class="role-table">
                 <thead>
-                  <tr><th>หน้า</th><th>สมาชิก</th><th>ผู้จัดการ</th><th>แอดมิน</th></tr>
+                  <tr><th>หน้า</th><th>สมาชิก</th><th>ผู้จัดการ</th></tr>
                 </thead>
                 <tbody>
-                  <tr><td>แดชบอร์ด</td><td>✅</td><td>✅+</td><td>✅</td></tr>
-                  <tr><td>คลังเพลง / เซ็ตลิสต์</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>Live Mode</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>ลงเวลา / ตารางงาน</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>รายได้รวม</td><td>✅ ตัวเอง</td><td>✅ ทุกคน</td><td>✅</td></tr>
-                  <tr><td>กองกลางวง</td><td>✅ รอ approve</td><td>✅ อนุมัติ</td><td>✅</td></tr>
-                  <tr><td>อุปกรณ์ / ข้อมูลวง</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>เกมส์ดนตรี</td><td>✅</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>เบิกจ่าย / ลงเวลา</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>เบิกจ่ายงานนอก</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>คำนวณราคางาน</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>ใบเสนอราคา</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>สัญญาจ้าง</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>ตั้งค่าวง</td><td>❌</td><td>✅</td><td>✅</td></tr>
-                  <tr><td>ส่วนแบ่งรายได้</td><td>❌</td><td>❌</td><td>✅</td></tr>
-                  <tr><td>Admin Panel</td><td>❌</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>แดชบอร์ด</td><td>✅</td><td>✅+</td></tr>
+                  <tr><td>คลังเพลง / เซ็ตลิสต์</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>Live Mode</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>ลงเวลา / ตารางงาน</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>รายได้รวม</td><td>✅ ตัวเอง</td><td>✅ ทุกคน</td></tr>
+                  <tr><td>กองกลางวง</td><td>✅ รอ approve</td><td>✅ อนุมัติ</td></tr>
+                  <tr><td>อุปกรณ์ / ข้อมูลวง</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>เกมส์ดนตรี</td><td>✅</td><td>✅</td></tr>
+                  <tr><td>เบิกจ่าย / ลงเวลา</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>เบิกจ่ายงานนอก</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>คำนวณราคางาน</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>ใบเสนอราคา</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>สัญญาจ้าง</td><td>❌</td><td>✅</td></tr>
+                  <tr><td>ตั้งค่าวง</td><td>❌</td><td>✅</td></tr>
                 </tbody>
               </table>
             </div>
@@ -625,7 +623,7 @@
             <p>หน้าล็อกอิน → กด <strong>"ลืมรหัสผ่าน?"</strong> → กรอกอีเมล → ตรวจสอบกล่องจดหมาย → กดลิงก์รีเซ็ต → ตั้งรหัสใหม่</p>
 
             <h3>จะเปลี่ยน Role สมาชิกได้อย่างไร?</h3>
-            <p>ต้องให้ admin ไปที่ <strong>Admin Panel → จัดการผู้ใช้งาน</strong> → ค้นหาสมาชิก → เปลี่ยน Role</p>
+            <p>ติดต่อผู้จัดการวงเพื่อขอเปลี่ยน Role ให้</p>
 
             <h3>เปิดจาก LINE/Facebook แล้วใช้งานไม่ได้?</h3>
             <p>In-App Browser มีข้อจำกัด → กดเมนู <strong>"เปิดใน Safari/Chrome"</strong> ระบบจะแสดง Banner แนะนำให้อัตโนมัติ</p>
