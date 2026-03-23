@@ -1127,14 +1127,18 @@
       if (!memberId) return { success: false, message: 'ไม่พบข้อมูลผู้ใช้' };
       var dateStr = d.date || new Date().toISOString().slice(0, 10);
       var bandId = d.bandId || getBandId();
-      var { error } = await sb.from('member_check_ins')
+      var { data: deleted, error } = await sb.from('member_check_ins')
         .delete().eq('band_id', bandId)
-        .eq('member_id', memberId).eq('date', dateStr);
+        .eq('member_id', memberId).eq('date', dateStr)
+        .select('id');
       if (error) throw error;
       // Also delete any leave_requests for same date
       await sb.from('leave_requests')
         .delete().eq('band_id', bandId)
         .eq('member_id', memberId).eq('date', dateStr);
+      if (!deleted || deleted.length === 0) {
+        return { success: false, message: 'ไม่พบข้อมูลลงเวลาที่จะยกเลิก' };
+      }
       return { success: true, message: 'ยกเลิกการลงเวลาเรียบร้อย' };
     }
 

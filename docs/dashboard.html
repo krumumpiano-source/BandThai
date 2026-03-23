@@ -847,6 +847,14 @@
     // Onboarding
     initOnboarding();
 
+    // Re-check check-in status when page restored from bfcache
+    window.addEventListener('pageshow', function(e) {
+      if (e.persisted) { qciCheckExisting(); }
+    });
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && qciBandId) { qciCheckExisting(); }
+    });
+
     // Admin Online Panel — only for admin/manager
     if (_role === 'admin' || _role === 'manager') {
       document.getElementById('onlinePanelCard').style.display = '';

@@ -453,6 +453,14 @@ document.addEventListener('DOMContentLoaded', function() {
   var cancelBtn = ciGetEl('ciCancelBtn');
   if (cancelBtn) cancelBtn.addEventListener('click', ciCancelCheckIn);
 
+  // Re-check check-in status when page restored from bfcache
+  window.addEventListener('pageshow', function(e) {
+    if (e.persisted) { ciLoadExistingCheckIn(); }
+  });
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && ciCurrentBandId) { ciLoadExistingCheckIn(); }
+  });
+
   // ===== SIMPLE LEAVE BUTTON =====
   var leaveBtn = ciGetEl('ciLeaveBtn');
   var leaveForm = ciGetEl('ciLeaveForm');
