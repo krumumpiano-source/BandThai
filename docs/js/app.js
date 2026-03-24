@@ -64,6 +64,10 @@
   document.addEventListener('DOMContentLoaded', function() {
     setTimeout(syncBandPlan, 1500);
   });
+  // Also sync when user switches back to this tab
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) syncBandPlan();
+  });
   global.syncBandPlan = syncBandPlan;
 
   // ── Ad Gate ─────────────────────────────────────────────────────────

@@ -1447,19 +1447,26 @@
     async function doSyncBandPlan() {
       var bandId = getBandId();
       if (!bandId) return { success: false, message: 'no band' };
-      var { data: bandRow, error } = await sb.from('bands').select('band_plan').eq('id', bandId).single();
-      if (error || !bandRow) return { success: false };
-      var bandPlan = bandRow.band_plan || 'free';
 
-      // Check plan_override (per-user override from admin)
-      var override = localStorage.getItem('plan_override') || '';
-      var finalPlan = bandPlan;
-      if (override) {
-        var _rank = { free: 0, lite: 1, pro: 2 };
-        if ((_rank[override] || 0) >= (_rank[bandPlan] || 0)) {
-          finalPlan = override;
-        }
-      }
+      // Fetch band_plan from bands AND plan_override from profiles in parallel
+      var { data: user } = await sb.auth.getUser();
+      var uid = user && user.user ? user.user.id : null;
+      var [bandRes, profileRes] = await Promise.all([
+        sb.from('bands').select('band_plan').eq('id', bandId).single(),
+        uid ? sb.from('profiles').select('plan_override').eq('id', uid).single() : Promise.resolve({ data: null })
+      ]);
+      if (bandRes.error || !bandRes.data) return { success: false };
+
+      var bandPlan = bandRes.data.band_plan || 'free';
+      var override = (profileRes.data && profileRes.data.plan_override) || '';
+
+      // Update plan_override in localStorage if changed
+      var oldOverride = localStorage.getItem('plan_override') || '';
+      if (override !== oldOverride) localStorage.setItem('plan_override', override);
+
+      // Effective plan = higher rank of band_plan vs plan_override
+      var _rank = { free: 0, lite: 1, pro: 2 };
+      var finalPlan = (_rank[override] || 0) >= (_rank[bandPlan] || 0) ? override || bandPlan : bandPlan;
 
       var oldPlan = localStorage.getItem('band_plan') || 'free';
       if (oldPlan !== finalPlan) {
