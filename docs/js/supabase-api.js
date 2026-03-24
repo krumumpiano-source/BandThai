@@ -1271,31 +1271,40 @@
       return { success: true };
     }
 
+    // Direct fetch to Edge Function (bypass sb.functions.invoke issues)
+    async function _callLineFunction(bodyObj) {
+      var session = (await sb.auth.getSession()).data.session;
+      var token = session ? session.access_token : SUPABASE_ANON;
+      var resp = await fetch(SUPABASE_URL + '/functions/v1/send-line-schedule', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON,
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(bodyObj)
+      });
+      var data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Edge Function error ' + resp.status);
+      return data;
+    }
+
     async function doSendLineTest(d) {
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var result = await sb.functions.invoke('send-line-schedule', {
-        body: { mode: 'test', config_id: d.configId }
-      });
-      if (result.error) throw result.error;
-      return { success: result.data && result.data.ok, data: result.data };
+      var data = await _callLineFunction({ mode: 'test', config_id: d.configId });
+      return { success: data.ok, data: data };
     }
 
     async function doGetLineQuota(d) {
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var result = await sb.functions.invoke('send-line-schedule', {
-        body: { mode: 'quota', config_id: d.configId }
-      });
-      if (result.error) throw result.error;
-      return { success: result.data && result.data.ok, data: result.data };
+      var data = await _callLineFunction({ mode: 'quota', config_id: d.configId });
+      return { success: data.ok, data: data };
     }
 
     async function doPreviewLineMessage(d) {
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var result = await sb.functions.invoke('send-line-schedule', {
-        body: { mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' }
-      });
-      if (result.error) throw result.error;
-      return { success: result.data && result.data.ok, data: result.data };
+      var data = await _callLineFunction({ mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' });
+      return { success: data.ok, data: data };
     }
 
     // ── Band Code (รหัสประจำวง) ─────────────────────────────────
