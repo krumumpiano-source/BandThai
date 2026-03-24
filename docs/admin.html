@@ -2175,9 +2175,17 @@
       var created = b.created_at ? new Date(b.created_at).toLocaleDateString('th-TH') : '—';
       var plan = b.band_plan || 'free';
       var members = b.member_count != null ? b.member_count : '—';
+      var codeCell;
+      if (b.band_code) {
+        codeCell = '<code style="font-size:.8rem;background:#f0fdf4;padding:2px 8px;border-radius:4px;color:#15803d;font-weight:600">' + escapeHtml(b.band_code) + '</code>'
+          + ' <button class="btn btn-sm" style="font-size:.65rem;padding:1px 6px;border:1px solid #d1d5db;border-radius:4px;cursor:pointer" onclick="copyBandCodeAdmin(\'' + escapeHtml(b.band_code) + '\',this)" title="คัดลอก">📋</button>';
+      } else {
+        codeCell = '<span style="color:var(--premium-text-muted);font-size:.78rem">ยังไม่มี</span>'
+          + ' <button class="btn btn-primary btn-sm" style="font-size:.65rem;padding:1px 8px" onclick="adminGenBandCode(\'' + b.id + '\',\'' + escapeHtml(b.band_name||'') + '\',\'' + escapeHtml(b.province||'') + '\')">🔑 สร้างรหัส</button>';
+      }
       return '<tr>'
         + '<td><b>' + escapeHtml(b.band_name || '—') + '</b></td>'
-        + '<td><code style="font-size:.8rem">' + escapeHtml(b.band_code || '—') + '</code></td>'
+        + '<td>' + codeCell + '</td>'
         + '<td style="font-size:.78rem">' + escapeHtml(b.province || '—') + '</td>'
         + '<td style="text-align:center">' + members + '</td>'
         + '<td><span style="background:' + (planColors[plan]||'#6b7280') + ';color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:700">' + plan.toUpperCase() + '</span></td>'
@@ -2228,6 +2236,25 @@
           loadAllBands();
         } else showToast((r && r.message) || t('msg_error'), 'error');
       });
+    });
+  }
+
+  function copyBandCodeAdmin(code, btn) {
+    navigator.clipboard.writeText(code).then(function() {
+      var orig = btn.textContent;
+      btn.textContent = '✅';
+      setTimeout(function() { btn.textContent = orig; }, 1500);
+    });
+  }
+
+  function adminGenBandCode(bandId, bandName, province) {
+    apiCall('generateInviteCode', { bandId: bandId, bandName: bandName, province: province }, function(r) {
+      if (r && r.success) {
+        showToast('✅ สร้างรหัสวง "' + bandName + '" สำเร็จ: ' + (r.data || ''), 'success');
+        loadAllBands();
+      } else {
+        showToast((r && r.message) || 'สร้างรหัสไม่สำเร็จ', 'error');
+      }
     });
   }
 
