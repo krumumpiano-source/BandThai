@@ -2214,14 +2214,19 @@
   function setBandPlan(bandId, plan) {
     var label = plan === 'pro' ? '👑 Pro' : plan === 'lite' ? '🎵 Lite' : '🆓 Free';
     showConfirm('เปลี่ยนแพ็กเกจวง', 'ต้องการเปลี่ยนเป็น ' + label + ' ?').then(function(ok) {
-      if (!ok) { loadAllBands(); return; }
+      if (!ok) { renderBandsTable(_allBandsData); return; }
       apiCall('setBandPlan', { bandId: bandId, plan: plan }, function(r) {
         if (r && r.success) {
           showToast('✅ เปลี่ยนแพ็กเกจวงเป็น ' + plan.toUpperCase() + ' สำเร็จ', 'success');
           apiCall('logActivity', { action: 'set_band_plan', target_type: 'band', target_id: bandId, details: { plan: plan } }, function(){});
           var b = _allBandsData.find(function(x){ return x.id === bandId; });
           if (b) b.band_plan = plan;
-        } else { showToast((r && r.message) || t('msg_error'), 'error'); loadAllBands(); }
+          renderBandsTable(_allBandsData);
+        } else {
+          console.error('[setBandPlan] error:', r);
+          showToast((r && r.message) || 'เปลี่ยนแพ็กเกจไม่สำเร็จ', 'error');
+          loadAllBands();
+        }
       });
     });
   }
