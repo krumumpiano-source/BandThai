@@ -451,8 +451,9 @@ function loadWeeklyTimetable() {
     apiCall('getBandSettings', { bandId: currentBandId }, function(r) {
       if (r && r.success && r.data) {
         if (r.data.venues) weeklyVenues = r.data.venues.map(function(v) { return { id: v.id || v.venueId || '', name: v.name || v.venueName || '' }; });
-        if (r.data.schedule) weeklySchedule = r.data.schedule;
+        if (r.data.schedule !== undefined) weeklySchedule = r.data.schedule || {};
         renderWeeklyTimetable();
+        try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
       }
     });
   }
@@ -552,4 +553,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   loadBandData();
   loadWeeklyTimetable();
+
+  // Auto-refresh when user comes back from another page (e.g. band-settings)
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) { loadWeeklyTimetable(); }
+  });
 });
