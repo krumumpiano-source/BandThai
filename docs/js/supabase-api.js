@@ -1260,9 +1260,13 @@
         existing = ex2;
         if (existing) payload.id = existing.id;
       }
-      var { error } = payload.id
-        ? await sb.from('venue_line_config').update(payload).eq('id', payload.id)
-        : await sb.from('venue_line_config').insert(payload);
+      if (payload.id) {
+        var { error } = await sb.from('venue_line_config').update(payload).eq('id', payload.id);
+      } else {
+        // Remove id so DB generates uuid automatically
+        delete payload.id;
+        var { error } = await sb.from('venue_line_config').insert(payload);
+      }
       if (error) throw error;
       return { success: true };
     }
