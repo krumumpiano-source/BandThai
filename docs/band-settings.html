@@ -353,10 +353,14 @@
 
         <!-- Enable toggle -->
         <div class="form-group" style="display:flex;align-items:center;gap:12px">
-          <label class="form-label" style="margin:0">เปิดใช้งาน</label>
-          <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="lineEnabled" style="width:18px;height:18px;cursor:pointer">
-            <span id="lineEnabledLabel" style="font-size:var(--text-sm);color:var(--premium-text-muted)">ปิด</span>
+          <label class="form-label" style="margin:0">ระบบส่ง LINE อัตโนมัติ</label>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none">
+            <div style="position:relative;width:44px;height:24px">
+              <input type="checkbox" id="lineEnabled" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:2;margin:0">
+              <div id="lineEnabledTrack" style="position:absolute;top:0;left:0;width:44px;height:24px;border-radius:12px;background:#475569;transition:.2s"></div>
+              <div id="lineEnabledThumb" style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+            </div>
+            <span id="lineEnabledLabel" style="font-size:var(--text-sm);font-weight:600;color:#ef4444">❌ ปิด</span>
           </label>
         </div>
 
@@ -383,9 +387,13 @@
           </div>
           <div class="form-group">
             <label class="form-label">ส่งสรุปรายสัปดาห์</label>
-            <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;margin-top:4px">
-              <input type="checkbox" id="lineWeeklyEnabled" style="width:16px;height:16px">
-              <span style="font-size:var(--text-sm)">ทุกวันจันทร์ เวลา</span>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-top:4px">
+              <div style="position:relative;width:38px;height:22px">
+                <input type="checkbox" id="lineWeeklyEnabled" style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:2;margin:0">
+                <div id="lineWeeklyTrack" style="position:absolute;top:0;left:0;width:38px;height:22px;border-radius:11px;background:#475569;transition:.2s"></div>
+                <div id="lineWeeklyThumb" style="position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+              </div>
+              <span id="lineWeeklyLabel" style="font-size:var(--text-sm)">ทุกวันจันทร์ เวลา</span>
               <input type="time" id="lineWeeklyTime" value="08:00" class="form-control" style="font-family:monospace;width:auto;padding:4px 8px">
             </label>
           </div>
@@ -762,11 +770,12 @@
         if (!cfg) return;
         _lineConfigId = cfg.id || null;
         document.getElementById('lineEnabled').checked = !!cfg.enabled;
-        document.getElementById('lineEnabledLabel').textContent = cfg.enabled ? 'เปิด' : 'ปิด';
+        _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', !!cfg.enabled, true);
         document.getElementById('lineToken').value = cfg.line_channel_token || '';
         document.getElementById('lineGroupId').value = cfg.line_group_id || '';
         document.getElementById('lineDailyTime').value = cfg.send_daily_time || '23:30';
         document.getElementById('lineWeeklyEnabled').checked = !!cfg.send_weekly_enabled;
+        _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', !!cfg.send_weekly_enabled, false);
         document.getElementById('lineWeeklyTime').value = cfg.send_weekly_time || '08:00';
         document.getElementById('lineFooter').value = cfg.footer_text || '';
         // Load quota
@@ -775,8 +784,22 @@
     }
 
     document.getElementById('lineEnabled').addEventListener('change', function() {
-      document.getElementById('lineEnabledLabel').textContent = this.checked ? 'เปิด' : 'ปิด';
+      _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', this.checked, true);
     });
+    document.getElementById('lineWeeklyEnabled').addEventListener('change', function() {
+      _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', this.checked, false);
+    });
+    function _updateLineToggle(cbId, trackId, thumbId, labelId, on, isMain) {
+      var track = document.getElementById(trackId);
+      var thumb = document.getElementById(thumbId);
+      var label = document.getElementById(labelId);
+      if (track) track.style.background = on ? '#16a34a' : '#475569';
+      if (thumb) thumb.style.left = on ? (isMain ? '22px' : '18px') : '2px';
+      if (isMain && label) {
+        label.textContent = on ? '✅ เปิดใช้งาน' : '❌ ปิด';
+        label.style.color = on ? '#16a34a' : '#ef4444';
+      }
+    }
 
     function saveLineConfig() {
       var msgEl = document.getElementById('lineMsg');
