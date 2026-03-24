@@ -1395,6 +1395,11 @@
       if (!d.userId) return { success: false, message: 'ไม่ระบุสมาชิก' };
       var { data, error } = await sb.from('profiles').update({ band_id: null, band_name: null, role: null, status: 'inactive', updated_at: new Date().toISOString() }).eq('id', d.userId).select().single();
       if (error) throw error;
+      // ถ้าเป็น session ของตัวเอง → clear band-related localStorage ทันที
+      var { data: { user } } = await sb.auth.getUser();
+      if (user && user.id === d.userId) {
+        ['bandId','bandName','bandProvince','bandManager','bandSettings','userRole'].forEach(function(k){ localStorage.removeItem(k); });
+      }
       return { success: true, data: toCamel(data), message: 'ลบสมาชิกออกจากวงเรียบร้อย' };
     }
 
