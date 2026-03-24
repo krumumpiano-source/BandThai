@@ -297,6 +297,13 @@
         case 'saveBandSettings':   return doSaveBandSettings(d);
         case 'getBandSettings':    return doGetBandSettings(d.bandId || getBandId());
 
+        // ── LINE Schedule (ระบบส่งตารางเบรคผ่าน LINE) ─────────────
+        case 'getVenueLineConfig':  return doGetVenueLineConfig(d);
+        case 'saveVenueLineConfig': return doSaveVenueLineConfig(d);
+        case 'sendLineTest':        return doSendLineTest(d);
+        case 'getLineQuota':        return doGetLineQuota(d);
+        case 'previewLineMessage':  return doPreviewLineMessage(d);
+
         // ── Schedule ───────────────────────────────────────────────
         case 'saveSchedule':  return doSaveSchedule(d);
         case 'getSchedule':   return doGetSchedule(d);
@@ -1229,6 +1236,62 @@
         localStorage.setItem('bandName', d.bandName);
       }
       return { success: true };
+    }
+
+    // ── LINE Schedule ────────────────────────────────────────────────────────
+    async function doGetVenueLineConfig(d) {
+      var venueName = (d && d.venueName) || 'ร้านนิยมสุข';
+      var { data, error } = await sb.from('venue_line_config').select('*').eq('venue_name', venueName).maybeSingle();
+      if (error) throw error;
+      return { success: true, data: data || null };
+    }
+
+    async function doSaveVenueLineConfig(d) {
+      var payload = Object.assign({}, d);
+      delete payload.action; delete payload._token;
+      if (!payload.venue_name) payload.venue_name = 'ร้านนิยมสุข';
+      payload.updated_at = new Date().toISOString();
+      var existing = null;
+      if (payload.id) {
+        var { data: ex } = await sb.from('venue_line_config').select('id').eq('id', payload.id).maybeSingle();
+        existing = ex;
+      } else {
+        var { data: ex2 } = await sb.from('venue_line_config').select('id').eq('venue_name', payload.venue_name).maybeSingle();
+        existing = ex2;
+        if (existing) payload.id = existing.id;
+      }
+      var { error } = payload.id
+        ? await sb.from('venue_line_config').update(payload).eq('id', payload.id)
+        : await sb.from('venue_line_config').insert(payload);
+      if (error) throw error;
+      return { success: true };
+    }
+
+    async function doSendLineTest(d) {
+      if (!d || !d.configId) throw new Error('ต้องระบุ configId');
+      var result = await sb.functions.invoke('send-line-schedule', {
+        body: { mode: 'test', config_id: d.configId }
+      });
+      if (result.error) throw result.error;
+      return { success: result.data && result.data.ok, data: result.data };
+    }
+
+    async function doGetLineQuota(d) {
+      if (!d || !d.configId) throw new Error('ต้องระบุ configId');
+      var result = await sb.functions.invoke('send-line-schedule', {
+        body: { mode: 'quota', config_id: d.configId }
+      });
+      if (result.error) throw result.error;
+      return { success: result.data && result.data.ok, data: result.data };
+    }
+
+    async function doPreviewLineMessage(d) {
+      if (!d || !d.configId) throw new Error('ต้องระบุ configId');
+      var result = await sb.functions.invoke('send-line-schedule', {
+        body: { mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' }
+      });
+      if (result.error) throw result.error;
+      return { success: result.data && result.data.ok, data: result.data };
     }
 
     // ── Band Code (รหัสประจำวง) ─────────────────────────────────
