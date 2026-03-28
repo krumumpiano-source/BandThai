@@ -22,12 +22,23 @@ FROM venue_line_config;
 -- ─────────────────────────────────────────────────────────────
 
 -- ลบ cron jobs เดิม (ถ้ามี)
-SELECT cron.unschedule('line-daily-schedule');
-SELECT cron.unschedule('line-weekly-summary');
-SELECT cron.unschedule('cleanup-line-message-log');
+DO $$
+BEGIN
+  PERFORM cron.unschedule('line-daily-schedule');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+DO $$
+BEGIN
+  PERFORM cron.unschedule('line-weekly-summary');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+DO $$
+BEGIN
+  PERFORM cron.unschedule('cleanup-line-message-log');
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
 
--- สร้าง cron ใหม่ — ⚠️ แก้ YOUR_SERVICE_ROLE_KEY ก่อนรัน!
--- ดู service_role key ที่: Supabase Dashboard → Settings → API → service_role (secret)
+-- สร้าง cron ใหม่ — ใช้ anon key (daily/weekly ไม่ต้องการ admin auth)
 
 -- Daily: 23:30 Thai time = 16:30 UTC
 SELECT cron.schedule(
@@ -36,7 +47,7 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url     := 'https://wsorngsyowgxikiepice.supabase.co/functions/v1/send-line-schedule',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb,
+    headers := '{"Content-Type":"application/json","apikey":"sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm","Authorization":"Bearer sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm"}'::jsonb,
     body    := '{"mode":"daily"}'::jsonb
   );
   $$
@@ -49,7 +60,7 @@ SELECT cron.schedule(
   $$
   SELECT net.http_post(
     url     := 'https://wsorngsyowgxikiepice.supabase.co/functions/v1/send-line-schedule',
-    headers := '{"Content-Type":"application/json","Authorization":"Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb,
+    headers := '{"Content-Type":"application/json","apikey":"sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm","Authorization":"Bearer sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm"}'::jsonb,
     body    := '{"mode":"weekly"}'::jsonb
   );
   $$
