@@ -1677,19 +1677,12 @@
         playlist:   d.songs || [],
         created_by: localStorage.getItem('userName') || ''
       };
-      // ถ้ามีลิสเดิมอยู่ (band+date+venue+time_slot เดิม) ให้ update แทน insert
-      var { data: existing } = await sb.from('playlist_history')
-        .select('id').eq('band_id', bandId)
-        .eq('date', row.date).eq('venue', row.venue).eq('time_slot', row.time_slot)
-        .limit(1);
-      if (existing && existing.length > 0) {
-        var { data, error } = await sb.from('playlist_history')
-          .update({ playlist: row.playlist, created_by: row.created_by })
-          .eq('id', existing[0].id).select().single();
-        if (error) throw error;
-        return { success: true, data: toCamel(data) };
-      }
-      var { data, error } = await sb.from('playlist_history').insert(row).select().single();
+      // Upsert: ถ้ามีลิสเดิม (band+date+venue+time_slot) → update, ถ้าไม่มี → insert
+      // ใช้ upsert + onConflict แทน SELECT→INSERT เพื่อป้องกัน race condition
+      // จากหลายเครื่องกด "จบเบรค" พร้อมกัน
+      var { data, error } = await sb.from('playlist_history')
+        .upsert(row, { onConflict: 'band_id,date,venue,time_slot', ignoreDuplicates: false })
+        .select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
     }
