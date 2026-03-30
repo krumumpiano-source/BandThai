@@ -437,6 +437,20 @@ async function runDaily(thai: Date): Promise<void> {
   for (const cfg of configs) {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
 
+    // ── Dedup: ถ้าส่ง daily สำเร็จไปแล้วใน 20 ชม. ล่าสุด → ข้าม (ป้องกันส่งซ้ำ)
+    const dedupSince = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
+    const { count: alreadySent } = await sb
+      .from('line_message_log')
+      .select('*', { count: 'exact', head: true })
+      .eq('venue_line_config_id', cfg.id)
+      .eq('message_type', 'daily')
+      .eq('success', true)
+      .gte('sent_at', dedupSince);
+    if (alreadySent && alreadySent > 0) {
+      console.log(`[line] daily already sent for config ${cfg.id} in last 20h — skipping`);
+      continue;
+    }
+
     // Validate there are bands configured — fallback to all bands if empty
     let bandIds: string[] = cfg.band_ids || [];
     if (!bandIds.length) {
@@ -696,8 +710,12 @@ Deno.serve(async (req: Request) => {
     // Scheduled runs (cron) — ส่งตามเวลาที่กำหนดเท่านั้น
     if (mode === 'weekly') {
       await runWeekly(thai);
-    } else {
+    } else if (mode === 'daily') {
       await runDaily(thai);
+    } else {
+      // ป้องกัน mode ที่ไม่รู้จัก — ไม่ให้ตก default เป็น daily
+      console.warn(`[send-line-schedule] unknown mode: ${mode}`);
+      return json({ ok: false, error: `Unknown mode: ${mode}` }, 400);
     }
 
     return json({ ok: true });
