@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS venue_line_config (
 CREATE TABLE IF NOT EXISTS line_message_log (
   id                    bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   venue_line_config_id  uuid REFERENCES venue_line_config(id) ON DELETE CASCADE,
-  message_type          text NOT NULL CHECK (message_type IN ('daily','weekly','test','preview')),
+  message_type          text NOT NULL CHECK (message_type IN ('daily','weekly','test','preview','checkin')),
   message_text          text,
   line_response_code    int,
   success               boolean NOT NULL DEFAULT false,
