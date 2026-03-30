@@ -607,71 +607,6 @@ async function getQuotaInfo(configId: string): Promise<{ count: number; limit: n
   return { count, limit: QUOTA_LIMIT, logs: logs || [] };
 }
 
-// ── Check-in notify — ส่งแจ้งเตือนทันทีเมื่อลงเวลาวันนี้ (ไม่ส่งถ้าล่วงหน้า) ──
-async function runCheckinNotify(body: Record<string, any>): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
-  const thai = thaiNow();
-  const todayStr = toThaiDateStr(thai);
-  const checkinDate = body.date || '';
-
-  // ถ้าลงเวลาล่วงหน้า (วันอนาคต) → ไม่ส่ง LINE
-  if (checkinDate > todayStr) {
-    console.log(`[line] checkin notify skipped — advance booking date=${checkinDate} today=${todayStr}`);
-    return { ok: true, skipped: true };
-  }
-
-  const bandId = body.band_id || '';
-  if (!bandId) return { ok: false, error: 'ต้องระบุ band_id' };
-
-  // หา venue_line_config ที่มี band_id นี้
-  const { data: configs } = await sb
-    .from('venue_line_config')
-    .select('*')
-    .eq('enabled', true)
-    .contains('band_ids', [bandId]);
-
-  if (!configs?.length) {
-    console.log(`[line] checkin notify — no LINE config for band ${bandId}`);
-    return { ok: true, skipped: true };
-  }
-
-  const memberName = body.member_name || 'สมาชิก';
-  const slots: string[] = body.slots || [];
-  const slotsText = slots.length > 0
-    ? slots.map((s: string) => s.replace('-', '–')).join(', ')
-    : 'ไม่ระบุ';
-
-  const sep = '━━━━━━━━━━━━━━━━━━━━━━';
-  const text = [
-    sep,
-    `📋 แจ้งเตือนลงเวลา`,
-    formatThaiDate(checkinDate),
-    sep,
-    '',
-    `👤 ${memberName}`,
-    `⏰ ${slotsText}`,
-    body.venue ? `📍 ${body.venue}` : '',
-    '',
-    sep,
-  ].filter(Boolean).join('\n');
-
-  for (const cfg of configs) {
-    if (!cfg.line_channel_token || !cfg.line_group_id) continue;
-
-    // ตรวจ quota
-    const count = await getMonthlyCount(cfg.id);
-    if (count >= QUOTA_WARN) {
-      console.warn(`[line] quota near limit (${count}/${QUOTA_LIMIT}) for config ${cfg.id} — skipping checkin notify`);
-      continue;
-    }
-
-    const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
-    await logMessage(cfg.id, 'checkin', text, result.code, result.ok, result.error);
-    console.log(`[line] checkin notify to ${cfg.venue_name} — ok=${result.ok}`);
-  }
-
-  return { ok: true };
-}
-
 // ── Main handler ───────────────────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -758,13 +693,7 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, ...info });
     }
 
-    // Check-in notify — ส่งแจ้งเตือนทันทีเมื่อลงเวลาวันนี้
-    if (mode === 'checkin') {
-      const result = await runCheckinNotify(body);
-      return json(result);
-    }
-
-    // Scheduled runs (cron)
+    // Scheduled runs (cron) — ส่งตามเวลาที่กำหนดเท่านั้น
     if (mode === 'weekly') {
       await runWeekly(thai);
     } else {
