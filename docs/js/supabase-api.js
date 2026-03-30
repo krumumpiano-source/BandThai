@@ -1052,24 +1052,6 @@
     }
 
     // ── Check-in ──────────────────────────────────────────────────
-    // ส่ง LINE แจ้งเตือนเมื่อลงเวลาวันนี้ (ไม่ส่งถ้าล่วงหน้า)
-    function _notifyLineCheckIn(bandId, memberName, dateStr, slots, venue) {
-      var today = new Date();
-      today.setMinutes(today.getMinutes() + today.getTimezoneOffset() + 420); // UTC+7
-      var todayStr = today.toISOString().slice(0, 10);
-      if (dateStr > todayStr) return; // ล่วงหน้า → ไม่ส่ง
-      try {
-        _callLineFunction({
-          mode: 'checkin',
-          band_id: bandId,
-          member_name: memberName,
-          date: dateStr,
-          slots: slots || [],
-          venue: venue || ''
-        }).catch(function(e) { console.warn('[LINE checkin notify]', e.message); });
-      } catch (e) { /* ignore */ }
-    }
-
     async function doMemberCheckIn(d) {
       var { data: authUser } = await sb.auth.getUser();
       var memberId = d.memberId || (authUser && authUser.user && authUser.user.id) || '';
@@ -1098,7 +1080,6 @@
         if (d.notes) upPayload.notes = d.notes;
         var { error: upErr } = await sb.from('member_check_ins').update(upPayload).eq('id', exist[0].id);
         if (upErr) throw upErr;
-        _notifyLineCheckIn(bandId, d.memberName || localStorage.getItem('userName') || '', dateStr, d.slots, d.venue);
         return { success: true, message: subInfo ? 'ลงเวลาแทน ' + subInfo.name + ' เรียบร้อย' : 'อัปเดตเวลาเรียบร้อย' };
       }
 
@@ -1123,13 +1104,11 @@
             .eq('member_id', memberId).eq('date', dateStr).limit(1);
           if (exist2 && exist2.length > 0) {
             await sb.from('member_check_ins').update(insertPayload).eq('id', exist2[0].id);
-            _notifyLineCheckIn(bandId, d.memberName || localStorage.getItem('userName') || '', dateStr, d.slots, d.venue);
             return { success: true, message: 'อัปเดตเวลาเรียบร้อย' };
           }
         }
         throw error;
       }
-      _notifyLineCheckIn(bandId, d.memberName || localStorage.getItem('userName') || '', dateStr, d.slots, d.venue);
       return { success: true, data: toCamel(data) };
     }
 
