@@ -328,6 +328,20 @@ interface DisplayOpts {
   showFooter?: boolean;
 }
 
+// ── Map time slot to break number ──────────────────────────────────────────
+const BREAK_SCHEDULE = [
+  { start: '18:00', end: '19:00' },
+  { start: '19:30', end: '20:30' },
+  { start: '21:00', end: '22:00' },
+  { start: '22:30', end: '23:30' },
+];
+
+function getBreakNumber(startTime: string): number {
+  const t = startTime.replace('.', ':').substring(0, 5);
+  const idx = BREAK_SCHEDULE.findIndex(b => b.start === t);
+  return idx >= 0 ? idx + 1 : 0;
+}
+
 // ── Format daily message ───────────────────────────────────────────────────
 function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string, opts?: DisplayOpts): string {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━';
@@ -343,8 +357,9 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string,
   if (slots.length === 0) {
     lines.push('— ไม่มีข้อมูลตารางงานวันนี้');
   } else {
-    slots.forEach((slot, idx) => {
-      lines.push(`▸ เบรค ${idx + 1} ⏐ ${formatTime(slot.startTime)}–${formatTime(slot.endTime)}`);
+    slots.forEach((slot) => {
+      const breakNum = getBreakNumber(slot.startTime) || '?';
+      lines.push(`▸ เบรค ${breakNum} ⏐ ${formatTime(slot.startTime)}–${formatTime(slot.endTime)}`);
 
       // Collect all members across bands with content
       const activeBands = slot.bands.filter(b => b.members.length > 0);
@@ -414,10 +429,11 @@ function formatWeeklyMessage(
     if (day.slots.length === 0) {
       lines.push('  — ไม่มีข้อมูล');
     } else {
-      day.slots.forEach((slot, idx) => {
+      day.slots.forEach((slot) => {
+        const breakNum = getBreakNumber(slot.startTime) || '?';
         const activeBands = slot.bands.filter(b => b.members.length > 0);
         if (activeBands.length === 0) {
-          lines.push(`  เบรค${idx + 1}: —`);
+          lines.push(`  เบรค${breakNum}: —`);
         } else {
             const sN = opts?.showNames !== false;
           const sI = opts?.showInstrument !== false;
@@ -433,7 +449,7 @@ function formatWeeklyMessage(
             }
             return parts.join(' ');
           }).join('; ');
-          lines.push(`  เบรค${idx + 1}: ${summary}`);
+          lines.push(`  เบรค${breakNum}: ${summary}`);
         }
       });
     }
