@@ -456,24 +456,38 @@
         <!-- Display options -->
         <div class="form-group">
           <label class="form-label" style="margin-bottom:8px">แสดงข้อมูลในข้อความ</label>
-          <div style="display:flex;flex-wrap:wrap;gap:6px 16px">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
-              <input type="checkbox" id="lineOptNames" checked> ชื่อสมาชิก
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
-              <input type="checkbox" id="lineOptInstrument" checked> ตำแหน่ง/เครื่องดนตรี
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
-              <input type="checkbox" id="lineOptCount" checked> จำนวนคน
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
-              <input type="checkbox" id="lineOptBand" checked> ชื่อวง
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
-              <input type="checkbox" id="lineOptFooter" checked> ท้ายข้อความ
-            </label>
+          <div style="display:flex;flex-wrap:wrap;gap:8px">
+            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+              <input type="checkbox" id="lineOptNames" checked style="display:none"> ชื่อสมาชิก
+            </div>
+            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+              <input type="checkbox" id="lineOptInstrument" checked style="display:none"> ตำแหน่ง
+            </div>
+            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+              <input type="checkbox" id="lineOptCount" checked style="display:none"> จำนวนคน
+            </div>
+            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+              <input type="checkbox" id="lineOptBand" checked style="display:none"> ชื่อวง
+            </div>
+            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+              <input type="checkbox" id="lineOptFooter" checked style="display:none"> ท้ายข้อความ
+            </div>
           </div>
         </div>
+        <style>
+          .line-opt-chip {
+            display:inline-flex;align-items:center;gap:4px;
+            padding:6px 14px;border-radius:20px;cursor:pointer;
+            font-size:13px;font-weight:500;user-select:none;
+            border:1.5px solid #cbd5e1;color:#64748b;background:#f8fafc;
+            transition:all .15s ease;
+          }
+          .line-opt-chip:hover { border-color:#94a3b8; }
+          .line-opt-chip.active {
+            background:#06c755;color:#fff;border-color:#06c755;
+          }
+          .line-opt-chip.active:hover { background:#05b34c;border-color:#05b34c; }
+        </style>
 
         <!-- Buttons -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
