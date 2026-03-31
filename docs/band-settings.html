@@ -434,17 +434,16 @@
           ดูตัวอย่างข้อความก่อน แล้วกดส่งเมื่อพร้อม — นับโควต้า  1 ครั้งเหมือนการส่งอัตโนมัติ
         </p>
 
-        <!-- Type selector -->
+        <!-- Type selector (toggle switch) -->
         <div class="form-group" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <label class="form-label" style="margin:0;white-space:nowrap">ประเภท</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="radio" name="lineManualType" id="lineManualTypeDaily" value="daily" checked onchange="lineManualTypeChange()">
-            <span style="font-size:var(--text-sm)">รายวัน (Daily)</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="radio" name="lineManualType" id="lineManualTypeWeekly" value="weekly" onchange="lineManualTypeChange()">
-            <span style="font-size:var(--text-sm)">สรุปสัปดาห์ (Weekly)</span>
-          </label>
+          <div id="lineManualToggle" style="position:relative;display:inline-flex;background:#e2e8f0;border-radius:12px;padding:3px;cursor:pointer;user-select:none" onclick="(function(e){if(e.target.closest('[data-val]')){var v=e.target.closest('[data-val]').dataset.val;document.getElementById('lineManualTypeDaily').checked=(v==='daily');document.getElementById('lineManualTypeWeekly').checked=(v==='weekly');_updateManualToggle();lineManualTypeChange()}})(event)">
+            <input type="radio" name="lineManualType" id="lineManualTypeDaily" value="daily" checked style="display:none">
+            <input type="radio" name="lineManualType" id="lineManualTypeWeekly" value="weekly" style="display:none">
+            <div id="lineManualToggleBg" style="position:absolute;top:3px;left:3px;height:calc(100% - 6px);width:calc(50% - 3px);border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(37,99,235,.35)"></div>
+            <span data-val="daily" id="lineManualOptDaily" style="position:relative;z-index:1;padding:6px 18px;border-radius:10px;font-size:var(--text-sm);font-weight:600;color:#fff;transition:color .2s;white-space:nowrap">📅 รายวัน</span>
+            <span data-val="weekly" id="lineManualOptWeekly" style="position:relative;z-index:1;padding:6px 18px;border-radius:10px;font-size:var(--text-sm);font-weight:600;color:#475569;transition:color .2s;white-space:nowrap">📊 สัปดาห์</span>
+          </div>
         </div>
 
         <!-- Date picker (daily only) -->
@@ -1006,6 +1005,16 @@
           msgEl.textContent = '❌ โหลดตัวอย่างไม่สำเร็จ: ' + err;
         }
       });
+    }
+
+    function _updateManualToggle() {
+      var isDaily = document.getElementById('lineManualTypeDaily').checked;
+      var bg = document.getElementById('lineManualToggleBg');
+      var optD = document.getElementById('lineManualOptDaily');
+      var optW = document.getElementById('lineManualOptWeekly');
+      if (bg) bg.style.transform = isDaily ? 'translateX(0)' : 'translateX(100%)';
+      if (optD) optD.style.color = isDaily ? '#fff' : '#475569';
+      if (optW) optW.style.color = isDaily ? '#475569' : '#fff';
     }
 
     function lineManualTypeChange() {
