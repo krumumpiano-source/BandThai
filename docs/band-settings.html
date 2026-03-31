@@ -457,19 +457,19 @@
         <div class="form-group">
           <label class="form-label" style="margin-bottom:8px">แสดงข้อมูลในข้อความ</label>
           <div style="display:flex;flex-wrap:wrap;gap:8px">
-            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+            <div class="line-opt-chip active" onclick="_toggleLineOpt(this)">
               <input type="checkbox" id="lineOptNames" checked style="display:none"> ชื่อสมาชิก
             </div>
-            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+            <div class="line-opt-chip active" onclick="_toggleLineOpt(this)">
               <input type="checkbox" id="lineOptInstrument" checked style="display:none"> ตำแหน่ง
             </div>
-            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+            <div class="line-opt-chip active" onclick="_toggleLineOpt(this)">
               <input type="checkbox" id="lineOptCount" checked style="display:none"> จำนวนคน
             </div>
-            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+            <div class="line-opt-chip active" onclick="_toggleLineOpt(this)">
               <input type="checkbox" id="lineOptBand" checked style="display:none"> ชื่อวง
             </div>
-            <div class="line-opt-chip active" onclick="var cb=this.querySelector('input');cb.checked=!cb.checked;this.classList.toggle('active',cb.checked)">
+            <div class="line-opt-chip active" onclick="_toggleLineOpt(this)">
               <input type="checkbox" id="lineOptFooter" checked style="display:none"> ท้ายข้อความ
             </div>
           </div>
@@ -626,6 +626,7 @@
           lineManualDate.value = now7.toISOString().slice(0, 10);
         }
         loadLineConfig();
+        _restoreLineDisplayOpts();
       }
       // Hide all write-buttons for members
       function _applyReadOnlyMode() {
@@ -1064,6 +1065,40 @@
       document.getElementById('lineManualPreviewBox').style.display = 'none';
       var sendBtn = document.getElementById('lineManualSendBtn');
       if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.45'; sendBtn.style.cursor = 'not-allowed'; }
+    }
+
+    function _toggleLineOpt(el) {
+      var cb = el.querySelector('input');
+      cb.checked = !cb.checked;
+      el.classList.toggle('active', cb.checked);
+      _saveLineDisplayOpts();
+    }
+
+    function _saveLineDisplayOpts() {
+      try {
+        localStorage.setItem('lineDisplayOpts', JSON.stringify(_getLineDisplayOpts()));
+      } catch(e) {}
+    }
+
+    function _restoreLineDisplayOpts() {
+      try {
+        var saved = JSON.parse(localStorage.getItem('lineDisplayOpts'));
+        if (!saved) return;
+        var map = {
+          showNames: 'lineOptNames',
+          showInstrument: 'lineOptInstrument',
+          showCount: 'lineOptCount',
+          showBand: 'lineOptBand',
+          showFooter: 'lineOptFooter'
+        };
+        for (var key in map) {
+          var cb = document.getElementById(map[key]);
+          if (cb && typeof saved[key] === 'boolean') {
+            cb.checked = saved[key];
+            cb.closest('.line-opt-chip').classList.toggle('active', saved[key]);
+          }
+        }
+      } catch(e) {}
     }
 
     function _getLineDisplayOpts() {
