@@ -453,6 +453,28 @@
           <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">ค่าเริ่มต้นคือวันนี้ (เวลาไทย)</div>
         </div>
 
+        <!-- Display options -->
+        <div class="form-group">
+          <label class="form-label" style="margin-bottom:8px">แสดงข้อมูลในข้อความ</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px 16px">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
+              <input type="checkbox" id="lineOptNames" checked> ชื่อสมาชิก
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
+              <input type="checkbox" id="lineOptInstrument" checked> ตำแหน่ง/เครื่องดนตรี
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
+              <input type="checkbox" id="lineOptCount" checked> จำนวนคน
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
+              <input type="checkbox" id="lineOptBand" checked> ชื่อวง
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--text-sm)">
+              <input type="checkbox" id="lineOptFooter" checked> ท้ายข้อความ
+            </label>
+          </div>
+        </div>
+
         <!-- Buttons -->
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
           <button type="button" class="btn btn-secondary btn-sm" id="lineManualPreviewBtn" onclick="lineManualPreview()">👁️ ดูตัวอย่าง</button>
@@ -1030,6 +1052,16 @@
       if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.45'; sendBtn.style.cursor = 'not-allowed'; }
     }
 
+    function _getLineDisplayOpts() {
+      return {
+        showNames: document.getElementById('lineOptNames').checked,
+        showInstrument: document.getElementById('lineOptInstrument').checked,
+        showCount: document.getElementById('lineOptCount').checked,
+        showBand: document.getElementById('lineOptBand').checked,
+        showFooter: document.getElementById('lineOptFooter').checked
+      };
+    }
+
     function lineManualPreview() {
       if (!_lineConfigId) { alert('กรุณาบันทึกการตั้งค่า LINE ก่อน'); return; }
       var type = document.querySelector('input[name="lineManualType"]:checked').value;
@@ -1039,7 +1071,7 @@
       msgEl.style.color = 'var(--premium-text-muted)';
       msgEl.textContent = '⏳ กำลังโหลดตัวอย่าง...';
       document.getElementById('lineManualPreviewBox').style.display = 'none';
-      var payload = { configId: _lineConfigId, previewMode: type };
+      var payload = { configId: _lineConfigId, previewMode: type, displayOpts: _getLineDisplayOpts() };
       if (type === 'daily') {
         var dateVal = document.getElementById('lineManualDate').value;
         if (dateVal) payload.date = dateVal;
@@ -1073,7 +1105,7 @@
       sendBtn.disabled = true; sendBtn.style.opacity = '.65';
       msgEl.style.color = 'var(--premium-text-muted)';
       msgEl.textContent = '⏳ กำลังส่ง...';
-      var payload = { configId: _lineConfigId, type: type };
+      var payload = { configId: _lineConfigId, type: type, displayOpts: _getLineDisplayOpts() };
       if (type === 'daily' && dateVal) payload.date = dateVal;
       apiCall('sendLineManual', payload, function(r) {
         if (r && r.success) {
