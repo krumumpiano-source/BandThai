@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -950,7 +951,15 @@
       if (!_lineConfigId) return;
       apiCall('getLineQuota', { configId: _lineConfigId }, function(r) {
         var data = r && r.data;
-        if (!data) return;
+        if (!r || !r.success || !data) {
+          var txt = document.getElementById('lineQuotaText');
+          if (txt) {
+            var is401 = (r && r.message && /401|Unauthorized/i.test(r.message));
+            txt.textContent = is401 ? 'Edge Function ยังไม่พร้อม' : 'โหลดโควต้าไม่สำเร็จ';
+            txt.style.color = '#e53e3e';
+          }
+          return;
+        }
         var count = data.count || 0;
         var limit = data.limit || 200;
         var pct = Math.min(100, Math.round((count / limit) * 100));
