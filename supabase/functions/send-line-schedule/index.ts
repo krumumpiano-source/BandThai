@@ -653,6 +653,18 @@ async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: s
   }
 }
 
+// ── Admin JWT verification (ใช้ Supabase auth แทน manual base64url decode) ──
+async function verifyAdmin(req: Request): Promise<{ uid: string; error: string | null }> {
+  const authHeader = req.headers.get('Authorization') ?? '';
+  const jwt = authHeader.replace('Bearer ', '').trim();
+  if (!jwt) return { uid: '', error: 'Unauthorized' };
+  const { data: { user }, error } = await sb.auth.getUser(jwt);
+  if (error || !user) return { uid: '', error: 'Unauthorized' };
+  const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
+  if (!profile || profile.role !== 'admin') return { uid: '', error: 'เฉพาะ admin เท่านั้น' };
+  return { uid: user.id, error: null };
+}
+
 // ── Get quota info ─────────────────────────────────────────────────────────
 async function getQuotaInfo(configId: string): Promise<{ count: number; limit: number; logs: unknown[] }> {
   const count = await getMonthlyCount(configId);
@@ -701,25 +713,8 @@ Deno.serve(async (req: Request) => {
 
     // Test, Preview and Manual require authentication (admin only) + configId
     if (mode === 'test' || mode === 'preview' || mode === 'manual') {
-      const authHeader = req.headers.get('Authorization') ?? '';
-      const jwt = authHeader.replace('Bearer ', '');
-
-      if (!jwt) {
-        return json({ ok: false, error: 'Unauthorized' }, 401);
-      }
-
-      // Verify user
-      const uid = (() => {
-        try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
-      })();
-      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
-      const { data: { user } } = await sb.auth.admin.getUserById(uid);
-      if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
-
-      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
-      if (!profile || profile.role !== 'admin') {
-        return json({ ok: false, error: 'เฉพาะ admin เท่านั้น' }, 403);
-      }
+      const { uid, error: authErr } = await verifyAdmin(req);
+      if (!uid) return json({ ok: false, error: authErr || 'Unauthorized' }, authErr === 'เฉพาะ admin เท่านั้น' ? 403 : 401);
 
       const configId = body.config_id;
       if (!configId) return json({ ok: false, error: 'ต้องระบุ config_id' }, 400);
@@ -742,17 +737,8 @@ Deno.serve(async (req: Request) => {
 
     // Quota info — admin endpoint
     if (mode === 'quota') {
-      const authHeader = req.headers.get('Authorization') ?? '';
-      const jwt = authHeader.replace('Bearer ', '');
-      if (!jwt) return json({ ok: false, error: 'Unauthorized' }, 401);
-      const uid = (() => {
-        try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
-      })();
-      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
-      const { data: { user } } = await sb.auth.admin.getUserById(uid);
-      if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
-      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
-      if (!profile || profile.role !== 'admin') return json({ ok: false, error: 'เฉพาะ admin' }, 403);
+      const { uid, error: authErr } = await verifyAdmin(req);
+      if (!uid) return json({ ok: false, error: authErr || 'Unauthorized' }, authErr === 'เฉพาะ admin เท่านั้น' ? 403 : 401);
 
       const configId = body.config_id;
       if (!configId) return json({ ok: false, error: 'ต้องระบุ config_id' }, 400);
