@@ -58,6 +58,8 @@ function minToTime(min) {
   return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
 }
 function autoFormatTime(inp) {
+  if (inp._autoFormatBound) return;
+  inp._autoFormatBound = true;
   inp.addEventListener('input', function() {
     var raw = this.value.replace(/[^0-9]/g, '');
     if (raw.length >= 3) raw = raw.substring(0, 2) + ':' + raw.substring(2, 4);
@@ -404,10 +406,17 @@ function loadPendingMembers() {
           '<div style="font-weight:700;font-size:var(--text-sm)">' + esc(name) + '</div>' +
           '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + esc(detail) + (created ? ' · ' + created : '') + '</div>' +
         '</div>' +
-        '<button class="btn btn-sm btn-primary" style="padding:4px 12px" onclick="approveMember(\'' + esc(m.id) + '\')">✅ อนุมัติ</button>' +
-        '<button class="btn btn-sm" style="padding:4px 12px;background:#e53e3e;color:#fff" onclick="rejectMember(\'' + esc(m.id) + '\')">❌ ปฏิเสธ</button>' +
+        '<button class="btn btn-sm btn-primary pm-approve-btn" style="padding:4px 12px" data-uid="' + esc(m.id) + '">✅ อนุมัติ</button>' +
+        '<button class="btn btn-sm pm-reject-btn" style="padding:4px 12px;background:#e53e3e;color:#fff" data-uid="' + esc(m.id) + '">❌ ปฏิเสธ</button>' +
       '</div>';
     }).join('');
+    // Bind approve/reject via addEventListener (prevent XSS via inline onclick)
+    list.querySelectorAll('.pm-approve-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() { approveMember(this.dataset.uid); });
+    });
+    list.querySelectorAll('.pm-reject-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() { rejectMember(this.dataset.uid); });
+    });
   });
 }
 function approveMember(userId) {
