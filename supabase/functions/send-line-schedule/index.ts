@@ -171,18 +171,48 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
     });
   }
 
-  // Fetch actual check-ins for this date across all bands
+  // Fetch actual check-ins for this date across all bands (including leave)
   const { data: checkIns } = await sb
     .from('member_check_ins')
-    .select('member_id, band_id, slots, status')
+    .select('member_id, band_id, slots, status, substitute')
+    .eq('date', dateStr)
+    .in('band_id', bandIds);
+
+  // Fetch leave_requests for this date to get substitute names
+  const { data: leaveReqs } = await sb
+    .from('leave_requests')
+    .select('member_id, band_id, slots, substitute_name, substitute_id')
     .eq('date', dateStr)
     .in('band_id', bandIds)
-    .neq('status', 'leave');
+    .in('status', ['approved', 'pending']);
 
-  // Build a map: memberKey → { memberId, bandId }
-  // checkIn.slots is array of strings like "18:00-19:00"
-  const checkedInBySlotKey: Record<string, string[]> = {}; // "18:00-19:00_bandId" → [memberId,...]
+  // Build substitute map: memberId_bandId → substitute info
+  const substituteMap: Record<string, { name: string; id: string }> = {};
+  for (const lv of leaveReqs || []) {
+    if (lv.substitute_name) {
+      substituteMap[`${lv.member_id}_${lv.band_id}`] = {
+        name: lv.substitute_name,
+        id: lv.substitute_id || '',
+      };
+    }
+  }
+  // Also check check-in substitute field
   for (const ci of checkIns || []) {
+    if (ci.status === 'leave' && ci.substitute) {
+      const sub = typeof ci.substitute === 'string' ? JSON.parse(ci.substitute) : ci.substitute;
+      if (sub && sub.name) {
+        const key = `${ci.member_id}_${ci.band_id}`;
+        if (!substituteMap[key]) {
+          substituteMap[key] = { name: sub.name, id: '' };
+        }
+      }
+    }
+  }
+
+  // Build a map: "18:00-19:00_bandId" → [memberId,...]
+  const checkedInBySlotKey: Record<string, string[]> = {};
+  for (const ci of checkIns || []) {
+    if (ci.status === 'leave') continue; // skip leave (substitute handled separately)
     const slots: string[] = Array.isArray(ci.slots) ? ci.slots : [];
     for (const slotStr of slots) {
       const key = `${slotStr}_${ci.band_id}`;
@@ -201,6 +231,10 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
   // Also add checked-in members
   for (const ids of Object.values(checkedInBySlotKey)) {
     ids.forEach(id => allMemberIds.add(id));
+  }
+  // Also add substitute member IDs (so their profiles get fetched)
+  for (const sub of Object.values(substituteMap)) {
+    if (sub.id) allMemberIds.add(sub.id);
   }
 
   const memberIdArr = [...allMemberIds];
@@ -238,10 +272,24 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
       const memberIds = checkedInIds.length > 0 ? checkedInIds : sl.memberIds;
 
       if (memberIds.length > 0) {
-        const members = memberIds.map(id => ({
-          name: memberMap[id]?.name || 'ไม่ทราบชื่อ',
-          instrument: memberMap[id]?.instrument || '',
-        }));
+        const members: Array<{ name: string; instrument: string }> = [];
+        for (const id of memberIds) {
+          const subKey = `${id}_${b.bandId}`;
+          const sub = substituteMap[subKey];
+          if (sub) {
+            // This member is on leave → use substitute name instead
+            const subProfile = sub.id && memberMap[sub.id];
+            members.push({
+              name: subProfile ? subProfile.name : sub.name,
+              instrument: subProfile ? subProfile.instrument : '',
+            });
+          } else {
+            members.push({
+              name: memberMap[id]?.name || 'ไม่ทราบชื่อ',
+              instrument: memberMap[id]?.instrument || '',
+            });
+          }
+        }
         slotMap[key].bands.push({ bandName: b.bandName, members });
       } else {
         // No members at all for this slot from this band — add empty
