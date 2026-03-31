@@ -212,7 +212,19 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
   // Build a map: "18:00-19:00_bandId" → [memberId,...]
   const checkedInBySlotKey: Record<string, string[]> = {};
   for (const ci of checkIns || []) {
-    if (ci.status === 'leave') continue; // skip leave (substitute handled separately)
+    if (ci.status === 'leave') {
+      // Leave member with substitute → add their memberId so substitute gets looked up
+      const subKey = `${ci.member_id}_${ci.band_id}`;
+      if (substituteMap[subKey]) {
+        const slots: string[] = Array.isArray(ci.slots) ? ci.slots : [];
+        for (const slotStr of slots) {
+          const key = `${slotStr}_${ci.band_id}`;
+          if (!checkedInBySlotKey[key]) checkedInBySlotKey[key] = [];
+          checkedInBySlotKey[key].push(ci.member_id);
+        }
+      }
+      continue;
+    }
     const slots: string[] = Array.isArray(ci.slots) ? ci.slots : [];
     for (const slotStr of slots) {
       const key = `${slotStr}_${ci.band_id}`;
