@@ -549,6 +549,7 @@ async function runDaily(thai: Date): Promise<void> {
 
   for (const cfg of configs) {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
+    if (cfg.send_daily_enabled === false) continue;
 
     // ── Dedup: ถ้าส่ง daily สำเร็จไปแล้วใน 20 ชม. ล่าสุด → ข้าม (ป้องกันส่งซ้ำ)
     const dedupSince = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
