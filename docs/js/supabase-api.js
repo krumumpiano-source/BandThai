@@ -1274,9 +1274,18 @@
 
     // Direct fetch to Edge Function (bypass sb.functions.invoke issues)
     async function _callLineFunction(bodyObj) {
+      // รอ session พร้อมก่อน (max 5 วินาที)
+      if (!global._sbSessionReady) {
+        await new Promise(function(resolve) {
+          var waited = 0;
+          var poll = setInterval(function() {
+            waited += 100;
+            if (global._sbSessionReady || waited >= 5000) { clearInterval(poll); resolve(); }
+          }, 100);
+        });
+      }
       var session = (await sb.auth.getSession()).data.session;
-      // Fallback to cached token when getSession() hasn't resolved yet (timing on page load)
-      var token = session ? session.access_token : (localStorage.getItem('auth_token') || null);
+      var token = session ? session.access_token : null;
       if (!token) throw new Error('กรุณาเข้าสู่ระบบก่อนใช้งานฟีเจอร์นี้');
       var resp = await fetch(SUPABASE_URL + '/functions/v1/send-line-schedule', {
         method: 'POST',
@@ -2709,17 +2718,14 @@
 
     // ── Restore session จาก Supabase ─────────────────────────────
     sb.auth.onAuthStateChange(function (event, session) {
-      if (event === 'SIGNED_IN' && session) {
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'PASSWORD_RECOVERY')) {
         localStorage.setItem('auth_token', session.access_token);
+        // แจ้ง _callLineFunction ว่า session พร้อมแล้ว
+        global._sbSessionReady = true;
       }
       if (event === 'SIGNED_OUT') {
         clearSession();
-      }
-      if (event === 'TOKEN_REFRESHED' && session) {
-        localStorage.setItem('auth_token', session.access_token);
-      }
-      if (event === 'PASSWORD_RECOVERY' && session) {
-        localStorage.setItem('auth_token', session.access_token);
+        global._sbSessionReady = false;
       }
     });
 
