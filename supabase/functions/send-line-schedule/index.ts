@@ -354,19 +354,21 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string,
   lines.push(sep);
   lines.push('');
 
-  if (slots.length === 0) {
-    lines.push('— ไม่มีข้อมูลตารางงานวันนี้');
-  } else {
-    slots.forEach((slot) => {
-      const breakNum = getBreakNumber(slot.startTime) || '?';
-      lines.push(`▸ เบรค ${breakNum} ⏐ ${formatTime(slot.startTime)}–${formatTime(slot.endTime)}`);
+  // Always show all 4 breaks
+  for (const brk of BREAK_SCHEDULE) {
+    const breakNum = getBreakNumber(brk.start);
+    lines.push(`▸ เบรค ${breakNum} ⏐ ${formatTime(brk.start)}–${formatTime(brk.end)}`);
 
-      // Collect all members across bands with content
-      const activeBands = slot.bands.filter(b => b.members.length > 0);
+    // Find matching slot data
+    const slot = slots.find(s => {
+      const t = s.startTime.replace('.', ':').substring(0, 5);
+      return t === brk.start;
+    });
+    const activeBands = slot ? slot.bands.filter(b => b.members.length > 0) : [];
 
-      if (activeBands.length === 0) {
-        lines.push('  — ไม่มีข้อมูล');
-      } else {
+    if (activeBands.length === 0) {
+      lines.push('  — ไม่มีข้อมูล');
+    } else {
         const sN = opts?.showNames !== false;
         const sI = opts?.showInstrument !== false;
         const sC = opts?.showCount !== false;
@@ -390,8 +392,7 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string,
         }
       }
       lines.push('');
-    });
-  }
+    }
 
   // Footer
   if (opts?.showFooter !== false) {
