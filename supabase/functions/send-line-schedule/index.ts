@@ -320,8 +320,16 @@ interface BreakSlot {
   bands: Array<{ bandName: string; members: Array<{ name: string; instrument: string }> }>;
 }
 
+interface DisplayOpts {
+  showNames?: boolean;
+  showInstrument?: boolean;
+  showCount?: boolean;
+  showBand?: boolean;
+  showFooter?: boolean;
+}
+
 // ── Format daily message ───────────────────────────────────────────────────
-function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string): string {
+function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string, opts?: DisplayOpts): string {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━';
   const lines: string[] = [];
 
@@ -344,18 +352,24 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string)
       if (activeBands.length === 0) {
         lines.push('  — ไม่มีข้อมูล');
       } else {
+        const sN = opts?.showNames !== false;
+        const sI = opts?.showInstrument !== false;
+        const sC = opts?.showCount !== false;
+        const sB = opts?.showBand !== false;
         for (const b of activeBands) {
-          // If multiple bands share same slot, show band name as header
-          if (activeBands.length > 1 || b.bandName) {
-            lines.push(`  ${b.bandName} (${b.members.length} คน)`);
-          } else {
-            lines.push(`  (${b.members.length} คน)`);
-          }
-          for (const m of b.members) {
-            if (m.instrument) {
-              lines.push(`  • ${m.name} — ${m.instrument}`);
-            } else {
-              lines.push(`  • ${m.name}`);
+          // Band name + count header
+          const bandLabel = sB ? b.bandName : '';
+          const countLabel = sC ? `(${b.members.length} คน)` : '';
+          const header = [bandLabel, countLabel].filter(Boolean).join(' ');
+          if (header) lines.push(`  ${header}`);
+
+          if (sN) {
+            for (const m of b.members) {
+              if (sI && m.instrument) {
+                lines.push(`  • ${m.name} — ${m.instrument}`);
+              } else {
+                lines.push(`  • ${m.name}`);
+              }
             }
           }
         }
@@ -365,10 +379,12 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string)
   }
 
   // Footer
-  const footerText = footer || defaultFooter();
-  lines.push(sep);
-  lines.push(footerText);
-  lines.push(sep);
+  if (opts?.showFooter !== false) {
+    const footerText = footer || defaultFooter();
+    lines.push(sep);
+    lines.push(footerText);
+    lines.push(sep);
+  }
 
   return lines.join('\n');
 }
@@ -378,7 +394,8 @@ function formatWeeklyMessage(
   startDateStr: string,
   endDateStr: string,
   dayData: Array<{ dateStr: string; slots: BreakSlot[] }>,
-  footer: string
+  footer: string,
+  opts?: DisplayOpts
 ): string {
   const sep  = '━━━━━━━━━━━━━━━━━━━━━━';
   const sep2 = '─────────────────────';
@@ -402,9 +419,19 @@ function formatWeeklyMessage(
         if (activeBands.length === 0) {
           lines.push(`  เบรค${idx + 1}: —`);
         } else {
+            const sN = opts?.showNames !== false;
+          const sI = opts?.showInstrument !== false;
+          const sC = opts?.showCount !== false;
+          const sB = opts?.showBand !== false;
           const summary = activeBands.map(b => {
-            const names = b.members.map(m => m.name).join(', ');
-            return `${b.bandName} (${b.members.length}) — ${names}`;
+            const parts: string[] = [];
+            if (sB) parts.push(b.bandName);
+            if (sC) parts.push(`(${b.members.length})`);
+            if (sN) {
+              const names = b.members.map(m => sI && m.instrument ? `${m.name}—${m.instrument}` : m.name).join(', ');
+              parts.push(`— ${names}`);
+            }
+            return parts.join(' ');
           }).join('; ');
           lines.push(`  เบรค${idx + 1}: ${summary}`);
         }
@@ -439,11 +466,19 @@ function formatWeeklyMessage(
   if (persons.length === 0) {
     lines.push('ไม่มีข้อมูลการลงเวลา');
   } else {
+    const sI = opts?.showInstrument !== false;
     const nameColW = Math.max(...persons.map(p => p.name.length), 4);
-    const instrColW = Math.max(...persons.map(p => p.instrument.length), 4);
-    lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}${'ตำแหน่ง'.padEnd(instrColW + 2)}เบรค`);
-    for (const p of persons) {
-      lines.push(`${p.name.padEnd(nameColW + 2)}${(p.instrument || '—').padEnd(instrColW + 2)}${p.count}`);
+    if (sI) {
+      const instrColW = Math.max(...persons.map(p => p.instrument.length), 4);
+      lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}${'ตำแหน่ง'.padEnd(instrColW + 2)}เบรค`);
+      for (const p of persons) {
+        lines.push(`${p.name.padEnd(nameColW + 2)}${(p.instrument || '—').padEnd(instrColW + 2)}${p.count}`);
+      }
+    } else {
+      lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}เบรค`);
+      for (const p of persons) {
+        lines.push(`${p.name.padEnd(nameColW + 2)}${p.count}`);
+      }
     }
   }
 
@@ -463,10 +498,12 @@ function formatWeeklyMessage(
   lines.push(`รวมทั้งสัปดาห์      ${totalBreaks} เบรค`);
 
   // Footer
-  const footerText = footer || defaultFooter();
-  lines.push(sep);
-  lines.push(footerText);
-  lines.push(sep);
+  if (opts?.showFooter !== false) {
+    const footerText = footer || defaultFooter();
+    lines.push(sep);
+    lines.push(footerText);
+    lines.push(sep);
+  }
 
   return lines.join('\n');
 }
@@ -625,7 +662,7 @@ async function runTest(configId: string): Promise<{ ok: boolean; message?: strin
 }
 
 // ── Preview mode ───────────────────────────────────────────────────────────
-async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?: string): Promise<{ ok: boolean; text?: string; error?: string }> {
+async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?: string, displayOpts?: DisplayOpts): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: cfg } = await sb
     .from('venue_line_config')
     .select('*')
@@ -654,11 +691,11 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?
       for (const dateStr of dates) {
         dayData.push({ dateStr, slots: await fetchDayData(dateStr, bandIds) });
       }
-      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '');
+      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
     } else {
       const ds = dateParam || toThaiDateStr(thai);
       const slots = await fetchDayData(ds, bandIds);
-      text = formatDailyMessage(ds, slots, cfg.footer_text || '');
+      text = formatDailyMessage(ds, slots, cfg.footer_text || '', displayOpts);
     }
     return { ok: true, text };
   } catch (e) {
@@ -667,7 +704,7 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?
 }
 
 // ── Manual send (admin-triggered) ─────────────────────────────────────────
-async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: string): Promise<{ ok: boolean; text?: string; error?: string }> {
+async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: string, displayOpts?: DisplayOpts): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: cfg } = await sb
     .from('venue_line_config')
     .select('*')
@@ -699,11 +736,11 @@ async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: s
       for (const ds of dates) {
         dayData.push({ dateStr: ds, slots: await fetchDayData(ds, bandIds) });
       }
-      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '');
+      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
     } else {
       const ds = dateStr || toThaiDateStr(thai);
       const slots = await fetchDayData(ds, bandIds);
-      text = formatDailyMessage(ds, slots, cfg.footer_text || '');
+      text = formatDailyMessage(ds, slots, cfg.footer_text || '', displayOpts);
     }
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, logType, text, result.code, result.ok, result.error);
@@ -785,12 +822,14 @@ Deno.serve(async (req: Request) => {
       } else if (mode === 'manual') {
         const manualType = (body.type === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
         const manualDate = typeof body.date === 'string' ? body.date : undefined;
-        const result = await runManual(configId, manualType, manualDate);
+        const dOpts = body.display_opts as DisplayOpts | undefined;
+        const result = await runManual(configId, manualType, manualDate, dOpts);
         return json({ ok: result.ok, ...result });
       } else {
         const previewMode = (body.preview_mode === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
         const previewDate = typeof body.date === 'string' ? body.date : undefined;
-        const result = await runPreview(configId, previewMode, previewDate);
+        const dOpts = body.display_opts as DisplayOpts | undefined;
+        const result = await runPreview(configId, previewMode, previewDate, dOpts);
         return json({ ok: result.ok, ...result });
       }
     }

@@ -1317,6 +1317,7 @@
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
       var payload = { mode: 'manual', config_id: d.configId, type: d.type || 'daily' };
       if (d.date) payload.date = d.date;
+      if (d.displayOpts) payload.display_opts = d.displayOpts;
       var data = await _callLineFunction(payload);
       return { success: data.ok, data: data };
     }
@@ -1325,6 +1326,7 @@
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
       var payload = { mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' };
       if (d.date) payload.date = d.date;
+      if (d.displayOpts) payload.display_opts = d.displayOpts;
       var data = await _callLineFunction(payload);
       return { success: data.ok, data: data };
     }
