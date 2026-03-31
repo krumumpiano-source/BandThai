@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
   <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
@@ -94,22 +95,6 @@
     #toast.toast-error{background:#e53e3e;color:#fff}
     #toast.toast-success{background:#38a169;color:#fff}
     #toast.show{display:block}
-    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
-    @media(max-width:600px){.info-grid{grid-template-columns:1fr}}
-
-    /* Invite code */
-    .invite-box{background:linear-gradient(135deg,#1a202c,#2d3748);border:1px solid var(--premium-gold);border-radius:var(--radius-lg);padding:var(--spacing-lg);margin-top:var(--spacing-md)}
-    .invite-code-display{font-family:monospace;font-size:2rem;font-weight:700;letter-spacing:.25em;color:var(--premium-gold);text-align:center;padding:14px;background:#111827;border-radius:var(--radius-md);margin:var(--spacing-md) 0;cursor:pointer;user-select:all;transition:background .15s}
-    .invite-code-display:hover{background:#1f2937}
-    .invite-code-display.empty{font-size:var(--text-sm);color:#4b5563;letter-spacing:normal;font-weight:400;font-family:inherit}
-    .invite-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
-    .invite-hint{font-size:var(--text-xs);color:#6b7280;text-align:center;margin-top:8px}
-    .invite-expires{font-size:var(--text-xs);color:#9ca3af;text-align:center;margin-top:2px;min-height:16px}
-
-    /* Members */
-    .member-item{display:flex;align-items:flex-end;gap:var(--spacing-md);padding:var(--spacing-md);background:var(--premium-off-white);border-radius:var(--radius-md);margin-bottom:var(--spacing-sm);flex-wrap:wrap}
-    .member-item .form-group{flex:1;min-width:130px;margin-bottom:0}
-    .member-remove{padding:8px 12px;background:#e53e3e;color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:15px;flex-shrink:0;align-self:flex-end}
 
     /* Venue accordion — ① ร้าน → ② วัน → ③ เวลา → ④ สมาชิก */
 </style>
@@ -449,17 +434,16 @@
           ดูตัวอย่างข้อความก่อน แล้วกดส่งเมื่อพร้อม — นับโควต้า  1 ครั้งเหมือนการส่งอัตโนมัติ
         </p>
 
-        <!-- Type selector -->
+        <!-- Type selector (toggle switch) -->
         <div class="form-group" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
           <label class="form-label" style="margin:0;white-space:nowrap">ประเภท</label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="radio" name="lineManualType" id="lineManualTypeDaily" value="daily" checked onchange="lineManualTypeChange()">
-            <span style="font-size:var(--text-sm)">รายวัน (Daily)</span>
-          </label>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-            <input type="radio" name="lineManualType" id="lineManualTypeWeekly" value="weekly" onchange="lineManualTypeChange()">
-            <span style="font-size:var(--text-sm)">สรุปสัปดาห์ (Weekly)</span>
-          </label>
+          <div id="lineManualToggle" style="position:relative;display:inline-flex;background:#e2e8f0;border-radius:12px;padding:3px;cursor:pointer;user-select:none" onclick="(function(e){if(e.target.closest('[data-val]')){var v=e.target.closest('[data-val]').dataset.val;document.getElementById('lineManualTypeDaily').checked=(v==='daily');document.getElementById('lineManualTypeWeekly').checked=(v==='weekly');_updateManualToggle();lineManualTypeChange()}})(event)">
+            <input type="radio" name="lineManualType" id="lineManualTypeDaily" value="daily" checked style="display:none">
+            <input type="radio" name="lineManualType" id="lineManualTypeWeekly" value="weekly" style="display:none">
+            <div id="lineManualToggleBg" style="position:absolute;top:3px;left:3px;height:calc(100% - 6px);width:calc(50% - 3px);border-radius:10px;background:linear-gradient(135deg,#3b82f6,#2563eb);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(37,99,235,.35)"></div>
+            <span data-val="daily" id="lineManualOptDaily" style="position:relative;z-index:1;padding:6px 18px;border-radius:10px;font-size:var(--text-sm);font-weight:600;color:#fff;transition:color .2s;white-space:nowrap">📅 รายวัน</span>
+            <span data-val="weekly" id="lineManualOptWeekly" style="position:relative;z-index:1;padding:6px 18px;border-radius:10px;font-size:var(--text-sm);font-weight:600;color:#475569;transition:color .2s;white-space:nowrap">📊 สัปดาห์</span>
+          </div>
         </div>
 
         <!-- Date picker (daily only) -->
@@ -608,17 +592,28 @@
         loadLineConfig();
       }
       // Hide all write-buttons for members
-      if (_role !== 'admin' && _role !== 'manager') {
-        document.querySelectorAll('#saveBtn, #addVenueNameBtn, .btn-danger, [onclick*="remove"], [onclick*="delete"]').forEach(function(b){ b.style.display='none'; });
+      function _applyReadOnlyMode() {
+        if (_role === 'admin' || _role === 'manager') return;
+        document.querySelectorAll('#saveBtn, #addVenueNameBtn, .btn-danger, .member-remove-btn, [onclick*="approve"], [onclick*="reject"], [onclick*="remove"], [onclick*="delete"], .role-select, [onclick*="saveBandInfo"], [onclick*="saveVenueNames"], [onclick*="savePayroll"], [onclick*="saveMembers"]').forEach(function(b){ b.style.display='none'; });
         document.querySelectorAll('input, select, textarea').forEach(function(el){
           if (el.type !== 'hidden') el.disabled = true;
         });
+      }
+      _applyReadOnlyMode();
+      if (_role !== 'admin' && _role !== 'manager') {
         var hdr = document.querySelector('.page-header');
-        if (hdr) { var info = document.createElement('div'); info.className = 'badge'; info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ โหมดดูอย่างเดียว — เฉพาะผู้จัดการวงแก้ไขได้'; hdr.appendChild(info); }
+        if (hdr && !hdr.querySelector('.badge')) { var info = document.createElement('div'); info.className = 'badge'; info.style.cssText = 'background:#f59e0b;color:#fff;padding:6px 14px;border-radius:8px;font-size:var(--text-sm)'; info.textContent = '👁️ โหมดดูอย่างเดียว — เฉพาะผู้จัดการวงแก้ไขได้'; hdr.appendChild(info); }
+        // Re-apply read-only after async renders (members, pending members)
+        var _roObserver = new MutationObserver(function() { _applyReadOnlyMode(); });
+        var _ml = document.getElementById('membersList');
+        var _pl = document.getElementById('pendingMembersList');
+        if (_ml) _roObserver.observe(_ml, { childList: true, subtree: true });
+        if (_pl) _roObserver.observe(_pl, { childList: true, subtree: true });
       }
     });
 
     /* ── Auto-Notification Toggle + Timing ── */
+    function _escHtml(t) { if (!t) return ''; var d = document.createElement('div'); d.textContent = String(t); return d.innerHTML; }
     var _notifSaveTimeout = null;
     function loadAutoNotifState() {
       var bandId = localStorage.getItem('bandId') || '';
@@ -718,8 +713,8 @@
           var domain = sub.endpoint ? (function(){ try { return new URL(sub.endpoint).hostname; } catch(e){ return sub.endpoint.substring(0,30)+'…'; }})() : 'ไม่ทราบอุปกรณ์';
           var when = sub.created_at ? new Date(sub.created_at).toLocaleDateString('th-TH') : '—';
           html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:rgba(249,207,69,.06);border:1px solid rgba(249,207,69,.18);border-radius:8px;font-size:var(--text-xs)">'
-            + '<div><span style="font-weight:600;color:var(--premium-text)">🔔 ' + name + '</span>'
-            + '<span style="color:var(--premium-text-muted);margin-left:8px">' + domain + '</span></div>'
+            + '<div><span style="font-weight:600;color:var(--premium-text)">🔔 ' + _escHtml(name) + '</span>'
+            + '<span style="color:var(--premium-text-muted);margin-left:8px">' + _escHtml(domain) + '</span></div>'
             + '<span style="color:#9ca3af">' + when + '</span>'
             + '</div>';
         });
@@ -840,7 +835,8 @@
     }
 
     document.getElementById('lineEnabled').addEventListener('change', function() {
-      var on = this.checked;
+      var cb = this;
+      var on = cb.checked;
       _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', on, true);
       // Auto-save enabled state to DB (like autoNotifToggle)
       if (_lineConfigId) {
@@ -850,6 +846,9 @@
             msgEl.style.color = 'var(--accent-success,#38a169)';
             msgEl.textContent = on ? '✅ เปิดระบบ LINE แล้ว' : '⏸️ ปิดระบบ LINE แล้ว';
           } else {
+            // Revert UI on failure
+            cb.checked = !on;
+            _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', !on, true);
             msgEl.style.color = '#e53e3e';
             msgEl.textContent = '❌ บันทึกไม่สำเร็จ';
           }
@@ -857,11 +856,18 @@
       }
     });
     document.getElementById('lineWeeklyEnabled').addEventListener('change', function() {
-      var on = this.checked;
+      var cb = this;
+      var on = cb.checked;
       _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', on, false);
       // Auto-save weekly enabled state to DB
       if (_lineConfigId) {
-        apiCall('saveVenueLineConfig', { id: _lineConfigId, send_weekly_enabled: on }, function() {});
+        apiCall('saveVenueLineConfig', { id: _lineConfigId, send_weekly_enabled: on }, function(r) {
+          if (!r || !r.success) {
+            // Revert UI on failure
+            cb.checked = !on;
+            _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', !on, false);
+          }
+        });
       }
     });
     function _updateLineToggle(cbId, trackId, thumbId, labelId, on, isMain) {
@@ -884,12 +890,24 @@
         msgEl.textContent = '❌ ไม่พบ Band ID — กรุณาล็อกอินใหม่';
         return;
       }
+      var token = document.getElementById('lineToken').value.trim();
+      var groupId = document.getElementById('lineGroupId').value.trim();
+      if (!token) {
+        msgEl.style.color = '#e53e3e';
+        msgEl.textContent = '❌ กรุณากรอก LINE Channel Access Token';
+        return;
+      }
+      if (!groupId) {
+        msgEl.style.color = '#e53e3e';
+        msgEl.textContent = '❌ กรุณากรอก LINE Group ID';
+        return;
+      }
       msgEl.textContent = '⏳ กำลังบันทึก...';
       var payload = {
         id: _lineConfigId,
         venue_name: 'ร้านนิยมสุข',
-        line_channel_token: document.getElementById('lineToken').value.trim(),
-        line_group_id: document.getElementById('lineGroupId').value.trim(),
+        line_channel_token: token,
+        line_group_id: groupId,
         enabled: document.getElementById('lineEnabled').checked,
         send_daily_time: document.getElementById('lineDailyTime').value || '23:30',
         send_weekly_enabled: document.getElementById('lineWeeklyEnabled').checked,
@@ -932,7 +950,15 @@
       if (!_lineConfigId) return;
       apiCall('getLineQuota', { configId: _lineConfigId }, function(r) {
         var data = r && r.data;
-        if (!data) return;
+        if (!r || !r.success || !data) {
+          var txt = document.getElementById('lineQuotaText');
+          if (txt) {
+            var is401 = (r && r.message && /401|Unauthorized/i.test(r.message));
+            txt.textContent = is401 ? 'Edge Function ยังไม่พร้อม' : 'โหลดโควต้าไม่สำเร็จ';
+            txt.style.color = '#e53e3e';
+          }
+          return;
+        }
         var count = data.count || 0;
         var limit = data.limit || 200;
         var pct = Math.min(100, Math.round((count / limit) * 100));
@@ -954,10 +980,41 @@
             var icon = lg.success ? '✅' : '❌';
             var typeMap = { daily: 'รายวัน', weekly: 'สัปดาห์', test: 'ทดสอบ', preview: 'ตัวอย่าง' };
             var typeTh = typeMap[lg.message_type] || lg.message_type;
-            return '<div style="padding:2px 0;border-bottom:1px solid #c9d4e0">' + icon + ' ' + typeTh + ' — ' + d + (lg.error_message ? ' <span style="color:#e53e3e">' + lg.error_message.slice(0,60) + '</span>' : '') + '</div>';
+            return '<div style="padding:2px 0;border-bottom:1px solid #c9d4e0">' + icon + ' ' + _escHtml(typeTh) + ' — ' + _escHtml(d) + (lg.error_message ? ' <span style="color:#e53e3e">' + _escHtml(lg.error_message.slice(0,60)) + '</span>' : '') + '</div>';
           }).join('');
         }
       });
+    }
+
+    function previewLineMsg(type) {
+      if (!_lineConfigId) { alert('กรุณาบันทึกการตั้งค่า LINE ก่อน'); return; }
+      var msgEl = document.getElementById('lineMsg');
+      msgEl.style.color = 'var(--premium-text-muted)';
+      msgEl.textContent = '⏳ กำลังโหลดตัวอย่าง...';
+      document.getElementById('linePreviewBox').style.display = 'none';
+      var payload = { configId: _lineConfigId, previewMode: type };
+      apiCall('previewLineMessage', payload, function(r) {
+        var data = r && r.data;
+        if (r && r.success && data && data.text) {
+          msgEl.textContent = '';
+          document.getElementById('linePreviewText').textContent = data.text;
+          document.getElementById('linePreviewBox').style.display = '';
+        } else {
+          msgEl.style.color = '#e53e3e';
+          var err = (data && data.error) ? data.error : (r && r.message ? r.message : 'ไม่สำเร็จ');
+          msgEl.textContent = '❌ โหลดตัวอย่างไม่สำเร็จ: ' + err;
+        }
+      });
+    }
+
+    function _updateManualToggle() {
+      var isDaily = document.getElementById('lineManualTypeDaily').checked;
+      var bg = document.getElementById('lineManualToggleBg');
+      var optD = document.getElementById('lineManualOptDaily');
+      var optW = document.getElementById('lineManualOptWeekly');
+      if (bg) bg.style.transform = isDaily ? 'translateX(0)' : 'translateX(100%)';
+      if (optD) optD.style.color = isDaily ? '#fff' : '#475569';
+      if (optW) optW.style.color = isDaily ? '#475569' : '#fff';
     }
 
     function lineManualTypeChange() {
