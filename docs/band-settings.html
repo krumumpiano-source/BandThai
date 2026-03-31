@@ -368,7 +368,15 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="form-group">
             <label class="form-label">เวลาส่งรายวัน</label>
-            <input type="time" id="lineDailyTime" value="23:30" class="form-control" style="font-family:monospace">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;margin-top:4px">
+              <div style="position:relative;width:38px;height:22px">
+                <input type="checkbox" id="lineDailyEnabled" checked style="position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:2;margin:0">
+                <div id="lineDailyTrack" style="position:absolute;top:0;left:0;width:38px;height:22px;border-radius:11px;background:#16a34a;transition:.2s"></div>
+                <div id="lineDailyThumb" style="position:absolute;top:2px;left:18px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div>
+              </div>
+              <span id="lineDailyLabel" style="font-size:var(--text-sm)">ทุกวัน เวลา</span>
+              <input type="time" id="lineDailyTime" value="23:30" class="form-control" style="font-family:monospace;width:auto;padding:4px 8px">
+            </label>
           </div>
           <div class="form-group">
             <label class="form-label">ส่งสรุปรายสัปดาห์</label>
@@ -862,6 +870,8 @@
         document.getElementById('lineToken').value = cfg.line_channel_token || '';
         document.getElementById('lineGroupId').value = cfg.line_group_id || '';
         document.getElementById('lineDailyTime').value = cfg.send_daily_time || '23:30';
+        document.getElementById('lineDailyEnabled').checked = cfg.send_daily_enabled !== false;
+        _updateLineToggle('lineDailyEnabled', 'lineDailyTrack', 'lineDailyThumb', 'lineDailyLabel', cfg.send_daily_enabled !== false, false);
         document.getElementById('lineWeeklyEnabled').checked = !!cfg.send_weekly_enabled;
         _updateLineToggle('lineWeeklyEnabled', 'lineWeeklyTrack', 'lineWeeklyThumb', 'lineWeeklyLabel', !!cfg.send_weekly_enabled, false);
         document.getElementById('lineWeeklyTime').value = cfg.send_weekly_time || '08:00';
@@ -888,6 +898,19 @@
             _updateLineToggle('lineEnabled', 'lineEnabledTrack', 'lineEnabledThumb', 'lineEnabledLabel', !on, true);
             msgEl.style.color = '#e53e3e';
             msgEl.textContent = '❌ บันทึกไม่สำเร็จ';
+          }
+        });
+      }
+    });
+    document.getElementById('lineDailyEnabled').addEventListener('change', function() {
+      var cb = this;
+      var on = cb.checked;
+      _updateLineToggle('lineDailyEnabled', 'lineDailyTrack', 'lineDailyThumb', 'lineDailyLabel', on, false);
+      if (_lineConfigId) {
+        apiCall('saveVenueLineConfig', { id: _lineConfigId, send_daily_enabled: on }, function(r) {
+          if (!r || !r.success) {
+            cb.checked = !on;
+            _updateLineToggle('lineDailyEnabled', 'lineDailyTrack', 'lineDailyThumb', 'lineDailyLabel', !on, false);
           }
         });
       }
@@ -946,6 +969,7 @@
         line_channel_token: token,
         line_group_id: groupId,
         enabled: document.getElementById('lineEnabled').checked,
+        send_daily_enabled: document.getElementById('lineDailyEnabled').checked,
         send_daily_time: document.getElementById('lineDailyTime').value || '23:30',
         send_weekly_enabled: document.getElementById('lineWeeklyEnabled').checked,
         send_weekly_time: document.getElementById('lineWeeklyTime').value || '08:00',
