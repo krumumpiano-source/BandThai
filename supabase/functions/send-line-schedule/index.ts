@@ -565,7 +565,7 @@ async function runTest(configId: string): Promise<{ ok: boolean; message?: strin
 }
 
 // ── Preview mode ───────────────────────────────────────────────────────────
-async function runPreview(configId: string, mode: 'daily' | 'weekly'): Promise<{ ok: boolean; text?: string; error?: string }> {
+async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?: string): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: cfg } = await sb
     .from('venue_line_config')
     .select('*')
@@ -596,11 +596,58 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly'): Promise<{
       }
       text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '');
     } else {
-      const dateStr = toThaiDateStr(thai);
-      const slots = await fetchDayData(dateStr, bandIds);
-      text = formatDailyMessage(dateStr, slots, cfg.footer_text || '');
+      const ds = dateParam || toThaiDateStr(thai);
+      const slots = await fetchDayData(ds, bandIds);
+      text = formatDailyMessage(ds, slots, cfg.footer_text || '');
     }
     return { ok: true, text };
+  } catch (e) {
+    return { ok: false, error: String(e) };
+  }
+}
+
+// ── Manual send (admin-triggered) ─────────────────────────────────────────
+async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: string): Promise<{ ok: boolean; text?: string; error?: string }> {
+  const { data: cfg } = await sb
+    .from('venue_line_config')
+    .select('*')
+    .eq('id', configId)
+    .maybeSingle();
+
+  if (!cfg) return { ok: false, error: 'ไม่พบ config' };
+  if (!cfg.line_channel_token || !cfg.line_group_id) return { ok: false, error: 'กรุณาใส่ LINE Token และ Group ID ก่อน' };
+
+  let bandIds: string[] = cfg.band_ids || [];
+  if (!bandIds.length) {
+    const { data: allBands } = await sb.from('bands').select('id');
+    bandIds = (allBands || []).map((b: { id: string }) => b.id);
+  }
+  const thai = thaiNow();
+
+  try {
+    let text: string;
+    const logType = type === 'weekly' ? 'weekly' : 'daily';
+    if (type === 'weekly') {
+      const endDate = new Date(thai);
+      endDate.setDate(endDate.getDate() - 1);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 6);
+      const dates: string[] = [];
+      const d = new Date(startDate);
+      for (let i = 0; i < 7; i++) { dates.push(toThaiDateStr(d)); d.setDate(d.getDate() + 1); }
+      const dayData: Array<{ dateStr: string; slots: BreakSlot[] }> = [];
+      for (const ds of dates) {
+        dayData.push({ dateStr: ds, slots: await fetchDayData(ds, bandIds) });
+      }
+      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '');
+    } else {
+      const ds = dateStr || toThaiDateStr(thai);
+      const slots = await fetchDayData(ds, bandIds);
+      text = formatDailyMessage(ds, slots, cfg.footer_text || '');
+    }
+    const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
+    await logMessage(cfg.id, logType, text, result.code, result.ok, result.error);
+    return { ok: result.ok, text, error: result.error };
   } catch (e) {
     return { ok: false, error: String(e) };
   }
@@ -652,8 +699,8 @@ Deno.serve(async (req: Request) => {
     const thai = thaiNow();
     console.log(`[send-line-schedule] mode=${mode} Thai=${thai.toISOString()}`);
 
-    // Test and Preview require authentication (admin/manager only) + configId
-    if (mode === 'test' || mode === 'preview') {
+    // Test, Preview and Manual require authentication (admin only) + configId
+    if (mode === 'test' || mode === 'preview' || mode === 'manual') {
       const authHeader = req.headers.get('Authorization') ?? '';
       const jwt = authHeader.replace('Bearer ', '');
 
@@ -680,9 +727,15 @@ Deno.serve(async (req: Request) => {
       if (mode === 'test') {
         const result = await runTest(configId);
         return json({ ok: result.ok, ...result });
+      } else if (mode === 'manual') {
+        const manualType = (body.type === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
+        const manualDate = typeof body.date === 'string' ? body.date : undefined;
+        const result = await runManual(configId, manualType, manualDate);
+        return json({ ok: result.ok, ...result });
       } else {
         const previewMode = (body.preview_mode === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
-        const result = await runPreview(configId, previewMode);
+        const previewDate = typeof body.date === 'string' ? body.date : undefined;
+        const result = await runPreview(configId, previewMode, previewDate);
         return json({ ok: result.ok, ...result });
       }
     }

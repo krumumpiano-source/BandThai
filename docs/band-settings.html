@@ -440,6 +440,54 @@
         </div>
       </div>
 
+      <!-- ╔═══ LINE Manual Send — ส่งด้วยตนเอง (Admin only) ═══╗ -->
+      <div id="lineManualSection" class="card" style="display:none">
+        <div class="card-header">
+          <h3 class="card-title">📤 ส่งข้อความ LINE ด้วยตนเอง</h3>
+        </div>
+        <p style="font-size:var(--text-sm);color:var(--premium-text-light);margin-bottom:var(--spacing-md)">
+          ดูตัวอย่างข้อความก่อน แล้วกดส่งเมื่อพร้อม — นับโควต้า  1 ครั้งเหมือนการส่งอัตโนมัติ
+        </p>
+
+        <!-- Type selector -->
+        <div class="form-group" style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+          <label class="form-label" style="margin:0;white-space:nowrap">ประเภท</label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="lineManualType" id="lineManualTypeDaily" value="daily" checked onchange="lineManualTypeChange()">
+            <span style="font-size:var(--text-sm)">รายวัน (Daily)</span>
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+            <input type="radio" name="lineManualType" id="lineManualTypeWeekly" value="weekly" onchange="lineManualTypeChange()">
+            <span style="font-size:var(--text-sm)">สรุปสัปดาห์ (Weekly)</span>
+          </label>
+        </div>
+
+        <!-- Date picker (daily only) -->
+        <div class="form-group" id="lineManualDateGroup">
+          <label class="form-label">วันที่</label>
+          <input type="date" id="lineManualDate" class="form-control" style="font-family:monospace;max-width:200px">
+          <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:4px">ค่าเริ่มต้นคือวันนี้ (เวลาไทย)</div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+          <button type="button" class="btn btn-secondary btn-sm" id="lineManualPreviewBtn" onclick="lineManualPreview()">👁️ ดูตัวอย่าง</button>
+          <button type="button" class="btn btn-sm" id="lineManualSendBtn" style="background:#06c755;color:#fff;opacity:.45;cursor:not-allowed" disabled onclick="lineManualSend()">📤 ส่งเลย</button>
+        </div>
+
+        <!-- Status -->
+        <div id="lineManualMsg" style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:8px"></div>
+
+        <!-- Inline preview -->
+        <div id="lineManualPreviewBox" style="display:none;background:#f0f4f8;border:1px solid #c9d4e0;border-radius:8px;padding:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong style="font-size:var(--text-sm)">ตัวอย่างข้อความที่จะส่ง</strong>
+            <button type="button" class="btn btn-sm btn-ghost" onclick="_closeManualPreview()">&#x2715;</button>
+          </div>
+          <pre id="lineManualPreviewText" style="white-space:pre-wrap;font-family:inherit;font-size:var(--text-xs);line-height:1.6;margin:0;color:#2d3748;max-height:300px;overflow-y:auto"></pre>
+        </div>
+      </div>
+
     </div><!-- /container -->
   </main>
 
@@ -549,6 +597,14 @@
         // Show LINE section for admin only
         var lineSec = document.getElementById('lineSection');
         if (lineSec) lineSec.style.display = '';
+        var lineManualSec = document.getElementById('lineManualSection');
+        if (lineManualSec) lineManualSec.style.display = '';
+        // Set default date to today (Thai time UTC+7)
+        var lineManualDate = document.getElementById('lineManualDate');
+        if (lineManualDate && !lineManualDate.value) {
+          var now7 = new Date(Date.now() + 7 * 60 * 60 * 1000);
+          lineManualDate.value = now7.toISOString().slice(0, 10);
+        }
         loadLineConfig();
       }
       // Hide all write-buttons for members
@@ -904,23 +960,76 @@
       });
     }
 
-    function previewLineMsg(previewMode) {
-      if (!_lineConfigId) { alert('กรุณาบันทึกการตั้งค่าก่อนดูตัวอย่าง'); return; }
-      var msgEl = document.getElementById('lineMsg');
+    function lineManualTypeChange() {
+      var isDaily = document.getElementById('lineManualTypeDaily').checked;
+      var dateGroup = document.getElementById('lineManualDateGroup');
+      if (dateGroup) dateGroup.style.display = isDaily ? '' : 'none';
+      _closeManualPreview();
+    }
+
+    function _closeManualPreview() {
+      document.getElementById('lineManualPreviewBox').style.display = 'none';
+      var sendBtn = document.getElementById('lineManualSendBtn');
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.45'; sendBtn.style.cursor = 'not-allowed'; }
+    }
+
+    function lineManualPreview() {
+      if (!_lineConfigId) { alert('กรุณาบันทึกการตั้งค่า LINE ก่อน'); return; }
+      var type = document.querySelector('input[name="lineManualType"]:checked').value;
+      var msgEl = document.getElementById('lineManualMsg');
+      var previewBtn = document.getElementById('lineManualPreviewBtn');
+      previewBtn.disabled = true;
       msgEl.style.color = 'var(--premium-text-muted)';
       msgEl.textContent = '⏳ กำลังโหลดตัวอย่าง...';
-      apiCall('previewLineMessage', { configId: _lineConfigId, previewMode: previewMode }, function(r) {
+      document.getElementById('lineManualPreviewBox').style.display = 'none';
+      var payload = { configId: _lineConfigId, previewMode: type };
+      if (type === 'daily') {
+        var dateVal = document.getElementById('lineManualDate').value;
+        if (dateVal) payload.date = dateVal;
+      }
+      apiCall('previewLineMessage', payload, function(r) {
+        previewBtn.disabled = false;
         var data = r && r.data;
         if (r && r.success && data && data.text) {
           msgEl.textContent = '';
-          var box = document.getElementById('linePreviewBox');
-          var pre = document.getElementById('linePreviewText');
-          if (pre) pre.textContent = data.text;
-          if (box) box.style.display = '';
+          document.getElementById('lineManualPreviewText').textContent = data.text;
+          document.getElementById('lineManualPreviewBox').style.display = '';
+          var sendBtn = document.getElementById('lineManualSendBtn');
+          sendBtn.disabled = false; sendBtn.style.opacity = '1'; sendBtn.style.cursor = 'pointer';
         } else {
           msgEl.style.color = '#e53e3e';
           var err = (data && data.error) ? data.error : (r && r.message ? r.message : 'ไม่สำเร็จ');
-          msgEl.textContent = '❌ ดูตัวอย่างไม่สำเร็จ: ' + err;
+          msgEl.textContent = '❌ โหลดตัวอย่างไม่สำเร็จ: ' + err;
+        }
+      });
+    }
+
+    function lineManualSend() {
+      if (!_lineConfigId) return;
+      var type = document.querySelector('input[name="lineManualType"]:checked').value;
+      var typeTh = type === 'weekly' ? 'สรุปสัปดาห์' : 'รายวัน';
+      var dateVal = (type === 'daily') ? (document.getElementById('lineManualDate').value || '') : '';
+      var confirmMsg = 'ยืนยันส่งข้อความ LINE (' + typeTh + ')' + (dateVal ? ' วันที่ ' + dateVal : '') + '\n\nข้อความนี้จะถูกส่งไปยังกลุ่ม LINE จริง และนับโควต้า 1 ครั้ง';
+      if (!confirm(confirmMsg)) return;
+      var msgEl = document.getElementById('lineManualMsg');
+      var sendBtn = document.getElementById('lineManualSendBtn');
+      sendBtn.disabled = true; sendBtn.style.opacity = '.65';
+      msgEl.style.color = 'var(--premium-text-muted)';
+      msgEl.textContent = '⏳ กำลังส่ง...';
+      var payload = { configId: _lineConfigId, type: type };
+      if (type === 'daily' && dateVal) payload.date = dateVal;
+      apiCall('sendLineManual', payload, function(r) {
+        if (r && r.success) {
+          msgEl.style.color = 'var(--accent-success,#38a169)';
+          msgEl.textContent = '✅ ส่งสำเร็จ! ตรวจสอบในกลุ่ม LINE ได้เลย';
+          _closeManualPreview();
+          refreshLineQuota();
+        } else {
+          sendBtn.disabled = false; sendBtn.style.opacity = '1'; sendBtn.style.cursor = 'pointer';
+          msgEl.style.color = '#e53e3e';
+          var data = r && r.data;
+          var err = (data && data.error) ? data.error : (r && r.message ? r.message : 'ไม่สำเร็จ');
+          msgEl.textContent = '❌ ส่งไม่สำเร็จ: ' + err;
         }
       });
     }

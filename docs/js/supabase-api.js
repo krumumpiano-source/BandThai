@@ -301,6 +301,7 @@
         case 'getVenueLineConfig':  return doGetVenueLineConfig(d);
         case 'saveVenueLineConfig': return doSaveVenueLineConfig(d);
         case 'sendLineTest':        return doSendLineTest(d);
+        case 'sendLineManual':      return doSendLineManual(d);
         case 'getLineQuota':        return doGetLineQuota(d);
         case 'previewLineMessage':  return doPreviewLineMessage(d);
 
@@ -1274,7 +1275,9 @@
     // Direct fetch to Edge Function (bypass sb.functions.invoke issues)
     async function _callLineFunction(bodyObj) {
       var session = (await sb.auth.getSession()).data.session;
-      var token = session ? session.access_token : SUPABASE_ANON;
+      // Fallback to cached token when getSession() hasn't resolved yet (timing on page load)
+      var token = session ? session.access_token : (localStorage.getItem('auth_token') || null);
+      if (!token) throw new Error('กรุณาเข้าสู่ระบบก่อนใช้งานฟีเจอร์นี้');
       var resp = await fetch(SUPABASE_URL + '/functions/v1/send-line-schedule', {
         method: 'POST',
         headers: {
@@ -1301,9 +1304,19 @@
       return { success: data.ok, data: data };
     }
 
+    async function doSendLineManual(d) {
+      if (!d || !d.configId) throw new Error('ต้องระบุ configId');
+      var payload = { mode: 'manual', config_id: d.configId, type: d.type || 'daily' };
+      if (d.date) payload.date = d.date;
+      var data = await _callLineFunction(payload);
+      return { success: data.ok, data: data };
+    }
+
     async function doPreviewLineMessage(d) {
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var data = await _callLineFunction({ mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' });
+      var payload = { mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' };
+      if (d.date) payload.date = d.date;
+      var data = await _callLineFunction(payload);
       return { success: data.ok, data: data };
     }
 
