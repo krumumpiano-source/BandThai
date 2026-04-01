@@ -339,6 +339,249 @@ function getBreakNumber(startTime: string): number {
   return idx >= 0 ? idx + 1 : 0;
 }
 
+// ── Short date BE: "2025-03-30" → "30/03/68" (BE ย่อ 2 หลัก) ──────────────
+function formatShortDateBE(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const be = (y + 543) % 100; // ย่อ 2 หลัก
+  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${String(be).padStart(2, '0')}`;
+}
+
+// ── Get Monday of the week containing a given date ─────────────────────────
+function getMondayStr(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00Z');
+  const dow = d.getUTCDay(); // 0=Sun,1=Mon...6=Sat
+  const diff = dow === 0 ? -6 : 1 - dow; // shift to Monday
+  d.setUTCDate(d.getUTCDate() + diff);
+  return toThaiDateStr(d);
+}
+
+// ── Format rolling week daily message ─────────────────────────────────────
+// Shows Mon → today (inclusive), remaining days blank template
+function formatRollingWeekMessage(
+  weekDates: string[],       // 7 dates Mon→Sun YYYY-MM-DD
+  todayStr: string,          // today YYYY-MM-DD (cutoff for check-in data)
+  daySlots: Map<string, BreakSlot[]>, // check-in data per date
+  footer: string
+): string {
+  const sep = '━━━━━━━━━━━━━━━━━━━━━━';
+  const lines: string[] = [];
+
+  lines.push(sep);
+  lines.push('📋 รายงานประจำวัน');
+  lines.push('ร้านนิยมสุข');
+  lines.push(sep);
+  lines.push('');
+
+  for (const dateStr of weekDates) {
+    const dow = new Date(dateStr + 'T12:00:00Z').getUTCDay();
+    const dayNames = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
+    lines.push(`${dayNames[dow]} ที่ ${formatShortDateBE(dateStr)}`);
+    lines.push('');
+
+    const slots = daySlots.get(dateStr) || [];
+    const isPast = dateStr <= todayStr;
+
+    for (const brk of BREAK_SCHEDULE) {
+      const bNum = getBreakNumber(brk.start);
+      lines.push(`* เบรค ${bNum} (${formatTime(brk.start)}-${formatTime(brk.end)})`);
+
+      if (!isPast) {
+        // future day — blank
+        lines.push('=');
+        continue;
+      }
+
+      // past/today — show SoulCiety check-in data
+      const slot = slots.find(s => s.startTime.replace('.', ':').substring(0, 5) === brk.start);
+      const activeBands = slot ? slot.bands.filter(b => b.members.length > 0) : [];
+
+      if (activeBands.length === 0) {
+        lines.push('=');
+      } else {
+        for (const b of activeBands) {
+          lines.push(`=${b.bandName} ${b.members.length} คนครับ`);
+        }
+      }
+    }
+    lines.push('');
+  }
+
+  const footerText = footer || defaultFooter();
+  lines.push(sep);
+  lines.push(footerText);
+  lines.push(sep);
+
+  return lines.join('\n');
+}
+
+// ── Parse LINE template message ────────────────────────────────────────────
+// Returns array of { dateStr: YYYY-MM-DD, breakNum: 1-4, existingText: string }
+interface TemplateLine { dateStr: string; breakNum: number; existingText: string }
+
+function parseLineTemplate(text: string): TemplateLine[] | null {
+  const lines = text.split('\n');
+  const result: TemplateLine[] = [];
+  let currentDate: string | null = null;
+  let currentBreak: number | null = null;
+  let waitingForEqual = false;
+
+  // Date patterns: "วันXXX ที่ DD/MM/YY" or "วันXXX ที่ DD/MM/YYYY"
+  const dateRe = /วัน\S+\s+ที่\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/;
+  // Break pattern: "* เบรค N (...)" or "* เบรคN"
+  const breakRe = /\*\s*เบรค\s*(\d)/;
+  // Equal pattern: starts with =
+  const equalRe = /^=(.*)/;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // Match date header
+    const dateMatch = trimmed.match(dateRe);
+    if (dateMatch) {
+      const d = parseInt(dateMatch[1]);
+      const m = parseInt(dateMatch[2]);
+      let y = parseInt(dateMatch[3]);
+      if (y < 100) y += 2500; // 2-digit BE
+      const ce = y - 543; // convert BE to CE
+      currentDate = `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      waitingForEqual = false;
+      currentBreak = null;
+      continue;
+    }
+
+    // Match break line
+    const breakMatch = trimmed.match(breakRe);
+    if (breakMatch && currentDate) {
+      currentBreak = parseInt(breakMatch[1]);
+      waitingForEqual = true;
+      continue;
+    }
+
+    // Match = line
+    const equalMatch = trimmed.match(equalRe);
+    if (equalMatch && waitingForEqual && currentDate && currentBreak) {
+      const existingText = equalMatch[1].trim();
+      result.push({ dateStr: currentDate, breakNum: currentBreak, existingText });
+      waitingForEqual = false;
+      currentBreak = null;
+      continue;
+    }
+  }
+
+  // Valid template must have at least 4 break entries
+  return result.length >= 4 ? result : null;
+}
+
+// ── Merge SoulCiety data into parsed template ──────────────────────────────
+async function mergeTemplateWithCheckIns(
+  templateLines: TemplateLine[],
+  bandIds: string[],
+  rawText: string,
+  todayStr: string
+): Promise<string> {
+  // Collect unique dates that are <= today
+  const pastDates = [...new Set(templateLines.map(l => l.dateStr))].filter(d => d <= todayStr);
+
+  // Fetch check-in data for all past dates
+  const slotsPerDate = new Map<string, BreakSlot[]>();
+  for (const dateStr of pastDates) {
+    slotsPerDate.set(dateStr, await fetchDayData(dateStr, bandIds));
+  }
+
+  // Build lookup: dateStr + breakNum → SoulCiety members count
+  const scCount = new Map<string, string[]>();
+  for (const [dateStr, slots] of slotsPerDate) {
+    for (const slot of slots) {
+      const bNum = getBreakNumber(slot.startTime);
+      if (bNum < 1) continue;
+      const key = `${dateStr}_${bNum}`;
+      const names: string[] = [];
+      for (const b of slot.bands) {
+        if (b.members.length > 0) {
+          names.push(`${b.bandName} ${b.members.length} คนครับ`);
+        }
+      }
+      if (names.length > 0) scCount.set(key, names);
+    }
+  }
+
+  // Rebuild text line by line — keep original structure, only fill blank = lines
+  const lines = rawText.split('\n');
+  const dateRe = /วัน\S+\s+ที่\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/;
+  const breakRe = /\*\s*เบรค\s*(\d)/;
+  const equalRe = /^(=\s*)(.*)$/;
+
+  let currentDate: string | null = null;
+  let currentBreak: number | null = null;
+  let waitingForEqual = false;
+  const output: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    const dateMatch = trimmed.match(dateRe);
+    if (dateMatch) {
+      const d = parseInt(dateMatch[1]);
+      const m = parseInt(dateMatch[2]);
+      let y = parseInt(dateMatch[3]);
+      if (y < 100) y += 2500;
+      const ce = y - 543;
+      currentDate = `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      waitingForEqual = false;
+      currentBreak = null;
+      output.push(line);
+      continue;
+    }
+
+    const breakMatch = trimmed.match(breakRe);
+    if (breakMatch && currentDate) {
+      currentBreak = parseInt(breakMatch[1]);
+      waitingForEqual = true;
+      output.push(line);
+      continue;
+    }
+
+    const equalMatch = trimmed.match(equalRe);
+    if (equalMatch && waitingForEqual && currentDate && currentBreak) {
+      const existingContent = equalMatch[2].trim();
+      const key = `${currentDate}_${currentBreak}`;
+      const isPast = currentDate <= todayStr;
+      const scEntries = (isPast && scCount.has(key)) ? scCount.get(key)! : [];
+
+      if (existingContent === '' && scEntries.length > 0) {
+        // blank = → replace with SoulCiety data (first entry replaces, rest append)
+        output.push(`=${scEntries[0]}`);
+        for (let i = 1; i < scEntries.length; i++) output.push(`=${scEntries[i]}`);
+      } else if (existingContent !== '' && scEntries.length > 0) {
+        // existing content → keep, then append SoulCiety on new lines
+        output.push(line);
+        for (const entry of scEntries) output.push(`=${entry}`);
+      } else {
+        output.push(line);
+      }
+      waitingForEqual = false;
+      currentBreak = null;
+      continue;
+    }
+
+    output.push(line);
+  }
+
+  return output.join('\n');
+}
+
+// ── Build rolling week dates (Mon→Sun) for a given date ───────────────────
+function getRollingWeekDates(todayStr: string): string[] {
+  const mondayStr = getMondayStr(todayStr);
+  const dates: string[] = [];
+  const d = new Date(mondayStr + 'T12:00:00Z');
+  for (let i = 0; i < 7; i++) {
+    dates.push(toThaiDateStr(d));
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return dates;
+}
+
 // ── Format daily message ───────────────────────────────────────────────────
 function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string, opts?: DisplayOpts): string {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━';
@@ -534,9 +777,10 @@ function defaultFooter(): string {
   ].join('\n');
 }
 
-// ── Daily mode ─────────────────────────────────────────────────────────────
+// ── Daily mode (rolling week) ──────────────────────────────────────────────
 async function runDaily(thai: Date): Promise<void> {
-  const dateStr = toThaiDateStr(thai);
+  const todayStr = toThaiDateStr(thai);
+  const weekDates = getRollingWeekDates(todayStr);
 
   const { data: configs } = await sb
     .from('venue_line_config')
@@ -549,7 +793,7 @@ async function runDaily(thai: Date): Promise<void> {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
     if (cfg.send_daily_enabled === false) continue;
 
-    // ── Dedup: ถ้าส่ง daily สำเร็จไปแล้วใน 20 ชม. ล่าสุด → ข้าม (ป้องกันส่งซ้ำ)
+    // ── Dedup: ถ้าส่ง daily สำเร็จไปแล้วใน 20 ชม. ล่าสุด → ข้าม
     const dedupSince = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
     const { count: alreadySent } = await sb
       .from('line_message_log')
@@ -563,7 +807,6 @@ async function runDaily(thai: Date): Promise<void> {
       continue;
     }
 
-    // Validate there are bands configured — fallback to all bands if empty
     let bandIds: string[] = cfg.band_ids || [];
     if (!bandIds.length) {
       const { data: allBands } = await sb.from('bands').select('id');
@@ -571,20 +814,25 @@ async function runDaily(thai: Date): Promise<void> {
       if (!bandIds.length) continue;
     }
 
-    // Check quota (skip for test)
     const count = await getMonthlyCount(cfg.id);
     if (count >= QUOTA_WARN) {
       console.warn(`[line] quota near limit (${count}/${QUOTA_LIMIT}) for config ${cfg.id} — skipping daily`);
       continue;
     }
 
-    const slots = await fetchDayData(dateStr, bandIds);
-    const text  = formatDailyMessage(dateStr, slots, cfg.footer_text || '');
+    // Fetch check-in data for Mon → today only
+    const daySlots = new Map<string, BreakSlot[]>();
+    for (const dateStr of weekDates) {
+      if (dateStr <= todayStr) {
+        daySlots.set(dateStr, await fetchDayData(dateStr, bandIds));
+      }
+    }
 
+    const text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, 'daily', text, result.code, result.ok, result.error);
 
-    console.log(`[line] daily sent to ${cfg.venue_name} — ok=${result.ok} code=${result.code}`);
+    console.log(`[line] daily (rolling) sent to ${cfg.venue_name} — ok=${result.ok} code=${result.code}`);
   }
 }
 
@@ -708,9 +956,13 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?
       }
       text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
     } else {
-      const ds = dateParam || toThaiDateStr(thai);
-      const slots = await fetchDayData(ds, bandIds);
-      text = formatDailyMessage(ds, slots, cfg.footer_text || '', displayOpts);
+      const todayStr = dateParam || toThaiDateStr(thai);
+      const weekDates = getRollingWeekDates(todayStr);
+      const daySlots = new Map<string, BreakSlot[]>();
+      for (const ds of weekDates) {
+        if (ds <= todayStr) daySlots.set(ds, await fetchDayData(ds, bandIds));
+      }
+      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
     }
     return { ok: true, text };
   } catch (e) {
@@ -753,9 +1005,13 @@ async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: s
       }
       text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
     } else {
-      const ds = dateStr || toThaiDateStr(thai);
-      const slots = await fetchDayData(ds, bandIds);
-      text = formatDailyMessage(ds, slots, cfg.footer_text || '', displayOpts);
+      const todayStr = dateStr || toThaiDateStr(thai);
+      const weekDates = getRollingWeekDates(todayStr);
+      const daySlots = new Map<string, BreakSlot[]>();
+      for (const ds of weekDates) {
+        if (ds <= todayStr) daySlots.set(ds, await fetchDayData(ds, bandIds));
+      }
+      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
     }
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, logType, text, result.code, result.ok, result.error);
@@ -808,13 +1064,56 @@ Deno.serve(async (req: Request) => {
     let body: Record<string, any> = {};
     try { body = await req.json(); } catch { /* cron sends empty body */ }
 
-    // ── LINE Webhook event — จับ Group ID ──────────────────────────
+    // ── LINE Webhook event ──────────────────────────────────────────
     if (body.events && Array.isArray(body.events)) {
       for (const ev of body.events) {
-        if (ev.source?.groupId) {
-          console.log(`[LINE-WEBHOOK] groupId = ${ev.source.groupId}`);
-          console.log(`[LINE-WEBHOOK] type = ${ev.type}, userId = ${ev.source?.userId || '-'}`);
+        const groupId: string = ev.source?.groupId || '';
+        if (!groupId) continue;
+        console.log(`[LINE-WEBHOOK] groupId=${groupId} type=${ev.type}`);
+
+        // Only process text messages
+        if (ev.type !== 'message' || ev.message?.type !== 'text') continue;
+        const msgText: string = ev.message.text || '';
+
+        // Detect template: must have "* เบรค" at least 4 times
+        const breakCount = (msgText.match(/\*\s*เบรค/g) || []).length;
+        if (breakCount < 4) continue;
+
+        // Parse template
+        const templateLines = parseLineTemplate(msgText);
+        if (!templateLines) continue;
+
+        // Find venue_line_config by group_id
+        const { data: cfg } = await sb
+          .from('venue_line_config')
+          .select('*')
+          .eq('line_group_id', groupId)
+          .eq('enabled', true)
+          .maybeSingle();
+        if (!cfg || !cfg.line_channel_token) continue;
+
+        let bandIds: string[] = cfg.band_ids || [];
+        if (!bandIds.length) {
+          const { data: allBands } = await sb.from('bands').select('id');
+          bandIds = (allBands || []).map((b: { id: string }) => b.id);
         }
+
+        const todayStr = toThaiDateStr(thaiNow());
+        const merged = await mergeTemplateWithCheckIns(templateLines, bandIds, msgText, todayStr);
+
+        // Only send if content changed
+        if (merged === msgText) continue;
+
+        // Check quota
+        const qCount = await getMonthlyCount(cfg.id);
+        if (qCount >= QUOTA_WARN) {
+          console.warn(`[line-webhook] quota near limit — skipping merge-resend`);
+          continue;
+        }
+
+        const result = await sendLineMessage(cfg.line_channel_token, groupId, merged);
+        await logMessage(cfg.id, 'webhook_merge', merged, result.code, result.ok, result.error);
+        console.log(`[line-webhook] merge-resend ok=${result.ok}`);
       }
       return json({ ok: true, webhook: true });
     }
