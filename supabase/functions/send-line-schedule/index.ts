@@ -276,12 +276,9 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
         slotMap[key] = { startTime: sl.startTime, endTime: sl.endTime, bands: [] };
       }
 
-      // Look up actual check-ins for this slot
+      // Look up actual check-ins for this slot — do NOT fall back to template
       const slotRangeStr = `${sl.startTime}-${sl.endTime}`;
-      const checkedInIds = checkedInBySlotKey[`${slotRangeStr}_${b.bandId}`] || [];
-
-      // Use checked-in members if any, else fall back to scheduled members
-      const memberIds = checkedInIds.length > 0 ? checkedInIds : sl.memberIds;
+      const memberIds = checkedInBySlotKey[`${slotRangeStr}_${b.bandId}`] || [];
 
       if (memberIds.length > 0) {
         const members: Array<{ name: string; instrument: string }> = [];

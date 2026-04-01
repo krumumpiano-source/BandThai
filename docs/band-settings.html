@@ -1096,6 +1096,11 @@
       cb.checked = !cb.checked;
       el.classList.toggle('active', cb.checked);
       _saveLineDisplayOpts();
+      // Invalidate preview when opts change — force re-preview before sending
+      var previewBox = document.getElementById('lineManualPreviewBox');
+      if (previewBox) previewBox.style.display = 'none';
+      var sendBtn = document.getElementById('lineManualSendBtn');
+      if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.45'; sendBtn.style.cursor = 'not-allowed'; }
     }
 
     function _saveLineDisplayOpts() {
