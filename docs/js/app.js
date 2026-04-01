@@ -429,6 +429,7 @@
 
   function initGlobalPresence() {
     if (!window._sb) return;
+    if (_globalPresenceCh) return; // already initialized
     var bandId = localStorage.getItem('bandId') || '';
     if (!bandId) return;
     var userId = localStorage.getItem('userId') || '';
