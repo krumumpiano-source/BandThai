@@ -360,8 +360,9 @@ function getMondayStr(dateStr: string): string {
 function formatRollingWeekMessage(
   weekDates: string[],       // 7 dates Mon→Sun YYYY-MM-DD
   todayStr: string,          // today YYYY-MM-DD (cutoff for check-in data)
-  daySlots: Map<string, BreakSlot[]>, // check-in data per date
-  footer: string
+  daySlots: Map<string, BreakSlot[]>, // SoulCiety check-in data per date
+  footer: string,
+  lineEntries?: Map<string, Map<number, string[]>> // LINE chat entries per date/break
 ): string {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━';
   const lines: string[] = [];
@@ -386,18 +387,23 @@ function formatRollingWeekMessage(
       lines.push(`* เบรค ${bNum} (${formatTime(brk.start)}-${formatTime(brk.end)})`);
 
       if (!isPast) {
-        // future day — blank
         lines.push('=');
         continue;
       }
 
-      // past/today — show SoulCiety check-in data
+      // LINE chat entries (external bands) for this break
+      const chatEntries = lineEntries?.get(dateStr)?.get(bNum) || [];
+
+      // SoulCiety check-in
       const slot = slots.find(s => s.startTime.replace('.', ':').substring(0, 5) === brk.start);
       const activeBands = slot ? slot.bands.filter(b => b.members.length > 0) : [];
 
-      if (activeBands.length === 0) {
+      if (chatEntries.length === 0 && activeBands.length === 0) {
         lines.push('=');
       } else {
+        for (const entry of chatEntries) {
+          lines.push(`=${entry}`);
+        }
         for (const b of activeBands) {
           lines.push(`=${b.bandName} ${b.members.length} คนครับ`);
         }
@@ -580,6 +586,55 @@ function getRollingWeekDates(todayStr: string): string[] {
     d.setUTCDate(d.getUTCDate() + 1);
   }
   return dates;
+}
+
+// ── Save LINE chat entries to DB (upsert: delete old then insert) ──────────
+async function saveLineChatEntries(
+  configId: string,
+  entries: Array<{ dateStr: string; breakNum: number; entryText: string; senderName?: string }>
+): Promise<void> {
+  if (!entries.length) return;
+  // Delete existing entries for the dates involved
+  const dates = [...new Set(entries.map(e => e.dateStr))];
+  await sb.from('line_chat_entries')
+    .delete()
+    .eq('venue_line_config_id', configId)
+    .in('date', dates);
+  // Insert new entries
+  await sb.from('line_chat_entries').insert(
+    entries.map(e => ({
+      venue_line_config_id: configId,
+      date: e.dateStr,
+      break_num: e.breakNum,
+      entry_text: e.entryText,
+      sender_name: e.senderName || null,
+    }))
+  );
+}
+
+// ── Fetch LINE chat entries from DB ────────────────────────────────────────
+// Returns Map<dateStr, Map<breakNum, string[]>>
+async function fetchLineChatEntries(
+  configId: string,
+  dates: string[]
+): Promise<Map<string, Map<number, string[]>>> {
+  const result = new Map<string, Map<number, string[]>>();
+  if (!dates.length) return result;
+  const { data } = await sb
+    .from('line_chat_entries')
+    .select('date, break_num, entry_text')
+    .eq('venue_line_config_id', configId)
+    .in('date', dates)
+    .order('created_at', { ascending: true });
+  for (const row of data || []) {
+    const d = row.date as string;
+    const b = row.break_num as number;
+    if (!result.has(d)) result.set(d, new Map());
+    const bMap = result.get(d)!;
+    if (!bMap.has(b)) bMap.set(b, []);
+    bMap.get(b)!.push(row.entry_text as string);
+  }
+  return result;
 }
 
 // ── Format daily message ───────────────────────────────────────────────────
@@ -821,14 +876,14 @@ async function runDaily(thai: Date): Promise<void> {
     }
 
     // Fetch check-in data for Mon → today only
+    const pastDates = weekDates.filter(ds => ds <= todayStr);
     const daySlots = new Map<string, BreakSlot[]>();
-    for (const dateStr of weekDates) {
-      if (dateStr <= todayStr) {
-        daySlots.set(dateStr, await fetchDayData(dateStr, bandIds));
-      }
+    for (const dateStr of pastDates) {
+      daySlots.set(dateStr, await fetchDayData(dateStr, bandIds));
     }
+    const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
 
-    const text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
+    const text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, 'daily', text, result.code, result.ok, result.error);
 
@@ -958,11 +1013,11 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?
     } else {
       const todayStr = dateParam || toThaiDateStr(thai);
       const weekDates = getRollingWeekDates(todayStr);
+      const pastDates = weekDates.filter(ds => ds <= todayStr);
       const daySlots = new Map<string, BreakSlot[]>();
-      for (const ds of weekDates) {
-        if (ds <= todayStr) daySlots.set(ds, await fetchDayData(ds, bandIds));
-      }
-      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
+      for (const ds of pastDates) daySlots.set(ds, await fetchDayData(ds, bandIds));
+      const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
+      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
     }
     return { ok: true, text };
   } catch (e) {
@@ -1007,11 +1062,11 @@ async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: s
     } else {
       const todayStr = dateStr || toThaiDateStr(thai);
       const weekDates = getRollingWeekDates(todayStr);
+      const pastDates = weekDates.filter(ds => ds <= todayStr);
       const daySlots = new Map<string, BreakSlot[]>();
-      for (const ds of weekDates) {
-        if (ds <= todayStr) daySlots.set(ds, await fetchDayData(ds, bandIds));
-      }
-      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '');
+      for (const ds of pastDates) daySlots.set(ds, await fetchDayData(ds, bandIds));
+      const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
+      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
     }
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, logType, text, result.code, result.ok, result.error);
@@ -1099,6 +1154,18 @@ Deno.serve(async (req: Request) => {
         }
 
         const todayStr = toThaiDateStr(thaiNow());
+
+        // Save non-empty LINE entries (external bands) to DB
+        const entriesToSave: Array<{ dateStr: string; breakNum: number; entryText: string }> = [];
+        for (const tl of templateLines) {
+          if (tl.existingText && tl.dateStr <= todayStr) {
+            entriesToSave.push({ dateStr: tl.dateStr, breakNum: tl.breakNum, entryText: tl.existingText });
+          }
+        }
+        if (entriesToSave.length > 0) {
+          await saveLineChatEntries(cfg.id, entriesToSave);
+        }
+
         const merged = await mergeTemplateWithCheckIns(templateLines, bandIds, msgText, todayStr);
 
         // Only send if content changed
