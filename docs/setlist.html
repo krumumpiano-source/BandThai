@@ -57,6 +57,9 @@
     .save-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px}
     #adGateModal{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:24px}
     #adGateModal.hidden{display:none}
+    #loadPrevModal.hidden{display:none}
+    .prev-date-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:var(--radius-md);margin-bottom:6px;cursor:pointer;transition:all .12s}
+    .prev-date-item:hover{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.4)}
     .ad-box{background:var(--bg-card);border-radius:16px;padding:28px 24px;max-width:380px;width:100%;text-align:center}
     .ad-box h3{font-size:1.1rem;margin-bottom:8px}
     .ad-box p{font-size:.85rem;color:var(--premium-text-muted);margin-bottom:16px}
@@ -81,11 +84,26 @@
     </div>
   </div>
 
+  <!-- Load Previous Setlist Modal -->
+  <div id="loadPrevModal" class="hidden" style="position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:24px">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;max-width:440px;width:100%;max-height:80vh;display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="margin:0;font-size:1.05rem">📋 ดึงเซ็ตลิสต์จากวันก่อน</h3>
+        <button onclick="closeLoadPrevModal()" style="background:none;border:none;color:var(--text-primary);font-size:1.3rem;cursor:pointer">×</button>
+      </div>
+      <p style="font-size:.82rem;color:var(--premium-text-muted);margin:0 0 12px">เลือกวันที่ต้องการคัดลอกมาใช้กับวันปัจจุบัน</p>
+      <div id="prevSetlistList" style="flex:1;overflow-y:auto;min-height:100px">
+        <div class="sl-empty"><div class="big-icon">⏳</div>กำลังโหลด...</div>
+      </div>
+    </div>
+  </div>
+
   <main>
     <div class="container">
       <div class="page-header">
         <h1 class="page-title">🎵 เซ็ตลิสต์</h1>
         <div style="display:flex;gap:8px">
+          <button id="loadPrevBtn" class="btn btn-secondary" onclick="openLoadPrevModal()" title="ดึงลิสเก่ามาใช้">📋 ดึงลิสเก่า</button>
           <button id="keyModeBtn" class="btn btn-secondary" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับการแสดงคีย์">🔤 อักษร</button>
           <button class="btn btn-secondary" onclick="window.print()">🖨️ พิมพ์</button>
         </div>
@@ -619,6 +637,76 @@
     renderQuota();
     selectSet(si);
     showToast('🔓 ปลดล็อคเซ็ตที่ ' + si + ' เรียบร้อย!', 'success');
+  }
+
+  // ── Load previous setlist ────────────────────────────────────────────────
+  function openLoadPrevModal() {
+    var date = getSelectedDate();
+    if (!date) { showToast('กรุณาเลือกวันที่ปัจจุบันก่อน', 'error'); return; }
+    var modal = document.getElementById('loadPrevModal');
+    modal.classList.remove('hidden');
+    document.getElementById('prevSetlistList').innerHTML =
+      '<div class="sl-empty"><div class="big-icon">⏳</div>กำลังโหลด...</div>';
+
+    apiCall('getSetlistDates', {}, function(r) {
+      var listEl = document.getElementById('prevSetlistList');
+      if (!r || !r.success || !r.data || !r.data.length) {
+        listEl.innerHTML = '<div class="sl-empty"><div class="big-icon">📭</div>ยังไม่มีเซ็ตลิสต์ที่บันทึกไว้</div>';
+        return;
+      }
+      // กรองเอาเฉพาะวันที่ไม่ใช่วันปัจจุบัน + มีเพลงจริง
+      var items = r.data.filter(function(row) {
+        if (row.date === date) return false;
+        var sd = row.sets_data || {};
+        var total = Object.keys(sd).reduce(function(sum, k) { return sum + (sd[k] || []).length; }, 0);
+        return total > 0;
+      });
+      if (!items.length) {
+        listEl.innerHTML = '<div class="sl-empty"><div class="big-icon">📭</div>ไม่มีเซ็ตลิสต์จากวันอื่น</div>';
+        return;
+      }
+      listEl.innerHTML = items.map(function(row) {
+        var sd = row.sets_data || {};
+        var setKeys = Object.keys(sd).filter(function(k) { return (sd[k] || []).length > 0; });
+        var totalSongs = setKeys.reduce(function(sum, k) { return sum + sd[k].length; }, 0);
+        var dateObj = new Date(row.date + 'T00:00:00');
+        var dayNames = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+        var monthNames = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+        var label = 'วัน' + dayNames[dateObj.getDay()] + ' ' + dateObj.getDate() + ' ' + monthNames[dateObj.getMonth()] + ' ' + (dateObj.getFullYear() + 543);
+        var detail = setKeys.length + ' เซ็ต · ' + totalSongs + ' เพลง';
+        return '<div class="prev-date-item" onclick="loadPrevSetlist(\'' + escapeHtml(row.date) + '\')">'
+          + '<div><div style="font-weight:600;font-size:.88rem">' + escapeHtml(label) + '</div>'
+          + '<div style="font-size:.75rem;color:var(--premium-text-muted)">' + escapeHtml(detail) + '</div></div>'
+          + '<span style="font-size:1.2rem">📥</span></div>';
+      }).join('');
+    });
+  }
+
+  function closeLoadPrevModal() {
+    document.getElementById('loadPrevModal').classList.add('hidden');
+  }
+
+  function loadPrevSetlist(prevDate) {
+    var currentDate = getSelectedDate();
+    if (!currentDate) { showToast('กรุณาเลือกวันที่ก่อน', 'error'); return; }
+    // ตรวจว่ามีข้อมูลอยู่แล้ววันนี้ไหม
+    var hasData = Object.keys(setsData).some(function(k) { return (setsData[k] || []).length > 0; });
+    if (hasData && !confirm('วันนี้มีเซ็ตลิสต์อยู่แล้ว\nต้องการแทนที่ด้วยลิสจากวัน ' + prevDate + ' หรือไม่?')) return;
+
+    apiCall('getSetlist', { date: prevDate }, function(r) {
+      if (!r || !r.success || !r.data) {
+        showToast('ไม่พบข้อมูลเซ็ตลิสต์ของวันที่เลือก', 'error'); return;
+      }
+      setsData = JSON.parse(JSON.stringify(r.data)); // deep clone
+      lastSavedHash = ''; // mark as unsaved
+      closeLoadPrevModal();
+      buildUI();
+      // auto-select first set with data
+      var firstKey = Object.keys(setsData).filter(function(k) { return (setsData[k] || []).length > 0; }).sort()[0];
+      if (firstKey) selectSet(firstKey);
+      autoSave();
+      showToast('📋 โหลดเซ็ตลิสต์จากวัน ' + prevDate + ' เรียบร้อย', 'success');
+    });
   }
 
   // ── Helper ───────────────────────────────────────────────────────────────
