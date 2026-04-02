@@ -267,6 +267,7 @@
 
         // ── Setlist ────────────────────────────────────────────────
         case 'getSetlist':          return doGetSetlist(d);
+        case 'getSetlistDates':     return doGetSetlistDates(d);
         case 'saveSetlist':         return doSaveSetlist(d);
         case 'getScheduleForDate':  return doGetScheduleForDate(d);
 
@@ -301,7 +302,6 @@
         case 'getVenueLineConfig':  return doGetVenueLineConfig(d);
         case 'saveVenueLineConfig': return doSaveVenueLineConfig(d);
         case 'sendLineTest':        return doSendLineTest(d);
-        case 'sendLineManual':      return doSendLineManual(d);
         case 'getLineQuota':        return doGetLineQuota(d);
         case 'previewLineMessage':  return doPreviewLineMessage(d);
 
@@ -1274,19 +1274,8 @@
 
     // Direct fetch to Edge Function (bypass sb.functions.invoke issues)
     async function _callLineFunction(bodyObj) {
-      // รอ session พร้อมก่อน (max 5 วินาที)
-      if (!global._sbSessionReady) {
-        await new Promise(function(resolve) {
-          var waited = 0;
-          var poll = setInterval(function() {
-            waited += 100;
-            if (global._sbSessionReady || waited >= 5000) { clearInterval(poll); resolve(); }
-          }, 100);
-        });
-      }
       var session = (await sb.auth.getSession()).data.session;
-      var token = session ? session.access_token : null;
-      if (!token) throw new Error('กรุณาเข้าสู่ระบบก่อนใช้งานฟีเจอร์นี้');
+      var token = session ? session.access_token : SUPABASE_ANON;
       var resp = await fetch(SUPABASE_URL + '/functions/v1/send-line-schedule', {
         method: 'POST',
         headers: {
@@ -1313,21 +1302,9 @@
       return { success: data.ok, data: data };
     }
 
-    async function doSendLineManual(d) {
-      if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var payload = { mode: 'manual', config_id: d.configId, type: d.type || 'daily' };
-      if (d.date) payload.date = d.date;
-      if (d.displayOpts) payload.display_opts = d.displayOpts;
-      var data = await _callLineFunction(payload);
-      return { success: data.ok, data: data };
-    }
-
     async function doPreviewLineMessage(d) {
       if (!d || !d.configId) throw new Error('ต้องระบุ configId');
-      var payload = { mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' };
-      if (d.date) payload.date = d.date;
-      if (d.displayOpts) payload.display_opts = d.displayOpts;
-      var data = await _callLineFunction(payload);
+      var data = await _callLineFunction({ mode: 'preview', config_id: d.configId, preview_mode: d.previewMode || 'daily' });
       return { success: data.ok, data: data };
     }
 
@@ -1652,6 +1629,17 @@
         .maybeSingle();
       if (error) throw error;
       return { success: true, data: (data && data.sets_data) || {} };
+    }
+
+    async function doGetSetlistDates(d) {
+      var bandId = d.bandId || getBandId();
+      var { data, error } = await sb.from('setlists')
+        .select('date, sets_data')
+        .eq('band_id', bandId)
+        .order('date', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return { success: true, data: data || [] };
     }
 
     async function doSaveSetlist(d) {
@@ -2720,14 +2708,17 @@
 
     // ── Restore session จาก Supabase ─────────────────────────────
     sb.auth.onAuthStateChange(function (event, session) {
-      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED' || event === 'PASSWORD_RECOVERY')) {
+      if (event === 'SIGNED_IN' && session) {
         localStorage.setItem('auth_token', session.access_token);
-        // แจ้ง _callLineFunction ว่า session พร้อมแล้ว
-        global._sbSessionReady = true;
       }
       if (event === 'SIGNED_OUT') {
         clearSession();
-        global._sbSessionReady = false;
+      }
+      if (event === 'TOKEN_REFRESHED' && session) {
+        localStorage.setItem('auth_token', session.access_token);
+      }
+      if (event === 'PASSWORD_RECOVERY' && session) {
+        localStorage.setItem('auth_token', session.access_token);
       }
     });
 
