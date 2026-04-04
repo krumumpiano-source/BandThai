@@ -68,6 +68,13 @@ function formatTime(t: string): string {
   return t.replace(':', '.');
 }
 
+function formatThaiDateBE(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const be = (y + 543) % 100;
+  const dow = new Date(dateStr + 'T12:00:00Z').getDay();
+  return `${THAI_DAYS_FULL[dow]} ที่ ${String(d).padStart(2,'0')}/${String(m).padStart(2,'0')}/${String(be).padStart(2,'0')}`;
+}
+
 // ── Quota check ────────────────────────────────────────────────────────────
 async function getMonthlyCount(configId: string): Promise<number> {
   const now = thaiNow();
@@ -113,6 +120,285 @@ async function sendLineMessage(token: string, groupId: string, text: string): Pr
   } catch (e) {
     return { code: 0, ok: false, error: String(e) };
   }
+}
+
+// ── Reply to LINE (uses replyToken — FREE, no quota) ───────────────────────
+async function replyLineMessage(token: string, replyToken: string, text: string): Promise<void> {
+  try {
+    await fetch('https://api.line.me/v2/bot/message/reply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ replyToken, messages: [{ type: 'text', text }] }),
+    });
+  } catch (e) {
+    console.error('[LINE-REPLY] Error:', e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// ── Schedule Entry System (venue_schedule_entries) ──────────────────────
+// ══════════════════════════════════════════════════════════════════════════
+
+interface ScheduleEntry {
+  date: string;
+  break_number: number;
+  break_start: string;
+  break_end: string;
+  band_name: string;
+  member_count: number;
+}
+
+// ── Parse LINE message → ScheduleEntry[] ────────────────────────────────
+// Parses: วันXXX ที่ DD/MM/YY  →  * เบรค N (HH.MM-HH.MM)  →  =band count คน
+function parseScheduleMessage(text: string): ScheduleEntry[] {
+  const entries: ScheduleEntry[] = [];
+  const lines = text.split('\n');
+  let currentDate = '';
+  let pendingBreak: { number: number; start: string; end: string } | null = null;
+
+  for (const line of lines) {
+    const t = line.trim();
+
+    // Date: วันXXX ที่ DD/MM/YY
+    const dateM = t.match(/วัน\S+\s+ที่\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (dateM) {
+      // Flush pending
+      if (pendingBreak && currentDate) {
+        entries.push({ date: currentDate, break_number: pendingBreak.number, break_start: pendingBreak.start, break_end: pendingBreak.end, band_name: '', member_count: 0 });
+        pendingBreak = null;
+      }
+      const day = parseInt(dateM[1]);
+      const month = parseInt(dateM[2]);
+      let year = parseInt(dateM[3]);
+      if (year < 100) year += 1957;        // 69 → 2026
+      else if (year > 2500) year -= 543;   // 2569 → 2026
+      currentDate = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      continue;
+    }
+
+    // Break: * เบรค N (HH.MM-HH.MM)
+    const brM = t.match(/\*\s*เบรค\s*(\d)\s*\(\s*(\d{1,2}[\.:]\d{2})\s*-\s*(\d{1,2}[\.:]\d{2})\s*\)/);
+    if (brM) {
+      // Flush previous pending break
+      if (pendingBreak && currentDate) {
+        entries.push({ date: currentDate, break_number: pendingBreak.number, break_start: pendingBreak.start, break_end: pendingBreak.end, band_name: '', member_count: 0 });
+      }
+      pendingBreak = {
+        number: parseInt(brM[1]),
+        start: brM[2].replace('.', ':'),
+        end: brM[3].replace('.', ':'),
+      };
+      continue;
+    }
+
+    // Assignment: = [band] [count] [คน[ครับ]]
+    if (t.startsWith('=') && currentDate && pendingBreak) {
+      const assign = t.substring(1).trim();
+      let bandName = '';
+      let memberCount = 0;
+      if (assign && !/^อ๊อฟ$|^off$/i.test(assign)) {
+        const cm = assign.match(/^(.+?)[\s]*(\d+)\s*(?:คน.*)?$/);
+        if (cm) {
+          bandName = cm[1].trim();
+          memberCount = parseInt(cm[2]);
+        } else {
+          bandName = assign;
+        }
+      }
+      entries.push({
+        date: currentDate,
+        break_number: pendingBreak.number,
+        break_start: pendingBreak.start,
+        break_end: pendingBreak.end,
+        band_name: bandName,
+        member_count: memberCount,
+      });
+      pendingBreak = null;
+      continue;
+    }
+  }
+  // Flush last pending
+  if (pendingBreak && currentDate) {
+    entries.push({ date: currentDate, break_number: pendingBreak.number, break_start: pendingBreak.start, break_end: pendingBreak.end, band_name: '', member_count: 0 });
+  }
+  return entries;
+}
+
+// ── UPSERT entries → venue_schedule_entries ─────────────────────────────
+async function upsertScheduleEntries(entries: ScheduleEntry[], source: string, updatedBy: string): Promise<void> {
+  for (const e of entries) {
+    await sb.from('venue_schedule_entries').upsert({
+      venue_name: 'ร้านนิยมสุข',
+      date: e.date,
+      break_number: e.break_number,
+      break_start: e.break_start,
+      break_end: e.break_end,
+      band_name: e.band_name,
+      member_count: e.member_count,
+      source,
+      updated_by: updatedBy,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'venue_name,date,break_number' });
+  }
+}
+
+// ── Sync SoulCiety check-ins → venue_schedule_entries ───────────────────
+async function syncSoulCietyCheckins(dateStr: string, bandIds: string[]): Promise<void> {
+  const { data: bands } = await sb.from('bands').select('id, band_name').in('id', bandIds);
+  const scBand = (bands || []).find((b: { id: string; band_name: string }) => /soulciety/i.test(b.band_name));
+  if (!scBand) return;
+
+  const { data: checkIns } = await sb
+    .from('member_check_ins')
+    .select('member_id, slots')
+    .eq('date', dateStr)
+    .eq('band_id', scBand.id)
+    .neq('status', 'leave');
+
+  if (!checkIns?.length) return;
+
+  const dow = new Date(dateStr + 'T12:00:00Z').getDay();
+  const { data: bs } = await sb.from('band_settings').select('settings').eq('band_id', scBand.id).maybeSingle();
+  const sched = bs?.settings?.schedule || {};
+  const daySlots = ((sched[dow] ?? sched[String(dow)] ?? []) as Array<{ startTime?: string; endTime?: string }>)
+    .filter(sl => sl.startTime && sl.endTime)
+    .sort((a, b) => (a.startTime! > b.startTime! ? 1 : -1));
+
+  for (let i = 0; i < daySlots.length; i++) {
+    const sl = daySlots[i];
+    const range = `${sl.startTime}-${sl.endTime}`;
+    const count = checkIns.filter((ci: { member_id: string; slots: string[] }) => {
+      const s = Array.isArray(ci.slots) ? ci.slots : [];
+      return s.includes(range);
+    }).length;
+
+    if (count > 0) {
+      await sb.from('venue_schedule_entries').upsert({
+        venue_name: 'ร้านนิยมสุข',
+        date: dateStr,
+        break_number: i + 1,
+        break_start: sl.startTime,
+        break_end: sl.endTime,
+        band_name: scBand.band_name || 'SoulCiety',
+        member_count: count,
+        source: 'checkin',
+        updated_by: 'system',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'venue_name,date,break_number' });
+    }
+  }
+}
+
+// ── Get current week Mon→Sun dates ─────────────────────────────────────
+function getWeekDates(thai: Date): string[] {
+  const today = new Date(thai);
+  const dayOfWeek = today.getDay(); // 0=Sun … 6=Sat
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const monday = new Date(today);
+  monday.setDate(today.getDate() + diff);
+  const dates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(toThaiDateStr(d));
+  }
+  return dates;
+}
+
+// ── Fetch week schedule from venue_schedule_entries ─────────────────────
+interface DayBreakData {
+  date: string;
+  breaks: Array<{ number: number; start: string; end: string; band_name: string; member_count: number }>;
+}
+
+async function fetchWeekSchedule(weekDates: string[], bandIds: string[]): Promise<DayBreakData[]> {
+  const { data: entries } = await sb
+    .from('venue_schedule_entries')
+    .select('*')
+    .eq('venue_name', 'ร้านนิยมสุข')
+    .in('date', weekDates)
+    .order('break_number');
+
+  // Get default break times from band_settings
+  let defaultBreaks: Array<{ number: number; start: string; end: string }> = [];
+  if (bandIds.length > 0) {
+    const { data: bsList } = await sb.from('band_settings').select('settings').in('band_id', bandIds).limit(1);
+    if (bsList?.[0]?.settings?.schedule) {
+      const sched = bsList[0].settings.schedule;
+      for (let dow = 0; dow < 7; dow++) {
+        const slots = sched[dow] || sched[String(dow)] || [];
+        if (slots.length > 0) {
+          defaultBreaks = slots
+            .filter((sl: { startTime?: string; endTime?: string }) => sl.startTime && sl.endTime)
+            .sort((a: { startTime: string }, b: { startTime: string }) => a.startTime > b.startTime ? 1 : -1)
+            .map((sl: { startTime: string; endTime: string }, i: number) => ({ number: i + 1, start: sl.startTime, end: sl.endTime }));
+          break;
+        }
+      }
+    }
+  }
+  if (defaultBreaks.length === 0) {
+    defaultBreaks = [
+      { number: 1, start: '18:00', end: '19:00' },
+      { number: 2, start: '19:30', end: '20:30' },
+      { number: 3, start: '21:00', end: '22:00' },
+      { number: 4, start: '22:30', end: '23:30' },
+    ];
+  }
+
+  const entryMap: Record<string, Record<number, { break_start: string; break_end: string; band_name: string; member_count: number }>> = {};
+  for (const e of entries || []) {
+    if (!entryMap[e.date]) entryMap[e.date] = {};
+    entryMap[e.date][e.break_number] = e;
+  }
+
+  return weekDates.map(dateStr => {
+    const dayEntries = entryMap[dateStr] || {};
+    return {
+      date: dateStr,
+      breaks: defaultBreaks.map(db => {
+        const entry = dayEntries[db.number];
+        return {
+          number: db.number,
+          start: entry?.break_start || db.start,
+          end: entry?.break_end || db.end,
+          band_name: entry?.band_name || '',
+          member_count: entry?.member_count || 0,
+        };
+      }),
+    };
+  });
+}
+
+// ── Format weekly overview (ส่งทุกวัน แสดงทั้งสัปดาห์ จ.-อา.) ──────────
+function formatWeeklyOverview(data: DayBreakData[], footer: string): string {
+  const sep = '━━━━━━━━━━━━━━━━━━━━━━';
+  const lines: string[] = [];
+
+  lines.push(sep);
+  lines.push('📋 รายงานประจำวัน');
+  lines.push('ร้านนิยมสุข');
+  lines.push(sep);
+
+  for (const day of data) {
+    lines.push('');
+    lines.push(formatThaiDateBE(day.date));
+    lines.push('');
+    for (const br of day.breaks) {
+      lines.push(`* เบรค ${br.number} (${formatTime(br.start)}-${formatTime(br.end)})`);
+      if (br.band_name && br.member_count > 0) {
+        lines.push(`=${br.band_name} ${br.member_count} คนครับ`);
+      } else {
+        lines.push('=');
+      }
+    }
+  }
+
+  lines.push('');
+  lines.push(sep);
+  lines.push(footer || 'ส่งโดยระบบอัตโนมัติจากโปรแกรม BandThai');
+  lines.push(sep);
+  return lines.join('\n');
 }
 
 // ── Fetch schedule slots for a specific date across multiple bands ─────────
@@ -171,60 +457,18 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
     });
   }
 
-  // Fetch actual check-ins for this date across all bands (including leave)
+  // Fetch actual check-ins for this date across all bands
   const { data: checkIns } = await sb
     .from('member_check_ins')
-    .select('member_id, band_id, slots, status, substitute')
-    .eq('date', dateStr)
-    .in('band_id', bandIds);
-
-  // Fetch leave_requests for this date to get substitute names
-  const { data: leaveReqs } = await sb
-    .from('leave_requests')
-    .select('member_id, band_id, slots, substitute_name, substitute_id')
+    .select('member_id, band_id, slots, status')
     .eq('date', dateStr)
     .in('band_id', bandIds)
-    .in('status', ['approved', 'pending']);
+    .neq('status', 'leave');
 
-  // Build substitute map: memberId_bandId → substitute info
-  const substituteMap: Record<string, { name: string; id: string }> = {};
-  for (const lv of leaveReqs || []) {
-    if (lv.substitute_name) {
-      substituteMap[`${lv.member_id}_${lv.band_id}`] = {
-        name: lv.substitute_name,
-        id: lv.substitute_id || '',
-      };
-    }
-  }
-  // Also check check-in substitute field
+  // Build a map: memberKey → { memberId, bandId }
+  // checkIn.slots is array of strings like "18:00-19:00"
+  const checkedInBySlotKey: Record<string, string[]> = {}; // "18:00-19:00_bandId" → [memberId,...]
   for (const ci of checkIns || []) {
-    if (ci.status === 'leave' && ci.substitute) {
-      const sub = typeof ci.substitute === 'string' ? JSON.parse(ci.substitute) : ci.substitute;
-      if (sub && sub.name) {
-        const key = `${ci.member_id}_${ci.band_id}`;
-        if (!substituteMap[key]) {
-          substituteMap[key] = { name: sub.name, id: '' };
-        }
-      }
-    }
-  }
-
-  // Build a map: "18:00-19:00_bandId" → [memberId,...]
-  const checkedInBySlotKey: Record<string, string[]> = {};
-  for (const ci of checkIns || []) {
-    if (ci.status === 'leave') {
-      // Leave member with substitute → add their memberId so substitute gets looked up
-      const subKey = `${ci.member_id}_${ci.band_id}`;
-      if (substituteMap[subKey]) {
-        const slots: string[] = Array.isArray(ci.slots) ? ci.slots : [];
-        for (const slotStr of slots) {
-          const key = `${slotStr}_${ci.band_id}`;
-          if (!checkedInBySlotKey[key]) checkedInBySlotKey[key] = [];
-          checkedInBySlotKey[key].push(ci.member_id);
-        }
-      }
-      continue;
-    }
     const slots: string[] = Array.isArray(ci.slots) ? ci.slots : [];
     for (const slotStr of slots) {
       const key = `${slotStr}_${ci.band_id}`;
@@ -243,10 +487,6 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
   // Also add checked-in members
   for (const ids of Object.values(checkedInBySlotKey)) {
     ids.forEach(id => allMemberIds.add(id));
-  }
-  // Also add substitute member IDs (so their profiles get fetched)
-  for (const sub of Object.values(substituteMap)) {
-    if (sub.id) allMemberIds.add(sub.id);
   }
 
   const memberIdArr = [...allMemberIds];
@@ -276,29 +516,18 @@ async function fetchDayData(dateStr: string, bandIds: string[]): Promise<BreakSl
         slotMap[key] = { startTime: sl.startTime, endTime: sl.endTime, bands: [] };
       }
 
-      // Look up actual check-ins for this slot — do NOT fall back to template
+      // Look up actual check-ins for this slot
       const slotRangeStr = `${sl.startTime}-${sl.endTime}`;
-      const memberIds = checkedInBySlotKey[`${slotRangeStr}_${b.bandId}`] || [];
+      const checkedInIds = checkedInBySlotKey[`${slotRangeStr}_${b.bandId}`] || [];
+
+      // Use checked-in members if any, else fall back to scheduled members
+      const memberIds = checkedInIds.length > 0 ? checkedInIds : sl.memberIds;
 
       if (memberIds.length > 0) {
-        const members: Array<{ name: string; instrument: string }> = [];
-        for (const id of memberIds) {
-          const subKey = `${id}_${b.bandId}`;
-          const sub = substituteMap[subKey];
-          if (sub) {
-            // This member is on leave → use substitute name instead
-            const subProfile = sub.id && memberMap[sub.id];
-            members.push({
-              name: subProfile ? subProfile.name : sub.name,
-              instrument: subProfile ? subProfile.instrument : '',
-            });
-          } else {
-            members.push({
-              name: memberMap[id]?.name || 'ไม่ทราบชื่อ',
-              instrument: memberMap[id]?.instrument || '',
-            });
-          }
-        }
+        const members = memberIds.map(id => ({
+          name: memberMap[id]?.name || 'ไม่ทราบชื่อ',
+          instrument: memberMap[id]?.instrument || '',
+        }));
         slotMap[key].bands.push({ bandName: b.bandName, members });
       } else {
         // No members at all for this slot from this band — add empty
@@ -317,328 +546,8 @@ interface BreakSlot {
   bands: Array<{ bandName: string; members: Array<{ name: string; instrument: string }> }>;
 }
 
-interface DisplayOpts {
-  showNames?: boolean;
-  showInstrument?: boolean;
-  showCount?: boolean;
-  showBand?: boolean;
-  showFooter?: boolean;
-}
-
-// ── Map time slot to break number ──────────────────────────────────────────
-const BREAK_SCHEDULE = [
-  { start: '18:00', end: '19:00' },
-  { start: '19:30', end: '20:30' },
-  { start: '21:00', end: '22:00' },
-  { start: '22:30', end: '23:30' },
-];
-
-function getBreakNumber(startTime: string): number {
-  const t = startTime.replace('.', ':').substring(0, 5);
-  const idx = BREAK_SCHEDULE.findIndex(b => b.start === t);
-  return idx >= 0 ? idx + 1 : 0;
-}
-
-// ── Short date BE: "2025-03-30" → "30/03/68" (BE ย่อ 2 หลัก) ──────────────
-function formatShortDateBE(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  const be = (y + 543) % 100; // ย่อ 2 หลัก
-  return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${String(be).padStart(2, '0')}`;
-}
-
-// ── Get Monday of the week containing a given date ─────────────────────────
-function getMondayStr(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00Z');
-  const dow = d.getUTCDay(); // 0=Sun,1=Mon...6=Sat
-  const diff = dow === 0 ? -6 : 1 - dow; // shift to Monday
-  d.setUTCDate(d.getUTCDate() + diff);
-  return toThaiDateStr(d);
-}
-
-// ── Format rolling week daily message ─────────────────────────────────────
-// Shows Mon → today (inclusive), remaining days blank template
-function formatRollingWeekMessage(
-  weekDates: string[],       // 7 dates Mon→Sun YYYY-MM-DD
-  todayStr: string,          // today YYYY-MM-DD (cutoff for check-in data)
-  daySlots: Map<string, BreakSlot[]>, // SoulCiety check-in data per date
-  footer: string,
-  lineEntries?: Map<string, Map<number, string[]>> // LINE chat entries per date/break
-): string {
-  const sep = '━━━━━━━━━━━━━━━━━━━━━━';
-  const lines: string[] = [];
-
-  lines.push(sep);
-  lines.push('📋 รายงานประจำวัน');
-  lines.push('ร้านนิยมสุข');
-  lines.push(sep);
-  lines.push('');
-
-  for (const dateStr of weekDates) {
-    const dow = new Date(dateStr + 'T12:00:00Z').getUTCDay();
-    const dayNames = ['วันอาทิตย์','วันจันทร์','วันอังคาร','วันพุธ','วันพฤหัสบดี','วันศุกร์','วันเสาร์'];
-    lines.push(`${dayNames[dow]} ที่ ${formatShortDateBE(dateStr)}`);
-    lines.push('');
-
-    const slots = daySlots.get(dateStr) || [];
-    const isPast = dateStr <= todayStr;
-
-    for (const brk of BREAK_SCHEDULE) {
-      const bNum = getBreakNumber(brk.start);
-      lines.push(`* เบรค ${bNum} (${formatTime(brk.start)}-${formatTime(brk.end)})`);
-
-      if (!isPast) {
-        lines.push('=');
-        continue;
-      }
-
-      // LINE chat entries (external bands) for this break
-      const chatEntries = lineEntries?.get(dateStr)?.get(bNum) || [];
-
-      // SoulCiety check-in
-      const slot = slots.find(s => s.startTime.replace('.', ':').substring(0, 5) === brk.start);
-      const activeBands = slot ? slot.bands.filter(b => b.members.length > 0) : [];
-
-      if (chatEntries.length === 0 && activeBands.length === 0) {
-        lines.push('=');
-      } else {
-        for (const entry of chatEntries) {
-          lines.push(`=${entry}`);
-        }
-        for (const b of activeBands) {
-          lines.push(`=${b.bandName} ${b.members.length} คนครับ`);
-        }
-      }
-    }
-    lines.push('');
-  }
-
-  const footerText = footer || defaultFooter();
-  lines.push(sep);
-  lines.push(footerText);
-  lines.push(sep);
-
-  return lines.join('\n');
-}
-
-// ── Parse LINE template message ────────────────────────────────────────────
-// Returns array of { dateStr: YYYY-MM-DD, breakNum: 1-4, existingText: string }
-interface TemplateLine { dateStr: string; breakNum: number; existingText: string }
-
-function parseLineTemplate(text: string): TemplateLine[] | null {
-  const lines = text.split('\n');
-  const result: TemplateLine[] = [];
-  let currentDate: string | null = null;
-  let currentBreak: number | null = null;
-  let waitingForEqual = false;
-
-  // Date patterns: "วันXXX ที่ DD/MM/YY" or "วันXXX ที่ DD/MM/YYYY"
-  const dateRe = /วัน\S+\s+ที่\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/;
-  // Break pattern: "* เบรค N (...)" or "* เบรคN"
-  const breakRe = /\*\s*เบรค\s*(\d)/;
-  // Equal pattern: starts with =
-  const equalRe = /^=(.*)/;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    // Match date header
-    const dateMatch = trimmed.match(dateRe);
-    if (dateMatch) {
-      const d = parseInt(dateMatch[1]);
-      const m = parseInt(dateMatch[2]);
-      let y = parseInt(dateMatch[3]);
-      if (y < 100) y += 2500; // 2-digit BE
-      const ce = y - 543; // convert BE to CE
-      currentDate = `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      waitingForEqual = false;
-      currentBreak = null;
-      continue;
-    }
-
-    // Match break line
-    const breakMatch = trimmed.match(breakRe);
-    if (breakMatch && currentDate) {
-      currentBreak = parseInt(breakMatch[1]);
-      waitingForEqual = true;
-      continue;
-    }
-
-    // Match = line
-    const equalMatch = trimmed.match(equalRe);
-    if (equalMatch && waitingForEqual && currentDate && currentBreak) {
-      const existingText = equalMatch[1].trim();
-      result.push({ dateStr: currentDate, breakNum: currentBreak, existingText });
-      waitingForEqual = false;
-      currentBreak = null;
-      continue;
-    }
-  }
-
-  // Valid template must have at least 4 break entries
-  return result.length >= 4 ? result : null;
-}
-
-// ── Merge SoulCiety data into parsed template ──────────────────────────────
-async function mergeTemplateWithCheckIns(
-  templateLines: TemplateLine[],
-  bandIds: string[],
-  rawText: string,
-  todayStr: string
-): Promise<string> {
-  // Collect unique dates that are <= today
-  const pastDates = [...new Set(templateLines.map(l => l.dateStr))].filter(d => d <= todayStr);
-
-  // Fetch check-in data for all past dates
-  const slotsPerDate = new Map<string, BreakSlot[]>();
-  for (const dateStr of pastDates) {
-    slotsPerDate.set(dateStr, await fetchDayData(dateStr, bandIds));
-  }
-
-  // Build lookup: dateStr + breakNum → SoulCiety members count
-  const scCount = new Map<string, string[]>();
-  for (const [dateStr, slots] of slotsPerDate) {
-    for (const slot of slots) {
-      const bNum = getBreakNumber(slot.startTime);
-      if (bNum < 1) continue;
-      const key = `${dateStr}_${bNum}`;
-      const names: string[] = [];
-      for (const b of slot.bands) {
-        if (b.members.length > 0) {
-          names.push(`${b.bandName} ${b.members.length} คนครับ`);
-        }
-      }
-      if (names.length > 0) scCount.set(key, names);
-    }
-  }
-
-  // Rebuild text line by line — keep original structure, only fill blank = lines
-  const lines = rawText.split('\n');
-  const dateRe = /วัน\S+\s+ที่\s+(\d{1,2})\/(\d{1,2})\/(\d{2,4})/;
-  const breakRe = /\*\s*เบรค\s*(\d)/;
-  const equalRe = /^(=\s*)(.*)$/;
-
-  let currentDate: string | null = null;
-  let currentBreak: number | null = null;
-  let waitingForEqual = false;
-  const output: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    const dateMatch = trimmed.match(dateRe);
-    if (dateMatch) {
-      const d = parseInt(dateMatch[1]);
-      const m = parseInt(dateMatch[2]);
-      let y = parseInt(dateMatch[3]);
-      if (y < 100) y += 2500;
-      const ce = y - 543;
-      currentDate = `${ce}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      waitingForEqual = false;
-      currentBreak = null;
-      output.push(line);
-      continue;
-    }
-
-    const breakMatch = trimmed.match(breakRe);
-    if (breakMatch && currentDate) {
-      currentBreak = parseInt(breakMatch[1]);
-      waitingForEqual = true;
-      output.push(line);
-      continue;
-    }
-
-    const equalMatch = trimmed.match(equalRe);
-    if (equalMatch && waitingForEqual && currentDate && currentBreak) {
-      const existingContent = equalMatch[2].trim();
-      const key = `${currentDate}_${currentBreak}`;
-      const isPast = currentDate <= todayStr;
-      const scEntries = (isPast && scCount.has(key)) ? scCount.get(key)! : [];
-
-      if (existingContent === '' && scEntries.length > 0) {
-        // blank = → replace with SoulCiety data (first entry replaces, rest append)
-        output.push(`=${scEntries[0]}`);
-        for (let i = 1; i < scEntries.length; i++) output.push(`=${scEntries[i]}`);
-      } else if (existingContent !== '' && scEntries.length > 0) {
-        // existing content → keep, then append SoulCiety on new lines
-        output.push(line);
-        for (const entry of scEntries) output.push(`=${entry}`);
-      } else {
-        output.push(line);
-      }
-      waitingForEqual = false;
-      currentBreak = null;
-      continue;
-    }
-
-    output.push(line);
-  }
-
-  return output.join('\n');
-}
-
-// ── Build rolling week dates (Mon→Sun) for a given date ───────────────────
-function getRollingWeekDates(todayStr: string): string[] {
-  const mondayStr = getMondayStr(todayStr);
-  const dates: string[] = [];
-  const d = new Date(mondayStr + 'T12:00:00Z');
-  for (let i = 0; i < 7; i++) {
-    dates.push(toThaiDateStr(d));
-    d.setUTCDate(d.getUTCDate() + 1);
-  }
-  return dates;
-}
-
-// ── Save LINE chat entries to DB (upsert: delete old then insert) ──────────
-async function saveLineChatEntries(
-  configId: string,
-  entries: Array<{ dateStr: string; breakNum: number; entryText: string; senderName?: string }>
-): Promise<void> {
-  if (!entries.length) return;
-  // Delete existing entries for the dates involved
-  const dates = [...new Set(entries.map(e => e.dateStr))];
-  await sb.from('line_chat_entries')
-    .delete()
-    .eq('venue_line_config_id', configId)
-    .in('date', dates);
-  // Insert new entries
-  await sb.from('line_chat_entries').insert(
-    entries.map(e => ({
-      venue_line_config_id: configId,
-      date: e.dateStr,
-      break_num: e.breakNum,
-      entry_text: e.entryText,
-      sender_name: e.senderName || null,
-    }))
-  );
-}
-
-// ── Fetch LINE chat entries from DB ────────────────────────────────────────
-// Returns Map<dateStr, Map<breakNum, string[]>>
-async function fetchLineChatEntries(
-  configId: string,
-  dates: string[]
-): Promise<Map<string, Map<number, string[]>>> {
-  const result = new Map<string, Map<number, string[]>>();
-  if (!dates.length) return result;
-  const { data } = await sb
-    .from('line_chat_entries')
-    .select('date, break_num, entry_text')
-    .eq('venue_line_config_id', configId)
-    .in('date', dates)
-    .order('created_at', { ascending: true });
-  for (const row of data || []) {
-    const d = row.date as string;
-    const b = row.break_num as number;
-    if (!result.has(d)) result.set(d, new Map());
-    const bMap = result.get(d)!;
-    if (!bMap.has(b)) bMap.set(b, []);
-    bMap.get(b)!.push(row.entry_text as string);
-  }
-  return result;
-}
-
 // ── Format daily message ───────────────────────────────────────────────────
-function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string, opts?: DisplayOpts): string {
+function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string): string {
   const sep = '━━━━━━━━━━━━━━━━━━━━━━';
   const lines: string[] = [];
 
@@ -649,53 +558,43 @@ function formatDailyMessage(dateStr: string, slots: BreakSlot[], footer: string,
   lines.push(sep);
   lines.push('');
 
-  // Always show all 4 breaks
-  for (const brk of BREAK_SCHEDULE) {
-    const breakNum = getBreakNumber(brk.start);
-    lines.push(`▸ เบรค ${breakNum} ⏐ ${formatTime(brk.start)}–${formatTime(brk.end)}`);
+  if (slots.length === 0) {
+    lines.push('— ไม่มีข้อมูลตารางงานวันนี้');
+  } else {
+    slots.forEach((slot, idx) => {
+      lines.push(`▸ เบรค ${idx + 1} ⏐ ${formatTime(slot.startTime)}–${formatTime(slot.endTime)}`);
 
-    // Find matching slot data
-    const slot = slots.find(s => {
-      const t = s.startTime.replace('.', ':').substring(0, 5);
-      return t === brk.start;
-    });
-    const activeBands = slot ? slot.bands.filter(b => b.members.length > 0) : [];
+      // Collect all members across bands with content
+      const activeBands = slot.bands.filter(b => b.members.length > 0);
 
-    if (activeBands.length === 0) {
-      lines.push('  — ไม่มีข้อมูล');
-    } else {
-        const sN = opts?.showNames !== false;
-        const sI = opts?.showInstrument !== false;
-        const sC = opts?.showCount !== false;
-        const sB = opts?.showBand !== false;
+      if (activeBands.length === 0) {
+        lines.push('  — ไม่มีข้อมูล');
+      } else {
         for (const b of activeBands) {
-          // Band name + count header
-          const bandLabel = sB ? b.bandName : '';
-          const countLabel = sC ? `(${b.members.length} คน)` : '';
-          const header = [bandLabel, countLabel].filter(Boolean).join(' ');
-          if (header) lines.push(`  ${header}`);
-
-          if (sN) {
-            for (const m of b.members) {
-              if (sI && m.instrument) {
-                lines.push(`  • ${m.name} — ${m.instrument}`);
-              } else {
-                lines.push(`  • ${m.name}`);
-              }
+          // If multiple bands share same slot, show band name as header
+          if (activeBands.length > 1 || b.bandName) {
+            lines.push(`  ${b.bandName} (${b.members.length} คน)`);
+          } else {
+            lines.push(`  (${b.members.length} คน)`);
+          }
+          for (const m of b.members) {
+            if (m.instrument) {
+              lines.push(`  • ${m.name} — ${m.instrument}`);
+            } else {
+              lines.push(`  • ${m.name}`);
             }
           }
         }
       }
       lines.push('');
-    }
+    });
+  }
 
   // Footer
-  if (opts?.showFooter !== false) {
-    const footerText = footer || defaultFooter();
-    lines.push(sep);
-    lines.push(footerText);
-    lines.push(sep);
-  }
+  const footerText = footer || defaultFooter();
+  lines.push(sep);
+  lines.push(footerText);
+  lines.push(sep);
 
   return lines.join('\n');
 }
@@ -705,8 +604,7 @@ function formatWeeklyMessage(
   startDateStr: string,
   endDateStr: string,
   dayData: Array<{ dateStr: string; slots: BreakSlot[] }>,
-  footer: string,
-  opts?: DisplayOpts
+  footer: string
 ): string {
   const sep  = '━━━━━━━━━━━━━━━━━━━━━━';
   const sep2 = '─────────────────────';
@@ -725,27 +623,16 @@ function formatWeeklyMessage(
     if (day.slots.length === 0) {
       lines.push('  — ไม่มีข้อมูล');
     } else {
-      day.slots.forEach((slot) => {
-        const breakNum = getBreakNumber(slot.startTime) || '?';
+      day.slots.forEach((slot, idx) => {
         const activeBands = slot.bands.filter(b => b.members.length > 0);
         if (activeBands.length === 0) {
-          lines.push(`  เบรค${breakNum}: —`);
+          lines.push(`  เบรค${idx + 1}: —`);
         } else {
-            const sN = opts?.showNames !== false;
-          const sI = opts?.showInstrument !== false;
-          const sC = opts?.showCount !== false;
-          const sB = opts?.showBand !== false;
           const summary = activeBands.map(b => {
-            const parts: string[] = [];
-            if (sB) parts.push(b.bandName);
-            if (sC) parts.push(`(${b.members.length})`);
-            if (sN) {
-              const names = b.members.map(m => sI && m.instrument ? `${m.name}—${m.instrument}` : m.name).join(', ');
-              parts.push(`— ${names}`);
-            }
-            return parts.join(' ');
+            const names = b.members.map(m => m.name).join(', ');
+            return `${b.bandName} (${b.members.length}) — ${names}`;
           }).join('; ');
-          lines.push(`  เบรค${breakNum}: ${summary}`);
+          lines.push(`  เบรค${idx + 1}: ${summary}`);
         }
       });
     }
@@ -778,19 +665,11 @@ function formatWeeklyMessage(
   if (persons.length === 0) {
     lines.push('ไม่มีข้อมูลการลงเวลา');
   } else {
-    const sI = opts?.showInstrument !== false;
     const nameColW = Math.max(...persons.map(p => p.name.length), 4);
-    if (sI) {
-      const instrColW = Math.max(...persons.map(p => p.instrument.length), 4);
-      lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}${'ตำแหน่ง'.padEnd(instrColW + 2)}เบรค`);
-      for (const p of persons) {
-        lines.push(`${p.name.padEnd(nameColW + 2)}${(p.instrument || '—').padEnd(instrColW + 2)}${p.count}`);
-      }
-    } else {
-      lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}เบรค`);
-      for (const p of persons) {
-        lines.push(`${p.name.padEnd(nameColW + 2)}${p.count}`);
-      }
+    const instrColW = Math.max(...persons.map(p => p.instrument.length), 4);
+    lines.push(`${'ชื่อ'.padEnd(nameColW + 2)}${'ตำแหน่ง'.padEnd(instrColW + 2)}เบรค`);
+    for (const p of persons) {
+      lines.push(`${p.name.padEnd(nameColW + 2)}${(p.instrument || '—').padEnd(instrColW + 2)}${p.count}`);
     }
   }
 
@@ -810,12 +689,10 @@ function formatWeeklyMessage(
   lines.push(`รวมทั้งสัปดาห์      ${totalBreaks} เบรค`);
 
   // Footer
-  if (opts?.showFooter !== false) {
-    const footerText = footer || defaultFooter();
-    lines.push(sep);
-    lines.push(footerText);
-    lines.push(sep);
-  }
+  const footerText = footer || defaultFooter();
+  lines.push(sep);
+  lines.push(footerText);
+  lines.push(sep);
 
   return lines.join('\n');
 }
@@ -832,11 +709,8 @@ function defaultFooter(): string {
   ].join('\n');
 }
 
-// ── Daily mode (rolling week) ──────────────────────────────────────────────
+// ── Daily mode — ส่งภาพรวมสัปดาห์ (จ.-อา.) ทุกวัน 23:30 ────────────────
 async function runDaily(thai: Date): Promise<void> {
-  const todayStr = toThaiDateStr(thai);
-  const weekDates = getRollingWeekDates(todayStr);
-
   const { data: configs } = await sb
     .from('venue_line_config')
     .select('*')
@@ -846,9 +720,8 @@ async function runDaily(thai: Date): Promise<void> {
 
   for (const cfg of configs) {
     if (!cfg.line_channel_token || !cfg.line_group_id) continue;
-    if (cfg.send_daily_enabled === false) continue;
 
-    // ── Dedup: ถ้าส่ง daily สำเร็จไปแล้วใน 20 ชม. ล่าสุด → ข้าม
+    // Dedup: ส่งสำเร็จแล้วใน 20 ชม. → ข้าม
     const dedupSince = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
     const { count: alreadySent } = await sb
       .from('line_message_log')
@@ -871,23 +744,28 @@ async function runDaily(thai: Date): Promise<void> {
 
     const count = await getMonthlyCount(cfg.id);
     if (count >= QUOTA_WARN) {
-      console.warn(`[line] quota near limit (${count}/${QUOTA_LIMIT}) for config ${cfg.id} — skipping daily`);
+      console.warn(`[line] quota near limit — skipping daily`);
       continue;
     }
 
-    // Fetch check-in data for Mon → today only
-    const pastDates = weekDates.filter(ds => ds <= todayStr);
-    const daySlots = new Map<string, BreakSlot[]>();
-    for (const dateStr of pastDates) {
-      daySlots.set(dateStr, await fetchDayData(dateStr, bandIds));
-    }
-    const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
+    // 1) คำนวณสัปดาห์ปัจจุบัน (จ.-อา.)
+    const weekDates = getWeekDates(thai);
+    const today = toThaiDateStr(thai);
 
-    const text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
+    // 2) Sync SoulCiety check-ins สำหรับวันที่ผ่านมาแล้ว+วันนี้
+    for (const dateStr of weekDates) {
+      if (dateStr <= today) {
+        await syncSoulCietyCheckins(dateStr, bandIds);
+      }
+    }
+
+    // 3) อ่านข้อมูลจาก venue_schedule_entries → format → ส่ง
+    const weekData = await fetchWeekSchedule(weekDates, bandIds);
+    const text = formatWeeklyOverview(weekData, cfg.footer_text || '');
+
     const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
     await logMessage(cfg.id, 'daily', text, result.code, result.ok, result.error);
-
-    console.log(`[line] daily (rolling) sent to ${cfg.venue_name} — ok=${result.ok} code=${result.code}`);
+    console.log(`[line] daily sent to ${cfg.venue_name} — ok=${result.ok} code=${result.code}`);
   }
 }
 
@@ -980,7 +858,7 @@ async function runTest(configId: string): Promise<{ ok: boolean; message?: strin
 }
 
 // ── Preview mode ───────────────────────────────────────────────────────────
-async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?: string, displayOpts?: DisplayOpts): Promise<{ ok: boolean; text?: string; error?: string }> {
+async function runPreview(configId: string, mode: 'daily' | 'weekly'): Promise<{ ok: boolean; text?: string; error?: string }> {
   const { data: cfg } = await sb
     .from('venue_line_config')
     .select('*')
@@ -1009,83 +887,21 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly', dateParam?
       for (const dateStr of dates) {
         dayData.push({ dateStr, slots: await fetchDayData(dateStr, bandIds) });
       }
-      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
+      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '');
     } else {
-      const todayStr = dateParam || toThaiDateStr(thai);
-      const weekDates = getRollingWeekDates(todayStr);
-      const pastDates = weekDates.filter(ds => ds <= todayStr);
-      const daySlots = new Map<string, BreakSlot[]>();
-      for (const ds of pastDates) daySlots.set(ds, await fetchDayData(ds, bandIds));
-      const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
-      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
+      // Daily preview = weekly overview (จ.-อา.)
+      const weekDates = getWeekDates(thai);
+      const today = toThaiDateStr(thai);
+      for (const dateStr of weekDates) {
+        if (dateStr <= today) await syncSoulCietyCheckins(dateStr, bandIds);
+      }
+      const weekData = await fetchWeekSchedule(weekDates, bandIds);
+      text = formatWeeklyOverview(weekData, cfg.footer_text || '');
     }
     return { ok: true, text };
   } catch (e) {
     return { ok: false, error: String(e) };
   }
-}
-
-// ── Manual send (admin-triggered) ─────────────────────────────────────────
-async function runManual(configId: string, type: 'daily' | 'weekly', dateStr?: string, displayOpts?: DisplayOpts): Promise<{ ok: boolean; text?: string; error?: string }> {
-  const { data: cfg } = await sb
-    .from('venue_line_config')
-    .select('*')
-    .eq('id', configId)
-    .maybeSingle();
-
-  if (!cfg) return { ok: false, error: 'ไม่พบ config' };
-  if (!cfg.line_channel_token || !cfg.line_group_id) return { ok: false, error: 'กรุณาใส่ LINE Token และ Group ID ก่อน' };
-
-  let bandIds: string[] = cfg.band_ids || [];
-  if (!bandIds.length) {
-    const { data: allBands } = await sb.from('bands').select('id');
-    bandIds = (allBands || []).map((b: { id: string }) => b.id);
-  }
-  const thai = thaiNow();
-
-  try {
-    let text: string;
-    const logType = type === 'weekly' ? 'weekly' : 'daily';
-    if (type === 'weekly') {
-      const endDate = new Date(thai);
-      endDate.setDate(endDate.getDate() - 1);
-      const startDate = new Date(endDate);
-      startDate.setDate(startDate.getDate() - 6);
-      const dates: string[] = [];
-      const d = new Date(startDate);
-      for (let i = 0; i < 7; i++) { dates.push(toThaiDateStr(d)); d.setDate(d.getDate() + 1); }
-      const dayData: Array<{ dateStr: string; slots: BreakSlot[] }> = [];
-      for (const ds of dates) {
-        dayData.push({ dateStr: ds, slots: await fetchDayData(ds, bandIds) });
-      }
-      text = formatWeeklyMessage(toThaiDateStr(startDate), toThaiDateStr(endDate), dayData, cfg.footer_text || '', displayOpts);
-    } else {
-      const todayStr = dateStr || toThaiDateStr(thai);
-      const weekDates = getRollingWeekDates(todayStr);
-      const pastDates = weekDates.filter(ds => ds <= todayStr);
-      const daySlots = new Map<string, BreakSlot[]>();
-      for (const ds of pastDates) daySlots.set(ds, await fetchDayData(ds, bandIds));
-      const lineEntries = await fetchLineChatEntries(cfg.id, pastDates);
-      text = formatRollingWeekMessage(weekDates, todayStr, daySlots, cfg.footer_text || '', lineEntries);
-    }
-    const result = await sendLineMessage(cfg.line_channel_token, cfg.line_group_id, text);
-    await logMessage(cfg.id, logType, text, result.code, result.ok, result.error);
-    return { ok: result.ok, text, error: result.error };
-  } catch (e) {
-    return { ok: false, error: String(e) };
-  }
-}
-
-// ── Admin JWT verification (ใช้ Supabase auth แทน manual base64url decode) ──
-async function verifyAdmin(req: Request): Promise<{ uid: string; error: string | null }> {
-  const authHeader = req.headers.get('Authorization') ?? '';
-  const jwt = authHeader.replace('Bearer ', '').trim();
-  if (!jwt) return { uid: '', error: 'Unauthorized' };
-  const { data: { user }, error } = await sb.auth.getUser(jwt);
-  if (error || !user) return { uid: '', error: 'Unauthorized' };
-  const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
-  if (!profile || profile.role !== 'admin') return { uid: '', error: 'เฉพาะ admin เท่านั้น' };
-  return { uid: user.id, error: null };
 }
 
 // ── Get quota info ─────────────────────────────────────────────────────────
@@ -1119,68 +935,57 @@ Deno.serve(async (req: Request) => {
     let body: Record<string, any> = {};
     try { body = await req.json(); } catch { /* cron sends empty body */ }
 
-    // ── LINE Webhook event ──────────────────────────────────────────
+    // ── LINE Webhook event — parse schedule messages ──────────────
     if (body.events && Array.isArray(body.events)) {
       for (const ev of body.events) {
-        const groupId: string = ev.source?.groupId || '';
-        if (!groupId) continue;
-        console.log(`[LINE-WEBHOOK] groupId=${groupId} type=${ev.type}`);
+        if (!ev.source?.groupId) continue;
+        console.log(`[LINE-WEBHOOK] groupId=${ev.source.groupId} type=${ev.type}`);
 
-        // Only process text messages
-        if (ev.type !== 'message' || ev.message?.type !== 'text') continue;
-        const msgText: string = ev.message.text || '';
+        // Process text messages for schedule data
+        if (ev.type === 'message' && ev.message?.type === 'text' && ev.message?.text) {
+          const msgText: string = ev.message.text;
+          const entries = parseScheduleMessage(msgText);
 
-        // Detect template: must have "* เบรค" at least 4 times
-        const breakCount = (msgText.match(/\*\s*เบรค/g) || []).length;
-        if (breakCount < 4) continue;
+          if (entries.length > 0) {
+            console.log(`[LINE-WEBHOOK] Parsed ${entries.length} schedule entries`);
 
-        // Parse template
-        const templateLines = parseLineTemplate(msgText);
-        if (!templateLines) continue;
+            // Look up venue config for this group
+            const { data: cfg } = await sb
+              .from('venue_line_config')
+              .select('*')
+              .eq('line_group_id', ev.source.groupId)
+              .eq('enabled', true)
+              .maybeSingle();
 
-        // Find venue_line_config by group_id
-        const { data: cfg } = await sb
-          .from('venue_line_config')
-          .select('*')
-          .eq('line_group_id', groupId)
-          .eq('enabled', true)
-          .maybeSingle();
-        if (!cfg || !cfg.line_channel_token) continue;
+            if (cfg) {
+              // UPSERT all entries → ห้ามซ้ำ (unique constraint)
+              await upsertScheduleEntries(entries, 'line', ev.source.userId || 'unknown');
 
-        let bandIds: string[] = cfg.band_ids || [];
-        if (!bandIds.length) {
-          const { data: allBands } = await sb.from('bands').select('id');
-          bandIds = (allBands || []).map((b: { id: string }) => b.id);
-        }
+              // Sync SoulCiety check-ins for dates <= today
+              let bandIds: string[] = cfg.band_ids || [];
+              if (!bandIds.length) {
+                const { data: allBands } = await sb.from('bands').select('id');
+                bandIds = (allBands || []).map((b: { id: string }) => b.id);
+              }
 
-        const todayStr = toThaiDateStr(thaiNow());
+              const today = toThaiDateStr(thaiNow());
+              const dates = [...new Set(entries.map(e => e.date))];
+              for (const dateStr of dates) {
+                if (dateStr <= today) {
+                  await syncSoulCietyCheckins(dateStr, bandIds);
+                }
+              }
 
-        // Save non-empty LINE entries (external bands) to DB
-        const entriesToSave: Array<{ dateStr: string; breakNum: number; entryText: string }> = [];
-        for (const tl of templateLines) {
-          if (tl.existingText && tl.dateStr <= todayStr) {
-            entriesToSave.push({ dateStr: tl.dateStr, breakNum: tl.breakNum, entryText: tl.existingText });
+              // Reply with updated weekly overview (free — uses replyToken)
+              if (ev.replyToken) {
+                const weekDates = getWeekDates(thaiNow());
+                const weekData = await fetchWeekSchedule(weekDates, bandIds);
+                const replyText = formatWeeklyOverview(weekData, cfg.footer_text || '');
+                await replyLineMessage(cfg.line_channel_token, ev.replyToken, replyText);
+              }
+            }
           }
         }
-        if (entriesToSave.length > 0) {
-          await saveLineChatEntries(cfg.id, entriesToSave);
-        }
-
-        const merged = await mergeTemplateWithCheckIns(templateLines, bandIds, msgText, todayStr);
-
-        // Only send if content changed
-        if (merged === msgText) continue;
-
-        // Check quota
-        const qCount = await getMonthlyCount(cfg.id);
-        if (qCount >= QUOTA_WARN) {
-          console.warn(`[line-webhook] quota near limit — skipping merge-resend`);
-          continue;
-        }
-
-        const result = await sendLineMessage(cfg.line_channel_token, groupId, merged);
-        await logMessage(cfg.id, 'webhook_merge', merged, result.code, result.ok, result.error);
-        console.log(`[line-webhook] merge-resend ok=${result.ok}`);
       }
       return json({ ok: true, webhook: true });
     }
@@ -1189,10 +994,27 @@ Deno.serve(async (req: Request) => {
     const thai = thaiNow();
     console.log(`[send-line-schedule] mode=${mode} Thai=${thai.toISOString()}`);
 
-    // Test, Preview and Manual require authentication (admin only) + configId
-    if (mode === 'test' || mode === 'preview' || mode === 'manual') {
-      const { uid, error: authErr } = await verifyAdmin(req);
-      if (!uid) return json({ ok: false, error: authErr || 'Unauthorized' }, authErr === 'เฉพาะ admin เท่านั้น' ? 403 : 401);
+    // Test and Preview require authentication (admin/manager only) + configId
+    if (mode === 'test' || mode === 'preview') {
+      const authHeader = req.headers.get('Authorization') ?? '';
+      const jwt = authHeader.replace('Bearer ', '');
+
+      if (!jwt) {
+        return json({ ok: false, error: 'Unauthorized' }, 401);
+      }
+
+      // Verify user
+      const uid = (() => {
+        try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
+      })();
+      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
+      const { data: { user } } = await sb.auth.admin.getUserById(uid);
+      if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
+
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      if (!profile || profile.role !== 'admin') {
+        return json({ ok: false, error: 'เฉพาะ admin เท่านั้น' }, 403);
+      }
 
       const configId = body.config_id;
       if (!configId) return json({ ok: false, error: 'ต้องระบุ config_id' }, 400);
@@ -1200,25 +1022,26 @@ Deno.serve(async (req: Request) => {
       if (mode === 'test') {
         const result = await runTest(configId);
         return json({ ok: result.ok, ...result });
-      } else if (mode === 'manual') {
-        const manualType = (body.type === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
-        const manualDate = typeof body.date === 'string' ? body.date : undefined;
-        const dOpts = body.display_opts as DisplayOpts | undefined;
-        const result = await runManual(configId, manualType, manualDate, dOpts);
-        return json({ ok: result.ok, ...result });
       } else {
         const previewMode = (body.preview_mode === 'weekly' ? 'weekly' : 'daily') as 'daily' | 'weekly';
-        const previewDate = typeof body.date === 'string' ? body.date : undefined;
-        const dOpts = body.display_opts as DisplayOpts | undefined;
-        const result = await runPreview(configId, previewMode, previewDate, dOpts);
+        const result = await runPreview(configId, previewMode);
         return json({ ok: result.ok, ...result });
       }
     }
 
     // Quota info — admin endpoint
     if (mode === 'quota') {
-      const { uid, error: authErr } = await verifyAdmin(req);
-      if (!uid) return json({ ok: false, error: authErr || 'Unauthorized' }, authErr === 'เฉพาะ admin เท่านั้น' ? 403 : 401);
+      const authHeader = req.headers.get('Authorization') ?? '';
+      const jwt = authHeader.replace('Bearer ', '');
+      if (!jwt) return json({ ok: false, error: 'Unauthorized' }, 401);
+      const uid = (() => {
+        try { return JSON.parse(atob(jwt.split('.')[1])).sub ?? ''; } catch { return ''; }
+      })();
+      if (!uid) return json({ ok: false, error: 'Unauthorized' }, 401);
+      const { data: { user } } = await sb.auth.admin.getUserById(uid);
+      if (!user) return json({ ok: false, error: 'Unauthorized' }, 401);
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', user.id).maybeSingle();
+      if (!profile || profile.role !== 'admin') return json({ ok: false, error: 'เฉพาะ admin' }, 403);
 
       const configId = body.config_id;
       if (!configId) return json({ ok: false, error: 'ต้องระบุ config_id' }, 400);
