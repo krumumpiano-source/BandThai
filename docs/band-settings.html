@@ -2,8 +2,6 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="google-adsense-account" content="ca-pub-6824376916256036">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
@@ -511,26 +509,18 @@
       if (typeof requireAuth === 'function') requireAuth();
       checkAdGate();
       if (typeof renderMainNav === 'function') renderMainNav('mainNav');
-      // Plan badge
+      // Plan badge — ฟรีทุกฟีเจอร์ (แสดงเป็น Pro ถาวร)
       (function() {
-        var plan = (localStorage.getItem('band_plan') || 'free').toLowerCase();
         var badge = document.getElementById('planBadge');
         var desc  = document.getElementById('planDesc');
         var btn   = document.getElementById('upgradeBtn');
-        if (!badge) return;
-        var labels = { free: 'ฟรี', lite: 'Lite', pro: 'Pro' };
-        var colors  = { free: '#4b5563', lite: '#2563eb', pro: '#d97706' };
-        var descs   = {
-          free: 'ใช้งานได้ 75 นาที/เซสชัน — อัปเกรดเพื่อใช้งานไม่จำกัด',
-          lite: 'Lite — ใช้งานได้ไม่จำกัดเวลา สำหรับวงขนาดเล็ก',
-          pro:  'Pro — ฟีเจอร์ครบครัน สำหรับวงมืออาชีพ'
-        };
-        badge.textContent = labels[plan] || plan;
-        badge.style.background = colors[plan] || '#4b5563';
-        badge.style.color = '#fff';
-        if (desc) desc.textContent = descs[plan] || '';
-        if (btn && plan === 'free') btn.style.display = '';
-        if (btn && plan === 'lite') { btn.style.display = ''; btn.textContent = '⬆️ อัปเกรดเป็น Pro'; }
+        if (badge) {
+          badge.textContent = 'Pro';
+          badge.style.background = '#d97706';
+          badge.style.color = '#fff';
+        }
+        if (desc) desc.textContent = 'ฟรีทุกฟีเจอร์ — ไม่มีค่าใช้จ่าย';
+        if (btn) btn.style.display = 'none';
       })();
       if (typeof applyTranslations === 'function') applyTranslations();
       // Show notification admin panel for admin/manager

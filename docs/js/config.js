@@ -20,6 +20,9 @@ window._AD_CONFIG = {
   client:     'ca-pub-6824376916256036',   // Publisher ID
   slot:       '',                           // Rewarded Ad Slot ID — ใส่หลัง AdSense approve แล้วสร้าง Ad Unit
   sessionMin: 75,                           // นาที — free tier ดูโฆษณาทุกกี่นาที
-  enabled:    false,                        // toggle ปิด/เปิดระบบโฆษณา
+  enabled:    false,                        // toggle ปิด/เปิดระบบโฆษณา (ปิดถาวร — ฟรีทุกฟีเจอร์)
   placeholder: true                         // true = countdown 30 วิ, false = AdSense จริง
 };
+
+// ── Force Pro for everyone (ปิดระบบ tier ชั่วคราว — ฟรีทั้งหมด) ──
+window._FORCE_FREE_PRO = true;
