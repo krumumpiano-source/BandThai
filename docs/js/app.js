@@ -428,6 +428,7 @@
   var _gpActivity = _getPageLabel();
 
   function initGlobalPresence() {
+    if (_globalPresenceCh) return;   // already initialized
     if (!window._sb) return;
     var bandId = localStorage.getItem('bandId') || '';
     if (!bandId) return;
