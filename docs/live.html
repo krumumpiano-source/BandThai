@@ -374,7 +374,7 @@
     #hbdBanner.urgent{animation:hbdPulse 1s ease-in-out infinite}
   </style>
   <link rel="manifest" href="manifest.json">
-  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
@@ -1282,6 +1282,15 @@ function toggleMetAudio() {
       sndBtn.classList.toggle('on', _metAudioOn);
       sndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
     }
+    // Create AudioContext on first user gesture to avoid browser warning
+    function _initAudioOnGesture() {
+      ensureAudioCtx();
+      resumeAudio();
+      document.removeEventListener('click', _initAudioOnGesture);
+      document.removeEventListener('touchstart', _initAudioOnGesture);
+    }
+    document.addEventListener('click', _initAudioOnGesture);
+    document.addEventListener('touchstart', _initAudioOnGesture);
   });
 })();
 
@@ -1297,7 +1306,7 @@ function startBeatDot(bpm) {
   var btn = document.getElementById('beatToggleBtn');
   if (btn) btn.classList.toggle('off', !_metEnabled);
 
-  var ctx = ensureAudioCtx();
+  var ctx = _audioCtx;  // use existing only; created on first user gesture
   if (ctx) resumeAudio();
 
   // Start the lookahead scheduler

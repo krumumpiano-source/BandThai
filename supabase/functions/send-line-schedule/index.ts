@@ -238,16 +238,18 @@ async function upsertScheduleEntries(entries: ScheduleEntry[], source: string, u
       source,
       updated_by: updatedBy,
       updated_at: new Date().toISOString(),
-    }, { onConflict: 'venue_name,date,break_number' });
+    }, { onConflict: 'venue_name,date,break_number,band_name' });
   }
 }
 
 // ── Sync SoulCiety check-ins → venue_schedule_entries ───────────────────
+// นับจาก member_check_ins: คนที่ไม่ลา + คนแทน (substitute) ที่มีชื่อ
 async function syncSoulCietyCheckins(dateStr: string, bandIds: string[]): Promise<void> {
   const { data: bands } = await sb.from('bands').select('id, band_name').in('id', bandIds);
   const scBand = (bands || []).find((b: { id: string; band_name: string }) => /soulciety/i.test(b.band_name));
   if (!scBand) return;
 
+  // ดึง check-in ปกติ (ไม่ลา)
   const { data: checkIns } = await sb
     .from('member_check_ins')
     .select('member_id, slots')
@@ -255,7 +257,23 @@ async function syncSoulCietyCheckins(dateStr: string, bandIds: string[]): Promis
     .eq('band_id', scBand.id)
     .neq('status', 'leave');
 
-  if (!checkIns?.length) return;
+  // ดึง check-in คนลาที่มีคนแทน (substitute)
+  const { data: leaveWithSub } = await sb
+    .from('member_check_ins')
+    .select('member_id, slots, substitute')
+    .eq('date', dateStr)
+    .eq('band_id', scBand.id)
+    .eq('status', 'leave');
+
+  // กรองเฉพาะคนลาที่มีคนแทนจริง (substitute มีชื่อ)
+  const subsWithSlots = (leaveWithSub || []).filter((ci: { substitute: { name?: string } | null }) => {
+    if (!ci.substitute) return false;
+    const sub = typeof ci.substitute === 'string' ? JSON.parse(ci.substitute) : ci.substitute;
+    return sub.name && sub.name.trim() !== '';
+  });
+
+  const totalRecords = (checkIns?.length || 0) + subsWithSlots.length;
+  if (totalRecords === 0) return;
 
   const dow = new Date(dateStr + 'T12:00:00Z').getDay();
   const { data: bs } = await sb.from('band_settings').select('settings').eq('band_id', scBand.id).maybeSingle();
@@ -267,10 +285,20 @@ async function syncSoulCietyCheckins(dateStr: string, bandIds: string[]): Promis
   for (let i = 0; i < daySlots.length; i++) {
     const sl = daySlots[i];
     const range = `${sl.startTime}-${sl.endTime}`;
-    const count = checkIns.filter((ci: { member_id: string; slots: string[] }) => {
+
+    // นับคนที่ check-in ปกติ (ไม่ลา) ที่มี slot นี้
+    const presentCount = (checkIns || []).filter((ci: { member_id: string; slots: string[] }) => {
       const s = Array.isArray(ci.slots) ? ci.slots : [];
       return s.includes(range);
     }).length;
+
+    // นับคนแทนที่มี slot นี้
+    const subCount = subsWithSlots.filter((ci: { slots: string[] }) => {
+      const s = Array.isArray(ci.slots) ? ci.slots : [];
+      return s.includes(range);
+    }).length;
+
+    const count = presentCount + subCount;
 
     if (count > 0) {
       await sb.from('venue_schedule_entries').upsert({
@@ -284,7 +312,7 @@ async function syncSoulCietyCheckins(dateStr: string, bandIds: string[]): Promis
         source: 'checkin',
         updated_by: 'system',
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'venue_name,date,break_number' });
+      }, { onConflict: 'venue_name,date,break_number,band_name' });
     }
   }
 }
@@ -317,9 +345,9 @@ async function fetchWeekSchedule(weekDates: string[], bandIds: string[]): Promis
     .select('*')
     .eq('venue_name', 'ร้านนิยมสุข')
     .in('date', weekDates)
-    .order('break_number');
+    .order('break_start');
 
-  // Get default break times from band_settings
+  // Get default break times from band_settings (fallback เมื่อวันไหนไม่มี entries)
   let defaultBreaks: Array<{ number: number; start: string; end: string }> = [];
   if (bandIds.length > 0) {
     const { data: bsList } = await sb.from('band_settings').select('settings').in('band_id', bandIds).limit(1);
@@ -346,27 +374,44 @@ async function fetchWeekSchedule(weekDates: string[], bandIds: string[]): Promis
     ];
   }
 
-  const entryMap: Record<string, Record<number, { break_start: string; break_end: string; band_name: string; member_count: number }>> = {};
+  // Group entries by date, sort by break_start time, renumber
+  const entryMap: Record<string, Array<{ break_start: string; break_end: string; band_name: string; member_count: number }>> = {};
   for (const e of entries || []) {
-    if (!entryMap[e.date]) entryMap[e.date] = {};
-    entryMap[e.date][e.break_number] = e;
+    if (!entryMap[e.date]) entryMap[e.date] = [];
+    entryMap[e.date].push(e);
+  }
+  // Sort each day's entries by break_start time
+  for (const dateStr of Object.keys(entryMap)) {
+    entryMap[dateStr].sort((a, b) => (a.break_start > b.break_start ? 1 : a.break_start < b.break_start ? -1 : 0));
   }
 
   return weekDates.map(dateStr => {
-    const dayEntries = entryMap[dateStr] || {};
-    return {
-      date: dateStr,
-      breaks: defaultBreaks.map(db => {
-        const entry = dayEntries[db.number];
-        return {
+    const dayEntries = entryMap[dateStr];
+    if (dayEntries && dayEntries.length > 0) {
+      // มี entries จริง → เรียงตาม time แล้ว renumber เป็น เบรค 1,2,3...
+      return {
+        date: dateStr,
+        breaks: dayEntries.map((entry, idx) => ({
+          number: idx + 1,
+          start: entry.break_start,
+          end: entry.break_end,
+          band_name: entry.band_name || '',
+          member_count: entry.member_count || 0,
+        })),
+      };
+    } else {
+      // ไม่มี entries → fallback ใช้ defaultBreaks (ว่าง)
+      return {
+        date: dateStr,
+        breaks: defaultBreaks.map(db => ({
           number: db.number,
-          start: entry?.break_start || db.start,
-          end: entry?.break_end || db.end,
-          band_name: entry?.band_name || '',
-          member_count: entry?.member_count || 0,
-        };
-      }),
-    };
+          start: db.start,
+          end: db.end,
+          band_name: '',
+          member_count: 0,
+        })),
+      };
+    }
   });
 }
 
@@ -750,13 +795,10 @@ async function runDaily(thai: Date): Promise<void> {
 
     // 1) คำนวณสัปดาห์ปัจจุบัน (จ.-อา.)
     const weekDates = getWeekDates(thai);
-    const today = toThaiDateStr(thai);
 
-    // 2) Sync SoulCiety check-ins สำหรับวันที่ผ่านมาแล้ว+วันนี้
+    // 2) Sync SoulCiety check-ins สำหรับทุกวันในสัปดาห์ (รวมลงเวลาย้อนหลัง)
     for (const dateStr of weekDates) {
-      if (dateStr <= today) {
-        await syncSoulCietyCheckins(dateStr, bandIds);
-      }
+      await syncSoulCietyCheckins(dateStr, bandIds);
     }
 
     // 3) อ่านข้อมูลจาก venue_schedule_entries → format → ส่ง
@@ -891,9 +933,8 @@ async function runPreview(configId: string, mode: 'daily' | 'weekly'): Promise<{
     } else {
       // Daily preview = weekly overview (จ.-อา.)
       const weekDates = getWeekDates(thai);
-      const today = toThaiDateStr(thai);
       for (const dateStr of weekDates) {
-        if (dateStr <= today) await syncSoulCietyCheckins(dateStr, bandIds);
+        await syncSoulCietyCheckins(dateStr, bandIds);
       }
       const weekData = await fetchWeekSchedule(weekDates, bandIds);
       text = formatWeeklyOverview(weekData, cfg.footer_text || '');
@@ -960,29 +1001,7 @@ Deno.serve(async (req: Request) => {
             if (cfg) {
               // UPSERT all entries → ห้ามซ้ำ (unique constraint)
               await upsertScheduleEntries(entries, 'line', ev.source.userId || 'unknown');
-
-              // Sync SoulCiety check-ins for dates <= today
-              let bandIds: string[] = cfg.band_ids || [];
-              if (!bandIds.length) {
-                const { data: allBands } = await sb.from('bands').select('id');
-                bandIds = (allBands || []).map((b: { id: string }) => b.id);
-              }
-
-              const today = toThaiDateStr(thaiNow());
-              const dates = [...new Set(entries.map(e => e.date))];
-              for (const dateStr of dates) {
-                if (dateStr <= today) {
-                  await syncSoulCietyCheckins(dateStr, bandIds);
-                }
-              }
-
-              // Reply with updated weekly overview (free — uses replyToken)
-              if (ev.replyToken) {
-                const weekDates = getWeekDates(thaiNow());
-                const weekData = await fetchWeekSchedule(weekDates, bandIds);
-                const replyText = formatWeeklyOverview(weekData, cfg.footer_text || '');
-                await replyLineMessage(cfg.line_channel_token, ev.replyToken, replyText);
-              }
+              console.log(`[LINE-WEBHOOK] Upserted ${entries.length} entries — will show in next daily report`);
             }
           }
         }
