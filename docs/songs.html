@@ -2,8 +2,6 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="google-adsense-account" content="ca-pub-6824376916256036">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6824376916256036" crossorigin="anonymous"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
@@ -2689,32 +2687,17 @@ function getBandPlan() {
 }
 
 // ── จำนวนลิสสูงสุดต่อวัน ตามแพ็กเกจ ──
-// free  = ตามจำนวน time slots ของวันนั้น (min 1)  → ถ้าเกินต้องดูโฆษณา
-// lite  = 4 ลิส/วัน
-// pro   = 8 ลิส/วัน
+// ฟรีทุกฟีเจอร์ — ทุก plan ได้ 8 ลิส/วัน
 function getPlaylistDayLimit() {
-  var plan = getBandPlan();
-  if (plan === 'pro')  return 8;
-  if (plan === 'lite') return 4;
-  // free: ตามจำนวน slots ของวันนั้น
-  var slots = plGetSlotsForDate();
-  return slots.length > 0 ? slots.length : 1;
+  return 8;
 }
 
 // ── Check limit then proceed ──
 function checkPlaylistLimit(thenDo) {
-  var plan      = getBandPlan();
   var dayLimit  = getPlaylistDayLimit();
   var usedToday = _plExistingForDate.length;
   if (usedToday < dayLimit) { thenDo(); return; }
-  // Pro & Lite: hard cap — แสดงข้อความแต่ไม่มีโฆษณา
-  if (plan === 'pro' || plan === 'lite') {
-    var label = plan === 'lite' ? 'Lite (4 ลิส/วัน)' : 'Pro (8 ลิส/วัน)';
-    showSongsAlert('⚠️ ครบลิมิตแพ็กเกจ ' + label + ' แล้ว — ลบลิสเก่าก่อนเพื่อสร้างใหม่');
-    return;
-  }
-  // Free: ต้องดูโฆษณา
-  showAdGate(thenDo);
+  showSongsAlert('⚠️ ครบลิมิต ' + dayLimit + ' ลิส/วัน แล้ว — ลบลิสเก่าก่อนเพื่อสร้างใหม่');
 }
 
 // ── Key Display Mode Toggle ──
