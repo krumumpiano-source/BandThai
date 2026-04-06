@@ -248,6 +248,8 @@
         case 'cancelCheckIn':      return doCancelCheckIn(d);
         case 'getCheckInsForDate': return doSelect('member_check_ins', { band_id: getBandId(), date: d.date });
         case 'getCheckInsForRange': return doSelectRange('member_check_ins', getBandId(), d.dateFrom, d.dateTo, d.memberId);
+        case 'getMyStreak':        return doGetMyStreak();
+        case 'getMonthlyLeaderboard': return doGetMonthlyLeaderboard();
 
         // ── Leave ──────────────────────────────────────────────────
         case 'requestLeave':       return doRequestLeave(d);
@@ -1061,6 +1063,70 @@
       }
 
       return { success: true, data: toCamel(data) };
+    }
+
+    // ── Streak & Leaderboard ──────────────────────────────────────
+    async function doGetMyStreak() {
+      var bandId = getBandId();
+      var memberId = localStorage.getItem('odoo_member_id') || localStorage.getItem('memberId') || '';
+      if (!bandId || !memberId) return { success: true, data: { streak: 0 } };
+      // Fetch last 120 check-in dates for this member
+      var { data, error } = await sb.from('member_check_ins')
+        .select('date')
+        .eq('band_id', bandId)
+        .eq('member_id', memberId)
+        .order('date', { ascending: false })
+        .limit(120);
+      if (error) return { success: false, message: error.message };
+      if (!data || !data.length) return { success: true, data: { streak: 0 } };
+      var dates = data.map(function(r){ return r.date; }).sort().reverse();
+      // deduplicate
+      var unique = []; var seen = {};
+      for (var i = 0; i < dates.length; i++) {
+        if (!seen[dates[i]]) { unique.push(dates[i]); seen[dates[i]] = true; }
+      }
+      // count consecutive days from today or yesterday
+      var today = new Date(); today.setHours(0,0,0,0);
+      var streak = 0;
+      var checkDate = new Date(today);
+      // Allow starting from today or yesterday
+      if (unique[0] !== checkDate.toISOString().slice(0,10)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (unique[0] !== checkDate.toISOString().slice(0,10)) return { success: true, data: { streak: 0 } };
+      }
+      for (var j = 0; j < unique.length; j++) {
+        if (unique[j] === checkDate.toISOString().slice(0,10)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else break;
+      }
+      return { success: true, data: { streak: streak } };
+    }
+
+    async function doGetMonthlyLeaderboard() {
+      var bandId = getBandId();
+      if (!bandId) return { success: true, data: [] };
+      var now = new Date();
+      var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+      var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0,10);
+      var { data, error } = await sb.from('member_check_ins')
+        .select('member_id, member_name, date')
+        .eq('band_id', bandId)
+        .gte('date', firstDay)
+        .lte('date', lastDay);
+      if (error) return { success: false, message: error.message };
+      // Count unique dates per member
+      var map = {};
+      (data || []).forEach(function(r) {
+        var key = r.member_id;
+        if (!map[key]) map[key] = { name: r.member_name || 'ไม่ทราบ', days: {} };
+        map[key].days[r.date] = true;
+        if (r.member_name) map[key].name = r.member_name;
+      });
+      var result = Object.keys(map).map(function(k) {
+        return { memberId: k, name: map[k].name, count: Object.keys(map[k].days).length };
+      }).sort(function(a,b) { return b.count - a.count; }).slice(0, 10);
+      return { success: true, data: result };
     }
 
     // ── Check-in ──────────────────────────────────────────────────
