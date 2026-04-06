@@ -354,6 +354,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 }
 .pagination button:hover:not(:disabled){background:#f8f8f6;border-color:var(--premium-gold)}
 .pagination button:disabled{opacity:.35}
+.page-jump{display:inline-flex;align-items:center;gap:4px}
+.page-jump input{width:48px;padding:6px 4px;border-radius:8px;border:1px solid var(--premium-border);background:#fff;color:var(--premium-text);font-size:13px;text-align:center;font-family:var(--font-family-body)}
+.page-jump-btn{min-height:32px!important;padding:6px 10px!important;font-size:12px!important}
 .page-info{
   font-size:12px;
   color:var(--premium-text-muted);
@@ -480,6 +483,7 @@ html{scroll-behavior:smooth}
   .copy-options{flex-direction:column;gap:8px}
   .pagination{flex-wrap:wrap;gap:8px;justify-content:center}
   .pagination button{min-height:44px;padding:10px 16px}
+  .page-jump input{width:44px;min-height:44px}
   .list li{padding:14px 10px;flex-wrap:wrap;gap:8px}
   .play-left{flex:1;min-width:0}
   .list li>span{display:flex;gap:4px;flex-shrink:0}
@@ -799,6 +803,7 @@ html{scroll-behavior:smooth}
   <div class="pagination">
     <button onclick="prevPage()" id="prevBtn">⬅ ก่อนหน้า</button>
     <div class="page-info" id="pageInfo"></div>
+    <span class="page-jump"><input type="number" id="pageJumpInput" min="1" value="1" inputmode="numeric" onkeydown="if(event.key==='Enter'){goToPage()}"> <button onclick="goToPage()" class="page-jump-btn">ไป</button></span>
     <button onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
   </div>
 </div>
@@ -1115,8 +1120,8 @@ function cloneSelectedToBand() {
 
 function loadPage(page) {
   currentPage = page || 1;
-  // บันทึกหน้าปัจจุบันใน sessionStorage เพื่อกลับมาหน้าเดิมเมื่อ navigate ไปหน้าอื่นแล้วกลับมา
-  try { sessionStorage.setItem('songs_currentPage', currentPage); } catch(ex) {}
+  // บันทึกหน้าปัจจุบันและ source ใน sessionStorage เพื่อกลับมาหน้าเดิมเมื่อ navigate ไปหน้าอื่นแล้วกลับมา
+  try { sessionStorage.setItem('songs_currentPage', currentPage); sessionStorage.setItem('songs_currentSource', _currentSource); } catch(ex) {}
   var resultEl = getEl("result");
   var _rc = resultEl ? resultEl.querySelector(".result-columns") : null;
   var hadContent = !!_rc;
@@ -1181,6 +1186,16 @@ function loadInitial(forceRefresh) {
   // คืนหน้าเดิมถ้ามาจาก edit-song.html (เช่น กดบันทึกแล้วกลับมา)
   var returnPage = 1;
   try {
+    // คืนค่า source (global/band) ก่อนโหลดหน้า
+    var rs = sessionStorage.getItem('songs_returnSource') || sessionStorage.getItem('songs_currentSource') || '';
+    if (rs && rs !== _currentSource) {
+      _currentSource = rs;
+      document.querySelectorAll('.lib-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.source === rs); });
+      var titleEl = document.getElementById('resultTitle');
+      if (titleEl) titleEl.textContent = rs === 'band' ? '🎸 เพลงในคลังวง' : '🎼 เพลงที่ค้นพบ';
+    }
+    sessionStorage.removeItem('songs_returnSource');
+
     var rp = parseInt(sessionStorage.getItem('songs_returnPage') || '0', 10);
     if (rp > 1) { returnPage = rp; sessionStorage.removeItem('songs_returnPage'); }
     else {
@@ -1213,6 +1228,7 @@ function populateArtistFilter() {
 function switchLibrary(source) {
   if (source === _currentSource) return;
   _currentSource = source;
+  try { sessionStorage.setItem('songs_currentSource', source); } catch(ex) {}
   // update tab UI
   document.querySelectorAll('.lib-tab').forEach(function(t) {
     t.classList.toggle('active', t.dataset.source === source);
@@ -1430,6 +1446,8 @@ function renderPage() {
   }
   if (prevBtn) prevBtn.disabled = currentPage <= 1;
   if (nextBtn) nextBtn.disabled = currentPage >= totalPages || _totalCount === 0;
+  var jumpInput = getEl('pageJumpInput');
+  if (jumpInput) { jumpInput.value = currentPage; jumpInput.max = totalPages; }
   if (typeof updatePlaylistFloating === 'function') updatePlaylistFloating();
 }
 
@@ -1447,6 +1465,16 @@ var prevPageThrottled = throttle(function () {
 
 function nextPage() { nextPageThrottled(); }
 function prevPage() { prevPageThrottled(); }
+
+function goToPage() {
+  var inp = document.getElementById('pageJumpInput');
+  if (!inp) return;
+  var p = parseInt(inp.value, 10);
+  if (isNaN(p) || p < 1) p = 1;
+  if (p > _totalPages) p = _totalPages;
+  inp.value = p;
+  if (p !== currentPage) loadPage(p);
+}
 
 document.addEventListener("click", function (e) {
   if (e.target && e.target.classList && e.target.classList.contains("add-song-btn")) {
@@ -1477,7 +1505,7 @@ document.addEventListener("click", function (e) {
         // Detach ref → create band-owned copy → edit
         e.target.style.opacity = '0.5';
         e.target.style.pointerEvents = 'none';
-        try { sessionStorage.setItem('songs_returnPage', currentPage); } catch(ex) {}
+        try { sessionStorage.setItem('songs_returnPage', currentPage); sessionStorage.setItem('songs_returnSource', _currentSource); } catch(ex) {}
         apiCall('detachRefSong', { songId: eid }, function(r) {
           if (r && r.success && r.newSongId) {
             window.location.href = 'edit-song.html?songId=' + r.newSongId;
@@ -1489,7 +1517,7 @@ document.addEventListener("click", function (e) {
           }
         });
       } else {
-        try { sessionStorage.setItem('songs_returnPage', currentPage); } catch(ex) {}
+        try { sessionStorage.setItem('songs_returnPage', currentPage); sessionStorage.setItem('songs_returnSource', _currentSource); } catch(ex) {}
         window.location.href = 'edit-song.html?songId=' + eid;
       }
     }
