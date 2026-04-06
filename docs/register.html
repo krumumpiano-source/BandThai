@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -10,6 +10,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
   <title>สมัครสมาชิก — BandThai</title>
+  <!-- OG Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="เข้าร่วมวง — BandThai">
+  <meta property="og:description" content="คุณได้รับเชิญเข้าร่วมวง! สมัครฟรี ใช้งานได้ทันที">
+  <meta property="og:image" content="https://krumumpiano-source.github.io/BandThai/icons/icon-512.png">
+  <meta property="og:url" content="https://krumumpiano-source.github.io/BandThai/register.html">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
@@ -24,9 +30,9 @@
     .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
     .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
     .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
-    .form-row-3{display:grid;grid-template-columns:auto 1fr 1fr;gap:var(--spacing-md)}
-    @media(max-width:480px){.form-row,.form-row-3{grid-template-columns:1fr}}
-    .form-section-label{font-size:var(--text-xs);font-weight:600;color:var(--premium-text-muted);text-transform:uppercase;letter-spacing:.05em;margin:var(--spacing-md) 0 var(--spacing-xs);border-bottom:1px solid var(--premium-light-gray);padding-bottom:4px}
+    @media(max-width:480px){.form-row{grid-template-columns:1fr}}
+    .info-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-bottom:var(--spacing-md);font-size:var(--text-sm);color:#1e40af;line-height:1.7}
+    .info-box strong{color:#1e3a8a}
     .invite-preview{background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:2px solid #22c55e;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-top:var(--spacing-sm);display:none}
     .invite-preview.show{display:block}
     .invite-preview.error{background:#fff5f5;border-color:#fc8181}
@@ -34,14 +40,6 @@
     .invite-preview .band-meta{font-size:var(--text-sm);color:#15803d;margin-top:2px}
     .invite-preview.error .band-name{color:#c53030}
     .invite-preview.error .band-meta{color:#fc8181}
-    .step-indicator{display:flex;gap:8px;margin-bottom:var(--spacing-lg);justify-content:center}
-    .step-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--text-sm);font-weight:700;background:var(--premium-light-gray);color:var(--premium-text-muted);transition:all .3s}
-    .step-dot.active{background:var(--premium-gold);color:#fff}
-    .step-dot.done{background:#22c55e;color:#fff}
-    .step-section{display:none}
-    .step-section.active{display:block}
-    .info-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-bottom:var(--spacing-md);font-size:var(--text-sm);color:#1e40af;line-height:1.7}
-    .info-box strong{color:#1e3a8a}
     .create-band-link{display:block;text-align:center;margin-top:var(--spacing-md);padding:var(--spacing-md);background:linear-gradient(135deg,#fefce8,#fef9c3);border:2px dashed var(--premium-gold);border-radius:var(--radius-lg);font-size:var(--text-sm);color:var(--premium-text);text-decoration:none;transition:transform .15s,box-shadow .15s}
     .create-band-link:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(203,162,60,.2)}
     .create-band-link strong{color:var(--premium-gold)}
@@ -55,118 +53,56 @@
         <h1>🎵 BandThai</h1>
         <p>สมัครสมาชิกเข้าร่วมวง</p>
       </div>
-      <div class="step-indicator">
-        <div class="step-dot active" id="stepDot1">1</div>
-        <div class="step-dot" id="stepDot2">2</div>
-        <div class="step-dot" id="stepDot3">3</div>
-      </div>
+
       <form id="registerForm">
-        <!-- ════════ STEP 1: กรอกรหัสวง ════════ -->
-        <div class="step-section active" id="step1">
-          <div class="info-box">
-            📋 <strong>ขั้นตอนที่ 1:</strong> กรอกรหัสวง 6 หลักที่ได้รับจากผู้จัดการวง<br>
-            💡 หากยังไม่มีรหัสวง ให้ติดต่อผู้จัดการวงของคุณ
-          </div>
-          <div class="form-group">
-            <label>🔑 รหัสประจำวง <span style="color:#c53030">*</span></label>
-            <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6"
-              style="text-transform:uppercase;font-family:monospace;font-size:1.3rem;letter-spacing:.25em;text-align:center;padding:14px" autocomplete="off" required>
-            <div id="invitePreview" class="invite-preview">
-              <div id="previewLoading" style="color:#6b7280;font-size:var(--text-sm)">🔍 กำลังตรวจสอบรหัส...</div>
-              <div id="previewInfo" style="display:none">
-                <div class="band-name" id="previewBandName"></div>
-                <div class="band-meta" id="previewBandMeta"></div>
-                <div style="font-size:var(--text-xs);color:#15803d;margin-top:6px" id="previewOk">✅ รหัสถูกต้อง — กด "ถัดไป" เพื่อกรอกข้อมูลส่วนตัว</div>
-              </div>
+        <!-- Invite code — auto-filled from URL or manual input -->
+        <div class="form-group">
+          <label>🔑 รหัสประจำวง <span style="color:#c53030">*</span></label>
+          <input type="text" id="inviteCode" placeholder="กรอกรหัส 6 หลัก เช่น AB3X7Q" maxlength="6"
+            style="text-transform:uppercase;font-family:monospace;font-size:1.3rem;letter-spacing:.25em;text-align:center;padding:14px" autocomplete="off" required>
+          <div id="invitePreview" class="invite-preview">
+            <div id="previewLoading" style="color:#6b7280;font-size:var(--text-sm)">🔍 กำลังตรวจสอบรหัส...</div>
+            <div id="previewInfo" style="display:none">
+              <div class="band-name" id="previewBandName"></div>
+              <div class="band-meta" id="previewBandMeta"></div>
+              <div style="font-size:var(--text-xs);color:#15803d;margin-top:6px" id="previewOk">✅ รหัสถูกต้อง</div>
             </div>
-          </div>
-          <button type="button" class="btn btn-primary btn-full" id="step1Next" disabled>ถัดไป →</button>
-        </div>
-
-        <!-- ════════ STEP 2: ข้อมูลส่วนตัว ════════ -->
-        <div class="step-section" id="step2">
-          <div class="info-box">👤 <strong>ขั้นตอนที่ 2:</strong> กรอกข้อมูลส่วนตัวของคุณ</div>
-          <div class="form-row-3">
-            <div class="form-group">
-              <label>คำนำหน้า</label>
-              <select id="title" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
-                <option value="นาย">นาย</option><option value="นาง">นาง</option><option value="นางสาว">นางสาว</option>
-                <option value="ด.ช.">ด.ช.</option><option value="ด.ญ.">ด.ญ.</option><option value="ไม่ระบุ">ไม่ระบุ</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>ชื่อ <span style="color:#c53030">*</span></label>
-              <input type="text" id="firstName" placeholder="ชื่อจริง" required>
-              <div class="err-msg" id="firstNameError"></div>
-            </div>
-            <div class="form-group">
-              <label>นามสกุล <span style="color:#c53030">*</span></label>
-              <input type="text" id="lastName" placeholder="นามสกุล" required>
-              <div class="err-msg" id="lastNameError"></div>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>ชื่อเล่น <span style="color:#c53030">*</span></label>
-              <input type="text" id="nickname" placeholder="เช่น เอ, บอล, นุ่น" required>
-              <div class="err-msg" id="nicknameError"></div>
-            </div>
-            <div class="form-group">
-              <label>ตำแหน่ง / เครื่องดนตรี</label>
-              <select id="instrument" style="padding:8px 6px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);font-size:var(--text-sm);width:100%">
-                <option value="">-- เลือก --</option>
-                <option value="ร้องนำ">🎤 ร้องนำ</option><option value="ร้องประสาน">🎤 ร้องประสาน</option>
-                <option value="กีตาร์ไฟฟ้า">🎸 กีตาร์ไฟฟ้า</option><option value="กีตาร์โปร่ง">🎸 กีตาร์โปร่ง</option>
-                <option value="กีตาร์เบส">🎸 กีตาร์เบส</option><option value="คีย์บอร์ด">🎹 คีย์บอร์ด</option>
-                <option value="กลอง">🥁 กลอง</option><option value="เพอร์คัสชัน">🥁 เพอร์คัสชัน</option>
-                <option value="ทรัมเปต">🎺 ทรัมเปต</option><option value="แซกโซโฟน">🎷 แซกโซโฟน</option>
-                <option value="ไวโอลิน">🎻 ไวโอลิน</option><option value="อื่นๆ">อื่นๆ</option>
-              </select>
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-top:var(--spacing-md)">
-            <button type="button" class="btn btn-secondary" id="step2Back" style="flex:1">← ย้อนกลับ</button>
-            <button type="button" class="btn btn-primary" id="step2Next" style="flex:1">ถัดไป →</button>
           </div>
         </div>
 
-        <!-- ════════ STEP 3: อีเมล + รหัสผ่าน ════════ -->
-        <div class="step-section" id="step3">
-          <div class="info-box">🔐 <strong>ขั้นตอนที่ 3:</strong> สร้างบัญชีผู้ใช้สำหรับเข้าสู่ระบบ</div>
+        <div class="form-group">
+          <label>ชื่อเล่น <span style="color:#c53030">*</span></label>
+          <input type="text" id="nickname" placeholder="เช่น เอ, บอล, นุ่น" required>
+          <div class="err-msg" id="nicknameError"></div>
+        </div>
+
+        <div class="form-group">
+          <label>อีเมล <span style="color:#c53030">*</span></label>
+          <input type="email" id="email" placeholder="กรุณากรอกอีเมล" required>
+          <div class="err-msg" id="emailError"></div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
-            <label>อีเมล <span style="color:#c53030">*</span></label>
-            <input type="email" id="email" placeholder="กรุณากรอกอีเมล" required>
-            <div class="err-msg" id="emailError"></div>
+            <label>รหัสผ่าน <span style="color:#c53030">*</span></label>
+            <input type="password" id="password" placeholder="8 ตัวขึ้นไป" required>
+            <div class="err-msg" id="passwordError"></div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>รหัสผ่าน <span style="color:#c53030">*</span></label>
-              <input type="password" id="password" placeholder="รหัสผ่าน (8+ ตัว)" required>
-              <div class="err-msg" id="passwordError"></div>
-            </div>
-            <div class="form-group">
-              <label>ยืนยันรหัสผ่าน <span style="color:#c53030">*</span></label>
-              <input type="password" id="confirmPassword" placeholder="พิมพ์รหัสผ่านอีกครั้ง" required>
-              <div class="err-msg" id="confirmError"></div>
-            </div>
-          </div>
-          <div style="background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);margin-top:var(--spacing-sm);font-size:var(--text-sm);line-height:1.8">
-            📋 <strong>สรุปข้อมูล:</strong><br>
-            🎵 วง: <strong id="sumBand">—</strong><br>
-            👤 ชื่อ: <strong id="sumName">—</strong><br>
-            🎸 ตำแหน่ง: <strong id="sumInstrument">—</strong>
-          </div>
-          <div class="err-msg" id="generalError"></div>
-          <div style="display:flex;gap:8px;margin-top:var(--spacing-md)">
-            <button type="button" class="btn btn-secondary" id="step3Back" style="flex:1">← ย้อนกลับ</button>
-            <button type="submit" class="btn btn-primary" id="regBtn" style="flex:2">✅ สมัครสมาชิก</button>
+          <div class="form-group">
+            <label>ยืนยันรหัสผ่าน <span style="color:#c53030">*</span></label>
+            <input type="password" id="confirmPassword" placeholder="พิมพ์อีกครั้ง" required>
+            <div class="err-msg" id="confirmError"></div>
           </div>
         </div>
+
+        <div class="err-msg" id="generalError"></div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="regBtn" disabled>✅ สมัครเข้าร่วมวง</button>
       </form>
 
       <a href="create-band.html" class="create-band-link">
         🎵 <strong>ยังไม่มีวง?</strong><br>
-        <span style="font-size:var(--text-xs);color:var(--premium-text-muted)">ขอสร้างวงใหม่สำหรับผู้จัดการวงหรือตัวแทนวง</span>
+        <span style="font-size:var(--text-xs);color:var(--premium-text-muted)">สร้างวงใหม่ฟรี ใช้งานได้ทันที</span>
       </a>
 
       <div class="auth-footer">
@@ -181,9 +117,7 @@
   <script>
   document.addEventListener('DOMContentLoaded', function() {
 
-    var currentStep = 1;
     var inviteValid = false;
-    var bandNameFromCode = '';
 
     // Pre-fill invite code from URL ?invite=XXXXXX
     var urlInvite = new URLSearchParams(window.location.search).get('invite') || '';
@@ -192,18 +126,6 @@
       setTimeout(function() {
         document.getElementById('inviteCode').dispatchEvent(new Event('input'));
       }, 300);
-    }
-
-    function showStep(n) {
-      currentStep = n;
-      for (var i = 1; i <= 3; i++) {
-        document.getElementById('step' + i).classList.toggle('active', i === n);
-        var dot = document.getElementById('stepDot' + i);
-        dot.classList.toggle('active', i === n);
-        dot.classList.toggle('done', i < n);
-        dot.textContent = i < n ? '✓' : String(i);
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // ── Invite code live preview ──
@@ -219,7 +141,7 @@
       loading.style.display = 'none';
       info.style.display = 'none';
       inviteValid = false;
-      document.getElementById('step1Next').disabled = true;
+      document.getElementById('regBtn').disabled = true;
       clearTimeout(previewTimer);
       if (code.length < 6) return;
 
@@ -230,15 +152,14 @@
           loading.style.display = 'none';
           if (r && r.success) {
             var province = r.province ? ' (' + r.province + ')' : '';
-            bandNameFromCode = r.bandName || r.band_name || '';
-            document.getElementById('previewBandName').textContent = '🎵 ' + bandNameFromCode;
+            document.getElementById('previewBandName').textContent = '🎵 ' + (r.bandName || r.band_name || '');
             document.getElementById('previewBandMeta').textContent =
               province + (r.memberCount || r.member_count ? ' · ' + (r.memberCount || r.member_count) + ' สมาชิก' : '');
             info.style.display = '';
             if (okMsg) okMsg.style.display = '';
             preview.className = 'invite-preview show';
             inviteValid = true;
-            document.getElementById('step1Next').disabled = false;
+            document.getElementById('regBtn').disabled = false;
           } else {
             document.getElementById('previewBandName').textContent = '❌ ' + ((r && r.message) || 'รหัสไม่ถูกต้อง');
             document.getElementById('previewBandMeta').textContent = 'กรุณาตรวจสอบรหัสประจำวงอีกครั้ง';
@@ -250,30 +171,15 @@
       }, 500);
     });
 
-    // ── Step nav ──
-    document.getElementById('step1Next').addEventListener('click', function() { if (inviteValid) showStep(2); });
-    document.getElementById('step2Back').addEventListener('click', function() { showStep(1); });
-    document.getElementById('step2Next').addEventListener('click', function() {
-      clearErrs();
-      var ok = true;
-      if (!val('firstName')) { err('firstNameError', 'กรุณากรอกชื่อ'); ok = false; }
-      if (!val('lastName'))  { err('lastNameError', 'กรุณากรอกนามสกุล'); ok = false; }
-      if (!val('nickname'))  { err('nicknameError', 'กรุณากรอกชื่อเล่น'); ok = false; }
-      if (!ok) return;
-      var title = val('title');
-      document.getElementById('sumBand').textContent = bandNameFromCode || '—';
-      document.getElementById('sumName').textContent = (title && title !== 'ไม่ระบุ' ? title + ' ' : '') + val('firstName') + ' ' + val('lastName') + ' (' + val('nickname') + ')';
-      document.getElementById('sumInstrument').textContent = val('instrument') || 'ไม่ระบุ';
-      showStep(3);
-    });
-    document.getElementById('step3Back').addEventListener('click', function() { showStep(2); });
-
     // ── Submit ──
     document.getElementById('registerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       clearErrs();
-      var email = val('email'), pw = document.getElementById('password').value, cpw = document.getElementById('confirmPassword').value;
+      var nickname = val('nickname'), email = val('email');
+      var pw = document.getElementById('password').value, cpw = document.getElementById('confirmPassword').value;
       var ok = true;
+      if (!inviteValid) { err('generalError', 'กรุณากรอกรหัสวงให้ถูกต้อง'); ok = false; }
+      if (!nickname) { err('nicknameError', 'กรุณากรอกชื่อเล่น'); ok = false; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err('emailError', 'อีเมลไม่ถูกต้อง'); ok = false; }
       if (pw.length < 8) { err('passwordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); ok = false; }
       if (pw !== cpw) { err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
@@ -281,19 +187,17 @@
 
       var btn = document.getElementById('regBtn');
       btn.disabled = true; btn.textContent = '⏳ กำลังสมัคร...';
-      var title = val('title');
 
       apiCall('register', {
-        name: (title && title !== 'ไม่ระบุ' ? title + ' ' : '') + val('firstName') + ' ' + val('lastName'),
-        firstName: val('firstName'), lastName: val('lastName'), nickname: val('nickname'),
-        title: title, instrument: val('instrument'), email: email, password: pw,
+        nickname: nickname, firstName: '', lastName: '', title: '', instrument: '',
+        name: nickname, email: email, password: pw,
         inviteCode: val('inviteCode').toUpperCase()
       }, function(r) {
-        btn.disabled = false; btn.textContent = '✅ สมัครสมาชิก';
         if (r && r.success) {
-          if (typeof showToast === 'function') showToast((r.message || 'สมัครเรียบร้อย!'), 'success');
-          setTimeout(function() { window.location.href = 'index.html'; }, 2500);
+          if (typeof showToast === 'function') showToast(r.message || 'สมัครสำเร็จ!', 'success');
+          setTimeout(function() { window.location.href = 'dashboard.html'; }, 1500);
         } else {
+          btn.disabled = false; btn.textContent = '✅ สมัครเข้าร่วมวง';
           err('generalError', (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
         }
       });
@@ -301,7 +205,7 @@
 
     function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
     function err(id, msg) { var el = document.getElementById(id); if (el) el.textContent = msg || ''; }
-    function clearErrs() { ['firstNameError','lastNameError','nicknameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ err(id); }); }
+    function clearErrs() { ['nicknameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ err(id); }); }
   });
   </script>
 </body>

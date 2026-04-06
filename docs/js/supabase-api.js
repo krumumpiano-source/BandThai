@@ -248,6 +248,8 @@
         case 'cancelCheckIn':      return doCancelCheckIn(d);
         case 'getCheckInsForDate': return doSelect('member_check_ins', { band_id: getBandId(), date: d.date });
         case 'getCheckInsForRange': return doSelectRange('member_check_ins', getBandId(), d.dateFrom, d.dateTo, d.memberId);
+        case 'getMyStreak':        return doGetMyStreak();
+        case 'getMonthlyLeaderboard': return doGetMonthlyLeaderboard();
 
         // ── Leave ──────────────────────────────────────────────────
         case 'requestLeave':       return doRequestLeave(d);
@@ -604,8 +606,12 @@
           await sb.auth.admin.deleteUser(data.user.id).catch(function(){});
           return { success: false, message: (result && result.message) || 'รหัสวงไม่ถูกต้อง' };
         }
+        // Auto-approve: อนุมัติสมาชิกอัตโนมัติ (Phase 2B)
+        if (result.band_id) {
+          await sb.rpc('approve_member', { p_user_id: data.user.id, p_band_id: result.band_id }).catch(function(){});
+        }
         var provincePart = result.province ? ' (' + result.province + ')' : '';
-        return { success: true, message: 'สมัครสำเร็จ! ส่งคำขอเข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว รอผู้จัดการวงอนุมัติ' };
+        return { success: true, message: 'สมัครสำเร็จ! เข้าร่วมวง ' + result.band_name + provincePart + ' เรียบร้อย', autoApproved: true };
       }
 
       return { success: false, message: 'กรุณากรอกรหัสวง' };
@@ -638,10 +644,17 @@
         p_band_name:    d.bandName || '',
         p_province:     d.province || '',
         p_member_count: parseInt(d.memberCount) || 1,
-        p_name:         fullName.trim(),
+        p_name:         fullName.trim() || d.nickname || d.email.split('@')[0],
         p_email:        d.email
       });
       if (rErr) return { success: false, message: rErr.message };
+      // Auto-approve: อนุมัติวงอัตโนมัติ (Phase 2A)
+      if (result && result.success && result.request_id) {
+        var { data: approveResult } = await sb.rpc('approve_band_request', { p_request_id: result.request_id }).catch(function(){ return {}; });
+        if (approveResult && approveResult.success) {
+          return { success: true, message: 'สร้างวง "' + (d.bandName || '') + '" สำเร็จ! เข้าใช้งานได้ทันที', autoApproved: true, band_id: approveResult.band_id };
+        }
+      }
       return result;
     }
 
@@ -1050,6 +1063,70 @@
       }
 
       return { success: true, data: toCamel(data) };
+    }
+
+    // ── Streak & Leaderboard ──────────────────────────────────────
+    async function doGetMyStreak() {
+      var bandId = getBandId();
+      var memberId = localStorage.getItem('odoo_member_id') || localStorage.getItem('memberId') || '';
+      if (!bandId || !memberId) return { success: true, data: { streak: 0 } };
+      // Fetch last 120 check-in dates for this member
+      var { data, error } = await sb.from('member_check_ins')
+        .select('date')
+        .eq('band_id', bandId)
+        .eq('member_id', memberId)
+        .order('date', { ascending: false })
+        .limit(120);
+      if (error) return { success: false, message: error.message };
+      if (!data || !data.length) return { success: true, data: { streak: 0 } };
+      var dates = data.map(function(r){ return r.date; }).sort().reverse();
+      // deduplicate
+      var unique = []; var seen = {};
+      for (var i = 0; i < dates.length; i++) {
+        if (!seen[dates[i]]) { unique.push(dates[i]); seen[dates[i]] = true; }
+      }
+      // count consecutive days from today or yesterday
+      var today = new Date(); today.setHours(0,0,0,0);
+      var streak = 0;
+      var checkDate = new Date(today);
+      // Allow starting from today or yesterday
+      if (unique[0] !== checkDate.toISOString().slice(0,10)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+        if (unique[0] !== checkDate.toISOString().slice(0,10)) return { success: true, data: { streak: 0 } };
+      }
+      for (var j = 0; j < unique.length; j++) {
+        if (unique[j] === checkDate.toISOString().slice(0,10)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else break;
+      }
+      return { success: true, data: { streak: streak } };
+    }
+
+    async function doGetMonthlyLeaderboard() {
+      var bandId = getBandId();
+      if (!bandId) return { success: true, data: [] };
+      var now = new Date();
+      var firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+      var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0,10);
+      var { data, error } = await sb.from('member_check_ins')
+        .select('member_id, member_name, date')
+        .eq('band_id', bandId)
+        .gte('date', firstDay)
+        .lte('date', lastDay);
+      if (error) return { success: false, message: error.message };
+      // Count unique dates per member
+      var map = {};
+      (data || []).forEach(function(r) {
+        var key = r.member_id;
+        if (!map[key]) map[key] = { name: r.member_name || 'ไม่ทราบ', days: {} };
+        map[key].days[r.date] = true;
+        if (r.member_name) map[key].name = r.member_name;
+      });
+      var result = Object.keys(map).map(function(k) {
+        return { memberId: k, name: map[k].name, count: Object.keys(map[k].days).length };
+      }).sort(function(a,b) { return b.count - a.count; }).slice(0, 10);
+      return { success: true, data: result };
     }
 
     // ── Check-in ──────────────────────────────────────────────────

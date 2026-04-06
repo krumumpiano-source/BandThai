@@ -48,6 +48,10 @@
     .slot-dur{font-size:.72rem;color:var(--premium-text-muted);flex-shrink:0}
     .slot-del{background:none;border:none;color:#ef4444;cursor:pointer;font-size:1rem;padding:2px 6px;border-radius:4px;opacity:.7;flex-shrink:0}
     .slot-del:hover{opacity:1;background:rgba(239,68,68,.1)}
+    .slot-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+    .slot-move{background:none;border:1px solid var(--premium-border,#e2e8f0);color:var(--premium-text-muted,#a0aec0);cursor:pointer;font-size:.85rem;padding:2px 6px;border-radius:4px;line-height:1}
+    .slot-move:hover:not(:disabled){background:var(--premium-off-white,#f7fafc);color:var(--premium-text,#1a202c)}
+    .slot-move:disabled{opacity:.25;cursor:default}
     .dur-bar{height:4px;background:var(--premium-light-gray);border-radius:99px;overflow:hidden;margin-top:10px}
     .dur-fill{height:100%;background:var(--premium-gold);border-radius:99px;transition:width .4s}
     .sl-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted)}
@@ -101,6 +105,7 @@
       <div class="page-header">
         <h1 class="page-title">🎵 เซ็ตลิสต์</h1>
         <div style="display:flex;gap:8px">
+          <button id="goLiveBtn" class="btn btn-secondary" onclick="goLive()" style="background:#e53e3e;color:#fff;font-weight:700" title="เริ่มเล่นสดจากเซ็ตลิสต์นี้">🎤 เริ่มเล่นสด</button>
           <button id="loadPrevBtn" class="btn btn-secondary" onclick="openLoadPrevModal()" title="ดึงลิสเก่ามาใช้">📋 ดึงลิสเก่า</button>
           <button id="keyModeBtn" class="btn btn-secondary" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับการแสดงคีย์">🔤 อักษร</button>
           <button class="btn btn-secondary" onclick="window.print()">🖨️ พิมพ์</button>
@@ -131,6 +136,10 @@
             <div class="quota-dots" id="quotaDots"></div>
             <span id="quotaText"></span>
           </div>
+          <div style="font-size:.7rem;color:var(--premium-text-muted,#a0aec0);display:flex;gap:10px;margin-top:2px">
+            <span><span class="q-dot used" style="display:inline-block;width:8px;height:8px;vertical-align:middle;margin-right:2px"></span> ใช้แล้ว</span>
+            <span><span class="q-dot sched" style="display:inline-block;width:8px;height:8px;vertical-align:middle;margin-right:2px"></span> ว่าง</span>
+          </div>
           <button class="add-set-btn" onclick="tryAddSet()">＋ เพิ่มเซ็ต</button>
         </div>
         <div id="setTabs" class="set-tabs">
@@ -159,7 +168,7 @@
               <div class="big-icon">☝️</div>
               <div style="line-height:1.7">
                 กรุณา <b>เลือกวันที่</b> แล้ว<br>
-                <b>แตะแท็บเซ็ต</b> ด้านบนเพื่อเริ่มลิสเพลง
+                <b>เลือกแท็บเซ็ต</b> หรือกด <b>＋</b> สร้างใหม่
               </div>
             </div>
           </div>
@@ -532,7 +541,11 @@
         + '<div class="slot-info"><div class="slot-title">' + escapeHtml(titleShow) + '</div>'
         + '<div class="slot-artist">' + escapeHtml(artShow) + '</div></div>'
         + '<span class="slot-dur">' + (parseFloat(s.duration) || 0).toFixed(1) + 'm</span>'
+        + '<div class="slot-actions">'
+        + '<button class="slot-move" onclick="moveSong(' + i + ',-1)" title="ขึ้น"' + (i === 0 ? ' disabled' : '') + '>↑</button>'
+        + '<button class="slot-move" onclick="moveSong(' + i + ',1)" title="ลง"' + (i === songs.length - 1 ? ' disabled' : '') + '>↓</button>'
         + '<button class="slot-del" onclick="removeSong(' + i + ')" title="ลบออก">×</button>'
+        + '</div>'
         + '</div>';
     }).join('');
   }
@@ -563,6 +576,16 @@
     renderSetBuilder();
     renderPool();
     renderSetTabs();
+    autoSave();
+  }
+
+  function moveSong(idx, dir) {
+    if (!currentSetIdx) return;
+    var arr = setsData[currentSetIdx];
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= arr.length) return;
+    var tmp = arr[idx]; arr[idx] = arr[newIdx]; arr[newIdx] = tmp;
+    renderSetBuilder();
     autoSave();
   }
 
@@ -635,6 +658,18 @@
     renderQuota();
     selectSet(si);
     showToast('🔓 ปลดล็อคเซ็ตที่ ' + si + ' เรียบร้อย!', 'success');
+  }
+
+  // ── Go Live ───────────────────────────────────────────────────────────
+  function goLive() {
+    var date = getSelectedDate();
+    if (!date) { showToast('กรุณาเลือกวันที่ก่อน', 'error'); return; }
+    var si = currentSetIdx || '1';
+    var ts = todaySlots[parseInt(si) - 1];
+    var params = 'date=' + encodeURIComponent(date);
+    if (ts && ts.time_slot) params += '&timeSlot=' + encodeURIComponent(ts.time_slot);
+    if (ts && (ts.venue_name || ts.venue)) params += '&venue=' + encodeURIComponent(ts.venue_name || ts.venue);
+    window.location.href = 'live.html?' + params;
   }
 
   // ── Load previous setlist ────────────────────────────────────────────────

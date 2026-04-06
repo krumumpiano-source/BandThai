@@ -83,7 +83,7 @@ function renderMainNav(containerId) {
     ? '<div class="sidebar-user-instrument">' + _escHtml(instrument) + '</div>'
     : '';
   // ── เมนูสมาชิกวง (ทุกบทบาท) ─────────────────────────
-  var _simpleMenu = localStorage.getItem('accessibility_simple_menu') === '1';
+  var _simpleMenu = localStorage.getItem('accessibility_simple_menu') !== '0';
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
     navLink('dashboard', '📊 ' + _t('nav_dashboard'), 'ภาพรวมงาน สถิติ และทางลัด') +
@@ -117,7 +117,7 @@ function renderMainNav(containerId) {
     navSubmenu('📋', 'เบิกจ่าย', 'ลงเวลาและจ่ายเงิน', ['attendance-payroll', 'external-payout', 'job-history'],
       navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'เช็คชื่อเข้างาน & เบิกจ่ายค่าตัว') +
       navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้คนนอกวง') +
-      navLink('job-history',        '📁 ประวัติงานนอก',               'ประวัติและรายละเอียดงานนอกทั้งหมด')
+      (_simpleMenu ? '' : navLink('job-history', '📁 ประวัติงานนอก', 'ประวัติและรายละเอียดงานนอกทั้งหมด'))
     ) +
     navSubmenu('🧮', 'งานนอก', 'คำนวณ เสนอราคา และสัญญา', ['job-calculator', 'quotation', 'contract'],
       navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงานนอก') +

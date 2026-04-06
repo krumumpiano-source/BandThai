@@ -128,11 +128,77 @@
     .ob-dismiss{position:absolute;top:var(--spacing-md);right:var(--spacing-md);background:none;border:none;cursor:pointer;font-size:var(--text-xs);color:#6b9fd4;padding:4px 10px;border-radius:var(--radius-full);transition:all .2s;font-family:var(--font-family-body)}
     .ob-dismiss:hover{background:#dbeafe;color:#1e40af}
     @media(max-width:600px){.ob-step{padding:10px 12px;gap:8px}}
+    /* === Welcome Modal === */
+    .wm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;animation:wmFadeIn .3s ease}
+    @keyframes wmFadeIn{from{opacity:0}to{opacity:1}}
+    .wm-box{background:#fff;border-radius:var(--radius-xl,16px);max-width:380px;width:92%;overflow:hidden;animation:wmSlideUp .35s ease;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+    @keyframes wmSlideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+    .wm-slide{display:none;text-align:center;padding:32px 28px 24px}
+    .wm-slide.active{display:block}
+    .wm-slide .wm-icon{font-size:56px;margin-bottom:12px}
+    .wm-slide h2{font-size:20px;font-weight:700;margin:0 0 8px;color:#1a202c}
+    .wm-slide p{font-size:14px;color:#4a5568;line-height:1.7;margin:0}
+    .wm-footer{display:flex;align-items:center;justify-content:space-between;padding:16px 28px;border-top:1px solid #e2e8f0}
+    .wm-dots{display:flex;gap:6px}
+    .wm-dot{width:8px;height:8px;border-radius:50%;background:#cbd5e0;transition:background .2s}
+    .wm-dot.active{background:#d4a843}
+    .wm-skip{background:none;border:none;color:#a0aec0;font-size:13px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:var(--radius-md,8px)}
+    .wm-skip:hover{color:#718096;background:#f7fafc}
+    .wm-next{background:linear-gradient(135deg,#d4a843,#b7891f);color:#fff;border:none;padding:10px 24px;border-radius:var(--radius-full,999px);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .15s}
+    .wm-next:hover{transform:scale(1.03)}
+    /* === Live Mode Button === */
+    .dash-live-btn{display:block;width:100%;padding:18px;border:none;border-radius:var(--radius-xl,16px);background:linear-gradient(135deg,#e53e3e,#c53030);color:#fff;font-size:20px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:var(--spacing-xl);text-align:center;text-decoration:none;box-shadow:0 4px 16px rgba(229,62,62,.35);transition:transform .15s,box-shadow .15s;animation:livePulse 2.5s infinite}
+    .dash-live-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(229,62,62,.45)}
+    @keyframes livePulse{0%,100%{box-shadow:0 4px 16px rgba(229,62,62,.35)}50%{box-shadow:0 4px 24px rgba(229,62,62,.55)}}
+    /* === Daily Digest Banner === */
+    .dash-digest{display:none;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #f6e05e;border-radius:var(--radius-xl,16px);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-xl);font-size:var(--text-sm);color:#744210;line-height:1.7}
+    .dash-digest.show{display:block}
+    .dash-digest strong{color:#92400e}
+    /* === Streak === */
+    .dash-streak{display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:var(--radius-xl,16px);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-xl);text-align:center;color:#fff}
+    .dash-streak.show{display:block}
+    .dash-streak .streak-num{font-size:36px;font-weight:700;margin:4px 0}
+    .dash-streak .streak-label{font-size:var(--text-sm);color:#a0aec0}
+    .dash-streak .streak-badge{font-size:28px;margin-left:8px}
+    /* === Leaderboard === */
+    .dash-lb{margin-bottom:var(--spacing-xl)}
+    .dash-lb .lb-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--premium-light-gray);font-size:var(--text-sm)}
+    .dash-lb .lb-row:last-child{border-bottom:none}
+    .dash-lb .lb-rank{width:24px;font-weight:700;text-align:center;color:var(--premium-gold)}
+    .dash-lb .lb-name{flex:1;color:var(--premium-text)}
+    .dash-lb .lb-count{font-weight:700;color:#276749}
   </style>
 </head>
 <body>
   <div id="mainNav"></div>
   <div id="toast"></div>
+
+  <!-- ===== Welcome Modal (first login only) ===== -->
+  <div class="wm-overlay" id="welcomeModal" style="display:none">
+    <div class="wm-box">
+      <div class="wm-slide active" data-slide="0">
+        <div class="wm-icon">🎵</div>
+        <h2>ยินดีต้อนรับสู่ BandThai!</h2>
+        <p>ระบบจัดการวงดนตรีครบวงจร<br>ที่สร้างโดยนักดนตรี เพื่อนักดนตรี</p>
+      </div>
+      <div class="wm-slide" data-slide="1">
+        <div class="wm-icon">🎤</div>
+        <h2>ทุกอย่างที่วงต้องการ</h2>
+        <p>คลังเพลง · เซ็ตลิสต์ · Live Mode<br>ตารางงาน · เบิกจ่าย · ใบเสนอราคา<br>ทุกอย่างอยู่ในแอปเดียว</p>
+      </div>
+      <div class="wm-slide" data-slide="2">
+        <div class="wm-icon">🚀</div>
+        <h2>เริ่มต้นใช้งานเลย!</h2>
+        <p>แค่ 3 ขั้นตอนก็พร้อมใช้งาน<br>กรอกโปรไฟล์ → เพิ่มเพลง → สร้างเซ็ตลิสต์</p>
+      </div>
+      <div class="wm-footer">
+        <button class="wm-skip" id="wmSkip">ข้าม</button>
+        <div class="wm-dots"><span class="wm-dot active"></span><span class="wm-dot"></span><span class="wm-dot"></span></div>
+        <button class="wm-next" id="wmNext">ถัดไป</button>
+      </div>
+    </div>
+  </div>
+
   <main>
     <div class="container">
       <div class="welcome-bar">
@@ -141,6 +207,12 @@
           <p id="welcomeBand"></p>
         </div>
         <div style="font-size:32px">🥁</div>
+      </div>
+
+      <!-- ===== Check-in Streak ===== -->
+      <div class="dash-streak" id="dashStreak">
+        <div class="streak-label">🔥 ลงเวลาติดต่อกัน</div>
+        <div class="streak-num"><span id="streakCount">0</span> วัน <span class="streak-badge" id="streakBadge"></span></div>
       </div>
 
       <!-- ===== Admin Online Panel (admin/manager only) ===== -->
@@ -163,6 +235,12 @@
         <div class="ob-progress-bar"><div class="ob-progress-fill" id="obProgressFill" style="width:0%"></div></div>
         <div class="ob-steps" id="obSteps"></div>
       </div>
+
+      <!-- ===== Live Mode Button ===== -->
+      <a href="live.html" class="dash-live-btn">🎤 เล่นสด — Live Mode</a>
+
+      <!-- ===== Daily Digest Banner ===== -->
+      <div class="dash-digest" id="dashDigest"></div>
 
       <!-- ===== Pending Band Approval (for manager who just created band) ===== -->
       <div class="card" id="dashPendingBandCard" style="margin-bottom:var(--spacing-xl);display:none;border:2px solid #f59e0b;background:linear-gradient(135deg,#fffbeb,#fef3c7)">
@@ -355,7 +433,7 @@
               <button class="quick-btn" onclick="nav('quotation')" data-tip="สร้างและส่งใบเสนอราคา">📃 <span data-i18n="nav_quotation">ใบเสนอราคา</span></button>
               <button class="quick-btn" onclick="nav('band-info')" data-tip="สมาชิกวงและช่องทางติดต่อ">🎵 <span data-i18n="nav_bandInfo">ข้อมูลวง</span></button>
               <button class="quick-btn" onclick="nav('songs')" data-tip="คลังเพลงและเซ็ตลิสต์">🎼 <span data-i18n="nav_songs">รายการเพลง</span></button>
-              <button class="quick-btn" onclick="nav('equipment')" data-tip="อุปกรณ์วงและงบซ่อมบำรุง">🎸 <span data-i18n="nav_equipment">อุปกรณ์</span></button>
+              <button class="quick-btn" onclick="nav('setlist')" data-tip="จัดเซ็ตลิสต์สำหรับงาน">🎼 เซ็ตลิสต์</button>
             </div>
           </div>
           <!-- Finance Summary -->
@@ -365,6 +443,11 @@
               <a href="statistics.html" class="btn btn-ghost btn-sm" data-i18n="viewAll">ดูทั้งหมด</a>
             </div>
             <div id="financeList"><div class="empty-state"><p data-i18n="loading">กำลังโหลด...</p></div></div>
+          </div>
+          <!-- Monthly Leaderboard -->
+          <div class="card dash-lb" id="dashLeaderboard" style="display:none;margin-top:var(--spacing-xl)">
+            <div class="card-header"><h3 class="card-title">🏆 ลงเวลาครบที่สุดเดือนนี้</h3></div>
+            <div id="lbList" style="padding:var(--spacing-md) var(--spacing-lg)"></div>
           </div>
         </div>
       </div>
@@ -845,6 +928,55 @@
     // Onboarding
     initOnboarding();
 
+    // Welcome Modal (first login only)
+    if (!localStorage.getItem('welcome_done')) {
+      var wm = document.getElementById('welcomeModal');
+      if (wm) {
+        wm.style.display = 'flex';
+        var wmIdx = 0;
+        var slides = wm.querySelectorAll('.wm-slide');
+        var dots = wm.querySelectorAll('.wm-dot');
+        var nextBtn = document.getElementById('wmNext');
+        function wmGo(i) {
+          wmIdx = i;
+          for (var s = 0; s < slides.length; s++) { slides[s].classList.toggle('active', s === i); dots[s].classList.toggle('active', s === i); }
+          nextBtn.textContent = i === slides.length - 1 ? 'เริ่มเลย!' : 'ถัดไป';
+        }
+        nextBtn.addEventListener('click', function() {
+          if (wmIdx < slides.length - 1) { wmGo(wmIdx + 1); }
+          else { localStorage.setItem('welcome_done', '1'); wm.style.display = 'none'; }
+        });
+        document.getElementById('wmSkip').addEventListener('click', function() {
+          localStorage.setItem('welcome_done', '1'); wm.style.display = 'none';
+        });
+      }
+    }
+
+    // Streak Counter
+    if (typeof apiCall === 'function') {
+      apiCall('getMyStreak', {}, function(r) {
+        if (!r || !r.success) return;
+        var streak = (r.data || {}).streak || 0;
+        if (streak > 0) {
+          document.getElementById('streakCount').textContent = streak;
+          var badge = streak >= 100 ? '🏆' : streak >= 30 ? '⭐' : streak >= 7 ? '🔥' : '';
+          document.getElementById('streakBadge').textContent = badge;
+          document.getElementById('dashStreak').classList.add('show');
+        }
+      });
+      apiCall('getMonthlyLeaderboard', {}, function(r) {
+        if (!r || !r.success || !r.data || !r.data.length) return;
+        var lbCard = document.getElementById('dashLeaderboard');
+        var lbList = document.getElementById('lbList');
+        if (!lbCard || !lbList) return;
+        lbList.innerHTML = r.data.map(function(m, i) {
+          var rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          return '<div class="lb-row"><span class="lb-rank">' + rank + '</span><span class="lb-name">' + escapeHtml(m.name) + '</span><span class="lb-count">' + m.count + ' วัน</span></div>';
+        }).join('');
+        lbCard.style.display = '';
+      });
+    }
+
     // Re-check check-in status when page restored from bfcache
     window.addEventListener('pageshow', function(e) {
       if (e.persisted) { qciCheckExisting(); }
@@ -1306,34 +1438,26 @@
   var OB_STEPS = {
     manager: {
       th: [
-        { key: 'settings',   icon: '⚙️', label: 'ตั้งค่าวง',        desc: 'ตั้งชื่อวง จังหวัด และตารางงาน',       href: 'band-settings.html' },
-        { key: 'members',    icon: '👥', label: 'เชิญสมาชิก',       desc: 'แชร์รหัสวงให้สมาชิกกดเข้าร่วม',        href: 'band-info.html' },
-        { key: 'schedule',   icon: '📅', label: 'กำหนดตารางงาน',    desc: 'ร้านที่เล่นและรอบเวลาประจำสัปดาห์',    href: 'schedule.html' },
-        { key: 'songs',      icon: '🎵', label: 'เพิ่มเพลงคลัง',    desc: 'สร้างเซ็ตลิสต์สำหรับการแสดง',          href: 'add-song.html' },
-        { key: 'calculator', icon: '🧮', label: 'คำนวณราคางาน',     desc: 'ประเมินราคารับงานครั้งแรก',             href: 'job-calculator.html' },
+        { key: 'profile',  icon: '👤', label: 'กรอกโปรไฟล์',       desc: 'ใส่ชื่อ เครื่องดนตรี และข้อมูลวง',     href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'เพิ่มเพลง',          desc: 'เพิ่มเพลงเข้าคลังเพลงของวง',           href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'สร้าง Setlist แรก',  desc: 'จัดเซ็ตลิสต์สำหรับงานแสดงสด',         href: 'setlist.html' },
       ],
       en: [
-        { key: 'settings',   icon: '⚙️', label: 'Band Settings',    desc: 'Set band name, province & schedule',    href: 'band-settings.html' },
-        { key: 'members',    icon: '👥', label: 'Invite Members',    desc: 'Share the band code to let members join', href: 'band-info.html' },
-        { key: 'schedule',   icon: '📅', label: 'Set Schedule',      desc: 'Add venues and weekly time slots',       href: 'schedule.html' },
-        { key: 'songs',      icon: '🎵', label: 'Add Songs',         desc: 'Build your song library and setlists',   href: 'add-song.html' },
-        { key: 'calculator', icon: '🧮', label: 'Job Calculator',    desc: 'Estimate your first gig pricing',        href: 'job-calculator.html' },
+        { key: 'profile',  icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & band info', href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'Add Songs',           desc: 'Add songs to your band library',        href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'Create First Setlist',desc: 'Build a setlist for your live show',    href: 'setlist.html' },
       ]
     },
     member: {
       th: [
-        { key: 'profile',   icon: '👤', label: 'ตั้งค่าโปรไฟล์',    desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
-        { key: 'bandinfo',  icon: '🎸', label: 'ดูข้อมูลวง',         desc: 'รายชื่อสมาชิกและช่องทางติดต่อ',         href: 'band-info.html' },
-        { key: 'schedule',  icon: '📅', label: 'ดูตารางงาน',         desc: 'ตรวจสอบงานและวันซ้อมที่กำลังจะมา',     href: 'schedule.html' },
-        { key: 'checkin',   icon: '⏰', label: 'ลงเวลาประจำวัน',     desc: 'กดลงเวลาที่กล่องด้านล่างนี้ทุกวัน',     href: '#qciCard' },
-        { key: 'earnings',  icon: '📊', label: 'ดูรายได้ของฉัน',     desc: 'สรุปรายได้รายสัปดาห์ รายเดือน รายปี',  href: 'statistics.html' },
+        { key: 'profile',  icon: '👤', label: 'กรอกโปรไฟล์',       desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'เพิ่มเพลง',          desc: 'เพิ่มเพลงเข้าคลังเพลงของวง',           href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'สร้าง Setlist แรก',  desc: 'จัดเซ็ตลิสต์สำหรับงานแสดงสด',         href: 'setlist.html' },
       ],
       en: [
-        { key: 'profile',   icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & pay rate',   href: 'my-profile.html' },
-        { key: 'bandinfo',  icon: '🎸', label: 'View Band Info',      desc: 'Member list and contact details',        href: 'band-info.html' },
-        { key: 'schedule',  icon: '📅', label: 'Check Schedule',      desc: 'Upcoming gigs and rehearsal dates',      href: 'schedule.html' },
-        { key: 'checkin',   icon: '⏰', label: 'Daily Check-In',      desc: 'Clock in using the box below every day', href: '#qciCard' },
-        { key: 'earnings',  icon: '📊', label: 'View My Earnings',    desc: 'Weekly, monthly and yearly breakdown',   href: 'statistics.html' },
+        { key: 'profile',  icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & pay rate',  href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'Add Songs',           desc: 'Add songs to your band library',        href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'Create First Setlist',desc: 'Build a setlist for your live show',    href: 'setlist.html' },
       ]
     }
   };
@@ -1520,6 +1644,20 @@
             +'<p>'+escapeHtml(j.band||'')+' · '+escapeHtml(j.type||'')+'</p></div></div>';
         }).join('');
       } else { jl.innerHTML = '<div class="empty-state"><p>ยังไม่มีงาน</p></div>'; }
+
+      // Daily Digest Banner — check if today has a gig
+      var digestEl = document.getElementById('dashDigest');
+      if (digestEl && d.jobs && d.jobs.length) {
+        var today = new Date(); today.setHours(0,0,0,0);
+        var todayJob = d.jobs.find(function(j) {
+          var jd = new Date(j.date); jd.setHours(0,0,0,0);
+          return jd.getTime() === today.getTime();
+        });
+        if (todayJob) {
+          digestEl.innerHTML = '📅 <strong>วันนี้มีงานที่ ' + escapeHtml(todayJob.venue || 'ไม่ระบุ') + '</strong> — <a href="setlist.html" style="color:#92400e;font-weight:700">Setlist พร้อมหรือยัง?</a>';
+          digestEl.classList.add('show');
+        }
+      }
 
       // finance
       var fl = document.getElementById('financeList');

@@ -10,6 +10,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#0d0d1a">
   <title>BandThai</title>
+  <!-- OG Tags -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="BandThai — ระบบจัดการวงดนตรีครบวงจร">
+  <meta property="og:description" content="จัดการเพลง ตารางงาน เบิกจ่าย Live Mode และอีกมากมาย — สร้างวงฟรี!">
+  <meta property="og:image" content="https://krumumpiano-source.github.io/BandThai/icons/icon-512.png">
+  <meta property="og:url" content="https://krumumpiano-source.github.io/BandThai/">
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
@@ -22,8 +28,8 @@
       font-family:'Kanit',sans-serif;
       color:#f0f0f0;
       display:flex;flex-direction:column;
-      align-items:center;justify-content:center;
-      overflow:hidden;
+      align-items:center;
+      overflow-y:auto;
     }
     body::before{
       content:'';position:fixed;inset:0;
@@ -106,6 +112,26 @@
       background:#d4a843;color:#000;border-radius:20px;
       font-weight:700;font-size:.78rem;text-decoration:none;
     }
+    /* ── Landing Page ── */
+    .landing-hero{position:relative;z-index:1;text-align:center;padding:60px 20px 40px;max-width:640px;width:100%}
+    .landing-hero h2{font-size:clamp(1.6rem,5vw,2.4rem);font-weight:700;line-height:1.3;margin-bottom:12px}
+    .landing-hero h2 .gold{color:#d4a843}
+    .landing-hero p{font-size:1rem;color:#aaa;line-height:1.7;margin-bottom:24px}
+    .landing-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .landing-cta a{display:inline-flex;align-items:center;gap:6px;padding:14px 28px;border-radius:14px;font-weight:700;font-size:.95rem;text-decoration:none;transition:transform .12s,box-shadow .15s}
+    .landing-cta .btn-gold{background:linear-gradient(135deg,#d4a843,#a06a00);color:#fff;box-shadow:0 6px 20px rgba(212,168,67,.38)}
+    .landing-cta .btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 26px rgba(212,168,67,.48)}
+    .landing-cta .btn-outline{border:2px solid rgba(255,255,255,.25);color:#e5e5e5;background:transparent}
+    .landing-cta .btn-outline:hover{border-color:#d4a843;color:#d4a843}
+    .landing-features{position:relative;z-index:1;width:100%;max-width:800px;padding:0 20px 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px}
+    .feature-card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:20px;text-align:center;transition:transform .15s,border-color .15s}
+    .feature-card:hover{transform:translateY(-3px);border-color:rgba(212,168,67,.4)}
+    .feature-card .icon{font-size:2rem;margin-bottom:8px}
+    .feature-card h3{font-size:.95rem;font-weight:600;color:#f0f0f0;margin-bottom:4px}
+    .feature-card p{font-size:.78rem;color:#999;line-height:1.5}
+    .landing-proof{position:relative;z-index:1;text-align:center;padding:0 20px 40px;font-size:.9rem;color:#888}
+    .landing-proof strong{color:#d4a843}
+    .landing-divider{position:relative;z-index:1;width:60px;height:2px;background:linear-gradient(90deg,transparent,#d4a843,transparent);margin:0 auto 32px}
   </style>
 </head>
 <body>
@@ -115,6 +141,58 @@
     <a id="inappOpenLink" href="#">เปิดใน Browser &#8594;</a>
   </div>
   <div id="toast"></div>
+
+  <!-- ═══ Landing Hero ═══ -->
+  <div class="landing-hero">
+    <h2>🎵 <span class="gold">BandThai</span><br>ระบบจัดการวงดนตรี<br>ครบวงจร</h2>
+    <p>จัดการเพลง ตารางงาน เบิกจ่าย Live Mode และอีกมากมาย<br>ใช้ฟรี ไม่มีค่าใช้จ่าย</p>
+    <div class="landing-cta">
+      <a href="create-band.html" class="btn-gold">🎵 สร้างวงฟรี</a>
+      <a href="#loginWrap" class="btn-outline">เข้าสู่ระบบ</a>
+    </div>
+  </div>
+
+  <!-- ═══ Feature Showcase ═══ -->
+  <div class="landing-features">
+    <div class="feature-card">
+      <div class="icon">🎤</div>
+      <h3>Live Mode</h3>
+      <p>เล่นสดพร้อมซิงก์ทั้งวง เปลี่ยนเพลง เปลี่ยนคีย์ เห็นพร้อมกันทุกคน</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🎼</div>
+      <h3>คลังเพลง + AI</h3>
+      <p>เพลงกว่า 1,000+ เพลง ค้นหาด้วย AI แนะนำเพลงที่เหมาะกับวง</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📅</div>
+      <h3>ตารางงาน</h3>
+      <p>จัดตารางงาน เบรค ลงเวลา ดูปฏิทินรวมของทั้งวง</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">💰</div>
+      <h3>เบิกจ่ายอัตโนมัติ</h3>
+      <p>คำนวณค่าแรง เบิกเงิน สร้างใบเสนอราคา สัญญาจ้าง</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">📝</div>
+      <h3>Setlist Builder</h3>
+      <p>สร้าง Setlist ส่งเข้า Live Mode ได้ทันที จัดเซ็ตเพลงง่ายๆ</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🎮</div>
+      <h3>เกมส์ดนตรี</h3>
+      <p>ทายเพลง ทายศิลปิน เพิ่มความสนุกในวง</p>
+    </div>
+  </div>
+
+  <!-- ═══ Social Proof ═══ -->
+  <div class="landing-proof">
+    สร้างโดย <strong>SoulCiety</strong> — นักดนตรีสร้างให้นักดนตรี
+  </div>
+  <div class="landing-divider"></div>
+
+  <!-- ═══ Login Form ═══ -->
   <div id="loginWrap">
     <div class="auth-card">
       <div class="auth-logo">
@@ -142,11 +220,11 @@
       </form>
       <div class="auth-footer">
         ยังไม่มีบัญชี? <a href="register.html">สมัครสมาชิก</a>
-        &nbsp;|&nbsp;<a href="create-band.html">ขอสร้างวงใหม่</a><br>
+        &nbsp;|&nbsp;<a href="create-band.html">สร้างวงใหม่ฟรี</a><br>
         <a href="forgot-password.html">ลืมรหัสผ่าน?</a>
-        &nbsp;|&nbsp;<a href="forgot-email.html">ลืมอีเมล?</a>
+        &nbsp;|&nbsp;<a href="forgot-email.html">ลืมอีเมล?</a><br>
+        <a href="user-manual.html">📖 คู่มือใช้งาน</a>
         &nbsp;|&nbsp;<a href="terms.html">ข้อกำหนด</a>
-        &nbsp;|&nbsp;<a href="user-manual.html">📖 คู่มือใช้งาน</a>
       </div>
     </div>
   </div>

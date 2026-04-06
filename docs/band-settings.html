@@ -166,6 +166,7 @@
           <div class="invite-actions">
             <button type="button" class="btn btn-sm btn-secondary" id="genInviteBtn" onclick="generateBandCode()">🔑 สร้างรหัสประจำวง</button>
             <button type="button" class="btn btn-sm btn-primary" id="copyInviteBtn" style="display:none" onclick="copyBandCode()">📋 คัดลอก</button>
+            <button type="button" class="btn btn-sm" id="shareInviteBtn" style="display:none;background:#25D366;color:#fff" onclick="shareInviteLink()">📤 แชร์ลิงก์เชิญ</button>
           </div>
           <div class="invite-hint">รหัสใช้ได้ตลอด ไม่มีวันหมดอายุ • สมาชิกกรอกรหัสนี้ในหน้าสมัคร → ผู้จัดการวงอนุมัติ</div>
         </div>
@@ -536,10 +537,10 @@
         var gemSec = document.getElementById('geminiSection');
         if (gemSec) gemSec.style.display = '';
         loadGeminiKey();
-        // Show LINE section for admin only
-        var lineSec = document.getElementById('lineSection');
-        if (lineSec) lineSec.style.display = '';
-        loadLineConfig();
+        // LINE integration hidden (Phase 5A — 2026-04-05)
+        // var lineSec = document.getElementById('lineSection');
+        // if (lineSec) lineSec.style.display = '';
+        // loadLineConfig();
       }
       // Hide all write-buttons for members
       if (_role !== 'admin' && _role !== 'manager') {

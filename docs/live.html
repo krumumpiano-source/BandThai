@@ -39,7 +39,7 @@
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
     #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
     #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
-    .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:32px;height:auto;font-size:0.78rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 8px}
+    .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:44px;min-height:44px;font-size:0.85rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px 10px}
     .font-btn:active{background:var(--bg4)}
     .btn-hint{font-size:0.52rem;color:var(--text3);font-weight:400;letter-spacing:.02em;line-height:1}
     /* ─── METRONOME CONTROLS (top-right of Now Playing) ─── */
@@ -331,7 +331,9 @@
     #nudgePopup .np-msg{font-size:1.8rem;color:#fff;font-weight:700}
 
     /* ─── UNDO BUTTON ─── */
-    #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:none}
+    #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:inline-flex;opacity:.4}
+    #undoBtn:disabled{opacity:.25;pointer-events:none}
+    #undoBtn.active{opacity:1}
 
     /* ─── MINI CHAT PANEL ─── */
     #chatPanel{display:none;border-top:1px solid #444;background:var(--bg2);flex-direction:column;max-height:220px}
@@ -462,11 +464,11 @@
   </div>
   <div id="chatBarSuggest"></div>
   <div id="chatBarInner">
-    <input type="text" id="chatBarInput" placeholder="พิมพ์ชื่อเพลงเพื่อขอเพลง..." autocomplete="off" />
+    <input type="text" id="chatBarInput" placeholder="🎵 พิมพ์ชื่อเพลงเพื่อเพิ่ม..." autocomplete="off" />
     <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
   </div>
   <div id="actionBar">
-    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง">↩ ย้อนกลับ</button>
+    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง" disabled>↩ ย้อนกลับ</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
     <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
     <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;width:100%" title="แชท">💬 แชท</button><span id="chatBtnBadge">0</span></span>
@@ -1462,7 +1464,7 @@ function triggerEnding(nextIdx) {
       renderNowPlaying();
       renderSongList();
     } else {
-      showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+      showLastSongBanner();
     }
   }
 
@@ -1485,7 +1487,7 @@ function advanceSong() {
     renderNowPlaying();
     renderSongList();
   } else {
-    showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+    showLastSongBanner();
   }
 }
 
@@ -1519,7 +1521,7 @@ function nextSongDirect() {
     renderSongList();
     showToast('▶ ' + (_playlist[_current] ? _playlist[_current].name : ''));
   } else {
-    showToast('เพลงสุดท้ายในเบรคแล้ว 🎉');
+    showLastSongBanner();
   }
 }
 
@@ -2641,7 +2643,9 @@ function _pushUndo() {
 
 function _updateUndoBtn() {
   var btn = document.getElementById('undoBtn');
-  if (btn) btn.style.display = _undoStack.length > 0 ? '' : 'none';
+  if (!btn) return;
+  if (_undoStack.length > 0) { btn.disabled = false; btn.classList.add('active'); }
+  else { btn.disabled = true; btn.classList.remove('active'); }
 }
 
 function undoSong() {
@@ -3357,6 +3361,15 @@ function showToast(msg) {
   el.classList.add('show');
   if (_toastTimer) clearTimeout(_toastTimer);
   _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2000);
+}
+
+function showLastSongBanner() {
+  var bw = document.getElementById('breakWarning');
+  if (bw) {
+    bw.innerHTML = '🎉 เพลงสุดท้ายแล้ว!<br><span style="font-size:.85rem;font-weight:400">กดปุ่ม ✅ จบเบรค เพื่อบันทึกและสรุป</span>';
+    bw.classList.add('show');
+    setTimeout(function(){ bw.classList.remove('show'); }, 5000);
+  }
 }
 </script>
 </body>

@@ -322,17 +322,19 @@ function updateBandInfo() {
    BAND CODE (รหัสประจำวง — ใช้ได้ตลอด)
 ══════════════════════════════════════════ */
 function renderBandCode() {
-  var disp = getEl('inviteCodeDisplay'), copyBtn = getEl('copyInviteBtn');
+  var disp = getEl('inviteCodeDisplay'), copyBtn = getEl('copyInviteBtn'), shareBtn = getEl('shareInviteBtn');
   if (!disp) return;
   if (currentInviteCode) {
     disp.textContent = currentInviteCode; disp.classList.remove('empty');
     if (copyBtn) copyBtn.style.display = 'inline-flex';
+    if (shareBtn) shareBtn.style.display = 'inline-flex';
     // ซ่อนปุ่มสร้าง ถ้ามีรหัสแล้ว
     var genBtn = getEl('genInviteBtn');
     if (genBtn) genBtn.textContent = '🔄 สร้างรหัสใหม่';
   } else {
     disp.textContent = 'ยังไม่มีรหัสประจำวง'; disp.classList.add('empty');
     if (copyBtn) copyBtn.style.display = 'none';
+    if (shareBtn) shareBtn.style.display = 'none';
   }
 }
 function generateBandCode() {
@@ -381,6 +383,23 @@ function _fallbackCopyText(text) {
   document.body.appendChild(t); t.focus(); t.select();
   try { document.execCommand('copy'); } catch(e) { console.warn('[copy] fallback failed', e); }
   document.body.removeChild(t);
+}
+function shareInviteLink() {
+  if (!currentInviteCode) return;
+  var baseUrl = location.origin + location.pathname.replace(/[^/]*$/, '');
+  var url = baseUrl + 'register.html?invite=' + encodeURIComponent(currentInviteCode);
+  var text = 'เข้าร่วมวง ' + (bandNameVal || 'ของเรา') + ' บน BandThai!\nสมัครฟรี ใช้งานได้ทันที';
+  if (navigator.share) {
+    navigator.share({ title: 'เข้าร่วมวง — BandThai', text: text, url: url }).catch(function() {});
+  } else {
+    // Fallback: copy link
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function() { showToast('คัดลอกลิงก์เชิญแล้ว'); });
+    } else {
+      _fallbackCopyText(url);
+      showToast('คัดลอกลิงก์เชิญแล้ว');
+    }
+  }
 }
 
 /* ══════════════════════════════════════════
