@@ -604,8 +604,12 @@
           await sb.auth.admin.deleteUser(data.user.id).catch(function(){});
           return { success: false, message: (result && result.message) || 'รหัสวงไม่ถูกต้อง' };
         }
+        // Auto-approve: อนุมัติสมาชิกอัตโนมัติ (Phase 2B)
+        if (result.band_id) {
+          await sb.rpc('approve_member', { p_user_id: data.user.id, p_band_id: result.band_id }).catch(function(){});
+        }
         var provincePart = result.province ? ' (' + result.province + ')' : '';
-        return { success: true, message: 'สมัครสำเร็จ! ส่งคำขอเข้าร่วมวง ' + result.band_name + provincePart + ' แล้ว รอผู้จัดการวงอนุมัติ' };
+        return { success: true, message: 'สมัครสำเร็จ! เข้าร่วมวง ' + result.band_name + provincePart + ' เรียบร้อย', autoApproved: true };
       }
 
       return { success: false, message: 'กรุณากรอกรหัสวง' };
@@ -638,10 +642,17 @@
         p_band_name:    d.bandName || '',
         p_province:     d.province || '',
         p_member_count: parseInt(d.memberCount) || 1,
-        p_name:         fullName.trim(),
+        p_name:         fullName.trim() || d.nickname || d.email.split('@')[0],
         p_email:        d.email
       });
       if (rErr) return { success: false, message: rErr.message };
+      // Auto-approve: อนุมัติวงอัตโนมัติ (Phase 2A)
+      if (result && result.success && result.request_id) {
+        var { data: approveResult } = await sb.rpc('approve_band_request', { p_request_id: result.request_id }).catch(function(){ return {}; });
+        if (approveResult && approveResult.success) {
+          return { success: true, message: 'สร้างวง "' + (d.bandName || '') + '" สำเร็จ! เข้าใช้งานได้ทันที', autoApproved: true, band_id: approveResult.band_id };
+        }
+      }
       return result;
     }
 
