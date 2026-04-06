@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
         amount:      amount,
         currency:    'thb',
         card:        token,
-        description: `BandFlow ${plan.toUpperCase()} Plan x${months}mo${discount>0?' (-'+discount+'%)':''} - Band ${bandId}`,
+        description: `BandThai ${plan.toUpperCase()} Plan x${months}mo${discount>0?' (-'+discount+'%)':''} - Band ${bandId}`,
         metadata: { band_id: bandId, plan, months, discount_percent: discount, user_id: user.id },
       }),
     });

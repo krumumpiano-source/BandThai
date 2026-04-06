@@ -399,8 +399,8 @@ CREATE TABLE IF NOT EXISTS public.notification_templates (
   updated_at timestamptz DEFAULT now()
 );
 INSERT INTO public.notification_templates (id, name, subject, body, variables) VALUES
-  ('welcome',       'ยินดีต้อนรับ',              'ยินดีต้อนรับสู่ BandFlow!',
-   E'สวัสดี {{name}}!\n\nยินดีต้อนรับสู่ BandFlow แอปจัดการวงดนตรีของคุณ\n\nเริ่มต้นใช้งานได้เลย!',
+  ('welcome',       'ยินดีต้อนรับ',              'ยินดีต้อนรับสู่ BandThai!',
+   E'สวัสดี {{name}}!\n\nยินดีต้อนรับสู่ BandThai แอปจัดการวงดนตรีของคุณ\n\nเริ่มต้นใช้งานได้เลย!',
    ARRAY['name']),
   ('expire_soon',   'แพ็กเกจใกล้หมดอายุ',         'แพ็กเกจของคุณจะหมดอายุใน {{days}} วัน',
    E'สวัสดี {{name}}!\n\nแพ็กเกจ {{plan}} ของวง {{band_name}} จะหมดอายุใน {{days}} วัน\n\nต่ออายุได้ที่: {{upgrade_url}}',
