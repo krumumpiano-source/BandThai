@@ -551,6 +551,8 @@ html{scroll-behavior:smooth}
 }
 .offsite-only{display:none;margin-top:8px}
 .offsite-only.active{display:block}
+.offsite-fields{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:-2px 0 12px}
+.offsite-fields.active{display:grid}
 .offsite-note{display:none;align-items:center;gap:8px;margin:-2px 0 12px;padding:10px 12px;border-radius:var(--radius-md);background:#fffdf8;border:1.5px dashed #f6ad55;color:var(--premium-text);font-size:13px;font-weight:600}
 .offsite-note.active{display:flex}
 .action-buttons{display:flex;gap:10px;margin:10px 0;flex-wrap:wrap}
@@ -564,6 +566,7 @@ html{scroll-behavior:smooth}
 
 @media(max-width:599px){
   .pl-ctrl-grid{grid-template-columns:1fr;gap:8px}
+  .offsite-fields{grid-template-columns:1fr;gap:8px}
   .copy-options label{width:100%}
   #selectBar,
   #plAddBar{padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px)) 12px}
@@ -843,18 +846,21 @@ html{scroll-behavior:smooth}
       <select id="venue" onchange="onPlaylistVenueChange()">
         <option value="">เลือกร้าน</option>
       </select>
-      <div class="offsite-only" id="customVenueWrap">
-        <input type="text" id="customVenue" placeholder="ระบุชื่องาน / สถานที่" oninput="onOffsiteInputsChange()">
-      </div>
     </div>
     <div class="pl-ctrl-item">
       <label class="pl-ctrl-label">🕐 ช่วงเวลา</label>
       <select id="timeSlot" onchange="autoLoadPlaylistForSlot()">
         <option value="">ช่วงเวลา</option>
       </select>
-      <div class="offsite-only" id="customTimeSlotWrap">
-        <input type="text" id="customTimeSlot" placeholder="เช่น 18:00-21:00 หรือ รอบค่ำ" oninput="onOffsiteInputsChange()">
-      </div>
+    </div>
+  </div>
+
+  <div class="offsite-fields" id="offsiteFields">
+    <div class="offsite-only" id="customVenueWrap">
+      <input type="text" id="customVenue" placeholder="ระบุชื่องาน / สถานที่" oninput="onOffsiteInputsChange()">
+    </div>
+    <div class="offsite-only" id="customTimeSlotWrap">
+      <input type="text" id="customTimeSlot" placeholder="เช่น 18:00-21:00 หรือ รอบค่ำ" oninput="onOffsiteInputsChange()">
     </div>
   </div>
 
@@ -1716,14 +1722,52 @@ function getActiveTimeSlotValue() {
 function setOffsiteMode(enabled) {
   var venueEl = document.getElementById('venue');
   var timeEl = document.getElementById('timeSlot');
+  var offsiteFields = document.getElementById('offsiteFields');
   var customVenueWrap = document.getElementById('customVenueWrap');
   var customTimeWrap = document.getElementById('customTimeSlotWrap');
   var offsiteNote = document.getElementById('offsiteNote');
   if (venueEl && enabled && venueEl.value !== '__offsite__') venueEl.value = '__offsite__';
+  if (offsiteFields) offsiteFields.classList.toggle('active', !!enabled);
   if (customVenueWrap) customVenueWrap.classList.toggle('active', !!enabled);
   if (customTimeWrap) customTimeWrap.classList.toggle('active', !!enabled);
   if (offsiteNote) offsiteNote.classList.toggle('active', !!enabled);
   if (timeEl) timeEl.style.display = enabled ? 'none' : '';
+}
+
+function validatePlaylistContext(actionLabel) {
+  var venueEl = document.getElementById('venue');
+  var timeEl = document.getElementById('timeSlot');
+  var slots = plGetSlotsForDate();
+  if (isOffsiteMode()) {
+    var customVenueEl = document.getElementById('customVenue');
+    var customTimeEl = document.getElementById('customTimeSlot');
+    if (!getActiveVenueValue()) {
+      showSongsAlert('⚠️ กรุณากรอกชื่องานหรือสถานที่ของงานนอกก่อน' + actionLabel);
+      if (customVenueEl) customVenueEl.focus();
+      return false;
+    }
+    if (!getActiveTimeSlotValue()) {
+      showSongsAlert('⚠️ กรุณากรอกช่วงเวลาของงานนอกก่อน' + actionLabel);
+      if (customTimeEl) customTimeEl.focus();
+      return false;
+    }
+    return true;
+  }
+  if (slots.length > 0 && timeEl && !timeEl.value) {
+    showSongsAlert('⚠️ กรุณาเลือกช่วงเวลาก่อน' + actionLabel + ' เพื่อไม่ให้ลิสทับกัน');
+    timeEl.focus();
+    timeEl.style.borderColor = '#e53e3e';
+    setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
+    return false;
+  }
+  if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
+    showSongsAlert('⚠️ กรุณาเลือกร้านก่อน' + actionLabel);
+    venueEl.focus();
+    venueEl.style.borderColor = '#e53e3e';
+    setTimeout(function(){ venueEl.style.borderColor = ''; }, 3000);
+    return false;
+  }
+  return true;
 }
 
 function onOffsiteModeChange() {
@@ -2473,31 +2517,7 @@ function _doCopyAndSave(){
 
 function copyPlaylist(){
   if(playlistData.length === 0){ showSongsAlert('⚠️ ไม่มีเพลงในลิส'); return; }
-  // เตือนถ้ายังไม่เลือกช่วงเวลา (ทำให้ลิสที่2 ทับลิสที่1)
-  var timeEl = document.getElementById('timeSlot');
-  var venueEl = document.getElementById('venue');
-  var slots = plGetSlotsForDate();
-  if (isOffsiteMode()) {
-    if (!getActiveVenueValue()) {
-      showSongsAlert('⚠️ กรุณากรอกชื่องานหรือสถานที่ของงานนอกก่อนบันทึก');
-      var customVenueEl = document.getElementById('customVenue');
-      if (customVenueEl) customVenueEl.focus();
-      return;
-    }
-  } else if (slots.length > 0 && timeEl && !timeEl.value) {
-    showSongsAlert('⚠️ กรุณาเลือกช่วงเวลาก่อนบันทึก เพื่อไม่ให้ลิสทับกัน');
-    timeEl.focus();
-    timeEl.style.borderColor = '#e53e3e';
-    setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
-    return;
-  }
-  if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
-    showSongsAlert('⚠️ กรุณาเลือกร้านก่อนบันทึก');
-    venueEl.focus();
-    venueEl.style.borderColor = '#e53e3e';
-    setTimeout(function(){ venueEl.style.borderColor = ''; }, 3000);
-    return;
-  }
+  if (!validatePlaylistContext('บันทึก')) return;
   checkPlaylistLimit(function() { _doCopyAndSave(); });
 }
 
@@ -2505,6 +2525,7 @@ var _historyCache = [];
 var _savingHistory = false;
 
 function goLiveMode() {
+  if (!validatePlaylistContext('เข้า live mode')) return;
   var date = (document.getElementById('useDate') || {}).value || '';
   var venue = getActiveVenueValue();
   var slot = getActiveTimeSlotValue();
@@ -2514,6 +2535,7 @@ function goLiveMode() {
 
 function saveHistoryManual() {
   if (playlistData.length === 0) { showSongsAlert('⚠️ ยังไม่มีเพลงในลิส'); return; }
+  if (!validatePlaylistContext('บันทึก')) return;
   checkPlaylistLimit(function() {
     saveHistory(function(ok) {
       var toast = document.getElementById('toast');
