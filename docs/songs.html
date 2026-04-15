@@ -1742,32 +1742,86 @@ function validatePlaylistContext(actionLabel) {
     var customVenueEl = document.getElementById('customVenue');
     var customTimeEl = document.getElementById('customTimeSlot');
     if (!getActiveVenueValue()) {
-      showSongsAlert('⚠️ กรุณากรอกชื่องานหรือสถานที่ของงานนอกก่อน' + actionLabel);
+      showSongsAlert('⚠️ ใส่ชื่องานก่อน' + actionLabel);
       if (customVenueEl) customVenueEl.focus();
       return false;
     }
     if (!getActiveTimeSlotValue()) {
-      showSongsAlert('⚠️ กรุณากรอกช่วงเวลาของงานนอกก่อน' + actionLabel);
+      showSongsAlert('⚠️ ใส่ช่วงเวลาก่อน' + actionLabel);
       if (customTimeEl) customTimeEl.focus();
       return false;
     }
     return true;
   }
   if (slots.length > 0 && timeEl && !timeEl.value) {
-    showSongsAlert('⚠️ กรุณาเลือกช่วงเวลาก่อน' + actionLabel + ' เพื่อไม่ให้ลิสทับกัน');
+    showSongsAlert('⚠️ เลือกช่วงเวลาก่อน' + actionLabel);
     timeEl.focus();
     timeEl.style.borderColor = '#e53e3e';
     setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
     return false;
   }
   if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
-    showSongsAlert('⚠️ กรุณาเลือกร้านก่อน' + actionLabel);
+    showSongsAlert('⚠️ เลือกร้านก่อน' + actionLabel);
     venueEl.focus();
     venueEl.style.borderColor = '#e53e3e';
     setTimeout(function(){ venueEl.style.borderColor = ''; }, 3000);
     return false;
   }
   return true;
+}
+
+function applyPlaylistContext(entry) {
+  var venueEl = document.getElementById('venue');
+  var timeEl = document.getElementById('timeSlot');
+  var dateEl = document.getElementById('useDate');
+  var customVenueEl = document.getElementById('customVenue');
+  var customTimeEl = document.getElementById('customTimeSlot');
+  var matchedVenue = false;
+
+  if (dateEl && entry && entry.date) {
+    dateEl.value = entry.date;
+  }
+
+  if (venueEl) {
+    venueEl.value = '';
+    if (entry && entry.venue) {
+      for (var i = 0; i < venueEl.options.length; i++) {
+        if (venueEl.options[i].value === entry.venue) {
+          venueEl.selectedIndex = i;
+          matchedVenue = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (matchedVenue) {
+    setOffsiteMode(false);
+    refreshTimeSlots();
+    if (timeEl) timeEl.value = '';
+    if (timeEl && entry && entry.timeSlot) {
+      for (var j = 0; j < timeEl.options.length; j++) {
+        if (timeEl.options[j].value === entry.timeSlot) {
+          timeEl.selectedIndex = j;
+          break;
+        }
+      }
+    }
+    if (customVenueEl) customVenueEl.value = '';
+    if (customTimeEl) customTimeEl.value = '';
+  } else if (entry && (entry.venue || entry.timeSlot)) {
+    if (venueEl) venueEl.value = '__offsite__';
+    setOffsiteMode(true);
+    if (customVenueEl) customVenueEl.value = entry.venue || '';
+    if (customTimeEl) customTimeEl.value = entry.timeSlot || '';
+  } else {
+    setOffsiteMode(false);
+    refreshTimeSlots();
+    if (customVenueEl) customVenueEl.value = '';
+    if (customTimeEl) customTimeEl.value = '';
+  }
+
+  checkExistingPlaylists(true);
 }
 
 function onOffsiteModeChange() {
@@ -1992,32 +2046,9 @@ function loadExistingPlaylist(idx, silent) {
     return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
   });
   renderPlaylist();
-  // sync venue + timeSlot dropdowns ถ้าทำได้
-  var venueEl = document.getElementById('venue');
-  var timeEl  = document.getElementById('timeSlot');
-  var venueMatched = false;
-  if (venueEl && p.venue) {
-    for (var i = 0; i < venueEl.options.length; i++) {
-      if (venueEl.options[i].value === p.venue) { venueEl.selectedIndex = i; venueMatched = true; break; }
-    }
-  }
-  if (!venueMatched && (p.venue || p.timeSlot)) {
-    setOffsiteMode(true);
-    var customVenueEl = document.getElementById('customVenue');
-    var customTimeEl = document.getElementById('customTimeSlot');
-    if (customVenueEl) customVenueEl.value = p.venue || '';
-    if (customTimeEl) customTimeEl.value = p.timeSlot || '';
-  } else {
-    setOffsiteMode(false);
-    refreshTimeSlots();
-  }
-  if (!isOffsiteMode() && timeEl && p.timeSlot) {
-    for (var j = 0; j < timeEl.options.length; j++) {
-      if (timeEl.options[j].value === p.timeSlot) { timeEl.selectedIndex = j; break; }
-    }
-  }
+  applyPlaylistContext(p);
   if (!silent) {
-    showSongsAlert('✅ โหลดลิส ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' แล้ว (' + playlistData.length + ' เพลง)');
+    showSongsAlert('✅ โหลดลิสแล้ว ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || ''));
   }
 }
 
@@ -2642,10 +2673,11 @@ function loadHistoryEntry(idx) {
     return { name: s.name, key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: '' };
   });
   renderPlaylist();
+  applyPlaylistContext(h);
   closeHistory();
   var toast = document.getElementById('toast');
   if (toast) {
-    toast.textContent = 'โหลดลิสเรียบร้อย!';
+    toast.textContent = 'โหลดลิสกลับมาแล้ว';
     toast.style.display = 'block';
     toast.classList.add('show');
     setTimeout(function(){
