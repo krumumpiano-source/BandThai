@@ -1991,7 +1991,7 @@ function refreshTimeSlotsLabels() {
   var selectedVenue = plGetSelectedVenue();
   var opts = timeEl.querySelectorAll('option');
   opts.forEach(function(opt) {
-    if (!opt.value) return;
+    if (!opt.value || opt.value === '__custom__') return;
     var baseKey = opt.value;
     var matches = _plExistingForDate.filter(function(e) {
       return plEntryMatches(e, selectedVenue, baseKey);
