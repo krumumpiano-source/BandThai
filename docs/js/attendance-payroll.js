@@ -466,14 +466,13 @@ function apRenderAttendance() {
     }
 
     var rowIdx = 0;
-    slots.forEach(function(slot) {
-      var sk = slot.start + '-' + slot.end;
-      renderSlotRow(slot, sk, rowIdx, false);
-      rowIdx++;
-    });
-    extraSlots.forEach(function(slot) {
-      var sk = slot.start + '-' + slot.end;
-      renderSlotRow(slot, sk, rowIdx, true);
+    // Merge normal + extra slots, sort by start time
+    var allSlots = [];
+    slots.forEach(function(slot) { allSlots.push({ slot: slot, sk: slot.start + '-' + slot.end, isExtra: false }); });
+    extraSlots.forEach(function(slot) { allSlots.push({ slot: slot, sk: slot.start + '-' + slot.end, isExtra: true }); });
+    allSlots.sort(function(a, b) { return a.slot.start < b.slot.start ? -1 : a.slot.start > b.slot.start ? 1 : 0; });
+    allSlots.forEach(function(item) {
+      renderSlotRow(item.slot, item.sk, rowIdx, item.isExtra);
       rowIdx++;
     });
   });
