@@ -322,11 +322,10 @@
           <!-- Extra slots (substitute band) -->
           <div class="qci-step" id="qciExtraStep">
             <button type="button" class="qci-extra-toggle" id="qciExtraToggle">➕ เพิ่มรอบพิเศษ (เล่นแทนวงอื่น)</button>
-            <div id="qciExtraWrap" style="display:none">
-              <div style="font-size:13px;color:#2b6cb0;font-weight:600;margin-bottom:8px">🔄 รอบพิเศษ — ใส่ช่วงเวลาที่ต้องเล่นแทน</div>
-              <div id="qciExtraRows"></div>
-              <button type="button" class="qci-extra-add" id="qciExtraAddBtn">➕ เพิ่มอีกรอบ</button>
-              <div class="qci-btn-group" id="qciExtraSlotBtns" style="margin-top:10px"></div>
+            <div id="qciExtraWrap" style="display:none" class="qci-extra-wrap">
+              <div style="font-size:13px;color:#2b6cb0;font-weight:600;margin-bottom:8px">🔄 รอบพิเศษ — เลือกช่วงเวลาที่ต้องเล่นแทนวงอื่น</div>
+              <div class="qci-btn-group" id="qciExtraSlotBtns"></div>
+              <div id="qciExtraEmpty" style="display:none;color:#718096;font-size:13px;font-style:italic;padding:8px 0">ไม่มีรอบเพิ่มเติม (เลือกรอบปกติครบแล้ว)</div>
             </div>
           </div>
 
@@ -491,7 +490,6 @@
   /* ===== Quick Check-In ===== */
   var qciBandId = '', qciBandSettings = { venues: [], scheduleData: {} };
   var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
-  var qciExtraSlots = []; // [{start:'HH:MM', end:'HH:MM'}]  
   var qciSelectedExtraSlots = []; // ['HH:MM-HH:MM']
   var qciSelectedDate = new Date();
   var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
@@ -516,11 +514,13 @@
   function qciOnDateChange() {
     qciUpdateDateBadge();
     qciSelectedSlots = []; qciExistingCheckIn = null;
-    qciExtraSlots = []; qciSelectedExtraSlots = [];
+    qciSelectedExtraSlots = [];
     document.getElementById('qciDone').classList.remove('show');
     document.getElementById('qciForm').style.display = 'block';
     document.getElementById('qciSummary').classList.remove('show');
     document.getElementById('qciConfirmRow').style.display = 'none';
+    var _ew = document.getElementById('qciExtraWrap');
+    if (_ew) { _ew.style.display = 'none'; }
     qciRenderSlots();
     qciCheckExisting();
     dashLoadPlaylistForDate();
@@ -649,44 +649,46 @@
   }
 
   /* ===== Extra Slots (substitute band) ===== */
-  function qciAddExtraSlot() {
-    qciExtraSlots.push({ start: '', end: '' });
-    qciRenderExtraRows();
-  }
-  function qciRemoveExtraSlot(idx) {
-    qciExtraSlots.splice(idx, 1);
-    // Remove from selected if it was there
-    qciRenderExtraRows();
-    qciRenderExtraSlotBtns();
-    qciUpdateSummary();
-  }
-  function qciRenderExtraRows() {
-    var container = document.getElementById('qciExtraRows');
-    if (!container) return;
-    container.innerHTML = qciExtraSlots.map(function(s, i) {
-      return '<div class="qci-extra-row">' +
-        '<input type="time" value="' + (s.start||'') + '" onchange="qciOnExtraTimeChange(' + i + ',\'start\',this.value)" placeholder="เริ่ม">' +
-        '<span style="color:#718096;font-weight:600"> – </span>' +
-        '<input type="time" value="' + (s.end||'') + '" onchange="qciOnExtraTimeChange(' + i + ',\'end\',this.value)" placeholder="จบ">' +
-        '<button type="button" class="qci-extra-remove" onclick="qciRemoveExtraSlot(' + i + ')">✕</button>' +
-        '</div>';
-    }).join('');
-  }
-  function qciOnExtraTimeChange(idx, field, val) {
-    if (!qciExtraSlots[idx]) return;
-    qciExtraSlots[idx][field] = val;
-    qciRenderExtraSlotBtns();
-    qciUpdateSummary();
+  /* Collect ALL unique time slots from venue schedule across ALL days, excluding today's normal slots */
+  function qciGetAllVenueExtraSlots() {
+    var todaySlots = qciGetSlotsForDate().map(function(s) { return s.key; });
+    var venueId = qciSelectedVenue ? qciGetVenueId(qciSelectedVenue) : '';
+    var seen = {};
+    var all = [];
+    // Scan all 7 days of the week
+    for (var d = 0; d < 7; d++) {
+      var dayData = qciBandSettings.scheduleData[d] || qciBandSettings.scheduleData[String(d)];
+      var slots = [];
+      if (Array.isArray(dayData)) { slots = dayData; }
+      else if (dayData && dayData.timeSlots && dayData.timeSlots.length) { slots = dayData.timeSlots; }
+      // Filter by selected venue if slots have venueId
+      if (venueId && slots.length && slots[0] && slots[0].venueId !== undefined) {
+        slots = slots.filter(function(s) { return s.venueId === venueId; });
+      }
+      slots.forEach(function(s) {
+        var key = s.startTime + '-' + s.endTime;
+        if (!seen[key]) { seen[key] = true; all.push({ key: key, label: s.startTime + ' \u2013 ' + s.endTime, start: s.startTime }); }
+      });
+    }
+    // Sort by start time
+    all.sort(function(a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+    // Exclude slots already shown in today's regular section
+    return all.filter(function(s) { return todaySlots.indexOf(s.key) === -1; });
   }
   function qciRenderExtraSlotBtns() {
     var container = document.getElementById('qciExtraSlotBtns');
+    var emptyMsg = document.getElementById('qciExtraEmpty');
     if (!container) return;
-    var valid = qciExtraSlots.filter(function(s) { return s.start && s.end; });
-    if (!valid.length) { container.innerHTML = ''; return; }
-    container.innerHTML = valid.map(function(s) {
-      var key = s.start + '-' + s.end;
-      var sel = qciSelectedExtraSlots.indexOf(key) !== -1 ? ' selected' : '';
-      return '<button type="button" class="qci-extra-slot-btn' + sel + '" data-extra-slot="' + qciEsc(key) + '">🔄 ' + s.start + ' – ' + s.end + '</button>';
+    var extraSlots = qciGetAllVenueExtraSlots();
+    if (!extraSlots.length) {
+      container.innerHTML = '';
+      if (emptyMsg) emptyMsg.style.display = 'block';
+      return;
+    }
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    container.innerHTML = extraSlots.map(function(s) {
+      var sel = qciSelectedExtraSlots.indexOf(s.key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-extra-slot-btn' + sel + '" data-extra-slot="' + qciEsc(s.key) + '">🔄 ' + qciEsc(s.label) + '</button>';
     }).join('');
     container.querySelectorAll('.qci-extra-slot-btn').forEach(function(btn) {
       btn.addEventListener('click', function() {
@@ -811,7 +813,7 @@
 
   function qciReset() {
     qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
-    qciExtraSlots = []; qciSelectedExtraSlots = [];
+    qciSelectedExtraSlots = [];
     document.getElementById('qciDone').classList.remove('show');
     document.getElementById('qciForm').style.display = 'block';
     document.getElementById('qciSummary').classList.remove('show');
@@ -820,8 +822,6 @@
     qciSelectedSlots = [];
     var extraWrap = document.getElementById('qciExtraWrap');
     if (extraWrap) extraWrap.style.display = 'none';
-    var extraRows = document.getElementById('qciExtraRows');
-    if (extraRows) extraRows.innerHTML = '';
     var extraBtns = document.getElementById('qciExtraSlotBtns');
     if (extraBtns) extraBtns.innerHTML = '';
     qciRenderVenues();
@@ -982,29 +982,25 @@
       }
       // Restore extra slots if editing
       if (qciExistingCheckIn && qciExistingCheckIn.extraSlots && qciExistingCheckIn.extraSlots.length) {
-        qciExtraSlots = qciExistingCheckIn.extraSlots.map(function(k) { var p = k.split('-'); return { start: p[0], end: p[1] }; });
         qciSelectedExtraSlots = qciExistingCheckIn.extraSlots.slice();
         document.getElementById('qciExtraWrap').style.display = '';
-        qciRenderExtraRows();
         qciRenderExtraSlotBtns();
       }
     });
 
-    // Extra slot toggle + add
+    // Extra slot toggle
     document.getElementById('qciExtraToggle').addEventListener('click', function() {
       var wrap = document.getElementById('qciExtraWrap');
       if (wrap.style.display === 'none') {
         wrap.style.display = '';
-        if (!qciExtraSlots.length) qciAddExtraSlot();
+        qciRenderExtraSlotBtns();
       } else {
         wrap.style.display = 'none';
-        qciExtraSlots = []; qciSelectedExtraSlots = [];
-        document.getElementById('qciExtraRows').innerHTML = '';
+        qciSelectedExtraSlots = [];
         document.getElementById('qciExtraSlotBtns').innerHTML = '';
         qciUpdateSummary();
       }
     });
-    document.getElementById('qciExtraAddBtn').addEventListener('click', qciAddExtraSlot);
 
     document.getElementById('qciCancelBtn').addEventListener('click', function() {
       if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
