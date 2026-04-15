@@ -86,6 +86,20 @@
     .qci-leave-actions .btn-leave-ok{padding:10px 24px;border:none;background:#e53e3e;color:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-weight:700;font-family:var(--font-family-body);transition:background .2s}
     .qci-leave-actions .btn-leave-ok:hover{background:#c53030}
     .qci-leave-actions .btn-leave-cancel{padding:10px 24px;border:1px solid #ccc;background:#fff;border-radius:var(--radius-md);cursor:pointer;font-size:var(--text-sm);font-family:var(--font-family-body)}
+    /* Extra slot (substitute band) */
+    .qci-extra-toggle{display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:8px 16px;border:2px dashed var(--premium-border);border-radius:var(--radius-full);background:#fff;color:var(--premium-text-muted);cursor:pointer;font-size:var(--text-sm);font-weight:600;font-family:var(--font-family-body);transition:all .18s}
+    .qci-extra-toggle:hover{border-color:var(--premium-gold);color:var(--premium-gold)}
+    .qci-extra-wrap{margin-top:var(--spacing-md);padding:var(--spacing-md) var(--spacing-lg);background:linear-gradient(135deg,#ebf8ff,#bee3f8);border:2px solid #90cdf4;border-radius:var(--radius-lg);animation:qciExtraIn .2s ease}
+    @keyframes qciExtraIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+    .qci-extra-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+    .qci-extra-row input[type=time]{padding:8px 10px;border:2px solid #90cdf4;border-radius:var(--radius-md);font-size:var(--text-sm);font-family:var(--font-family-body);background:#fff}
+    .qci-extra-row input[type=time]:focus{outline:none;border-color:#3182ce}
+    .qci-extra-remove{width:30px;height:30px;border:none;background:#e53e3e;color:#fff;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .qci-extra-remove:hover{background:#c53030}
+    .qci-extra-add{padding:6px 14px;border:2px dashed #90cdf4;border-radius:var(--radius-full);background:transparent;color:#3182ce;cursor:pointer;font-size:var(--text-xs);font-weight:600;font-family:var(--font-family-body);transition:all .18s}
+    .qci-extra-add:hover{background:#ebf8ff;border-color:#3182ce}
+    .qci-extra-slot-btn{padding:12px 22px;font-size:var(--text-md);border-radius:var(--radius-full);border:2px solid #3182ce;background:#ebf8ff;cursor:pointer;font-family:var(--font-family-body);color:#2b6cb0;transition:all .18s;font-weight:500}
+    .qci-extra-slot-btn.selected{border-color:#2b6cb0;background:#2b6cb0;color:#fff;font-weight:700;transform:translateY(-1px);box-shadow:0 2px 8px rgba(43,108,176,.25)}
     /* Earnings tabs */
     .earn-tab{padding:6px 16px;border-radius:var(--radius-full);border:1px solid var(--premium-border);background:#fff;cursor:pointer;font-size:var(--text-xs);font-weight:600;font-family:var(--font-family-body);color:var(--premium-text-muted);transition:all .2s}
     .earn-tab.active{background:#276749;color:#fff;border-color:#276749}
@@ -305,6 +319,17 @@
             </div>
           </div>
 
+          <!-- Extra slots (substitute band) -->
+          <div class="qci-step" id="qciExtraStep">
+            <button type="button" class="qci-extra-toggle" id="qciExtraToggle">➕ เพิ่มรอบพิเศษ (เล่นแทนวงอื่น)</button>
+            <div id="qciExtraWrap" style="display:none">
+              <div style="font-size:13px;color:#2b6cb0;font-weight:600;margin-bottom:8px">🔄 รอบพิเศษ — ใส่ช่วงเวลาที่ต้องเล่นแทน</div>
+              <div id="qciExtraRows"></div>
+              <button type="button" class="qci-extra-add" id="qciExtraAddBtn">➕ เพิ่มอีกรอบ</button>
+              <div class="qci-btn-group" id="qciExtraSlotBtns" style="margin-top:10px"></div>
+            </div>
+          </div>
+
           <!-- Summary -->
           <div class="qci-summary" id="qciSummary">
             <strong>📋 สรุปการลงเวลา</strong><br>
@@ -466,6 +491,8 @@
   /* ===== Quick Check-In ===== */
   var qciBandId = '', qciBandSettings = { venues: [], scheduleData: {} };
   var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
+  var qciExtraSlots = []; // [{start:'HH:MM', end:'HH:MM'}]  
+  var qciSelectedExtraSlots = []; // ['HH:MM-HH:MM']
   var qciSelectedDate = new Date();
   var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
 
@@ -489,6 +516,7 @@
   function qciOnDateChange() {
     qciUpdateDateBadge();
     qciSelectedSlots = []; qciExistingCheckIn = null;
+    qciExtraSlots = []; qciSelectedExtraSlots = [];
     document.getElementById('qciDone').classList.remove('show');
     document.getElementById('qciForm').style.display = 'block';
     document.getElementById('qciSummary').classList.remove('show');
@@ -620,16 +648,74 @@
     qciUpdateSummary();
   }
 
+  /* ===== Extra Slots (substitute band) ===== */
+  function qciAddExtraSlot() {
+    qciExtraSlots.push({ start: '', end: '' });
+    qciRenderExtraRows();
+  }
+  function qciRemoveExtraSlot(idx) {
+    qciExtraSlots.splice(idx, 1);
+    // Remove from selected if it was there
+    qciRenderExtraRows();
+    qciRenderExtraSlotBtns();
+    qciUpdateSummary();
+  }
+  function qciRenderExtraRows() {
+    var container = document.getElementById('qciExtraRows');
+    if (!container) return;
+    container.innerHTML = qciExtraSlots.map(function(s, i) {
+      return '<div class="qci-extra-row">' +
+        '<input type="time" value="' + (s.start||'') + '" onchange="qciOnExtraTimeChange(' + i + ',\'start\',this.value)" placeholder="เริ่ม">' +
+        '<span style="color:#718096;font-weight:600"> – </span>' +
+        '<input type="time" value="' + (s.end||'') + '" onchange="qciOnExtraTimeChange(' + i + ',\'end\',this.value)" placeholder="จบ">' +
+        '<button type="button" class="qci-extra-remove" onclick="qciRemoveExtraSlot(' + i + ')">✕</button>' +
+        '</div>';
+    }).join('');
+  }
+  function qciOnExtraTimeChange(idx, field, val) {
+    if (!qciExtraSlots[idx]) return;
+    qciExtraSlots[idx][field] = val;
+    qciRenderExtraSlotBtns();
+    qciUpdateSummary();
+  }
+  function qciRenderExtraSlotBtns() {
+    var container = document.getElementById('qciExtraSlotBtns');
+    if (!container) return;
+    var valid = qciExtraSlots.filter(function(s) { return s.start && s.end; });
+    if (!valid.length) { container.innerHTML = ''; return; }
+    container.innerHTML = valid.map(function(s) {
+      var key = s.start + '-' + s.end;
+      var sel = qciSelectedExtraSlots.indexOf(key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-extra-slot-btn' + sel + '" data-extra-slot="' + qciEsc(key) + '">🔄 ' + s.start + ' – ' + s.end + '</button>';
+    }).join('');
+    container.querySelectorAll('.qci-extra-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+        var slot = btn.dataset.extraSlot;
+        if (btn.classList.contains('selected')) {
+          if (qciSelectedExtraSlots.indexOf(slot) === -1) qciSelectedExtraSlots.push(slot);
+        } else {
+          qciSelectedExtraSlots = qciSelectedExtraSlots.filter(function(s) { return s !== slot; });
+        }
+        qciUpdateSummary();
+      });
+    });
+  }
+
   function qciUpdateSummary() {
     var summary = document.getElementById('qciSummary');
     var confirmRow = document.getElementById('qciConfirmRow');
     if (!summary || !confirmRow) return;
-    if (qciSelectedVenue && qciSelectedSlots.length) {
+    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots);
+    if (qciSelectedVenue && allSlots.length) {
       var dateStr = QCI_DAY_NAMES_TH[qciSelectedDate.getDay()] + ' ' + formatThaiDateFull(qciSelectedDate);
       var slotStr = qciSelectedSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+      var extraStr = qciSelectedExtraSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
       document.getElementById('sumDate').textContent = dateStr;
       document.getElementById('sumVenue').textContent = qciSelectedVenue;
-      document.getElementById('sumSlots').textContent = slotStr;
+      var fullSlotText = slotStr;
+      if (extraStr) fullSlotText += (slotStr ? ' · ' : '') + '🔄 ' + extraStr;
+      document.getElementById('sumSlots').textContent = fullSlotText;
       summary.classList.add('show');
       confirmRow.style.display = 'block';
     } else {
@@ -638,10 +724,11 @@
     }
   }
 
-  function qciShowDone(slots, venue, status, subName) {
+  function qciShowDone(slots, venue, status, subName, extraSlots) {
     var done = document.getElementById('qciDone');
     var form = document.getElementById('qciForm');
     var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    var extraStr = (extraSlots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
     var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
     var dateLabel = isToday ? 'วันนี้' : formatThaiDateFull(qciSelectedDate, {year:false});
     var icon = done.querySelector('.done-icon');
@@ -659,7 +746,9 @@
       if (icon) icon.textContent = '✅';
       done.style.background = '';
       document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
-      document.getElementById('qciDoneDetail').textContent = '📍 '+venue+' · ⏰ '+slotStr;
+      var doneDetail = '📍 '+venue+' · ⏰ '+slotStr;
+      if (extraStr) doneDetail += '<br><span style="color:#2b6cb0;font-weight:600">🔄 รอบพิเศษ: ' + extraStr + '</span>';
+      document.getElementById('qciDoneDetail').innerHTML = doneDetail;
     }
     done.classList.add('show');
     form.style.display = 'none';
@@ -678,7 +767,7 @@
             if (ci.substitute && ci.substitute.name) subName = ci.substitute.name;
             else if (ci.notes) { var _m = ci.notes.match(/คนแทน:\s*(.+)/); if (_m) subName = _m[1].trim(); }
           }
-          qciShowDone(ci.slots, ci.venue, ci.status, subName);
+          qciShowDone(ci.slots, ci.venue, ci.status, subName, ci.extraSlots);
         }
       }
       // Check-in reminder: show banner if today + no check-in
@@ -700,15 +789,18 @@
 
   function qciConfirm() {
     if (!qciSelectedVenue) { alert('กรุณาเลือกสถานที่ก่อน'); return; }
-    if (!qciSelectedSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
+    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots);
+    if (!allSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
     var btn = document.getElementById('qciConfirmBtn');
     btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
     var dateStr = qciLocalDateStr(qciSelectedDate);
-    apiCall('memberCheckIn', { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: qciSelectedSlots, notes: '' }, function(r) {
+    var payload = { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: allSlots, notes: '' };
+    if (qciSelectedExtraSlots.length) payload.extraSlots = qciSelectedExtraSlots;
+    apiCall('memberCheckIn', payload, function(r) {
       btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
       if (r && r.success) {
-        qciExistingCheckIn = { status: 'pending', slots: qciSelectedSlots, venue: qciSelectedVenue };
-        qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending');
+        qciExistingCheckIn = { status: 'pending', slots: allSlots, venue: qciSelectedVenue, extraSlots: qciSelectedExtraSlots };
+        qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending', '', qciSelectedExtraSlots);
         showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
         _updateCheckinReminder();
       } else {
@@ -719,12 +811,19 @@
 
   function qciReset() {
     qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
+    qciExtraSlots = []; qciSelectedExtraSlots = [];
     document.getElementById('qciDone').classList.remove('show');
     document.getElementById('qciForm').style.display = 'block';
     document.getElementById('qciSummary').classList.remove('show');
     document.getElementById('qciConfirmRow').style.display = 'none';
     document.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
     qciSelectedSlots = [];
+    var extraWrap = document.getElementById('qciExtraWrap');
+    if (extraWrap) extraWrap.style.display = 'none';
+    var extraRows = document.getElementById('qciExtraRows');
+    if (extraRows) extraRows.innerHTML = '';
+    var extraBtns = document.getElementById('qciExtraSlotBtns');
+    if (extraBtns) extraBtns.innerHTML = '';
     qciRenderVenues();
   }
 
@@ -881,7 +980,31 @@
         if (vBtn) vBtn.classList.add('selected');
         qciRenderSlots();
       }
+      // Restore extra slots if editing
+      if (qciExistingCheckIn && qciExistingCheckIn.extraSlots && qciExistingCheckIn.extraSlots.length) {
+        qciExtraSlots = qciExistingCheckIn.extraSlots.map(function(k) { var p = k.split('-'); return { start: p[0], end: p[1] }; });
+        qciSelectedExtraSlots = qciExistingCheckIn.extraSlots.slice();
+        document.getElementById('qciExtraWrap').style.display = '';
+        qciRenderExtraRows();
+        qciRenderExtraSlotBtns();
+      }
     });
+
+    // Extra slot toggle + add
+    document.getElementById('qciExtraToggle').addEventListener('click', function() {
+      var wrap = document.getElementById('qciExtraWrap');
+      if (wrap.style.display === 'none') {
+        wrap.style.display = '';
+        if (!qciExtraSlots.length) qciAddExtraSlot();
+      } else {
+        wrap.style.display = 'none';
+        qciExtraSlots = []; qciSelectedExtraSlots = [];
+        document.getElementById('qciExtraRows').innerHTML = '';
+        document.getElementById('qciExtraSlotBtns').innerHTML = '';
+        qciUpdateSummary();
+      }
+    });
+    document.getElementById('qciExtraAddBtn').addEventListener('click', qciAddExtraSlot);
 
     document.getElementById('qciCancelBtn').addEventListener('click', function() {
       if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
