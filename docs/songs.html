@@ -1762,8 +1762,14 @@ function onPlaylistDateChange() {
 
 /* ── When venue changes → refresh time slots (re-filter by venue) ── */
 function onPlaylistVenueChange() {
+  var offsite = isOffsiteMode();
+  setOffsiteMode(offsite);
   refreshTimeSlots();
-  checkExistingPlaylists();
+  if (offsite) {
+    var customVenueEl = document.getElementById('customVenue');
+    if (customVenueEl && !customVenueEl.value.trim()) customVenueEl.focus();
+  }
+  checkExistingPlaylists(offsite);
 }
 
 /* ── Refresh timeSlot dropdown based on date + venue ── */
