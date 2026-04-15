@@ -708,15 +708,12 @@
     var summary = document.getElementById('qciSummary');
     var confirmRow = document.getElementById('qciConfirmRow');
     if (!summary || !confirmRow) return;
-    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots);
+    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots).slice().sort();
     if (qciSelectedVenue && allSlots.length) {
       var dateStr = QCI_DAY_NAMES_TH[qciSelectedDate.getDay()] + ' ' + formatThaiDateFull(qciSelectedDate);
-      var slotStr = qciSelectedSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
-      var extraStr = qciSelectedExtraSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
       document.getElementById('sumDate').textContent = dateStr;
       document.getElementById('sumVenue').textContent = qciSelectedVenue;
-      var fullSlotText = slotStr;
-      if (extraStr) fullSlotText += (slotStr ? ' · ' : '') + '🔄 ' + extraStr;
+      var fullSlotText = allSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
       document.getElementById('sumSlots').textContent = fullSlotText;
       summary.classList.add('show');
       confirmRow.style.display = 'block';
@@ -729,8 +726,8 @@
   function qciShowDone(slots, venue, status, subName, extraSlots) {
     var done = document.getElementById('qciDone');
     var form = document.getElementById('qciForm');
-    var slotStr = (slots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
-    var extraStr = (extraSlots||[]).map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    var slotStr = (slots||[]).concat(extraSlots||[]).slice().sort().map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    var extraStr = '';
     var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
     var dateLabel = isToday ? 'วันนี้' : formatThaiDateFull(qciSelectedDate, {year:false});
     var icon = done.querySelector('.done-icon');
@@ -749,7 +746,6 @@
       done.style.background = '';
       document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
       var doneDetail = '📍 '+venue+' · ⏰ '+slotStr;
-      if (extraStr) doneDetail += '<br><span style="color:#2b6cb0;font-weight:600">🔄 รอบพิเศษ: ' + extraStr + '</span>';
       document.getElementById('qciDoneDetail').innerHTML = doneDetail;
     }
     done.classList.add('show');

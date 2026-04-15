@@ -417,7 +417,7 @@ function apRenderAttendance() {
         b += '<td rowspan="' + totalRows + '" style="font-weight:600">' + DN[dow] + '</td>';
         b += '<td rowspan="' + totalRows + '">' + apFmtDate(dt) + '</td>';
       }
-      b += '<td style="white-space:nowrap">' + slot.start + ' – ' + slot.end + (isExtra ? ' <span style="color:#3182ce;font-size:10px;font-weight:700">(พิเศษ)</span>' : '') + '</td>';
+      b += '<td style="white-space:nowrap">' + slot.start + ' – ' + slot.end + '</td>';
       var rowAmt = 0;
       apMembers.forEach(function(m) {
         var ciSlots = (apChecked[m.id] && apChecked[m.id][dateStr]) || [];
