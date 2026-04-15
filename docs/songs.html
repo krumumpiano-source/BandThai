@@ -549,6 +549,10 @@ html{scroll-behavior:smooth}
   border-color:var(--premium-gold);
   box-shadow:0 0 0 3px rgba(246,173,85,.15);
 }
+.manual-time-wrap{display:none;margin-top:6px}
+.manual-time-wrap.active{display:block}
+.manual-time-wrap input{width:100%;padding:8px 10px;border:1.5px solid var(--border-color,#ddd);border-radius:var(--radius-md,8px);font-size:14px;background:var(--input-bg,#fff);color:var(--text-color,#222)}
+.manual-time-wrap input:focus{outline:none;border-color:var(--premium-gold);box-shadow:0 0 0 3px rgba(246,173,85,.15)}
 .offsite-only{display:none;margin-top:8px}
 .offsite-only.active{display:block}
 .offsite-fields{display:none;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:-2px 0 12px}
@@ -849,9 +853,12 @@ html{scroll-behavior:smooth}
     </div>
     <div class="pl-ctrl-item">
       <label class="pl-ctrl-label">🕐 ช่วงเวลา</label>
-      <select id="timeSlot" onchange="autoLoadPlaylistForSlot()">
+      <select id="timeSlot" onchange="onTimeSlotChange()">
         <option value="">ช่วงเวลา</option>
       </select>
+      <div id="manualTimeWrap" class="manual-time-wrap">
+        <input type="text" id="manualTimeSlot" placeholder="เช่น 18:00-21:00" oninput="onManualTimeInput()">
+      </div>
     </div>
   </div>
 
@@ -1716,6 +1723,10 @@ function getActiveTimeSlotValue() {
     return customTimeEl ? customTimeEl.value.trim() : '';
   }
   var timeEl = document.getElementById('timeSlot');
+  if (timeEl && timeEl.value === '__custom__') {
+    var manualEl = document.getElementById('manualTimeSlot');
+    return manualEl ? manualEl.value.trim() : '';
+  }
   return timeEl ? timeEl.value : '';
 }
 
@@ -1726,11 +1737,13 @@ function setOffsiteMode(enabled) {
   var customVenueWrap = document.getElementById('customVenueWrap');
   var customTimeWrap = document.getElementById('customTimeSlotWrap');
   var offsiteNote = document.getElementById('offsiteNote');
+  var manualWrap = document.getElementById('manualTimeWrap');
   if (venueEl && enabled && venueEl.value !== '__offsite__') venueEl.value = '__offsite__';
   if (offsiteFields) offsiteFields.classList.toggle('active', !!enabled);
   if (customVenueWrap) customVenueWrap.classList.toggle('active', !!enabled);
   if (customTimeWrap) customTimeWrap.classList.toggle('active', !!enabled);
   if (offsiteNote) offsiteNote.classList.toggle('active', !!enabled);
+  if (manualWrap && enabled) manualWrap.classList.remove('active');
   if (timeEl) timeEl.style.display = enabled ? 'none' : '';
 }
 
@@ -1758,6 +1771,12 @@ function validatePlaylistContext(actionLabel) {
     timeEl.focus();
     timeEl.style.borderColor = '#e53e3e';
     setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
+    return false;
+  }
+  if (timeEl && timeEl.value === '__custom__' && !getActiveTimeSlotValue()) {
+    showSongsAlert('⚠️ พิมพ์ช่วงเวลาก่อน' + actionLabel);
+    var manualEl = document.getElementById('manualTimeSlot');
+    if (manualEl) { manualEl.focus(); manualEl.style.borderColor = '#e53e3e'; setTimeout(function(){ manualEl.style.borderColor = ''; }, 3000); }
     return false;
   }
   if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
@@ -1799,12 +1818,25 @@ function applyPlaylistContext(entry) {
     setOffsiteMode(false);
     refreshTimeSlots();
     if (timeEl) timeEl.value = '';
+    var matchedSlot = false;
     if (timeEl && entry && entry.timeSlot) {
       for (var j = 0; j < timeEl.options.length; j++) {
         if (timeEl.options[j].value === entry.timeSlot) {
           timeEl.selectedIndex = j;
+          matchedSlot = true;
           break;
         }
+      }
+      // ถ้าไม่เจอ slot ใน dropdown → ใช้ __custom__ แล้วเติมช่องพิมพ์เอง
+      if (!matchedSlot) {
+        timeEl.value = '__custom__';
+        var manualEl = document.getElementById('manualTimeSlot');
+        if (manualEl) manualEl.value = entry.timeSlot;
+        var manualWrap = document.getElementById('manualTimeWrap');
+        if (manualWrap) manualWrap.classList.add('active');
+      } else {
+        var manualWrap2 = document.getElementById('manualTimeWrap');
+        if (manualWrap2) manualWrap2.classList.remove('active');
       }
     }
     if (customVenueEl) customVenueEl.value = '';
@@ -1899,26 +1931,31 @@ function refreshTimeSlots() {
       opt.value = slot; opt.textContent = slot;
       timeEl.appendChild(opt);
     });
-    if (previousValue && Array.prototype.some.call(timeEl.options, function(opt) { return opt.value === previousValue; })) {
-      timeEl.value = previousValue;
-    }
-    return;
+  } else {
+    slots.forEach(function(s) {
+      var key = s.startTime + '-' + s.endTime;
+      var opt = document.createElement('option');
+      opt.value = key;
+      var existingCount = _plExistingForDate.filter(function(e) {
+        return plEntryMatches(e, selectedVenue, key);
+      }).length;
+      opt.textContent = key + (existingCount ? ' ✅ มีลิสแล้ว' : '');
+      if (existingCount) opt.style.color = '#48bb78';
+      timeEl.appendChild(opt);
+    });
   }
-  slots.forEach(function(s) {
-    var key = s.startTime + '-' + s.endTime;
-    var opt = document.createElement('option');
-    opt.value = key;
-    // Mark existing playlists in the dropdown
-    var existingCount = _plExistingForDate.filter(function(e) {
-      return plEntryMatches(e, selectedVenue, key);
-    }).length;
-    opt.textContent = key + (existingCount ? ' ✅ มีลิสแล้ว' : '');
-    if (existingCount) opt.style.color = '#48bb78';
-    timeEl.appendChild(opt);
-  });
+  // เพิ่มตัวเลือก "พิมพ์เอง"
+  var customOpt = document.createElement('option');
+  customOpt.value = '__custom__';
+  customOpt.textContent = '✏️ พิมพ์เอง...';
+  timeEl.appendChild(customOpt);
+  // Restore previous value
   if (previousValue && Array.prototype.some.call(timeEl.options, function(opt) { return opt.value === previousValue; })) {
     timeEl.value = previousValue;
   }
+  // Toggle manual input visibility
+  var manualWrap = document.getElementById('manualTimeWrap');
+  if (manualWrap) manualWrap.classList.toggle('active', timeEl.value === '__custom__');
 }
 
 /* ── Check which slots already have playlists for selected date ── */
@@ -2053,10 +2090,26 @@ function loadExistingPlaylist(idx, silent) {
 }
 
 /* ── Auto-load when user picks a time slot that already has a saved playlist ── */
+function onTimeSlotChange() {
+  var timeEl = document.getElementById('timeSlot');
+  var manualWrap = document.getElementById('manualTimeWrap');
+  if (manualWrap) manualWrap.classList.toggle('active', timeEl && timeEl.value === '__custom__');
+  if (timeEl && timeEl.value === '__custom__') {
+    var manualEl = document.getElementById('manualTimeSlot');
+    if (manualEl) manualEl.focus();
+    return;
+  }
+  autoLoadPlaylistForSlot();
+}
+
+function onManualTimeInput() {
+  // no-op for now, user types and saves with playlist
+}
+
 function autoLoadPlaylistForSlot() {
   if (isOffsiteMode()) return;
   var timeEl = document.getElementById('timeSlot');
-  if (!timeEl || !timeEl.value || !_plExistingForDate.length) return;
+  if (!timeEl || !timeEl.value || timeEl.value === '__custom__' || !_plExistingForDate.length) return;
   var slot = timeEl.value;
   var idx = plFindExistingIndex(plGetSelectedVenue(), slot);
   if (idx === -1) return; // no existing playlist for this slot
