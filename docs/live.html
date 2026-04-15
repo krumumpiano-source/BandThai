@@ -372,6 +372,53 @@
     #hbdBanner.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
     @keyframes hbdPulse{0%,100%{border-color:rgba(234,179,8,.5);box-shadow:0 0 0 0 rgba(234,179,8,0)}50%{border-color:#fde68a;box-shadow:0 0 12px 3px rgba(234,179,8,.25)}}
     #hbdBanner.urgent{animation:hbdPulse 1s ease-in-out infinite}
+
+    @media (max-width: 900px) {
+      #topBar{padding:8px 10px}
+      #topBar .tb-left{flex:1 1 100%;justify-content:space-between}
+      #topBar .tb-right{width:100%;flex-wrap:wrap;justify-content:flex-start}
+      .font-btn,#shareBtn,#endBreakBtn,#exitLiveBtn{flex:1 1 calc(33.333% - 8px);min-width:0}
+      #nowPlaying{padding:18px 12px 14px;min-height:124px}
+      #nextPreview{width:100%;max-width:100%;flex-wrap:wrap;justify-content:center}
+      #songList{padding-bottom:220px}
+    }
+
+    @media (max-width: 640px) {
+      #clock{font-size:.95rem}
+      #songCounter{font-size:.78rem}
+      #venueLabel{white-space:normal;line-height:1.3}
+      .font-btn{min-width:40px;min-height:40px;padding:6px 8px;font-size:.8rem}
+      .btn-hint{display:none}
+      #shareBtn,#endBreakBtn,#exitLiveBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
+      .met-controls{position:static;margin-top:10px;order:2}
+      #nowPlaying{padding-top:14px}
+      #nowTitle{font-size:clamp(1.5rem,7vw,2.2rem)}
+      .now-meta{gap:8px}
+      #nowKey{font-size:1.25rem;padding:4px 10px}
+      #nowBpm{font-size:.92rem}
+      #songList{padding:4px 0 240px}
+      .song-item{display:grid;grid-template-columns:20px 5px 28px minmax(0,1fr) auto 32px;align-items:center;gap:8px;padding:10px}
+      .si-arrows{margin-right:0}
+      .si-content{min-width:0}
+      .si-badges{flex-wrap:wrap;justify-content:flex-end;max-width:104px}
+      .si-name{white-space:normal;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+      .si-meta,.si-note{white-space:normal;overflow:visible;text-overflow:clip}
+      #actionBar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 10px}
+      #undoBtn,#endSongBtn,#actionBar #nudgeBtn,#chatBtnWrap{flex:none;width:100%}
+      #chatBarInner{padding:8px}
+      #chatBarInput{font-size:16px;min-height:44px;max-height:96px}
+      #chatBarSend{width:44px;height:44px}
+    }
+
+    @media (max-width: 420px) {
+      #topBar .tb-right{gap:6px}
+      .font-btn,#shareBtn,#endBreakBtn,#exitLiveBtn{flex:1 1 calc(50% - 6px)}
+      #nowTitle{font-size:clamp(1.35rem,8vw,1.9rem)}
+      .nav-arrow{min-width:32px}
+      #actionBar{grid-template-columns:1fr}
+      .song-item{grid-template-columns:18px 4px 24px minmax(0,1fr) 28px}
+      .si-badges{display:none}
+    }
   </style>
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
@@ -720,6 +767,8 @@ var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
 var _clockTimer = null;
 var _ctxIdx = -1; // context menu target song index
+var _clientId = 'live-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+var _stateSyncTimer = null;
 
 // ── Sync state (realtime) ─────────────────────────────────────────
 var _syncReceived     = false; // have we received a state_sync after joining?
@@ -749,6 +798,49 @@ var _tapTimer   = null;
 var _lastTapIdx = -1;
 
 var _isGuest   = false; // guest mode (no login required)
+
+function normalizePlaylistState(preferredCurrent) {
+  if (!Array.isArray(_playlist)) _playlist = [];
+  if (_playlist.length === 0) {
+    _current = 0;
+    return;
+  }
+  if (typeof preferredCurrent === 'number' && !isNaN(preferredCurrent)) {
+    _current = preferredCurrent;
+  }
+  if (_current < 0) _current = 0;
+  if (_current >= _playlist.length) _current = _playlist.length - 1;
+}
+
+function scheduleStateSync() {
+  if (!_channel) return;
+  if (_stateSyncTimer) clearTimeout(_stateSyncTimer);
+  _stateSyncTimer = setTimeout(function() {
+    _stateSyncTimer = null;
+    broadcastEvent('state_sync', getState());
+  }, 80);
+}
+
+function isOwnBroadcast(payload) {
+  var data = payload && payload.payload;
+  return !!(data && data.senderId === _clientId);
+}
+
+function removeSongAtIndex(idx) {
+  if (typeof idx !== 'number' || idx < 0 || idx >= _playlist.length) return false;
+  _playlist.splice(idx, 1);
+  if (_playlist.length === 0) {
+    _current = 0;
+    return true;
+  }
+  if (idx < _current) {
+    _current--;
+  } else if (idx === _current && _current >= _playlist.length) {
+    _current = _playlist.length - 1;
+  }
+  normalizePlaylistState();
+  return true;
+}
 
 // URL params
 var _params    = new URLSearchParams(location.search);
@@ -939,6 +1031,7 @@ function loadPlaylist() {
                _isRequest: false, _isEncore: false };
     });
     _current = 0;
+    normalizePlaylistState();
     renderSongList();
     renderNowPlaying();
     initRealtime();
@@ -1142,12 +1235,12 @@ function removeSong(e, idx) {
   e.stopPropagation();
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
-  _playlist.splice(idx, 1);
+  if (!removeSongAtIndex(idx)) return;
   _modified = true;
-  if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
+  scheduleStateSync();
   showToast('\u0e25\u0e1a \u201c' + name + '\u201d \u0e41\u0e25\u0e49\u0e27');
 }
 
@@ -1459,10 +1552,12 @@ function triggerEnding(nextIdx) {
     if (nextIdx >= 0 && nextIdx < _playlist.length) {
       _current  = nextIdx;
       _modified = true;
+      normalizePlaylistState();
       haptic(100);
       startBeatDot((_playlist[_current] || {}).bpm || 0);
       renderNowPlaying();
       renderSongList();
+      scheduleStateSync();
     } else {
       showLastSongBanner();
     }
@@ -1481,8 +1576,10 @@ function advanceSong() {
     _pushUndo();
     _current  = next;
     _modified = true;
+    normalizePlaylistState();
     haptic(100);
     broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    scheduleStateSync();
     startBeatDot((_playlist[_current] || {}).bpm || 0);
     renderNowPlaying();
     renderSongList();
@@ -1498,8 +1595,10 @@ function prevSong() {
   if (prev >= 0) {
     _current = prev;
     _modified = true;
+    normalizePlaylistState();
     haptic(80);
     broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    scheduleStateSync();
     renderNowPlaying();
     renderSongList();
     showToast('◀ ' + (_playlist[_current] ? _playlist[_current].name : ''));
@@ -1515,8 +1614,10 @@ function nextSongDirect() {
     _pushUndo();
     _current = next;
     _modified = true;
+    normalizePlaylistState();
     haptic(80);
     broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    scheduleStateSync();
     renderNowPlaying();
     renderSongList();
     showToast('▶ ' + (_playlist[_current] ? _playlist[_current].name : ''));
@@ -1668,6 +1769,7 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   _playlist.splice(insertAt, 0, song);
   _modified = true;
   broadcastEvent('request_song', { song: song, insertAfter: insertAt - 1 });
+  scheduleStateSync();
 
   // Clear chat bar
   var inp = document.getElementById('chatBarInput');
@@ -1726,9 +1828,11 @@ function playNow(idx) {
   if (idx === _current) return;
   _current = idx;
   _modified = true;
+  normalizePlaylistState();
   haptic(80);
   // broadcast ให้ทุกเครื่องเปลี่ยนเพลงพร้อมกัน
   broadcastEvent('current_changed', { idx: idx, bpm: (_playlist[idx] || {}).bpm || 0 });
+  scheduleStateSync();
   renderNowPlaying();
   renderSongList();
   showToast('▶ เล่น: ' + (_playlist[idx] ? _playlist[idx].name : ''));
@@ -1744,6 +1848,7 @@ function setAsNext(idx) {
   _playlist.splice(insertAt, 0, song);
   _modified = true;
   broadcastEvent('set_next', { idx: idx });
+  scheduleStateSync();
   renderNowPlaying();
   renderSongList();
   showToast('"' + song.name + '" → เพลงถัดไป ✅');
@@ -1759,6 +1864,7 @@ function skipSong(idx) {
   _playlist[idx]._skipped = true;
   _modified = true;
   broadcastEvent('skip_song', { idx: idx });
+  scheduleStateSync();
   if (idx === _current) advanceSong();
   else renderSongList();
 }
@@ -1768,6 +1874,7 @@ function unskipSong(e, idx) {
   _playlist[idx]._skipped = false;
   _modified = true;
   broadcastEvent('unskip_song', { idx: idx });
+  scheduleStateSync();
   renderSongList();
 }
 
@@ -2320,6 +2427,7 @@ function initRealtime() {
 
   _channel
     .on('broadcast', { event: 'song_ending' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       // sync _current ให้ตรงกับผู้กดก่อน จากนั้น advance ไป next เดียวกัน
       if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
@@ -2328,10 +2436,12 @@ function initRealtime() {
       if (!_isEnding) triggerEnding(typeof d.next === 'number' ? d.next : -1);
     })
     .on('broadcast', { event: 'current_changed' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
         _current = d.idx;
         _modified = true;
+        normalizePlaylistState();
         renderNowPlaying();
         renderSongList();
         // sync beat dot ด้วย
@@ -2342,6 +2452,7 @@ function initRealtime() {
       }
     })
     .on('broadcast', { event: 'transpose' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._key = d.key; _modified = true; }
       if (d.idx === _current) {
@@ -2351,12 +2462,14 @@ function initRealtime() {
       renderSongList();
     })
     .on('broadcast', { event: 'note_update' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; _modified = true; }
       if (d.idx === _current) document.getElementById('nowNote').textContent = d.note || '';
       renderSongList();
     })
     .on('broadcast', { event: 'edit_keybpm' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var s = _playlist[d.idx];
       if (s) {
@@ -2368,36 +2481,40 @@ function initRealtime() {
       }
     })
     .on('broadcast', { event: 'request_song' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.song) {
         // ใช้ typeof เพื่อป้องกัน insertAfter=0 ถูกมองเป็น falsy
         var insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
         _playlist.splice(insertPos, 0, d.song);
         _modified = true;
+        normalizePlaylistState();
       }
       renderSongList();
     })
     .on('broadcast', { event: 'skip_song' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; _modified = true; }
       renderSongList();
     })
     .on('broadcast', { event: 'unskip_song' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; _modified = true; }
       renderSongList();
     })
     .on('broadcast', { event: 'remove' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
-        _playlist.splice(d.idx, 1);
-        if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
+      if (removeSongAtIndex(d.idx)) {
         _modified = true;
         renderNowPlaying();
         renderSongList();
       }
     })
     .on('broadcast', { event: 'reorder' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var from = d.from; var to = d.to;
       if (typeof from === 'number' && typeof to === 'number' && from !== to &&
@@ -2408,11 +2525,13 @@ function initRealtime() {
         else if (from < to && _current > from && _current <= to) _current--;
         else if (from > to && _current < from && _current >= to) _current++;
         _modified = true;
+        normalizePlaylistState();
         renderNowPlaying();
         renderSongList();
       }
     })
     .on('broadcast', { event: 'request_state' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       // someone is asking for state — only respond if:
       //   1) I joined earlier  2) I have a non-empty playlist
       var d = payload.payload || {};
@@ -2427,6 +2546,7 @@ function initRealtime() {
       }
     })
     .on('broadcast', { event: 'set_next' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var idx = d.idx;
       if (typeof idx !== 'number' || idx === _current || idx < 0 || idx >= _playlist.length) return;
@@ -2435,10 +2555,12 @@ function initRealtime() {
       if (idx < _current) { _current--; insertAt = _current + 1; }
       _playlist.splice(insertAt, 0, song);
       _modified = true;
+      normalizePlaylistState();
       renderNowPlaying();
       renderSongList();
     })
     .on('broadcast', { event: 'beat_ref' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       // New song — show dot for guest/viewer, prepare metronome
       _metBpm      = d.bpm || 0;
@@ -2450,6 +2572,7 @@ function initRealtime() {
       if (btn) btn.classList.toggle('off', !_metEnabled);
     })
     .on('broadcast', { event: 'beat_sync' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       // RECEIVER: Wall-clock phase-locked metronome
       // Manager sends wallOrigin (Date.now() at beat 0) + beat count + bpm
       // Receiver calculates exact wall-clock time of each beat and schedules accordingly
@@ -2519,6 +2642,7 @@ function initRealtime() {
       }
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (!d.playlist || d.playlist.length === 0) return;
 
@@ -2545,19 +2669,23 @@ function initRealtime() {
       _current  = typeof d.current === 'number' ? d.current : 0;
       _isSyncLeader = false; // someone else is senior — they own broadcast
       _modified = true;
+      normalizePlaylistState();
       _resetHbdTracking();
       renderNowPlaying();
       renderSongList();
     })
     .on('broadcast', { event: 'nudge' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.from && d.msg) receiveNudge(d.from, d.msg);
     })
     .on('broadcast', { event: 'chat_msg' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.from && d.text) receiveChatMsg(d.from, d.text, d.time);
     })
     .on('broadcast', { event: 'end_break_saving' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       // เครื่องอื่นกำลัง save → disable ปุ่มจบเบรคของเราเพื่อไม่ให้ save ซ้ำ
       var d = payload.payload || {};
       _endBreakSaving = true;
@@ -2566,6 +2694,7 @@ function initRealtime() {
       showToast('💾 ' + (d.by || 'สมาชิก') + ' กำลังบันทึก...');
     })
     .on('broadcast', { event: 'end_break_done' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
       // เครื่องอื่น save สำเร็จแล้ว → แสดง clip modal + ล็อคปุ่ม
       var d = payload.payload || {};
       _endBreakDone = true;
@@ -2600,7 +2729,14 @@ function getState() {
 
 function broadcastEvent(event, data) {
   if (!_channel) return;
-  try { _channel.send({ type: 'broadcast', event: event, payload: data }); }
+  var payload = {};
+  if (data && typeof data === 'object') {
+    for (var key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) payload[key] = data[key];
+    }
+  }
+  payload.senderId = _clientId;
+  try { _channel.send({ type: 'broadcast', event: event, payload: payload }); }
   catch(e) { console.warn('broadcastEvent error:', e); }
 }
 
@@ -2653,8 +2789,10 @@ function undoSong() {
   var state = _undoStack.pop();
   _current = state.current;
   _modified = true;
+  normalizePlaylistState();
   haptic(80);
   broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+  scheduleStateSync();
   renderNowPlaying();
   renderSongList();
   _updateUndoBtn();
@@ -3322,20 +3460,22 @@ function _doMoveSong(from, to) {
   else if (from < to && _current > from && _current <= to) _current--;
   else if (from > to && _current < from && _current >= to) _current++;
   _modified = true;
+  normalizePlaylistState();
   renderNowPlaying();
   renderSongList();
   broadcastEvent('reorder', { from: from, to: to });
+  scheduleStateSync();
 }
 
 function removeSongDirect(idx) {
   var name = _playlist[idx] ? _playlist[idx].name : '';
   if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
-  _playlist.splice(idx, 1);
+  if (!removeSongAtIndex(idx)) return;
   _modified = true;
-  if (_current >= _playlist.length) _current = Math.max(0, _playlist.length - 1);
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
+  scheduleStateSync();
   showToast('ลบ "' + name + '" แล้ว');
 }
 
