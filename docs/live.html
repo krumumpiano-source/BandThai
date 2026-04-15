@@ -1003,8 +1003,13 @@ function loadPlaylist() {
       if (!row && _timeSlot) {
         row = rows.find(function(x) { return x.timeSlot === _timeSlot; });
       }
-      // Fallback to first available
-      if (!row) row = rows[0];
+      // No match — do not silently load wrong playlist; wait for realtime sync
+      if (!row) {
+        console.warn('[Live] No matching playlist for venue/timeSlot, waiting for realtime sync');
+        showWaitingForSync();
+        initRealtime();
+        return;
+      }
     } else {
       row = rows[0];
     }
@@ -1942,9 +1947,9 @@ function onDragEnd(e) {
 // ─────────────────────────────────────────────────────────────────
 function setupBreakWarning() {
   if (!_timeSlot) return;
-  // Parse "HH:MM-HH:MM" format from timeSlot param
-  var match = _timeSlot.match(/(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})/);
-  if (!match) return;
+  // Parse "HH:MM-HH:MM" or "HH.MM-HH.MM" format from timeSlot param
+  var match = _timeSlot.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
+  if (!match) return; // free-text timeslot (e.g. "รอบค่ำ") — no break warning
   var endH = parseInt(match[3], 10);
   var endM = parseInt(match[4], 10);
   var now = new Date();
@@ -2418,11 +2423,17 @@ function doExit() {
 // ─────────────────────────────────────────────────────────────────
 //  REALTIME — Supabase Broadcast
 // ─────────────────────────────────────────────────────────────────
+function _sanitizeChannelPart(str) {
+  return (str || '').replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+}
+
 function initRealtime() {
   if (!window._sb) return;
   // Clean up existing channel before creating a new one (prevent duplicate listeners)
   if (_channel) { try { _channel.unsubscribe(); } catch(e) {} _channel = null; }
-  var channelName = 'live-' + _bandId + '-' + _date + (_timeSlot ? '-' + _timeSlot.replace(/:/g,'') : '');
+  var channelName = 'live-' + _bandId + '-' + _date
+    + (_venue ? '-' + _sanitizeChannelPart(_venue) : '')
+    + (_timeSlot ? '-' + _timeSlot.replace(/[^0-9]/g, '') : '');
   _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
 
   _channel
