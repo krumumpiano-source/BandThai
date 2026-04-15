@@ -13,6 +13,7 @@ var ciSelectedDate = '';
 var ciExistingCheckIn = null;
 var ciIsSubstitute = false;
 var ciLeaveType = 'all'; // 'all' = ลาทั้งวัน, 'some' = ลาบางรอบ
+var ciExtraSlots = []; // [{start:'16:00', end:'17:00'}, ...]
 
 function ciGetEl(id) { return document.getElementById(id); }
 function ciLocalDate(d) { return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
@@ -54,7 +55,7 @@ function ciShowDone(slots, venue, status) {
   ciGetEl('ciDoneDetail').textContent = (venue ? '\ud83d\udccd '+venue+' \u00b7 ' : '') + (slotStr ? '\u23f0 '+slotStr : '');
   done.style.display = 'block';
   // Hide form fields but keep done visible
-  ['ciSlotsContainer','ciSubToggle','ciSubFields','ciNotes','ciSubmitBtn','ciLeaveBtn','ciLeaveForm','ciSelectAll','ciSelectNone','ciNoSlots'].forEach(function(id){
+  ['ciSlotsContainer','ciSubToggle','ciSubFields','ciNotes','ciSubmitBtn','ciLeaveBtn','ciLeaveForm','ciSelectAll','ciSelectNone','ciNoSlots','ciExtraWrap'].forEach(function(id){
     var e = ciGetEl(id); if(e) e.style.display = 'none';
   });
   var shortcutRow = ciGetEl('ciSelectAll') ? ciGetEl('ciSelectAll').parentElement : null;
@@ -64,7 +65,7 @@ function ciShowDone(slots, venue, status) {
 function ciHideDone() {
   var done = ciGetEl('ciDone');
   if (done) done.style.display = 'none';
-  ['ciSlotsContainer','ciSubToggle','ciNotes','ciSubmitBtn','ciLeaveBtn','ciSelectAll','ciSelectNone'].forEach(function(id){
+  ['ciSlotsContainer','ciSubToggle','ciNotes','ciSubmitBtn','ciLeaveBtn','ciSelectAll','ciSelectNone','ciExtraWrap'].forEach(function(id){
     var e = ciGetEl(id); if(e) e.style.display = '';
   });
   var shortcutRow = ciGetEl('ciSelectAll') ? ciGetEl('ciSelectAll').parentElement : null;
@@ -199,6 +200,10 @@ function ciRenderSlots() {
   var dayLabel = ciGetEl('ciDayLabel');
   if (dayLabel) dayLabel.textContent = dayNames[dow];
 
+  // Separate extra slots from regular slots
+  var regularKeys = slots.map(function(s) { return s.key; });
+  var existingExtra = existingSlots.filter(function(sk) { return regularKeys.indexOf(sk) === -1; });
+
   container.innerHTML = slots.map(function(slot) {
     var checked = existingSlots.indexOf(slot.key) !== -1 ? ' checked' : '';
     return '<label class="ci-slot-label' + (checked ? ' checked' : '') + '">' +
@@ -213,6 +218,17 @@ function ciRenderSlots() {
       cb.closest('label').classList.toggle('checked', cb.checked);
     });
   });
+
+  // Show extra slot section
+  var extraWrap = ciGetEl('ciExtraWrap');
+  if (extraWrap) extraWrap.style.display = '';
+  // Pre-fill existing extra slots
+  ciExtraSlots = [];
+  existingExtra.forEach(function(sk) {
+    var p = sk.split('-');
+    if (p.length === 2) ciExtraSlots.push({ start: p[0], end: p[1] });
+  });
+  ciRenderExtraSlots();
 }
 
 /* ===== LOAD EXISTING CHECK-IN ===== */
@@ -242,6 +258,9 @@ function ciSubmit() {
   var venue = ciGetEl('ciVenue') ? ciGetEl('ciVenue').value : '';
   var notes = ciGetEl('ciNotes') ? ciGetEl('ciNotes').value : '';
   var checkedSlots = Array.from(document.querySelectorAll('input[name="ciSlot"]:checked')).map(function(cb) { return cb.value; });
+  // Include extra (custom) slots
+  var extraChecked = Array.from(document.querySelectorAll('input[name="ciExtraSlot"]:checked')).map(function(cb) { return cb.value; });
+  checkedSlots = checkedSlots.concat(extraChecked);
 
   if (!date) { ciShowToast('กรุณาเลือกวันที่', 'error'); return; }
   if (!venue) { ciShowToast('กรุณาเลือกสถานที่', 'error'); return; }
@@ -518,4 +537,74 @@ document.addEventListener('DOMContentLoaded', function() {
       cb.checked = false; cb.closest('label').classList.remove('checked');
     });
   });
+
+  // Extra slot toggle & add button
+  var extraToggle = ciGetEl('ciExtraToggle');
+  var extraList = ciGetEl('ciExtraList');
+  if (extraToggle && extraList) {
+    extraToggle.addEventListener('click', function() {
+      extraList.classList.toggle('show');
+      extraToggle.textContent = extraList.classList.contains('show')
+        ? '➖ ซ่อนช่วงเวลาพิเศษ' : '➕ เพิ่มช่วงเวลาพิเศษ (เล่นแทนวงอื่น / OT)';
+    });
+  }
+  var extraAddBtn = ciGetEl('ciExtraAddBtn');
+  if (extraAddBtn) extraAddBtn.addEventListener('click', ciAddExtraRow);
 });
+
+/* ===== EXTRA SLOT MANAGEMENT ===== */
+function ciAddExtraRow() {
+  ciExtraSlots.push({ start: '', end: '' });
+  ciRenderExtraRows();
+}
+
+function ciRemoveExtraRow(idx) {
+  ciExtraSlots.splice(idx, 1);
+  ciRenderExtraRows();
+  ciRenderExtraSlots();
+}
+
+function ciRenderExtraRows() {
+  var container = ciGetEl('ciExtraRows');
+  if (!container) return;
+  container.innerHTML = ciExtraSlots.map(function(s, i) {
+    return '<div class="ci-extra-row">' +
+      '<input type="time" value="' + ciEscHtml(s.start) + '" data-idx="' + i + '" data-field="start" onchange="ciOnExtraTimeChange(this)">' +
+      '<span class="ci-extra-sep">ถึง</span>' +
+      '<input type="time" value="' + ciEscHtml(s.end) + '" data-idx="' + i + '" data-field="end" onchange="ciOnExtraTimeChange(this)">' +
+      '<button type="button" class="ci-extra-remove" onclick="ciRemoveExtraRow(' + i + ')" title="ลบ">✕</button>' +
+      '</div>';
+  }).join('');
+}
+
+function ciOnExtraTimeChange(input) {
+  var idx = parseInt(input.dataset.idx, 10);
+  var field = input.dataset.field;
+  if (ciExtraSlots[idx]) {
+    ciExtraSlots[idx][field] = input.value;
+    ciRenderExtraSlots();
+  }
+}
+
+function ciRenderExtraSlots() {
+  var container = ciGetEl('ciExtraSlotsContainer');
+  if (!container) return;
+  var existingSlots = (ciExistingCheckIn && ciExistingCheckIn.slots) ? ciExistingCheckIn.slots : [];
+  var html = '';
+  ciExtraSlots.forEach(function(s, i) {
+    if (!s.start || !s.end) return;
+    var key = s.start + '-' + s.end;
+    var checked = existingSlots.indexOf(key) !== -1 ? ' checked' : ' checked'; // default checked for newly added
+    html += '<label class="ci-extra-slot-label checked">' +
+      '<input type="checkbox" name="ciExtraSlot" value="' + ciEscHtml(key) + '"' + checked + '>' +
+      '<span class="ci-slot-time">⏱️ ' + ciEscHtml(s.start) + ' – ' + ciEscHtml(s.end) + ' <em style="color:#3182ce;font-size:12px">(พิเศษ)</em></span>' +
+      '</label>';
+  });
+  container.innerHTML = html;
+  // Toggle visual
+  container.querySelectorAll('input[name="ciExtraSlot"]').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      cb.closest('label').classList.toggle('checked', cb.checked);
+    });
+  });
+}

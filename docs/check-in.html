@@ -87,6 +87,24 @@
     .ci-leave-slot-label{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#fff;border:2px solid #feb2b2;border-radius:var(--radius-md);cursor:pointer;margin-bottom:6px;transition:all .15s;user-select:none;font-size:var(--text-sm);font-weight:600}
     .ci-leave-slot-label.checked{border-color:#e53e3e;background:#fff5f5}
     .ci-leave-slot-label input[type=checkbox]{accent-color:#e53e3e;width:18px;height:18px;flex-shrink:0}
+    /* Extra slots */
+    .ci-extra-wrap{margin-top:var(--spacing-md);border-top:1.5px dashed var(--premium-border,#ddd);padding-top:var(--spacing-md)}
+    .ci-extra-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-weight:600;font-size:var(--text-sm);color:#3182ce;padding:6px 0}
+    .ci-extra-toggle:hover{color:#2b6cb0}
+    .ci-extra-list{display:none;margin-top:var(--spacing-sm)}
+    .ci-extra-list.show{display:block}
+    .ci-extra-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .ci-extra-row input[type=time]{flex:1;padding:10px;border:2px solid #bee3f8;border-radius:var(--radius-md);font-size:var(--text-base);font-family:var(--font-family-body)}
+    .ci-extra-row input[type=time]:focus{outline:none;border-color:#3182ce;box-shadow:0 0 0 3px rgba(49,130,206,.15)}
+    .ci-extra-row .ci-extra-sep{font-weight:700;color:var(--premium-text-muted);flex-shrink:0}
+    .ci-extra-remove{background:none;border:none;cursor:pointer;font-size:18px;color:#e53e3e;padding:4px;flex-shrink:0}
+    .ci-extra-remove:hover{color:#c53030}
+    .ci-extra-add{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:2px dashed #90cdf4;border-radius:var(--radius-md);background:#ebf8ff;color:#2b6cb0;font-weight:700;font-size:var(--text-sm);cursor:pointer;transition:all .15s;font-family:var(--font-family-body)}
+    .ci-extra-add:hover{background:#bee3f8;border-color:#63b3ed}
+    .ci-extra-slot-label{display:flex;align-items:center;gap:var(--spacing-sm);padding:var(--spacing-md) var(--spacing-lg);background:#ebf8ff;border:2px solid #90cdf4;border-radius:var(--radius-md);cursor:pointer;margin-bottom:var(--spacing-sm);transition:all .15s;user-select:none}
+    .ci-extra-slot-label.checked{border-color:#3182ce;background:#bee3f8}
+    .ci-extra-slot-label input[type=checkbox]{accent-color:#3182ce;width:18px;height:18px;flex-shrink:0}
+    .ci-extra-note{font-size:12px;color:#718096;margin-top:6px;font-style:italic}
   </style>
 </head>
 <body>
@@ -146,6 +164,17 @@
             </div>
             <div id="ciSlotsContainer"></div>
             <div id="ciNoSlots" class="ci-no-slots">เลือกวันที่และสถานที่ก่อนเพื่อดูช่วงเวลา</div>
+
+            <!-- Extra Slots (for substitute band / ad-hoc) -->
+            <div class="ci-extra-wrap" id="ciExtraWrap" style="display:none">
+              <div class="ci-extra-toggle" id="ciExtraToggle">➕ เพิ่มช่วงเวลาพิเศษ (เล่นแทนวงอื่น / OT)</div>
+              <div class="ci-extra-list" id="ciExtraList">
+                <div id="ciExtraRows"></div>
+                <button type="button" class="ci-extra-add" id="ciExtraAddBtn">➕ เพิ่มช่วงเวลา</button>
+                <p class="ci-extra-note">ระบุช่วงเวลาที่นอกเหนือจากตารางปกติ เช่น เล่นแทนวงอื่น หรือ OT</p>
+                <div id="ciExtraSlotsContainer" style="margin-top:8px"></div>
+              </div>
+            </div>
           </div>
 
           <!-- Substitute Option -->
