@@ -1813,30 +1813,16 @@
     var img = document.getElementById('dashQrCode');
     var urlEl = document.getElementById('dashQrUrl');
     var expiryEl = document.getElementById('dashQrExpiry');
-    img.src = ''; urlEl.textContent = 'กำลังสร้างลิงก์...'; expiryEl.textContent = '';
-    modal.classList.add('show');
 
-    apiCall('createGuestToken', {
-      bandId: bandId,
-      date: decodeURIComponent(date),
-      venue: decodeURIComponent(venue),
-      timeSlot: decodeURIComponent(timeSlot)
-    }, function(r) {
-      if (!r || !r.success) {
-        urlEl.textContent = '⚠️ สร้างลิงก์ไม่สำเร็จ';
-        return;
-      }
-      var token = r.data.token;
-      var expiry = r.data.expiresAt;
-      var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
-      var url = base + 'live.html?guest=' + token;
-      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-      urlEl.textContent = url;
-      if (expiry) {
-        var d = new Date(expiry);
-        expiryEl.textContent = 'หมดอายุ: ' + d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
-      }
-    });
+    var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+    var url = base + 'live.html?guest=1&band=' + encodeURIComponent(bandId) +
+              '&date=' + encodeURIComponent(decodeURIComponent(date)) +
+              '&venue=' + encodeURIComponent(decodeURIComponent(venue)) +
+              '&timeSlot=' + encodeURIComponent(decodeURIComponent(timeSlot));
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    urlEl.textContent = url;
+    expiryEl.textContent = 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
+    modal.classList.add('show');
   }
   </script>
 

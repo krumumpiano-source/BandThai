@@ -983,36 +983,26 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   if (_isGuest) {
-    // guest mode — verify token first, then load (full access)
+    // guest mode — ใครก็ได้สแกน QR เข้าใช้งานได้เลย ไม่ต้องมีบัญชี
     document.getElementById('guestBadge').style.display = 'inline-block';
     document.getElementById('endBreakBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
-    if (!_guestToken) { showInvalidToken(); return; }
-    // save to sessionStorage to survive refresh
-    sessionStorage.setItem('liveGuestToken', _guestToken);
-    apiCall('verifyGuestToken', { token: _guestToken }, function(r) {
-      if (!r || !r.success) { showInvalidToken(); return; }
-      var d = r.data;
-      _bandId   = d.bandId   || _bandId;
-      _date     = d.date     || _date;
-      _venue    = d.venue    || _venue;
-      _timeSlot = d.timeSlot || _timeSlot;
-      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+    if (!_bandId || !_date) { showInvalidToken(); return; }
+    document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
 
-      // ── ตรวจว่าผู้ใช้นี้เป็นสมาชิกวงจริงหรือเปล่า ──
-      var storedBand  = localStorage.getItem('bandId')     || '';
-      var storedToken = localStorage.getItem('auth_token') || '';
-      if (storedToken && storedBand === _bandId) {
-        // เป็นสมาชิก — อัปเกรดเป็น member mode
-        _isGuest = false;
-        document.getElementById('guestBadge').style.display = 'none';
-      }
-      // guest หรือ member — ใช้งานได้เหมือนกันทุกอย่าง
-      loadPlaylist();
-      preGenerateToken();
-      setupBreakWarning();
-      showHintsIfFirstTime();
-    });
+    // ── ตรวจว่าผู้ใช้นี้เป็นสมาชิกวงจริงหรือเปล่า ──
+    var storedBand  = localStorage.getItem('bandId')     || '';
+    var storedToken = localStorage.getItem('auth_token') || '';
+    if (storedToken && storedBand === _bandId) {
+      // เป็นสมาชิก — อัปเกรดเป็น member mode
+      _isGuest = false;
+      document.getElementById('guestBadge').style.display = 'none';
+    }
+    // guest หรือ member — ใช้งานได้เหมือนกันทุกอย่าง
+    loadPlaylist();
+    if (!_isGuest) preGenerateToken(); // สร้าง QR ได้เฉพาะ member
+    setupBreakWarning();
+    showHintsIfFirstTime();
   } else {
     // member mode — require login
     if (!_bandId || !localStorage.getItem('auth_token')) {
@@ -3610,31 +3600,16 @@ function showInvalidToken() {
 
 // ─── QR CODE / SHARE ──────────────────────────────────────────────
 function shareQR() {
-  if (_guestLinkToken) {
-    showQRModal(_guestLinkToken);
-    return;
-  }
-  // Token not ready yet — generate now (fallback)
-  showToast('กำลังสร้าง QR...');
-  apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
-    if (!r || !r.success) { showToast('สร้าง QR ไม่ได้ กรุณา login ใหม่'); return; }
-    _guestLinkToken = r.data;
-    showQRModal(r.data);
-  });
-}
-
-function showQRModal(data) {
-  var base  = location.origin + location.pathname;
-  var url   = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
-              '&date=' + encodeURIComponent(_date) +
-              '&venue=' + encodeURIComponent(_venue) +
-              '&timeSlot=' + encodeURIComponent(_timeSlot) +
-              '&token=' + encodeURIComponent(data.token);
+  // สร้าง QR URL ตรง ไม่ต้องใช้ token — ใครก็ได้สแกนเข้าได้เลย
+  var base = location.origin + location.pathname;
+  var url  = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
+             '&date=' + encodeURIComponent(_date) +
+             '&venue=' + encodeURIComponent(_venue) +
+             '&timeSlot=' + encodeURIComponent(_timeSlot);
   var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
   document.getElementById('qrCode').src = qrSrc;
   document.getElementById('qrUrl').textContent = url;
-  var exp = new Date(data.expiresAt);
-  document.getElementById('qrExpiry').textContent = 'หมดอายุ: ' + exp.toLocaleTimeString('th-TH');
+  document.getElementById('qrExpiry').textContent = 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
   document.getElementById('qrModal').classList.add('show');
 }
 
