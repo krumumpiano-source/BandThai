@@ -1189,25 +1189,36 @@ function renderNowPlaying() {
 
 function _autoFitTitle(el) {
   if (!el || !el.textContent) return;
-  // Allow wrapping at word boundaries (Thai ICU segmentation), max 2 lines, NO ellipsis
-  el.style.whiteSpace = 'normal';
-  el.style.wordBreak = 'keep-all';
-  el.style.overflowWrap = 'anywhere';
+  var text = el.textContent.trim();
+  var hasSpace = text.includes(' ');
+  var size = 4.5;
+  var minSize = 1.0;
   el.style.display = 'block';
   el.style.webkitLineClamp = '';
   el.style.webkitBoxOrient = '';
   el.style.textOverflow = 'clip';
   el.style.maxHeight = '';
 
-  // Start big, shrink until content fits within 2 lines
-  var size = 4.5;
-  var minSize = 1.0;
-  el.style.fontSize = size + 'rem';
-  for (var i = 0; i < 60 && size > minSize; i++) {
-    var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
-    if (el.scrollHeight <= lh * 2.05) break;
-    size -= 0.1;
-    el.style.fontSize = size + 'rem';
+  if (!hasSpace) {
+    // ไม่มีเว้นวรรค: shrink ให้พอดี 1 บรรทัด ห้ามตัดกลางคำ
+    el.style.whiteSpace = 'nowrap';
+    el.style.wordBreak = 'normal';
+    el.style.overflowWrap = 'normal';
+    for (size = 4.5; size > minSize; size -= 0.1) {
+      el.style.fontSize = size + 'rem';
+      var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
+      if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= lh * 1.1) break;
+    }
+  } else {
+    // มีเว้นวรรค: shrink ให้พอดี 2 บรรทัด ตัดตาม space
+    el.style.whiteSpace = 'normal';
+    el.style.wordBreak = 'keep-all';
+    el.style.overflowWrap = 'anywhere';
+    for (size = 4.5; size > minSize; size -= 0.1) {
+      el.style.fontSize = size + 'rem';
+      var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
+      if (el.scrollHeight <= lh * 2.05) break;
+    }
   }
 }
 
