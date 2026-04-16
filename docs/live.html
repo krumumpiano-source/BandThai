@@ -51,7 +51,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:10px 12px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    #nowPlaying{flex-shrink:0;padding:10px 44px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -79,10 +79,12 @@
     #prevSongBtn{left:-4px}
     #nextSongBtn{right:-4px}
     .now-nav-title{width:100%;padding:0 32px;overflow:hidden}
-    /* ─── NOW TOOLBAR (met + font controls) ─── */
-    .now-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0 2px;order:3}
-    .now-toolbar .met-btn,.now-toolbar .tb-btn{cursor:pointer;border-radius:8px;min-width:32px;height:32px;font-size:.82rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
-    .now-toolbar .met-btn:active,.now-toolbar .tb-btn:active{transform:scale(.9);border-color:var(--gold);color:var(--gold)}
+    /* ─── SIDE CONTROLS (absolute left/right) ─── */
+    .now-side{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px;z-index:3}
+    .now-side-left{left:6px}
+    .now-side-right{right:6px}
+    .now-side .s-btn{cursor:pointer;border-radius:8px;width:34px;height:34px;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
+    .now-side .s-btn:active{transform:scale(.9);border-color:var(--gold);color:var(--gold)}
     /* ─── CHAT BAR (song request) ─── */
     #chatBar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--bg2);border-top:1px solid #333;padding:0 0 env(safe-area-inset-bottom,0)}
     #chatBarInner{display:flex;align-items:flex-end;gap:8px;padding:8px 10px}
@@ -506,11 +508,13 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
-    <div class="now-toolbar">
-      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
-      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
-      <button class="tb-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
-      <button class="tb-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+    <div class="now-side now-side-left">
+      <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
+      <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
+    </div>
+    <div class="now-side now-side-right">
+      <button class="s-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
+      <button class="s-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
     </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
@@ -1182,12 +1186,12 @@ function renderNowPlaying() {
 
 function _autoFitTitle(el) {
   if (!el || !el.textContent) return;
-  var size = 3.2; // rem — very large for live visibility
-  var minSize = 1.8;
+  var size = 4.0; // rem — extra large for live visibility
+  var minSize = 2.2;
   el.style.fontSize = size + 'rem';
   // Allow up to 2 lines — measure actual content height vs 2-line limit
   var lh, maxH;
-  for (var i = 0; i < 30 && size > minSize; i++) {
+  for (var i = 0; i < 40 && size > minSize; i++) {
     lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
     maxH = lh * 2 + 4;
     if (el.scrollHeight <= maxH) break;
@@ -1974,7 +1978,7 @@ function initNowPlayingSwipe() {
   var sx = 0, sy = 0, swiping = false;
   np.addEventListener('touchstart', function(e) {
     // Don't intercept touches on buttons/key
-    if (e.target.closest('.nav-arrow, #nowKey, .met-btn, .now-toolbar, .tb-btn')) return;
+    if (e.target.closest('.nav-arrow, #nowKey, .s-btn, .now-side')) return;
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
     swiping = true;
