@@ -1670,21 +1670,8 @@
         }, 600);
         return;
       }
-      // If global channel not yet ready, subscribe separately as observer
-      if (window._sb && !window._opObserverCh) {
-        var ch = window._sb.channel('presence-band-' + bandId);
-        window._opObserverCh = ch;
-        ch.on('presence', { event: 'sync' }, function() { renderOnlinePanel(ch.presenceState()); })
-          .on('presence', { event: 'join' }, function() { renderOnlinePanel(ch.presenceState()); })
-          .on('presence', { event: 'leave' }, function() { renderOnlinePanel(ch.presenceState()); })
-          .subscribe(function(status) {
-            if (status === 'SUBSCRIBED') {
-              setTimeout(function() { renderOnlinePanel(ch.presenceState()); }, 400);
-            }
-          });
-        return;
-      }
-      if (++_opTries < 60) setTimeout(_trySubscribe, 200);
+      // Keep waiting — global channel will be created by app.js
+      if (++_opTries < 100) setTimeout(_trySubscribe, 200);
     }
     _trySubscribe();
   }
