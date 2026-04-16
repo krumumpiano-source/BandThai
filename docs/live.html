@@ -51,7 +51,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:10px 44px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    #nowPlaying{flex-shrink:0;padding:10px 44px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -398,7 +398,7 @@
       #topBar{padding:8px 10px}
       #topBar .tb-left{flex:1;min-width:0}
       #topBar .tb-right{flex-shrink:0}
-      #nowPlaying{padding:14px 12px 10px;min-height:100px}
+      #nowPlaying{padding:14px 44px 10px;height:280px}
       #nextPreview{width:100%;max-width:100%;flex-wrap:wrap;justify-content:center}
       #songList{padding-bottom:220px}
     }
