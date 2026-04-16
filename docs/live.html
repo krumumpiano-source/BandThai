@@ -197,6 +197,15 @@
     .modal-btn{flex:1;border:none;border-radius:var(--radius-sm);padding:12px;font-family:inherit;font-size:0.95rem;font-weight:700;cursor:pointer}
     .modal-btn.primary{background:var(--gold);color:#000}
     .modal-btn.secondary{background:var(--bg3);color:var(--text);border:1px solid #444}
+    /* insert position picker */
+    .ip-item{display:flex;align-items:center;gap:10px;padding:12px 10px;border-radius:8px;cursor:pointer;transition:background .12s;border-bottom:1px solid #222}
+    .ip-item:active{background:var(--bg4)}
+    .ip-item.ip-default{background:rgba(134,239,172,.08);border:1px solid rgba(134,239,172,.25)}
+    .ip-item .ip-num{flex:0 0 28px;font-size:.8rem;font-weight:700;color:var(--text3);text-align:center}
+    .ip-item .ip-name{flex:1;font-size:.92rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ip-item .ip-hint{font-size:.72rem;color:#86efac;font-weight:600;white-space:nowrap}
+    .ip-item.ip-current .ip-name{color:var(--gold);font-weight:700}
+    .ip-divider{height:2px;background:var(--gold);margin:2px 0;opacity:.4;border-radius:1px}
 
     /* transpose modal */
     #transposeModal .modal-sheet{padding-bottom:40px}
@@ -652,6 +661,19 @@
 </div>
 
 <!-- ── END BREAK WARNING MODAL ── -->
+
+<!-- ── INSERT POSITION PICKER MODAL ── -->
+<div class="modal-backdrop" id="insertPosModal">
+  <div class="modal-sheet">
+    <h3 id="insertPosTitle">📍 เลือกตำแหน่งเพิ่มเพลง</h3>
+    <div id="insertPosSongName" style="font-size:0.95rem;color:var(--gold);margin-bottom:10px;font-weight:600"></div>
+    <div id="insertPosList" style="max-height:55vh;overflow-y:auto;margin:0 -8px"></div>
+    <div class="modal-actions" style="margin-top:14px">
+      <button class="modal-btn secondary" onclick="closeInsertPos()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop" id="endBreakModal">
   <div class="modal-sheet" style="text-align:center;padding:28px 20px">
     <h3 style="margin-bottom:12px">⚠️ ยืนยันจบเบรค?</h3>
@@ -1837,29 +1859,96 @@ function chatBarSubmit() {
   addSongToPlaylist(name, '', 0, '', '', true);
 }
 
+/* ── pending song to add (waiting for position pick) ── */
+var _pendingSong = null;
+
 function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   // ป้องกันเพลงซ้ำในลิสต์
   var dup = _playlist.some(function(s) { return !s._skipped && s.name === name; });
   if (dup && !confirm('เพลง "' + name + '" มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
-  // ถ้าเพลงมีในคลังอยู่แล้ว → ไม่ mark เป็นเพลงขอ (แม้จะเพิ่มผ่าน chat bar)
+  // ถ้าเพลงมีในคลังอยู่แล้ว → ไม่ mark เป็นเพลงขอ
   if (isRequest && _allSongs.length > 0) {
     var nameLower = name.toLowerCase();
     var inLibrary = _allSongs.some(function(s) { return (s.name || '').toLowerCase() === nameLower; });
     if (inLibrary) isRequest = false;
   }
-  var song = {
+  _pendingSong = {
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key ? formatKey(key) : '', _note: '', _skipped: false,
     _isRequest: !!isRequest, _isEncore: false
   };
-  // Insert after current song's request block (FIFO)
-  var insertAt = _current + 1;
+  openInsertPos();
+}
+
+function openInsertPos() {
+  if (!_pendingSong) return;
+  var modal = document.getElementById('insertPosModal');
+  document.getElementById('insertPosSongName').textContent = '🎵 ' + _pendingSong.name;
+
+  // Build position list
+  var visible = _playlist.filter(function(s) { return !s._skipped; });
+  var list = document.getElementById('insertPosList');
+  var html = '';
+  // Default insert: right after current song's request block (FIFO)
+  var defaultAt = _current + 1;
   for (var qi = _current + 1; qi < _playlist.length; qi++) {
-    if (_playlist[qi]._isRequest) { insertAt = qi + 1; } else { break; }
+    if (_playlist[qi]._isRequest) { defaultAt = qi + 1; } else { break; }
   }
-  _playlist.splice(insertAt, 0, song);
+
+  for (var i = 0; i <= _playlist.length; i++) {
+    if (i <= _current) continue; // ไม่ให้แทรกก่อนเพลงที่กำลังเล่น
+    var isDefault = (i === defaultAt);
+    var isCurrent = (i <= _current);
+
+    if (i === _playlist.length) {
+      // ตำแหน่งสุดท้าย
+      html += '<div class="ip-item' + (isDefault ? ' ip-default' : '') + '" data-pos="' + i + '">' +
+        '<div class="ip-num">' + (i + 1) + '</div>' +
+        '<div class="ip-name" style="color:var(--text3);font-style:italic">— ท้ายลิส —</div>' +
+        (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
+      '</div>';
+    } else {
+      var s = _playlist[i];
+      var num = i + 1;
+      var cls = 'ip-item';
+      if (isDefault) cls += ' ip-default';
+      if (i === _current) cls += ' ip-current';
+      html += '<div class="' + cls + '" data-pos="' + i + '">' +
+        '<div class="ip-num">' + num + '</div>' +
+        '<div class="ip-name">' + escHtml(s.name) + (s._isRequest ? ' 🙏' : '') + '</div>' +
+        (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
+      '</div>';
+    }
+  }
+
+  list.innerHTML = html;
+
+  // Bind tap on each position
+  list.querySelectorAll('.ip-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+      var pos = parseInt(el.dataset.pos, 10);
+      confirmInsertAt(pos);
+    });
+  });
+
+  modal.classList.add('show');
+
+  // Scroll to default item
+  setTimeout(function() {
+    var def = list.querySelector('.ip-default');
+    if (def) def.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, 100);
+}
+
+function confirmInsertAt(pos) {
+  if (!_pendingSong) return;
+  var song = _pendingSong;
+  _pendingSong = null;
+  closeInsertPos();
+
+  _playlist.splice(pos, 0, song);
   _modified = true;
-  broadcastEvent('request_song', { song: song, insertAfter: insertAt - 1 });
+  broadcastEvent('request_song', { song: song, insertAfter: pos - 1 });
   scheduleStateSync();
 
   // Clear chat bar
@@ -1870,8 +1959,13 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   inp.blur();
 
   renderSongList();
-  showToast('➕ ' + name);
+  showToast('➕ ' + song.name + ' (ลำดับที่ ' + (pos + 1) + ')');
   haptic(40);
+}
+
+function closeInsertPos() {
+  _pendingSong = null;
+  document.getElementById('insertPosModal').classList.remove('show');
 }
 
 // ─── SWIPE ON NOW-PLAYING ─────────────────────────────────────────────────────
