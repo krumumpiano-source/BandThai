@@ -78,7 +78,7 @@
     .nav-arrow:disabled{opacity:.1;pointer-events:none}
     #prevSongBtn{left:-4px}
     #nextSongBtn{right:-4px}
-    .now-nav-title{width:100%;padding:0 32px;overflow:hidden}
+    .now-nav-title{width:100%;padding:0 32px}
     /* ─── SIDE CONTROLS (absolute left/right, near bottom) ─── */
     .now-side{position:absolute;bottom:48px;display:flex;flex-direction:column;gap:4px;z-index:3}
     .now-side-left{left:6px}
@@ -1186,50 +1186,20 @@ function renderNowPlaying() {
 
 function _autoFitTitle(el) {
   if (!el || !el.textContent) return;
-  var parent = el.closest('.now-nav-title') || el.parentElement;
-  var maxW = parent ? parent.clientWidth : el.parentElement.clientWidth;
-  if (!maxW) maxW = 280;
-  var text = el.textContent;
-  var hasSpace = /\s/.test(text);
-
-  // Reset styles
-  el.style.whiteSpace = 'nowrap';
-  el.style.display = 'block';
-  el.style.webkitLineClamp = '';
-  el.style.webkitBoxOrient = '';
-  el.style.overflowWrap = 'normal';
-
-  if (!hasSpace) {
-    // Single word: stay on 1 line, shrink to fit within frame
-    var size = 4.5;
-    el.style.fontSize = size + 'rem';
-    while (el.scrollWidth > maxW && size > 1.2) {
-      size -= 0.1;
-      el.style.fontSize = size + 'rem';
-    }
-    return;
-  }
-
-  // Multi-word: try 1 line first
-  var size = 4.5;
-  el.style.fontSize = size + 'rem';
-  while (el.scrollWidth > maxW && size > 2.2) {
-    size -= 0.1;
-    el.style.fontSize = size + 'rem';
-  }
-  if (el.scrollWidth <= maxW) return; // fits on 1 line!
-
-  // Allow 2 lines — break at word boundaries only
+  // Always allow wrapping + max 2 lines
   el.style.whiteSpace = 'normal';
+  el.style.overflowWrap = 'break-word';
   el.style.display = '-webkit-box';
   el.style.webkitLineClamp = '2';
   el.style.webkitBoxOrient = 'vertical';
-  size = 3.4;
+
+  // Start big, shrink until content fits within 2 lines
+  var size = 4.5;
+  var minSize = 1.4;
   el.style.fontSize = size + 'rem';
-  var lh, maxH;
-  for (var i = 0; i < 40 && size > 1.6; i++) {
-    lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
-    maxH = lh * 2 + 4;
+  for (var i = 0; i < 50 && size > minSize; i++) {
+    var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
+    var maxH = lh * 2 + 6;
     if (el.scrollHeight <= maxH) break;
     size -= 0.1;
     el.style.fontSize = size + 'rem';
