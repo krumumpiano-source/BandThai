@@ -54,25 +54,25 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-    .font-size-ctrl{display:flex;gap:4px;justify-content:flex-end;align-self:flex-end;margin-top:2px;margin-bottom:2px}
-    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:40px;height:40px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+    #nowPlaying{flex-shrink:0;padding:10px 16px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .font-size-ctrl{display:flex;gap:3px;justify-content:flex-end;align-self:flex-end;margin-top:1px;margin-bottom:1px}
+    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:30px;height:30px;border-radius:6px;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
     .font-size-ctrl button:active{background:var(--bg4);border-color:var(--gold);color:var(--gold)}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
-    #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:4px;opacity:.85}
-    #nowTitle{font-size:var(--font-size-now);font-weight:700;line-height:1.2;color:#fde68a;word-break:break-word;margin-bottom:8px;transition:font-size .2s}
-    .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:2px}
+    #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
+    #nowTitle{font-weight:700;line-height:1.15;color:#fde68a;word-break:break-word;margin-bottom:2px;transition:font-size .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+    .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:0;margin-bottom:2px}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
     .key-hint{font-size:0.6rem;color:var(--text3);margin-top:2px;opacity:.7;transition:opacity .4s}
     .key-hint.hide{opacity:0}
     #nowBpm{font-size:1rem;color:var(--text2);font-weight:500}
     #nowSinger{font-size:0.9rem;color:var(--text2)}
-    #nowNote{font-size:0.82rem;color:var(--gold);margin-top:6px;font-style:italic;min-height:18px}
+    #nowNote{font-size:0.82rem;color:var(--gold);margin-top:2px;font-style:italic;min-height:14px}
     /* pulse animation — bright white strobe flash */
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
@@ -1148,7 +1148,10 @@ function singerClass(singer) {
 function renderNowPlaying() {
   var s = _playlist[_current];
   if (!s) return;
-  document.getElementById('nowTitle').textContent = s.name;
+  var titleEl = document.getElementById('nowTitle');
+  titleEl.textContent = s.name;
+  // Auto-fit song name to fill available width
+  _autoFitTitle(titleEl);
   document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
@@ -1167,6 +1170,21 @@ function renderNowPlaying() {
   renderNextPreview();
   // ── Nav arrow enable/disable ──
   updateNavButtons();
+}
+
+function _autoFitTitle(el) {
+  if (!el || !el.textContent) return;
+  var parent = el.closest('.now-nav-title') || el.parentElement;
+  if (!parent) return;
+  var maxW = parent.clientWidth || 280;
+  // Start from large font, shrink until text fits
+  var size = 2.2; // rem
+  var minSize = 0.9;
+  el.style.fontSize = size + 'rem';
+  while (el.scrollWidth > maxW && size > minSize) {
+    size -= 0.1;
+    el.style.fontSize = size + 'rem';
+  }
 }
 
 function renderNextPreview() {
