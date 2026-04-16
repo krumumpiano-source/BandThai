@@ -2518,7 +2518,21 @@ function doExit() {
 //  REALTIME — Supabase Broadcast
 // ─────────────────────────────────────────────────────────────────
 function _sanitizeChannelPart(str) {
-  return (str || '').trim().replace(/[^a-zA-Z0-9\u0E00-\u0E7F]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 40);
+  // CRITICAL: Supabase Realtime broadcast fails with non-ASCII (Thai) chars in channel name
+  // Convert Thai chars to hex to ensure ASCII-only channel names
+  var out = '';
+  var s = (str || '').trim();
+  for (var i = 0; i < s.length; i++) {
+    var code = s.charCodeAt(i);
+    if ((code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122)) {
+      out += s[i]; // 0-9 A-Z a-z
+    } else if (code >= 0x0E00 && code <= 0x0E7F) {
+      out += code.toString(16); // Thai → hex
+    } else {
+      out += '_';
+    }
+  }
+  return out.replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
 }
 
 function initRealtime() {
