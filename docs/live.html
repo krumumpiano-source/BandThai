@@ -54,7 +54,10 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;touch-action:manipulation}
+    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    .font-size-ctrl{position:absolute;bottom:8px;right:10px;display:flex;gap:4px;z-index:2}
+    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:30px;height:30px;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+    .font-size-ctrl button:active{background:var(--bg4);border-color:var(--gold);color:var(--gold)}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -466,10 +469,15 @@
       <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡<span class="btn-hint">ไฟ</span></button>
       <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇<span class="btn-hint">คลิก</span></button>
     </div>
+    <div class="font-size-ctrl">
+      <button onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
+      <button onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+    </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
       <span class="np-name" id="nextName">—</span>
       <span class="np-key" id="nextKey"></span>
+      <span class="np-bpm" id="nextBpm" style="font-size:.78rem;color:var(--text2);white-space:nowrap"></span>
     </div>
   </div>
 
@@ -1096,6 +1104,8 @@ function renderNextPreview() {
   var nk = document.getElementById('nextKey');
   nk.textContent = formatKey(ns._key || ns.key) || '';
   nk.style.display = (ns._key || ns.key) ? '' : 'none';
+  var nb = document.getElementById('nextBpm');
+  if (nb) { nb.textContent = ns.bpm ? ns.bpm + ' BPM' : ''; nb.style.display = ns.bpm ? '' : 'none'; }
   preview.classList.remove('hidden');
 }
 
@@ -1264,49 +1274,6 @@ function setFontLevel(lvl) {
 function adjustFont(dir) {
   setFontLevel(_fontLevel + dir);
 }
-
-// ── Pinch-to-zoom on nowPlaying ──
-(function() {
-  var np = document.getElementById('nowPlaying');
-  if (!np) return;
-  var startDist = 0;
-  var pinched = false;
-
-  // Standard touch events (Android + most browsers)
-  np.addEventListener('touchstart', function(e) {
-    if (e.touches.length === 2) {
-      startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      pinched = false;
-    }
-  }, { passive: true });
-  np.addEventListener('touchmove', function(e) {
-    if (e.touches.length === 2 && startDist > 0) {
-      e.preventDefault();
-      var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      var ratio = dist / startDist;
-      if (!pinched && ratio > 1.3) { adjustFont(1); pinched = true; }
-      else if (!pinched && ratio < 0.7) { adjustFont(-1); pinched = true; }
-    }
-  }, { passive: false });
-  np.addEventListener('touchend', function() { startDist = 0; pinched = false; }, { passive: true });
-
-  // iOS Safari gesture events (more reliable on iOS)
-  var gestureScale = 1;
-  np.addEventListener('gesturestart', function(e) {
-    e.preventDefault();
-    gestureScale = 1;
-    pinched = false;
-  });
-  np.addEventListener('gesturechange', function(e) {
-    e.preventDefault();
-    if (!pinched && e.scale > 1.3) { adjustFont(1); pinched = true; }
-    else if (!pinched && e.scale < 0.7) { adjustFont(-1); pinched = true; }
-  });
-  np.addEventListener('gestureend', function(e) {
-    e.preventDefault();
-    pinched = false;
-  });
-})();
 
 // ─────────────────────────────────────────────────────────────────
 //  KEY DISPLAY MODE TOGGLE
