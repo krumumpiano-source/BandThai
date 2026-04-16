@@ -825,6 +825,7 @@ var _rtDebugTaps      = 0;    // tap counter for debug panel
 var _rtDebugTimer     = null;
 var _rtHeartbeatTimer = null;
 var _rtLastActivity   = Date.now(); // last send or receive timestamp
+var _userHasInteracted = false; // true after first click/touch — guards vibrate+AudioContext
 
 // ── Drag-reorder state ────────────────────────────────────────────
 var _drag = { active: false, fromIdx: -1, toIdx: -1, ghostEl: null };
@@ -1418,7 +1419,7 @@ function ensureAudioCtx() {
 
 // Resume AudioContext (required after user gesture on mobile)
 function resumeAudio() {
-  if (_audioCtx && _audioCtx.state === 'suspended') {
+  if (_userHasInteracted && _audioCtx && _audioCtx.state === 'suspended') {
     _audioCtx.resume();
   }
 }
@@ -1461,6 +1462,7 @@ function toggleMetAudio() {
     }
     // Create AudioContext on first user gesture to avoid browser warning
     function _initAudioOnGesture() {
+      _userHasInteracted = true;
       ensureAudioCtx();
       resumeAudio();
       document.removeEventListener('click', _initAudioOnGesture);
@@ -1601,7 +1603,7 @@ function releaseWakeLock() {
 //  HAPTIC
 // ─────────────────────────────────────────────────────────────────
 function haptic(ms) {
-  try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {}
+  if (_userHasInteracted && navigator.vibrate) try { navigator.vibrate(ms); } catch(e) {}
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2718,8 +2720,8 @@ function initRealtime() {
       // Stop existing local scheduler
       if (_metTimer) { clearTimeout(_metTimer); _metTimer = null; }
 
-      // Ensure AudioContext for receiver too
-      var ctx = ensureAudioCtx();
+      // Use existing AudioContext only (create requires user gesture)
+      var ctx = _userHasInteracted ? ensureAudioCtx() : _audioCtx;
       if (ctx) resumeAudio();
 
       // Wall-clock sync: calculate where we should be right now
