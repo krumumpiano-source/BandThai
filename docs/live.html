@@ -54,7 +54,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;touch-action:pan-y}
+    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;touch-action:manipulation}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -148,14 +148,14 @@
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{display:flex;flex-wrap:wrap;gap:6px;padding:4px 10px 2px}
-    #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;padding:7px 6px;font-size:0.8rem;min-height:32px;text-align:center}
+    #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px}
+    #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;text-align:center}
     #actionBar button:active{transform:scale(.96)}
-    #undoBtn,#endSongBtn{flex:1 1 45%}
-    #endSongBtn{background:var(--gold);color:#000}
-    #actionBar #nudgeBtn,#chatBtnWrap{flex:1 1 28%}
-    #actionBar #nudgeBtn{background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
-    #chatBtnWrap button{width:100%;padding:7px 6px;font-size:0.8rem;min-height:32px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
+    #undoBtn{flex:0 0 auto;padding:7px 10px;font-size:0.78rem;min-height:36px}
+    #endSongBtn{flex:1;background:var(--gold);color:#000;padding:9px 6px;font-size:0.88rem;min-height:40px}
+    #actionBar #nudgeBtn{flex:0 0 auto;padding:7px 10px;font-size:0.78rem;min-height:36px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
+    #chatBtnWrap{flex:0 0 auto}
+    #chatBtnWrap button{padding:7px 10px;font-size:0.78rem;min-height:36px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
 
     /* ─── CONTEXT MENU ─── */
     #ctxMenu{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end}
@@ -398,8 +398,7 @@
       .si-badges{flex-wrap:wrap;justify-content:flex-end;max-width:104px}
       .si-name{white-space:normal;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
       .si-meta,.si-note{white-space:normal;overflow:visible;text-overflow:clip}
-      #actionBar{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:6px 10px}
-      #undoBtn,#endSongBtn,#actionBar #nudgeBtn,#chatBtnWrap{flex:none;width:100%}
+      #actionBar{gap:5px;padding:4px 8px 2px}
       #chatBarInner{padding:8px}
       #chatBarInput{font-size:16px;min-height:44px;max-height:96px}
       #chatBarSend{width:44px;height:44px}
@@ -408,7 +407,7 @@
     @media (max-width: 420px) {
       #nowTitle{font-size:clamp(1.35rem,8vw,1.9rem)}
       .nav-arrow{min-width:32px}
-      #actionBar{grid-template-columns:1fr}
+      #actionBar{gap:4px;padding:4px 6px 2px}
       .song-item{grid-template-columns:18px 4px 24px minmax(0,1fr) 28px}
       .si-badges{display:none}
     }
@@ -1272,6 +1271,8 @@ function adjustFont(dir) {
   if (!np) return;
   var startDist = 0;
   var pinched = false;
+
+  // Standard touch events (Android + most browsers)
   np.addEventListener('touchstart', function(e) {
     if (e.touches.length === 2) {
       startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
@@ -1288,6 +1289,23 @@ function adjustFont(dir) {
     }
   }, { passive: false });
   np.addEventListener('touchend', function() { startDist = 0; pinched = false; }, { passive: true });
+
+  // iOS Safari gesture events (more reliable on iOS)
+  var gestureScale = 1;
+  np.addEventListener('gesturestart', function(e) {
+    e.preventDefault();
+    gestureScale = 1;
+    pinched = false;
+  });
+  np.addEventListener('gesturechange', function(e) {
+    e.preventDefault();
+    if (!pinched && e.scale > 1.3) { adjustFont(1); pinched = true; }
+    else if (!pinched && e.scale < 0.7) { adjustFont(-1); pinched = true; }
+  });
+  np.addEventListener('gestureend', function(e) {
+    e.preventDefault();
+    pinched = false;
+  });
 })();
 
 // ─────────────────────────────────────────────────────────────────
