@@ -9,7 +9,7 @@
 
 (function (global) {
 
-  var _VAPID_PUBLIC_KEY = (global._SB_CONFIG && global._SB_CONFIG.vapidPublicKey) || '';
+  function _getVapidKey() { return (global._SB_CONFIG && global._SB_CONFIG.vapidPublicKey) || ''; }
   var _swReg = null;
 
   // ── Utility ────────────────────────────────────────────────────
@@ -79,8 +79,9 @@
 
   // ── subscribe push ────────────────────────────────────────────
   function subscribePush(callback) {
-    if (!_VAPID_PUBLIC_KEY) {
-      console.error('[Push] VAPID public key missing');
+    var vapidKey = _getVapidKey();
+    if (!vapidKey) {
+      console.warn('[Push] VAPID public key not loaded yet');
       callback && callback({ success: false, error: 'VAPID key missing' });
       return;
     }
@@ -93,7 +94,7 @@
       _swReg = reg;
       reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(_VAPID_PUBLIC_KEY)
+        applicationServerKey: urlBase64ToUint8Array(vapidKey)
       }).then(function (sub) {
         var key     = sub.getKey ? sub.getKey('p256dh') : null;
         var authKey = sub.getKey ? sub.getKey('auth') : null;
@@ -158,6 +159,11 @@
   // ── initNotifications — เรียกหลัง login ─────────────────────
   function initNotifications() {
     if (!isSupported()) return;
+    // รอ config.js โหลด VAPID key ก่อน
+    if (!_getVapidKey()) {
+      setTimeout(initNotifications, 500);
+      return;
+    }
     var status = getPermissionStatus();
     if (status === 'granted') {
       // ตรวจว่า subscription ยังใช้ได้ — ถ้าหายให้ re-subscribe เงียบๆ
