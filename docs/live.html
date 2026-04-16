@@ -42,10 +42,7 @@
     .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:44px;min-height:44px;font-size:0.85rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px 10px}
     .font-btn:active{background:var(--bg4)}
     .btn-hint{font-size:0.52rem;color:var(--text3);font-weight:400;letter-spacing:.02em;line-height:1}
-    /* ─── METRONOME CONTROLS (top-right of Now Playing) ─── */
-    .met-controls{position:absolute;top:6px;left:12px;display:flex;gap:6px;z-index:2}
-    .met-btn{cursor:pointer;border-radius:8px;width:auto;min-width:28px;height:auto;font-size:0.85rem;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 6px;gap:1px;transition:all .15s;line-height:1}
-    .met-btn:active{transform:scale(.9)}
+    /* ─── METRONOME CONTROLS (inside toolbar) ─── */
     #beatToggleBtn{background:rgba(34,197,94,.22);border:1px solid rgba(34,197,94,.5);color:#22c55e}
     #beatToggleBtn.off{background:rgba(100,100,100,.12);border-color:#444;color:#555}
     #metSoundBtn{background:rgba(100,100,100,.12);border:1px solid #444;color:#555}
@@ -54,17 +51,14 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:10px 16px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-    .font-size-ctrl{display:flex;gap:3px;justify-content:flex-end;align-self:flex-end;margin-top:1px;margin-bottom:1px}
-    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:30px;height:30px;border-radius:6px;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-    .font-size-ctrl button:active{background:var(--bg4);border-color:var(--gold);color:var(--gold)}
+    #nowPlaying{flex-shrink:0;padding:10px 12px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
-    #nowTitle{font-weight:700;line-height:1.18;color:#fde68a;word-break:break-word;margin-bottom:2px;transition:font-size .2s;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;text-align:center}
+    #nowTitle{font-weight:700;line-height:1.2;color:#fde68a;word-break:break-word;margin-bottom:4px;transition:font-size .15s;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;width:100%;text-align:center}
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -77,12 +71,18 @@
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
 
-    /* ─── NAV ARROWS ─── */
-    .now-nav{display:flex;align-items:center;width:100%;gap:0}
-    .nav-arrow{background:none;border:none;color:var(--text3);font-size:1.1rem;padding:10px 8px;border-radius:10px;cursor:pointer;transition:color .12s;line-height:1;min-width:36px;min-height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;opacity:.5}
-    .nav-arrow:active{color:var(--gold);opacity:1}
-    .nav-arrow:disabled{opacity:.12;pointer-events:none}
-    .now-nav-title{flex:1;min-width:0;overflow:hidden}
+    /* ─── NAV ARROWS (overlay on sides) ─── */
+    .now-nav{position:relative;width:100%}
+    .nav-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;background:rgba(30,30,30,.7);border:1px solid #444;color:var(--text3);font-size:1rem;padding:6px;border-radius:50%;cursor:pointer;transition:color .12s,background .12s;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;opacity:.6}
+    .nav-arrow:active{color:var(--gold);opacity:1;background:rgba(60,60,60,.9)}
+    .nav-arrow:disabled{opacity:.1;pointer-events:none}
+    #prevSongBtn{left:-4px}
+    #nextSongBtn{right:-4px}
+    .now-nav-title{width:100%;padding:0 32px;overflow:hidden}
+    /* ─── NOW TOOLBAR (met + font controls) ─── */
+    .now-toolbar{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0 2px;order:3}
+    .now-toolbar .met-btn,.now-toolbar .tb-btn{cursor:pointer;border-radius:8px;min-width:32px;height:32px;font-size:.82rem;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:4px 8px;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
+    .now-toolbar .met-btn:active,.now-toolbar .tb-btn:active{transform:scale(.9);border-color:var(--gold);color:var(--gold)}
     /* ─── CHAT BAR (song request) ─── */
     #chatBar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--bg2);border-top:1px solid #333;padding:0 0 env(safe-area-inset-bottom,0)}
     #chatBarInner{display:flex;align-items:flex-end;gap:8px;padding:8px 10px}
@@ -399,9 +399,7 @@
       .font-btn{min-width:40px;min-height:40px;padding:6px 8px;font-size:.8rem}
       .btn-hint{display:none}
       #endBreakBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
-      .met-controls{position:static;margin-top:10px;order:2}
       #nowPlaying{padding-top:10px}
-      #nowTitle{font-size:clamp(1.5rem,7vw,2.2rem)}
       .now-meta{gap:8px}
       #nowKey{font-size:1.25rem;padding:4px 10px}
       #nowBpm{font-size:.92rem}
@@ -499,13 +497,11 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
-    <div class="met-controls">
-      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡<span class="btn-hint">ไฟ</span></button>
-      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇<span class="btn-hint">คลิก</span></button>
-    </div>
-    <div class="font-size-ctrl">
-      <button onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
-      <button onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+    <div class="now-toolbar">
+      <button id="beatToggleBtn" class="met-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
+      <button id="metSoundBtn" class="met-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
+      <button class="tb-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
+      <button class="tb-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
     </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
@@ -1164,16 +1160,17 @@ function renderNowPlaying() {
 
 function _autoFitTitle(el) {
   if (!el || !el.textContent) return;
-  var size = 2.8; // rem — start large for live visibility
-  var minSize = 1.4;
+  var size = 3.2; // rem — very large for live visibility
+  var minSize = 1.8;
   el.style.fontSize = size + 'rem';
-  el.style.webkitLineClamp = '2';
-  // Shrink until text fits within 2 lines
-  var maxH = parseFloat(getComputedStyle(el).lineHeight) * 2 + 2;
-  while (el.scrollHeight > maxH && size > minSize) {
+  // Allow up to 2 lines — measure actual content height vs 2-line limit
+  var lh, maxH;
+  for (var i = 0; i < 30 && size > minSize; i++) {
+    lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
+    maxH = lh * 2 + 4;
+    if (el.scrollHeight <= maxH) break;
     size -= 0.1;
     el.style.fontSize = size + 'rem';
-    maxH = parseFloat(getComputedStyle(el).lineHeight) * 2 + 2;
   }
 }
 
@@ -1883,7 +1880,7 @@ function initNowPlayingSwipe() {
   var sx = 0, sy = 0, swiping = false;
   np.addEventListener('touchstart', function(e) {
     // Don't intercept touches on buttons/key
-    if (e.target.closest('.nav-arrow, #nowKey, .met-btn, .met-controls')) return;
+    if (e.target.closest('.nav-arrow, #nowKey, .met-btn, .now-toolbar, .tb-btn')) return;
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
     swiping = true;
