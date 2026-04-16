@@ -56,7 +56,7 @@
     /* ─── NOW PLAYING ─── */
     #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
     .font-size-ctrl{position:absolute;top:6px;right:42px;display:flex;gap:4px;z-index:2}
-    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:30px;height:30px;border-radius:8px;font-size:0.85rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s}
+    .font-size-ctrl button{background:var(--bg3);border:1px solid #555;color:var(--text2);width:40px;height:40px;border-radius:8px;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
     .font-size-ctrl button:active{background:var(--bg4);border-color:var(--gold);color:var(--gold)}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
@@ -1265,9 +1265,9 @@ function escHtml(s) {
 // ─────────────────────────────────────────────────────────────────
 //  FONT SIZE
 // ─────────────────────────────────────────────────────────────────
-var FONT_SIZES = ['1.9rem','2.4rem','3rem'];
+var FONT_SIZES = ['1.6rem','1.9rem','2.3rem','2.8rem','3.4rem','4rem','5rem'];
 function setFontLevel(lvl) {
-  _fontLevel = Math.max(0, Math.min(2, lvl));
+  _fontLevel = Math.max(0, Math.min(FONT_SIZES.length - 1, lvl));
   document.documentElement.style.setProperty('--font-size-now', FONT_SIZES[_fontLevel]);
   localStorage.setItem('liveFontLevel', _fontLevel);
 }
