@@ -58,7 +58,7 @@
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
-    #nowTitle{font-weight:700;line-height:1.2;color:#fde68a;margin-bottom:4px;transition:font-size .15s;overflow:hidden;width:100%;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
+    #nowTitle{font-weight:700;line-height:1.5;color:#fde68a;margin-bottom:4px;transition:font-size .15s;width:100%;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -78,7 +78,7 @@
     .nav-arrow:disabled{opacity:.1;pointer-events:none}
     #prevSongBtn{left:-4px}
     #nextSongBtn{right:-4px}
-    .now-nav-title{width:100%;padding:0 32px}
+    .now-nav-title{width:100%;padding:0 32px;overflow:hidden}
     /* ─── SIDE CONTROLS (absolute left/right, near bottom) ─── */
     .now-side{position:absolute;bottom:48px;display:flex;flex-direction:column;gap:4px;z-index:3}
     .now-side-left{left:6px}
@@ -1197,21 +1197,18 @@ function _autoFitTitle(el) {
   el.style.webkitLineClamp = '';
   el.style.webkitBoxOrient = '';
   el.style.textOverflow = 'clip';
+  el.style.maxHeight = '';
 
   // Start big, shrink until content fits within 2 lines
   var size = 4.5;
   var minSize = 1.0;
   el.style.fontSize = size + 'rem';
   for (var i = 0; i < 60 && size > minSize; i++) {
-    var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
-    var maxH = lh * 2 + 4;
-    if (el.scrollHeight <= maxH + 1) break;
+    var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
+    if (el.scrollHeight <= lh * 2.05) break;
     size -= 0.1;
     el.style.fontSize = size + 'rem';
   }
-  // Hard cap at 2 lines height — hide overflow without ellipsis
-  var finalLh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
-  el.style.maxHeight = (finalLh * 2 + 4) + 'px';
 }
 
 function renderNextPreview() {
