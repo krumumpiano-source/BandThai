@@ -1201,7 +1201,8 @@
             '<div style="display:flex;gap:6px;align-items:center">' +
               '<button onclick="dashDeletePlaylist(\'' + h.id + '\',\'' + escapeHtml(label).replace(/'/g,'\\\'') + '\')" style="background:none;border:1px solid #ef4444;color:#ef4444;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);cursor:pointer" title="ลบลิสนี้">🗑</button>' +
               '<a href="songs.html?date=' + encodeURIComponent(dateStr) + '&venue=' + encodeURIComponent(h.venue || '') + '&timeSlot=' + encodeURIComponent(h.timeSlot || '') + '" style="background:none;border:1px solid #3b82f6;color:#3b82f6;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);font-weight:700;text-decoration:none" title="แก้ไขลิส">✏️</a>' +
-              '<a href="live.html?from=dashboard.html&date=' + encodeURIComponent(dateStr) + '&venue=' + encodeURIComponent(h.venue || '') + '&timeSlot=' + encodeURIComponent(h.timeSlot || '') + '" style="background:#0d9488;color:#fff;border-radius:8px;padding:4px 14px;font-size:var(--text-xs);font-weight:700;text-decoration:none">🎤 Live</a>' +
+              '<button onclick="dashShareQR(\'' + encodeURIComponent(dateStr) + '\',\'' + encodeURIComponent(h.venue || '') + '\',\'' + encodeURIComponent(h.timeSlot || '') + '\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);font-weight:700;cursor:pointer" title="แชร์ QR เข้า Live">📱 แชร์</button>' +
+              '<a href="live.html?from=dashboard.html&band=' + encodeURIComponent(bandId) + '&date=' + encodeURIComponent(dateStr) + '&venue=' + encodeURIComponent(h.venue || '') + '&timeSlot=' + encodeURIComponent(h.timeSlot || '') + '" style="background:#0d9488;color:#fff;border-radius:8px;padding:4px 14px;font-size:var(--text-xs);font-weight:700;text-decoration:none">🎤 Live</a>' +
             '</div>' +
           '</div>' +
         '</div>';
@@ -1803,6 +1804,52 @@
       }).join('');
     });
   }
+
+  /* ── Dashboard Share QR ── */
+  function dashShareQR(date, venue, timeSlot) {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) { alert('ไม่พบ bandId'); return; }
+    var modal = document.getElementById('dashQrModal');
+    var img = document.getElementById('dashQrCode');
+    var urlEl = document.getElementById('dashQrUrl');
+    var expiryEl = document.getElementById('dashQrExpiry');
+    img.src = ''; urlEl.textContent = 'กำลังสร้างลิงก์...'; expiryEl.textContent = '';
+    modal.classList.add('show');
+
+    apiCall('createGuestToken', {
+      bandId: bandId,
+      date: decodeURIComponent(date),
+      venue: decodeURIComponent(venue),
+      timeSlot: decodeURIComponent(timeSlot)
+    }, function(r) {
+      if (!r || !r.success) {
+        urlEl.textContent = '⚠️ สร้างลิงก์ไม่สำเร็จ';
+        return;
+      }
+      var token = r.data.token;
+      var expiry = r.data.expiresAt;
+      var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+      var url = base + 'live.html?guest=' + token;
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+      urlEl.textContent = url;
+      if (expiry) {
+        var d = new Date(expiry);
+        expiryEl.textContent = 'หมดอายุ: ' + d.toLocaleDateString('th-TH') + ' ' + d.toLocaleTimeString('th-TH', {hour:'2-digit',minute:'2-digit'});
+      }
+    });
+  }
   </script>
+
+<!-- Dashboard QR Modal -->
+<div id="dashQrModal" style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;align-items:center;justify-content:center">
+  <div style="background:#1e1e2e;border-radius:16px;padding:28px 24px;max-width:340px;width:90%;text-align:center">
+    <h3 style="color:#d4a843;margin-bottom:12px">📱 QR Code เข้า Live</h3>
+    <img id="dashQrCode" style="margin:12px auto;display:block;border-radius:8px;background:#fff;padding:10px" width="200" height="200" alt="QR">
+    <div id="dashQrUrl" style="font-size:0.72rem;color:#999;word-break:break-all;margin-top:8px;padding:0 8px"></div>
+    <div id="dashQrExpiry" style="font-size:0.78rem;color:#ccc;margin-top:6px"></div>
+    <button onclick="document.getElementById('dashQrModal').classList.remove('show');document.getElementById('dashQrModal').style.display='none'" style="margin-top:16px;background:#444;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-size:0.9rem;cursor:pointer">ปิด</button>
+  </div>
+</div>
+<style>#dashQrModal.show{display:flex!important}</style>
 </body>
 </html>

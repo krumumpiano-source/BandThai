@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Live Mode</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.2/dist/umd/supabase.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase-api.js"></script>
   <script src="js/key-utils.js"></script>
@@ -33,12 +33,12 @@
     #liveApp{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
 
     /* ─── TOP BAR ─── */
-    #topBar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg2);border-bottom:1px solid #333;flex-shrink:0;gap:4px 8px;position:relative;z-index:10;flex-wrap:wrap}
+    #topBar{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--bg2);border-bottom:1px solid #333;flex-shrink:0;gap:4px 8px;position:relative;z-index:10}
     #topBar .tb-left{display:flex;align-items:center;gap:10px;min-width:0;flex-shrink:1}
     #topBar .tb-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
     #clock{font-size:1.05rem;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
     #songCounter{font-size:0.85rem;color:var(--text2);white-space:nowrap}
-    #venueLabel{font-size:0.78rem;color:var(--text3);white-space:nowrap;order:10;width:100%;padding-top:2px}
+    #venueLabel{font-size:0.72rem;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
     .font-btn{background:var(--bg3);border:1px solid #444;color:var(--text);cursor:pointer;border-radius:8px;width:auto;min-width:44px;min-height:44px;font-size:0.85rem;font-weight:600;font-family:inherit;transition:background .15s;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px 10px}
     .font-btn:active{background:var(--bg4)}
     .btn-hint{font-size:0.52rem;color:var(--text3);font-weight:400;letter-spacing:.02em;line-height:1}
@@ -54,7 +54,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:22px 16px 16px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -232,9 +232,7 @@
     /* guest badge */
     .guest-badge{background:#7c3aed;color:#fff;font-size:0.7rem;padding:2px 8px;border-radius:10px;white-space:nowrap;font-weight:600}
 
-    /* share/QR button */
-    #shareBtn{background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:#93c5fd;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:background .15s}
-    #shareBtn:active{background:rgba(59,130,246,.3)}
+    /* share/QR button (moved to dashboard) */
 
     /* QR modal */
     #qrModal .modal-sheet{text-align:center;padding-bottom:40px}
@@ -272,9 +270,7 @@
     #reqSelectAll{font-size:.78rem;color:var(--text2);cursor:pointer;text-decoration:underline;margin-bottom:6px;display:inline-block}
     #saveToLibBtn{margin-top:10px}
 
-    /* ─── EXIT BUTTON ─── */
-    #exitLiveBtn{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:#f87171;cursor:pointer;border-radius:8px;padding:6px 12px;font-size:.78rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:color .15s,border-color .15s}
-    #exitLiveBtn:active{color:#fff;background:rgba(239,68,68,.3);border-color:var(--red)}
+    /* exit button removed from topBar */
 
     /* autocomplete add option */
     .ac-add{border-top:1px solid #3a3a3a!important;background:rgba(212,168,67,.06)}
@@ -375,10 +371,9 @@
 
     @media (max-width: 900px) {
       #topBar{padding:8px 10px}
-      #topBar .tb-left{flex:1 1 100%;justify-content:space-between}
-      #topBar .tb-right{width:100%;flex-wrap:wrap;justify-content:flex-start}
-      .font-btn,#shareBtn,#endBreakBtn,#exitLiveBtn{flex:1 1 calc(33.333% - 8px);min-width:0}
-      #nowPlaying{padding:18px 12px 14px;min-height:124px}
+      #topBar .tb-left{flex:1;min-width:0}
+      #topBar .tb-right{flex-shrink:0}
+      #nowPlaying{padding:14px 12px 10px;min-height:100px}
       #nextPreview{width:100%;max-width:100%;flex-wrap:wrap;justify-content:center}
       #songList{padding-bottom:220px}
     }
@@ -386,12 +381,12 @@
     @media (max-width: 640px) {
       #clock{font-size:.95rem}
       #songCounter{font-size:.78rem}
-      #venueLabel{white-space:normal;line-height:1.3}
+      #venueLabel{max-width:120px}
       .font-btn{min-width:40px;min-height:40px;padding:6px 8px;font-size:.8rem}
       .btn-hint{display:none}
-      #shareBtn,#endBreakBtn,#exitLiveBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
+      #endBreakBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
       .met-controls{position:static;margin-top:10px;order:2}
-      #nowPlaying{padding-top:14px}
+      #nowPlaying{padding-top:10px}
       #nowTitle{font-size:clamp(1.5rem,7vw,2.2rem)}
       .now-meta{gap:8px}
       #nowKey{font-size:1.25rem;padding:4px 10px}
@@ -411,8 +406,6 @@
     }
 
     @media (max-width: 420px) {
-      #topBar .tb-right{gap:6px}
-      .font-btn,#shareBtn,#endBreakBtn,#exitLiveBtn{flex:1 1 calc(50% - 6px)}
       #nowTitle{font-size:clamp(1.35rem,8vw,1.9rem)}
       .nav-arrow{min-width:32px}
       #actionBar{grid-template-columns:1fr}
@@ -439,18 +432,11 @@
       <div id="realtimeIndicator" title="แตะเพื่อซิงค์ข้อมูลกับเครื่องอื่น"></div>
       <div id="songCounter">- / -</div>
     </div>
+    <div id="venueLabel"></div>
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
-      <button class="font-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻<span class="btn-hint">เล็ก</span></button>
-      <button class="font-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺<span class="btn-hint">ใหญ่</span></button>
-
-      <button id="keyModeBtn" class="font-btn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับรูปแบบคีย์">🔤<span class="btn-hint" style="color:rgba(255,255,255,.55)">คีย์</span></button>
-      <button id="shareBtn" onclick="shareQR()" style="display:none">📱 แชร์</button>
-      <button id="helpBtn" class="font-btn" onclick="document.getElementById('gestureHints').classList.remove('hidden')" title="วิธีใช้ Live Mode" style="background:rgba(99,102,241,.18);border:1px solid rgba(99,102,241,.4);color:#a5b4fc">❓<span class="btn-hint" style="color:rgba(165,180,252,.7)">ช่วย</span></button>
       <button id="endBreakBtn" onclick="endBreak()">✅ จบเบรค</button>
-      <button id="exitLiveBtn" onclick="exitLive()" title="ออกจาก Live Mode">✕ ออก</button>
     </div>
-    <div id="venueLabel"></div>
   </div>
 
   <!-- ── NOW PLAYING ── -->
@@ -624,6 +610,18 @@
     <div class="modal-actions">
       <button class="modal-btn secondary" onclick="closeNote()">ยกเลิก</button>
       <button class="modal-btn primary" onclick="submitNote()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── END BREAK WARNING MODAL ── -->
+<div class="modal-backdrop" id="endBreakModal">
+  <div class="modal-sheet" style="text-align:center;padding:28px 20px">
+    <h3 style="margin-bottom:12px">⚠️ ยืนยันจบเบรค?</h3>
+    <p id="endBreakWarningMsg" style="color:var(--text2);font-size:0.92rem;margin-bottom:20px"></p>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" onclick="document.getElementById('endBreakModal').classList.remove('show')">ยกเลิก</button>
+      <button class="modal-btn primary" onclick="document.getElementById('endBreakModal').classList.remove('show');endBreakConfirmed()" style="background:#ef4444">ยืนยันจบเบรค</button>
     </div>
   </div>
 </div>
@@ -879,9 +877,7 @@ document.addEventListener('DOMContentLoaded', function() {
     _initSndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
   
-  // Initialize key mode button
-  var keyBtn = document.getElementById('keyModeBtn');
-  if (keyBtn) keyBtn.textContent = getKeyDisplayMode() === 'number' ? '🔤' : '🔢';
+  // key mode button removed from topBar
 
   // ── Tap realtime indicator = manual resync ──
   document.getElementById('realtimeIndicator').addEventListener('click', function() {
@@ -905,8 +901,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // guest mode — verify token first, then load (full access)
     document.getElementById('guestBadge').style.display = 'inline-block';
     document.getElementById('endBreakBtn').style.display = 'inline-block';
-    document.getElementById('exitLiveBtn').style.display = 'inline-block';
-    document.getElementById('shareBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
     if (!_guestToken) { showInvalidToken(); return; }
     // save to sessionStorage to survive refresh
@@ -940,7 +934,6 @@ document.addEventListener('DOMContentLoaded', function() {
       window.location.replace('index.html');
       return;
     }
-    document.getElementById('shareBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
     loadPlaylist();
     preGenerateToken();
@@ -2221,6 +2214,21 @@ var _endBreakSaving = false; // guard against concurrent saves (multi-device rac
 var _endBreakDone  = false; // true = someone already saved this session (broadcast received)
 
 function endBreak() {
+  // Count unplayed songs (after current, not skipped)
+  var unplayed = 0;
+  for (var i = _current + 1; i < _playlist.length; i++) {
+    if (!_playlist[i]._skipped) unplayed++;
+  }
+  if (unplayed > 0) {
+    var msg = 'ยังมีเพลงที่ยังไม่ได้เล่นอีก <b>' + unplayed + '</b> เพลง';
+    document.getElementById('endBreakWarningMsg').innerHTML = msg;
+    document.getElementById('endBreakModal').classList.add('show');
+    return;
+  }
+  endBreakConfirmed();
+}
+
+function endBreakConfirmed() {
   if (_endBreakSaving || _endBreakDone) return; // prevent double-call or already-saved
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
@@ -2434,6 +2442,7 @@ function initRealtime() {
   var channelName = 'live-' + _bandId + '-' + _date
     + (_venue ? '-' + _sanitizeChannelPart(_venue) : '')
     + (_timeSlot ? '-' + _timeSlot.replace(/[^0-9]/g, '') : '');
+  console.log('[Live-RT] channel:', channelName, 'bandId:', _bandId);
   _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
 
   _channel
@@ -2543,15 +2552,14 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'request_state' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
-      // someone is asking for state — only respond if:
-      //   1) I joined earlier  2) I have a non-empty playlist
+      // someone is asking for state — respond if we have a non-empty playlist
       var d = payload.payload || {};
-      if (d.joinedAt && _joinedAt < d.joinedAt && _playlist.length > 0) {
-        // Stagger response: earliest joiner responds fastest (50-200ms)
-        // This prevents all 4 devices broadcasting state_sync simultaneously
-        var delay = Math.min(200, 50 + Math.random() * 150);
+      if (_playlist.length > 0) {
+        // Stagger response: earlier joiner responds faster (50ms), later joiner slower (300ms)
+        var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
+        var delay = isSenior ? (50 + Math.random() * 100) : (200 + Math.random() * 200);
         setTimeout(function() {
-          _isSyncLeader = true; // I'm the senior device — I own periodic broadcast
+          if (isSenior) _isSyncLeader = true;
           broadcastEvent('state_sync', getState());
         }, delay);
       }
@@ -2658,22 +2666,27 @@ function initRealtime() {
       if (!d.playlist || d.playlist.length === 0) return;
 
       // Cancel retry timer on first sync
+      var isFirstSync = !_syncReceived;
       if (!_syncReceived) {
         _syncReceived = true;
         if (_syncRetryTimer) { clearTimeout(_syncRetryTimer); _syncRetryTimer = null; }
       }
 
-      // Quick diff: skip re-render if state is already identical
-      if (_playlist.length === d.playlist.length && _current === (d.current || 0)) {
-        var same = true;
-        for (var si = 0; si < _playlist.length; si++) {
-          var a = _playlist[si], b = d.playlist[si];
-          if (a.name !== b.name || !!a._skipped !== !!b._skipped ||
-              (a._key || '') !== (b._key || '') || (a._note || '') !== (b._note || '')) {
-            same = false; break;
+      // Always accept on first sync (rejoin scenario — DB state may be stale)
+      if (!isFirstSync) {
+        // Quick diff: skip re-render if state is already identical
+        if (_playlist.length === d.playlist.length && _current === (d.current || 0)) {
+          var same = true;
+          for (var si = 0; si < _playlist.length; si++) {
+            var a = _playlist[si], b = d.playlist[si];
+            if (a.name !== b.name || !!a._skipped !== !!b._skipped ||
+                (a._key || '') !== (b._key || '') || (a._note || '') !== (b._note || '') ||
+                !!a._isRequest !== !!b._isRequest || !!a._isEncore !== !!b._isEncore) {
+              same = false; break;
+            }
           }
+          if (same) return; // state identical — skip
         }
-        if (same) return; // state identical — skip
       }
 
       _playlist = d.playlist;
@@ -2684,6 +2697,7 @@ function initRealtime() {
       _resetHbdTracking();
       renderNowPlaying();
       renderSongList();
+      if (isFirstSync) console.log('[Live-RT] state_sync received, playlist:', _playlist.length, 'current:', _current);
     })
     .on('broadcast', { event: 'nudge' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
@@ -2717,6 +2731,7 @@ function initRealtime() {
     })
     .subscribe(function(status) {
       var ind = document.getElementById('realtimeIndicator');
+      console.log('[Live-RT] subscribe status:', status);
       if (status === 'SUBSCRIBED') {
         ind.className = 'connected';
         // Request state with retry (handles late joiners + reconnections)
@@ -2728,6 +2743,8 @@ function initRealtime() {
         startPeriodicSync();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         ind.className = 'error';
+        // Auto-reconnect after 3 seconds
+        setTimeout(function() { console.log('[Live-RT] auto-reconnect...'); initRealtime(); }, 3000);
       } else {
         ind.className = '';
       }
@@ -2753,9 +2770,9 @@ function broadcastEvent(event, data) {
 
 // ─── SYNC: Retry + Periodic ──────────────────────────────────────
 function requestStateWithRetry() {
-  if (_syncReceived || _syncRetryCount >= 3) {
-    // After 3 retries with no response + empty playlist → warn
-    if (!_syncReceived && _syncRetryCount >= 3 && _playlist.length === 0) {
+  if (_syncReceived || _syncRetryCount >= 8) {
+    // After 8 retries with no response + empty playlist → warn
+    if (!_syncReceived && _syncRetryCount >= 8 && _playlist.length === 0) {
       showToast('⚠️ ไม่พบสมาชิกออนไลน์ รอรับข้อมูล...');
     }
     return;
@@ -2764,17 +2781,22 @@ function requestStateWithRetry() {
   _syncRetryCount++;
   _syncRetryTimer = setTimeout(function() {
     if (!_syncReceived) requestStateWithRetry();
-  }, 2000); // retry every 2 seconds
+  }, 3000); // retry every 3 seconds (8 retries = 24s total)
 }
 
 function startPeriodicSync() {
   if (_periodicSyncTimer) clearInterval(_periodicSyncTimer);
-  // Every 30s, all non-guest devices broadcast their state.
-  // Receivers use smart diff — only update if state has actually changed.
   _periodicSyncTimer = setInterval(function() {
-    if (!_isSyncLeader) return; // only the sync leader (earliest joiner) broadcasts
     if (_playlist.length > 0 && _channel) {
-      broadcastEvent('state_sync', getState());
+      if (_isSyncLeader) {
+        // Leader: broadcast every 30s
+        broadcastEvent('state_sync', getState());
+      } else if (!_isSyncLeader && _playlist.length > 0) {
+        // Fallback: if no leader responded after 60s, broadcast once as fallback
+        if (Date.now() - _joinedAt > 60000) {
+          broadcastEvent('state_sync', getState());
+        }
+      }
     }
   }, 30000);
 }

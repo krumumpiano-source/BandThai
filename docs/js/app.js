@@ -23,7 +23,7 @@
   loadScript('js/config.js', '_sb_cfg', function () {
     // 2) Load Supabase SDK
     loadScript(
-      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js',
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.2/dist/umd/supabase.min.js',
       '_sb_sdk',
       function () {
         // 3) Load supabase-api.js
