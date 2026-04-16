@@ -1504,7 +1504,7 @@ function metScheduler() {
     scheduleClick(_metNextTime);
     scheduleDotFlash(_metNextTime - ctx.currentTime);
     // Broadcast sync (only every 4th beat to reduce network traffic)
-    if (_metBeatCount % _metTimeSig === 0) {
+    if (_metBeatCount % _metTimeSig === 0 && _channelStatus === 'SUBSCRIBED') {
       // Send wall-clock origin so receivers can phase-lock precisely
       if (_metBeatCount === 0) _metWallOrigin = Date.now();
       broadcastEvent('beat_sync', {
@@ -1524,7 +1524,7 @@ function metSchedulerFallback() {
   while (_metNextTime < now + MET_LOOKAHEAD) {
     var delay = Math.max(0, (_metNextTime - now) * 1000);
     scheduleDotFlash(delay / 1000);
-    if (_metBeatCount % _metTimeSig === 0) {
+    if (_metBeatCount % _metTimeSig === 0 && _channelStatus === 'SUBSCRIBED') {
       broadcastEvent('beat_sync', { bpm: _metBpm, beat: _metBeatCount, wallOrigin: _metWallOrigin });
     }
     _metNextTime += _metInterval;
@@ -1601,7 +1601,7 @@ function releaseWakeLock() {
 //  HAPTIC
 // ─────────────────────────────────────────────────────────────────
 function haptic(ms) {
-  if (navigator.vibrate) navigator.vibrate(ms);
+  try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e) {}
 }
 
 // ─────────────────────────────────────────────────────────────────
