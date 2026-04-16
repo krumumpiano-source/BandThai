@@ -54,7 +54,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+    #nowPlaying{flex-shrink:0;padding:16px 16px 12px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;touch-action:pan-y}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -1265,6 +1265,30 @@ function setFontLevel(lvl) {
 function adjustFont(dir) {
   setFontLevel(_fontLevel + dir);
 }
+
+// ── Pinch-to-zoom on nowPlaying ──
+(function() {
+  var np = document.getElementById('nowPlaying');
+  if (!np) return;
+  var startDist = 0;
+  var pinched = false;
+  np.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 2) {
+      startDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      pinched = false;
+    }
+  }, { passive: true });
+  np.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 2 && startDist > 0) {
+      e.preventDefault();
+      var dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      var ratio = dist / startDist;
+      if (!pinched && ratio > 1.3) { adjustFont(1); pinched = true; }
+      else if (!pinched && ratio < 0.7) { adjustFont(-1); pinched = true; }
+    }
+  }, { passive: false });
+  np.addEventListener('touchend', function() { startDist = 0; pinched = false; }, { passive: true });
+})();
 
 // ─────────────────────────────────────────────────────────────────
 //  KEY DISPLAY MODE TOGGLE
