@@ -148,14 +148,14 @@
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px}
+    #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px;flex-wrap:nowrap}
     #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;text-align:center}
     #actionBar button:active{transform:scale(.96)}
-    #undoBtn{flex:0 0 auto;padding:7px 10px;font-size:0.78rem;min-height:36px}
+    #undoBtn{flex:0 0 40px;width:40px;padding:7px 0;font-size:1rem;min-height:40px}
     #endSongBtn{flex:1;background:var(--gold);color:#000;padding:9px 6px;font-size:0.88rem;min-height:40px}
-    #actionBar #nudgeBtn{flex:0 0 auto;padding:7px 10px;font-size:0.78rem;min-height:36px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
-    #chatBtnWrap{flex:0 0 auto}
-    #chatBtnWrap button{padding:7px 10px;font-size:0.78rem;min-height:36px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
+    #actionBar #nudgeBtn{flex:0 0 40px;width:40px;padding:7px 0;font-size:1rem;min-height:40px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
+    #chatBtnWrap{flex:0 0 40px;width:40px}
+    #chatBtnWrap button{width:40px;padding:7px 0;font-size:1rem;min-height:40px;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;border:none}
 
     /* ─── CONTEXT MENU ─── */
     #ctxMenu{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:flex-end}
@@ -500,10 +500,10 @@
     <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
   </div>
   <div id="actionBar">
-    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง" disabled>↩ ย้อนกลับ</button>
+    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง" disabled>↩</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
-    <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋 สะกิด</button>
-    <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;width:100%" title="แชท">💬 แชท</button><span id="chatBtnBadge">0</span></span>
+    <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
+    <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd" title="แชท">💬</button><span id="chatBtnBadge">0</span></span>
   </div>
 </div>
 
