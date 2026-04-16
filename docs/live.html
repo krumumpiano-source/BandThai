@@ -58,7 +58,7 @@
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
-    #nowTitle{font-weight:700;line-height:1.2;color:#fde68a;margin-bottom:4px;transition:font-size .15s;overflow:hidden;width:100%;text-align:center}
+    #nowTitle{font-weight:700;line-height:1.2;color:#fde68a;margin-bottom:4px;transition:font-size .15s;overflow:hidden;width:100%;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -428,7 +428,6 @@
     }
 
     @media (max-width: 420px) {
-      #nowTitle{font-size:clamp(1.35rem,8vw,1.9rem)}
       .nav-arrow{min-width:32px}
       #actionBar{gap:4px;padding:4px 6px 2px}
       .song-item{grid-template-columns:18px 4px 24px minmax(0,1fr) 28px}
@@ -1186,24 +1185,29 @@ function renderNowPlaying() {
 
 function _autoFitTitle(el) {
   if (!el || !el.textContent) return;
-  // Always allow wrapping + max 2 lines
+  // Allow wrapping at word boundaries (Thai ICU segmentation), max 2 lines, NO ellipsis
   el.style.whiteSpace = 'normal';
-  el.style.overflowWrap = 'break-word';
-  el.style.display = '-webkit-box';
-  el.style.webkitLineClamp = '2';
-  el.style.webkitBoxOrient = 'vertical';
+  el.style.wordBreak = 'keep-all';
+  el.style.overflowWrap = 'anywhere';
+  el.style.display = 'block';
+  el.style.webkitLineClamp = '';
+  el.style.webkitBoxOrient = '';
+  el.style.textOverflow = 'clip';
 
   // Start big, shrink until content fits within 2 lines
   var size = 4.5;
-  var minSize = 1.4;
+  var minSize = 1.0;
   el.style.fontSize = size + 'rem';
-  for (var i = 0; i < 50 && size > minSize; i++) {
+  for (var i = 0; i < 60 && size > minSize; i++) {
     var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
-    var maxH = lh * 2 + 6;
-    if (el.scrollHeight <= maxH) break;
+    var maxH = lh * 2 + 4;
+    if (el.scrollHeight <= maxH + 1) break;
     size -= 0.1;
     el.style.fontSize = size + 'rem';
   }
+  // Hard cap at 2 lines height — hide overflow without ellipsis
+  var finalLh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.2);
+  el.style.maxHeight = (finalLh * 2 + 4) + 'px';
 }
 
 function renderNextPreview() {
