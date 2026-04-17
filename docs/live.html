@@ -437,6 +437,9 @@
       #chatBarInner{padding:8px}
       #chatBarInput{font-size:16px;min-height:44px;max-height:96px}
       #chatBarSend{width:44px;height:44px}
+      /* iOS Safari: prevent zoom-on-focus (input font-size must be ≥16px) */
+      #chatMsgInput,#nudgeCustomInput,#nudgeAddTextInput,.modal-input,
+      #editSongModal .edit-row input,#noteInput,#chatSendMsgBtn{font-size:16px}
     }
 
     @media (max-width: 420px) {
@@ -1279,7 +1282,8 @@ function _updateMarquee(el) {
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
 
   var spanB = document.createElement('span');
-  spanB.style.cssText = 'font-weight:700;font-size:3.8rem;line-height:1.3;white-space:nowrap;flex-shrink:0;';
+  var _elFontPx = window.getComputedStyle(el).fontSize; // responsive — matches CSS breakpoint
+  spanB.style.cssText = 'font-weight:700;font-size:' + _elFontPx + ';line-height:1.3;white-space:nowrap;flex-shrink:0;';
   spanB.textContent = text;
   spanB.style.color = colors[(_marqueeColorIdx + 1) % colors.length];
 
@@ -1768,6 +1772,9 @@ function acquireWakeLock() {
   navigator.wakeLock.request('screen').then(function(wl) {
     _wakeLock = wl;
   }).catch(function(){});
+}
+// Register visibilitychange handler once (avoid duplicate listeners)
+if ('wakeLock' in navigator) {
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && !_wakeLock) acquireWakeLock();
   });
