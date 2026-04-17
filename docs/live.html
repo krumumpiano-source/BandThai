@@ -1,26 +1,4 @@
-﻿// ─────────────────────────────────────────────────────────────────
-//  KEY DISPLAY MODE TOGGLE (เลข ↔ ชื่อโน้ต)
-// ─────────────────────────────────────────────────────────────────
-var _keyDisplayMode = localStorage.getItem('keyDisplayMode') || 'number'; // 'number' or 'note'
-
-// Mapping: 1# → G/Em, 2# → D/Bm, 1b → F/Dm, 2b → Bb/Gm
-const KEY_MAP = {
-  '1#': 'G/Em',
-  '2#': 'D/Bm',
-  '1b': 'F/Dm',
-  '2b': 'Bb/Gm',
-  // เพิ่มเติมถ้าต้องการ
-};
-
-function toggleKeyMode() {
-  _keyDisplayMode = _keyDisplayMode === 'number' ? 'note' : 'number';
-  localStorage.setItem('keyDisplayMode', _keyDisplayMode);
-  renderNowPlaying();
-  // อัปเดตปุ่มใน settings
-  var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = _keyDisplayMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
-}
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -971,6 +949,9 @@ var _tapTimer   = null;
 var _lastTapIdx = -1;
 
 var _isGuest   = false; // guest mode (no login required)
+var _marqueeColorIdx = 0;
+var _marqueeColors = ['marquee-color1', 'marquee-color2', 'marquee-color3'];
+var _marqueeTimer = null;
 
 function normalizePlaylistState(preferredCurrent) {
   if (!Array.isArray(_playlist)) _playlist = [];
@@ -1261,19 +1242,22 @@ function singerClass(singer) {
 function renderNowPlaying() {
   var s = _playlist[_current];
   if (!s) return;
-  var titleEl = document.getElementById('nowTitle');
-  titleEl.textContent = s.name;
-  // Auto-fit song name to fill available width
-  _autoFitTitle(titleEl);
-  // แสดงคีย์ตามโหมด
-  var rawKey = s._key || s.key;
-  var keyText = '';
-  if (_keyDisplayMode === 'note' && KEY_MAP[rawKey]) {
-    keyText = KEY_MAP[rawKey];
-  } else {
-    keyText = formatKey(rawKey) || '—';
+  var titleWrap = document.getElementById('nowTitle');
+  var marquee = titleWrap ? titleWrap.querySelector('.marquee-text') : null;
+  if (marquee) {
+    marquee.textContent = s.name;
+    marquee.style.animation = 'none';
+    void marquee.offsetWidth;
+    marquee.style.animation = '';
+    _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColors.length;
+    marquee.className = 'marquee-text ' + _marqueeColors[_marqueeColorIdx];
+    clearTimeout(_marqueeTimer);
+    _marqueeTimer = setTimeout(function() {
+      if (_playlist[_current] === s) renderNowPlaying();
+    }, 9000);
   }
-  document.getElementById('nowKey').textContent = keyText;
+  var rawKey = s._key || s.key;
+  document.getElementById('nowKey').textContent = formatKey(rawKey) || '—';
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
@@ -1289,7 +1273,6 @@ function renderNowPlaying() {
   startBeatDot(s.bpm);
   // ── Next song preview ──
   renderNextPreview();
-  // ── Nav arrow enable/disable ──
   updateNavButtons();
 }
 
@@ -1519,99 +1502,115 @@ function toggleKeyMode() {
   toggleKeyDisplayMode();
   var newMode = getKeyDisplayMode();
   var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = newMode === 'number' ? '🔤' : '🔢';
+  if (btn) btn.textContent = newMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
   renderNowPlaying();
   renderSongList();
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  CLOCK
+//  THEME / SETTINGS
 // ─────────────────────────────────────────────────────────────────
-//  RENDER
-// ─────────────────────────────────────────────────────────────────
-function singerClass(singer) {/* ...existing code... */}
-
-// Marquee color cycle state
-var _marqueeColorIdx = 0;
-var _marqueeColors = ['marquee-color1', 'marquee-color2', 'marquee-color3'];
-var _marqueeTimer = null;
-
-function renderNowPlaying() {
-  var s = _playlist[_current];
-  if (!s) return;
-  var titleWrap = document.getElementById('nowTitle');
-  var marquee = titleWrap.querySelector('.marquee-text');
-  if (!marquee) return;
-  marquee.textContent = s.name;
-  // reset animation
-  marquee.style.animation = 'none';
-  void marquee.offsetWidth; // force reflow
-  marquee.style.animation = '';
-  // set color class
-  _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColors.length;
-  marquee.className = 'marquee-text ' + _marqueeColors[_marqueeColorIdx];
-  // cycle color everyรอบ marquee
-  clearTimeout(_marqueeTimer);
-  var duration = 9000; // ms, sync with CSS
-  _marqueeTimer = setTimeout(function() {
-    renderNowPlaying();
-  }, duration);
-
-  document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
-  document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
-  var sc = singerClass(s.singer);
-  var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
-  document.getElementById('nowSinger').textContent = sc ? '🎤 ' + (singerNames[sc] || s.singer) : '';
-  document.getElementById('nowNote').textContent = s._note || '';
-  var strip = document.getElementById('singerStrip');
-  strip.className = 'singer-strip' + (sc ? ' ' + sc : '');
-  // song counter
-  var visible = _playlist.filter(function(x){ return !x._skipped; });
-  var visIdx  = visible.indexOf(s);
-  document.getElementById('songCounter').textContent =
-    (visIdx + 1) + ' / ' + visible.length;
-  startBeatDot(s.bpm);
-  // ── Next song preview ──
-  renderNextPreview();
-}
-
-// Theme toggle (dark/light)
 function toggleTheme() {
   var root = document.documentElement;
-  var isDark = root.classList.toggle('light-theme');
-  if (isDark) {
-    // Light mode
+  var isLight = root.classList.toggle('light-theme');
+  if (isLight) {
     root.style.setProperty('--bg', '#f7fafc');
     root.style.setProperty('--bg2', '#e5e7eb');
     root.style.setProperty('--bg3', '#f3f4f6');
+    root.style.setProperty('--bg4', '#d1d5db');
     root.style.setProperty('--text', '#222');
     root.style.setProperty('--text2', '#555');
     root.style.setProperty('--text3', '#888');
     root.style.setProperty('--gold', '#b7891a');
     document.getElementById('themeToggleBtn').textContent = '☀️';
+    localStorage.setItem('liveTheme', 'light');
   } else {
-    // Dark mode
-    root.style.setProperty('--bg', '#0d0d0d');
-    root.style.setProperty('--bg2', '#1a1a1a');
-    root.style.setProperty('--bg3', '#252525');
-    root.style.setProperty('--text', '#f0f0f0');
-    root.style.setProperty('--text2', '#a0a0a0');
-    root.style.setProperty('--text3', '#666');
-    root.style.setProperty('--gold', '#d4a843');
+    root.style.removeProperty('--bg');
+    root.style.removeProperty('--bg2');
+    root.style.removeProperty('--bg3');
+    root.style.removeProperty('--bg4');
+    root.style.removeProperty('--text');
+    root.style.removeProperty('--text2');
+    root.style.removeProperty('--text3');
+    root.style.removeProperty('--gold');
     document.getElementById('themeToggleBtn').textContent = '🌙';
+    localStorage.setItem('liveTheme', 'dark');
   }
 }
 
-// Settings modal
+function applySavedTheme() {
+  if (localStorage.getItem('liveTheme') === 'light' && !document.documentElement.classList.contains('light-theme')) {
+    toggleTheme();
+  }
+}
+
 function openSettingsMenu() {
-  // ตั้งชื่อปุ่ม toggleKeyMode ให้ตรงกับโหมดปัจจุบัน
   var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = _keyDisplayMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
+  if (btn) btn.textContent = getKeyDisplayMode() === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
   document.getElementById('settingsModal').classList.add('show');
 }
+
 function closeSettingsMenu() {
   document.getElementById('settingsModal').classList.remove('show');
 }
+
+// ─────────────────────────────────────────────────────────────────
+//  CLOCK
+// ─────────────────────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2,'0');
+    var m = String(now.getMinutes()).padStart(2,'0');
+    var s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+  }
+  tick();
+  _clockTimer = setInterval(tick, 1000);
+}
+
+// ─────────────────────────────────────────────────────────────────
+//  METRONOME — Web Audio API (hardware-precision scheduler)
+// ─────────────────────────────────────────────────────────────────
+var _audioCtx       = null;
+var _metTimer       = null;
+var _metBpm         = 0;
+var _metInterval    = 0;
+var _metNextTime    = 0;
+var _metBeatCount   = 0;
+var _metTimeSig     = 4;
+var _metEnabled     = true;
+var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';
+var _metVolume      = 0.3;
+var _beatOffTimer   = null;
+var _metWallOrigin  = 0;
+
+var MET_LOOKAHEAD   = 0.1;
+var MET_INTERVAL    = 25;
+
+function ensureAudioCtx() {
+  if (_audioCtx) return _audioCtx;
+  try {
+    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  } catch(e) {}
+  return _audioCtx;
+}
+
+function resumeAudio() {
+  if (_userHasInteracted && _audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume();
+  }
+}
+
+function toggleBeatDot() {
+  _metEnabled = !_metEnabled;
+  var btn = document.getElementById('beatToggleBtn');
+  if (btn) {
+    btn.classList.toggle('off', !_metEnabled);
+    btn.innerHTML = '💡 ไฟกระพริบ';
+  }
+  if (!_metEnabled) {
+    var bd = document.getElementById('beatDot');
     if (bd) bd.style.opacity = '0';
   }
   showToast(_metEnabled ? '💡 ไฟจังหวะ: เปิด' : '💡 ไฟจังหวะ: ปิด');
@@ -1624,7 +1623,7 @@ function toggleMetAudio() {
   var btn = document.getElementById('metSoundBtn');
   if (btn) {
     btn.classList.toggle('on', _metAudioOn);
-    btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
+    btn.innerHTML = _metAudioOn ? '🔊 เสียงคลิก' : '🔇 เสียงคลิก';
   }
   resumeAudio();
   showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
@@ -1633,11 +1632,22 @@ function toggleMetAudio() {
 // Init beat/sound button states on load
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
+    applySavedTheme();
     // Set initial sound button state
     var sndBtn = document.getElementById('metSoundBtn');
     if (sndBtn) {
       sndBtn.classList.toggle('on', _metAudioOn);
-      sndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
+      sndBtn.innerHTML = _metAudioOn ? '🔊 เสียงคลิก' : '🔇 เสียงคลิก';
+    }
+    var keyModeBtn = document.getElementById('keyModeBtn');
+    if (keyModeBtn) {
+      keyModeBtn.textContent = getKeyDisplayMode() === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
+    }
+    var settingsModal = document.getElementById('settingsModal');
+    if (settingsModal) {
+      settingsModal.addEventListener('click', function(e) {
+        if (e.target === this) closeSettingsMenu();
+      });
     }
     // Create AudioContext on first user gesture to avoid browser warning
     function _initAudioOnGesture() {
