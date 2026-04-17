@@ -1057,6 +1057,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (ind) ind.className = 'error';
   });
 
+  // Safety net: iOS Safari อาจ reset _isGuest ก่อน DOMContentLoaded
+  // ตรวจ URL params ซ้ำเพื่อป้องกัน false redirect
+  if (!_isGuest && _params.get('guest') === '1') {
+    _isGuest = true;
+    _bandId  = _params.get('band') || _bandId;
+    _date    = _params.get('date') || _date;
+    _venue   = _params.get('venue') || _venue;
+    _timeSlot = _params.get('timeSlot') || _timeSlot;
+    _guestToken = _params.get('token') || _guestToken;
+  }
+
   if (_isGuest) {
     // guest mode — สแกน QR เข้าใช้งาน
     document.getElementById('guestBadge').style.display = 'inline-block';
