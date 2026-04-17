@@ -1,4 +1,26 @@
-﻿<!DOCTYPE html>
+﻿// ─────────────────────────────────────────────────────────────────
+//  KEY DISPLAY MODE TOGGLE (เลข ↔ ชื่อโน้ต)
+// ─────────────────────────────────────────────────────────────────
+var _keyDisplayMode = localStorage.getItem('keyDisplayMode') || 'number'; // 'number' or 'note'
+
+// Mapping: 1# → G/Em, 2# → D/Bm, 1b → F/Dm, 2b → Bb/Gm
+const KEY_MAP = {
+  '1#': 'G/Em',
+  '2#': 'D/Bm',
+  '1b': 'F/Dm',
+  '2b': 'Bb/Gm',
+  // เพิ่มเติมถ้าต้องการ
+};
+
+function toggleKeyMode() {
+  _keyDisplayMode = _keyDisplayMode === 'number' ? 'note' : 'number';
+  localStorage.setItem('keyDisplayMode', _keyDisplayMode);
+  renderNowPlaying();
+  // อัปเดตปุ่มใน settings
+  var btn = document.getElementById('keyModeBtn');
+  if (btn) btn.textContent = _keyDisplayMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
+}
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -58,7 +80,73 @@
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
-    #nowTitle{font-weight:700;line-height:1.5;color:#fde68a;margin-bottom:4px;transition:font-size .15s;width:100%;text-align:center;word-break:keep-all;overflow-wrap:anywhere}
+    #nowTitle.marquee-wrap {
+      position: relative;
+      width: 100%;
+      height: 3.2rem;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 4px;
+    }
+    .marquee-text {
+      display: inline-block;
+      font-weight: 700;
+      font-size: 2.5rem;
+      line-height: 1.2;
+      white-space: nowrap;
+      will-change: transform;
+      animation: marquee-scroll 9s linear infinite;
+      color: #fde68a;
+      transition: color 0.5s;
+    }
+    .marquee-color1 { color: #fde68a; }
+    .marquee-color2 { color: #7dd3fc; }
+    .marquee-color3 { color: #f87171; }
+    @keyframes marquee-scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .now-nav-actions {
+      display: flex;
+      gap: 8px;
+      position: absolute;
+      right: 0;
+      top: 0;
+      height: 100%;
+      align-items: center;
+    }
+
+    #themeToggleBtn {
+      font-size: 1.3rem;
+      background: var(--bg3);
+      border: 1px solid #444;
+      color: var(--text2);
+      border-radius: 6px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      margin-right: 2px;
+    }
+    #themeToggleBtn:active { color: var(--gold); border-color: var(--gold); }
+    #settingsBtn {
+      font-size: 1.3rem;
+      background: var(--bg3);
+      border: 1px solid #444;
+      color: var(--text2);
+      border-radius: 6px;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+    }
+    #settingsBtn:active { color: var(--gold); border-color: var(--gold); }
+
+    /* Settings Modal override */
+    #settingsModal { z-index: 2001; }
+    #settingsModal .modal-sheet { padding: 28px 18px 32px; text-align: center; }
+    #settingsModal .s-btn { width: 100%; margin-bottom: 0; }
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -493,11 +581,13 @@
     <span id="beatDot" class="beat-dot" style="display:none"></span>
     <div id="nowLabel">▶ กำลังเล่น</div>
     <div class="now-nav">
-      <button class="nav-arrow" id="prevSongBtn" onclick="prevSong()" title="เพลงก่อนหน้า">◀</button>
       <div class="now-nav-title">
-        <div id="nowTitle">—</div>
+        <div id="nowTitle" class="marquee-wrap"><span class="marquee-text">—</span></div>
       </div>
-      <button class="nav-arrow" id="nextSongBtn" onclick="nextSongDirect()" title="เพลงถัดไป">▶</button>
+      <div class="now-nav-actions">
+        <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโหมดกลางวัน/กลางคืน">🌙</button>
+        <button id="settingsBtn" class="s-btn" onclick="openSettingsMenu()" title="ตั้งค่าเพิ่มเติม">⚙️</button>
+      </div>
     </div>
     <div class="now-meta">
       <div style="display:flex;flex-direction:column;align-items:center">
@@ -511,13 +601,21 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
-    <div class="now-side now-side-left">
-      <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
-      <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
-    </div>
-    <div class="now-side now-side-right">
-      <button class="s-btn" onclick="adjustFont(-1)" title="ลดขนาด">A⁻</button>
-      <button class="s-btn" onclick="adjustFont(1)" title="เพิ่มขนาด">A⁺</button>
+    <!-- ปุ่มด้านข้างถูกย้ายไปเมนูตั้งค่า -->
+    <div class="now-side now-side-left"></div>
+    <div class="now-side now-side-right"></div>
+
+    <!-- SETTINGS MENU MODAL -->
+    <div class="modal-backdrop" id="settingsModal">
+      <div class="modal-sheet" style="max-width:340px;margin:auto">
+        <h3 style="margin-bottom:16px">⚙️ ตั้งค่า Live Mode</h3>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" style="font-size:1.1rem" title="ไฟกระพริบ">💡 ไฟกระพริบ</button>
+          <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" style="font-size:1.1rem" title="เสียงคลิก">🔇 เสียงคลิก</button>
+          <button id="keyModeBtn" class="s-btn" onclick="toggleKeyMode()" style="font-size:1.1rem" title="เปลี่ยนรูปแบบคีย์">🎼 เปลี่ยนรูปแบบคีย์</button>
+        </div>
+        <button class="modal-btn secondary" style="margin-top:22px" onclick="closeSettingsMenu()">ปิด</button>
+      </div>
     </div>
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
@@ -1167,7 +1265,15 @@ function renderNowPlaying() {
   titleEl.textContent = s.name;
   // Auto-fit song name to fill available width
   _autoFitTitle(titleEl);
-  document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
+  // แสดงคีย์ตามโหมด
+  var rawKey = s._key || s.key;
+  var keyText = '';
+  if (_keyDisplayMode === 'note' && KEY_MAP[rawKey]) {
+    keyText = KEY_MAP[rawKey];
+  } else {
+    keyText = formatKey(rawKey) || '—';
+  }
+  document.getElementById('nowKey').textContent = keyText;
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
@@ -1421,71 +1527,91 @@ function toggleKeyMode() {
 // ─────────────────────────────────────────────────────────────────
 //  CLOCK
 // ─────────────────────────────────────────────────────────────────
-function startClock() {
-  function tick() {
-    var now = new Date();
-    var h = String(now.getHours()).padStart(2,'0');
-    var m = String(now.getMinutes()).padStart(2,'0');
-    var s = String(now.getSeconds()).padStart(2,'0');
-    document.getElementById('clock').textContent = h + ':' + m + ':' + s;
-  }
-  tick();
-  _clockTimer = setInterval(tick, 1000);
-}
-
+//  RENDER
 // ─────────────────────────────────────────────────────────────────
-//  METRONOME — Web Audio API (hardware-precision scheduler)
-//
-//  ใช้ AudioContext.currentTime (hardware clock ±0.01ms)
-//  แทน setTimeout (±4-16ms jitter) เพื่อให้จังหวะนิ่ง
-//
-//  หลักการ "Lookahead Scheduler" (Chris Wilson):
-//    1. setTimeout วน loop ทุก ~25ms (ไม่ต้องแม่น)
-//    2. ในแต่ละ loop: ดูว่า beat ถัดไปอยู่ใน scheduleAhead window ไหม
-//    3. ถ้าใช่ → scheduleNote() ด้วย audioCtx time (แม่นมาก)
-//    4. Visual dot ถูก trigger จาก scheduler เดียวกัน
-// ─────────────────────────────────────────────────────────────────
-var _audioCtx       = null;  // AudioContext (lazy init on user gesture)
-var _metTimer       = null;  // setTimeout id for lookahead loop
-var _metBpm         = 0;
-var _metInterval    = 0;     // seconds between beats
-var _metNextTime    = 0;     // audioCtx time of next scheduled beat
-var _metBeatCount   = 0;     // running beat counter (for time signature)
-var _metTimeSig     = 4;     // beats per bar (4/4 default)
-var _metEnabled     = true;  // beat dot (light) toggle
-var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';  // sound OFF by default (opt-in)
-var _metVolume      = 0.3;   // click volume (0-1)
-var _beatOffTimer   = null;
-var _metWallOrigin  = 0;     // Date.now() at beat 0 (for wall-clock sync)
+function singerClass(singer) {/* ...existing code... */}
 
-// Lookahead config
-var MET_LOOKAHEAD   = 0.1;  // seconds to look ahead
-var MET_INTERVAL    = 25;   // ms between scheduler calls
+// Marquee color cycle state
+var _marqueeColorIdx = 0;
+var _marqueeColors = ['marquee-color1', 'marquee-color2', 'marquee-color3'];
+var _marqueeTimer = null;
 
-function ensureAudioCtx() {
-  if (_audioCtx) return _audioCtx;
-  try {
-    _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch(e) { /* fallback: no audio, visual only */ }
-  return _audioCtx;
+function renderNowPlaying() {
+  var s = _playlist[_current];
+  if (!s) return;
+  var titleWrap = document.getElementById('nowTitle');
+  var marquee = titleWrap.querySelector('.marquee-text');
+  if (!marquee) return;
+  marquee.textContent = s.name;
+  // reset animation
+  marquee.style.animation = 'none';
+  void marquee.offsetWidth; // force reflow
+  marquee.style.animation = '';
+  // set color class
+  _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColors.length;
+  marquee.className = 'marquee-text ' + _marqueeColors[_marqueeColorIdx];
+  // cycle color everyรอบ marquee
+  clearTimeout(_marqueeTimer);
+  var duration = 9000; // ms, sync with CSS
+  _marqueeTimer = setTimeout(function() {
+    renderNowPlaying();
+  }, duration);
+
+  document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
+  document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
+  var sc = singerClass(s.singer);
+  var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+  document.getElementById('nowSinger').textContent = sc ? '🎤 ' + (singerNames[sc] || s.singer) : '';
+  document.getElementById('nowNote').textContent = s._note || '';
+  var strip = document.getElementById('singerStrip');
+  strip.className = 'singer-strip' + (sc ? ' ' + sc : '');
+  // song counter
+  var visible = _playlist.filter(function(x){ return !x._skipped; });
+  var visIdx  = visible.indexOf(s);
+  document.getElementById('songCounter').textContent =
+    (visIdx + 1) + ' / ' + visible.length;
+  startBeatDot(s.bpm);
+  // ── Next song preview ──
+  renderNextPreview();
 }
 
-// Resume AudioContext (required after user gesture on mobile)
-function resumeAudio() {
-  if (_userHasInteracted && _audioCtx && _audioCtx.state === 'suspended') {
-    _audioCtx.resume();
+// Theme toggle (dark/light)
+function toggleTheme() {
+  var root = document.documentElement;
+  var isDark = root.classList.toggle('light-theme');
+  if (isDark) {
+    // Light mode
+    root.style.setProperty('--bg', '#f7fafc');
+    root.style.setProperty('--bg2', '#e5e7eb');
+    root.style.setProperty('--bg3', '#f3f4f6');
+    root.style.setProperty('--text', '#222');
+    root.style.setProperty('--text2', '#555');
+    root.style.setProperty('--text3', '#888');
+    root.style.setProperty('--gold', '#b7891a');
+    document.getElementById('themeToggleBtn').textContent = '☀️';
+  } else {
+    // Dark mode
+    root.style.setProperty('--bg', '#0d0d0d');
+    root.style.setProperty('--bg2', '#1a1a1a');
+    root.style.setProperty('--bg3', '#252525');
+    root.style.setProperty('--text', '#f0f0f0');
+    root.style.setProperty('--text2', '#a0a0a0');
+    root.style.setProperty('--text3', '#666');
+    root.style.setProperty('--gold', '#d4a843');
+    document.getElementById('themeToggleBtn').textContent = '🌙';
   }
 }
 
-function toggleBeatDot() {
-  _metEnabled = !_metEnabled;
-  var btn = document.getElementById('beatToggleBtn');
-  if (btn) {
-    btn.classList.toggle('off', !_metEnabled);
-    btn.innerHTML = '💡';
-  }
-  if (!_metEnabled) {
-    var bd = document.getElementById('beatDot');
+// Settings modal
+function openSettingsMenu() {
+  // ตั้งชื่อปุ่ม toggleKeyMode ให้ตรงกับโหมดปัจจุบัน
+  var btn = document.getElementById('keyModeBtn');
+  if (btn) btn.textContent = _keyDisplayMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettingsMenu() {
+  document.getElementById('settingsModal').classList.remove('show');
+}
     if (bd) bd.style.opacity = '0';
   }
   showToast(_metEnabled ? '💡 ไฟจังหวะ: เปิด' : '💡 ไฟจังหวะ: ปิด');
