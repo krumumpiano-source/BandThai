@@ -51,80 +51,19 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:10px 44px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+    #nowPlaying{flex-shrink:0;padding:10px 42px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
     .singer-strip.duet{background:var(--green)}
     /* NOW label */
-    #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:2px;opacity:.85}
-    #nowTitle.marquee-wrap {
-      position: relative;
-      width: 100%;
-      height: 3.2rem;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 4px;
-    }
-    .marquee-text {
-      display: inline-block;
-      font-weight: 700;
-      font-size: 2.5rem;
-      line-height: 1.2;
-      white-space: nowrap;
-      will-change: transform;
-      animation: marquee-scroll 9s linear infinite;
-      color: #fde68a;
-      transition: color 0.5s;
-    }
-    .marquee-color1 { color: #fde68a; }
-    .marquee-color2 { color: #7dd3fc; }
-    .marquee-color3 { color: #f87171; }
-    @keyframes marquee-scroll {
-      0% { transform: translateX(100%); }
-      100% { transform: translateX(-100%); }
-    }
-
-    .now-nav-actions {
-      display: flex;
-      gap: 8px;
-      position: absolute;
-      right: 0;
-      top: 0;
-      height: 100%;
-      align-items: center;
-    }
-
-    #themeToggleBtn {
-      font-size: 1.3rem;
-      background: var(--bg3);
-      border: 1px solid #444;
-      color: var(--text2);
-      border-radius: 6px;
-      width: 36px;
-      height: 36px;
-      cursor: pointer;
-      margin-right: 2px;
-    }
-    #themeToggleBtn:active { color: var(--gold); border-color: var(--gold); }
-    #settingsBtn {
-      font-size: 1.3rem;
-      background: var(--bg3);
-      border: 1px solid #444;
-      color: var(--text2);
-      border-radius: 6px;
-      width: 36px;
-      height: 36px;
-      cursor: pointer;
-    }
-    #settingsBtn:active { color: var(--gold); border-color: var(--gold); }
-
-    /* Settings Modal override */
-    #settingsModal { z-index: 2001; }
-    #settingsModal .modal-sheet { padding: 28px 18px 32px; text-align: center; }
-    #settingsModal .s-btn { width: 100%; margin-bottom: 0; }
+    #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:4px;opacity:.85}
+    /* ── Marquee title ── */
+    #nowTitleWrap{width:100%;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
+    #nowTitle{font-weight:700;line-height:1.3;color:#fde68a;font-size:2.8rem;white-space:nowrap;display:inline-block}
+    #nowTitle.title-static{display:block;text-align:center;width:100%}
+    #nowTitle.title-marquee{animation:nowMarquee linear infinite}
+    @keyframes nowMarquee{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -137,20 +76,34 @@
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
 
-    /* ─── NAV ARROWS (overlay on sides) ─── */
-    .now-nav{position:relative;width:100%}
-    .nav-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:2;background:rgba(30,30,30,.7);border:1px solid #444;color:var(--text3);font-size:1rem;padding:6px;border-radius:50%;cursor:pointer;transition:color .12s,background .12s;line-height:1;width:32px;height:32px;display:flex;align-items:center;justify-content:center;opacity:.6}
-    .nav-arrow:active{color:var(--gold);opacity:1;background:rgba(60,60,60,.9)}
-    .nav-arrow:disabled{opacity:.1;pointer-events:none}
-    #prevSongBtn{left:-4px}
-    #nextSongBtn{right:-4px}
-    .now-nav-title{width:100%;padding:0 32px;overflow:hidden}
     /* ─── SIDE CONTROLS (absolute left/right, near bottom) ─── */
     .now-side{position:absolute;bottom:48px;display:flex;flex-direction:column;gap:4px;z-index:3}
     .now-side-left{left:6px}
     .now-side-right{right:6px}
-    .now-side .s-btn{cursor:pointer;border-radius:6px;width:28px;height:28px;font-size:.72rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
+    .now-side .s-btn{cursor:pointer;border-radius:8px;width:32px;height:32px;font-size:.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
     .now-side .s-btn:active{transform:scale(.9);border-color:var(--gold);color:var(--gold)}
+    /* ─── SETTINGS PANEL (inside nowPlaying) ─── */
+    #liveSettings{position:absolute;inset:0;background:rgba(10,10,10,.96);backdrop-filter:blur(12px);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px 24px;opacity:0;pointer-events:none;transition:opacity .2s}
+    #liveSettings.open{opacity:1;pointer-events:auto}
+    .ls-header{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .ls-title{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.06em}
+    .ls-close{background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
+    .ls-close:active{color:var(--gold)}
+    .ls-row{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222}
+    .ls-label{font-size:0.9rem;color:var(--text)}
+    .ls-row .s-btn{width:48px;height:38px;font-size:1rem;border-radius:8px;border:1px solid #444;background:var(--bg3);color:var(--text2)}
+    /* ─── LIGHT MODE ─── */
+    body.light-mode{--bg:#f1f5f9;--bg2:#ffffff;--bg3:#e2e8f0;--bg4:#cbd5e1;--text:#1e293b;--text2:#475569;--text3:#94a3b8}
+    body.light-mode #nowLabel{color:#0369a1}
+    body.light-mode #nowNote{color:#92400e}
+    body.light-mode #liveSettings{background:rgba(241,245,249,.97)}
+    body.light-mode .ls-row{border-color:#e2e8f0}
+    body.light-mode #nowPlaying{border-bottom-color:#e2e8f0}
+    body.light-mode #topBar{border-bottom-color:#e2e8f0}
+    body.light-mode #chatBar{border-top-color:#e2e8f0}
+    body.light-mode #beatToggleBtn{background:rgba(22,163,74,.15);border-color:rgba(22,163,74,.4);color:#166534}
+    body.light-mode #beatToggleBtn.off{background:rgba(100,100,100,.1);border-color:#94a3b8;color:#94a3b8}
+    body.light-mode #metSoundBtn.on{background:rgba(37,99,235,.15);border-color:rgba(37,99,235,.4);color:#1d4ed8}
     /* ─── CHAT BAR (song request) ─── */
     #chatBar{position:fixed;bottom:0;left:0;right:0;z-index:50;background:var(--bg2);border-top:1px solid #333;padding:0 0 env(safe-area-inset-bottom,0)}
     #chatBarInner{display:flex;align-items:flex-end;gap:8px;padding:8px 10px}
@@ -464,7 +417,7 @@
       #topBar{padding:8px 10px}
       #topBar .tb-left{flex:1;min-width:0}
       #topBar .tb-right{flex-shrink:0}
-      #nowPlaying{padding:14px 44px 10px;height:280px}
+      #nowPlaying{padding:14px 12px 10px;height:280px}
       #nextPreview{width:100%;max-width:100%;flex-wrap:wrap;justify-content:center}
       #songList{padding-bottom:220px}
     }
@@ -477,6 +430,7 @@
       .btn-hint{display:none}
       #endBreakBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
       #nowPlaying{padding-top:10px}
+      #nowTitle{font-size:2.2rem}
       .now-meta{gap:8px}
       #nowKey{font-size:1.25rem;padding:4px 10px}
       #nowBpm{font-size:.92rem}
@@ -495,10 +449,7 @@
 
     @media (max-width: 420px) {
       #nowPlaying{padding:10px 8px 6px}
-      .now-nav-title{padding:0 28px}
-      .nav-arrow{min-width:28px;width:28px;height:28px;font-size:.85rem}
-      #prevSongBtn{left:0}
-      #nextSongBtn{right:0}
+      #nowTitle{font-size:1.9rem}
       #actionBar{gap:4px;padding:4px 6px 2px}
       .song-item{grid-template-columns:18px 4px 24px minmax(0,1fr) 28px}
       .si-badges{display:none}
@@ -558,14 +509,8 @@
     <div class="singer-strip" id="singerStrip"></div>
     <span id="beatDot" class="beat-dot" style="display:none"></span>
     <div id="nowLabel">▶ กำลังเล่น</div>
-    <div class="now-nav">
-      <div class="now-nav-title">
-        <div id="nowTitle" class="marquee-wrap"><span class="marquee-text">—</span></div>
-      </div>
-      <div class="now-nav-actions">
-        <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโหมดกลางวัน/กลางคืน">🌙</button>
-        <button id="settingsBtn" class="s-btn" onclick="openSettingsMenu()" title="ตั้งค่าเพิ่มเติม">⚙️</button>
-      </div>
+    <div id="nowTitleWrap">
+      <div id="nowTitle">—</div>
     </div>
     <div class="now-meta">
       <div style="display:flex;flex-direction:column;align-items:center">
@@ -579,20 +524,29 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
-    <!-- ปุ่มด้านข้างถูกย้ายไปเมนูตั้งค่า -->
-    <div class="now-side now-side-left"></div>
-    <div class="now-side now-side-right"></div>
-
-    <!-- SETTINGS MENU MODAL -->
-    <div class="modal-backdrop" id="settingsModal">
-      <div class="modal-sheet" style="max-width:340px;margin:auto">
-        <h3 style="margin-bottom:16px">⚙️ ตั้งค่า Live Mode</h3>
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" style="font-size:1.1rem" title="ไฟกระพริบ">💡 ไฟกระพริบ</button>
-          <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" style="font-size:1.1rem" title="เสียงคลิก">🔇 เสียงคลิก</button>
-          <button id="keyModeBtn" class="s-btn" onclick="toggleKeyMode()" style="font-size:1.1rem" title="เปลี่ยนรูปแบบคีย์">🎼 เปลี่ยนรูปแบบคีย์</button>
-        </div>
-        <button class="modal-btn secondary" style="margin-top:22px" onclick="closeSettingsMenu()">ปิด</button>
+    <div class="now-side now-side-left">
+      <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
+    </div>
+    <div class="now-side now-side-right">
+      <button id="settingsBtn" class="s-btn" onclick="openSettings()" title="ตั้งค่า">⚙️</button>
+    </div>
+    <!-- ── SETTINGS PANEL ── -->
+    <div id="liveSettings">
+      <div class="ls-header">
+        <span class="ls-title">⚙️ ตั้งค่า</span>
+        <button class="ls-close" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="ls-row">
+        <span class="ls-label">💡 ไฟกระพริบ (Beat)</span>
+        <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
+      </div>
+      <div class="ls-row">
+        <span class="ls-label">🔇 เสียงคลิก (Metronome)</span>
+        <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
+      </div>
+      <div class="ls-row">
+        <span class="ls-label">🎵 รูปแบบคีย์</span>
+        <button id="keyModeBtn" class="s-btn" onclick="toggleKeyMode()" title="เปลี่ยนรูปแบบคีย์">🔤</button>
       </div>
     </div>
     <div id="nextPreview" class="hidden">
@@ -899,6 +853,12 @@ var _trStep    = 0;   // current transpose offset for active song (temp, before 
 var _noteIdx   = -1;  // which song is being noted
 var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 0=S,1=M,2=L
 var _wakeLock  = null;
+
+// ── Marquee / title display ───────────────────────────────────────
+var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
+var _marqueeColorsLight = ['#92400e','#14532d','#1e3a8a','#831843'];
+var _marqueeColorIdx    = 0;
+var _marqueeListenerSet = false;
 var _endingTimer = null;
 var _isEnding  = false;
 var _allSongs  = [];   // preloaded band song library for autocomplete
@@ -949,9 +909,6 @@ var _tapTimer   = null;
 var _lastTapIdx = -1;
 
 var _isGuest   = false; // guest mode (no login required)
-var _marqueeColorIdx = 0;
-var _marqueeColors = ['marquee-color1', 'marquee-color2', 'marquee-color3'];
-var _marqueeTimer = null;
 
 function normalizePlaylistState(preferredCurrent) {
   if (!Array.isArray(_playlist)) _playlist = [];
@@ -1025,6 +982,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // Dynamic title
   var _bn = localStorage.getItem('bandName');
   if (_bn) document.title = 'Live Mode — ' + _bn;
+  // ── Restore theme ──────────────────────────────────────────────
+  var savedTheme = localStorage.getItem('liveTheme');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-mode');
+    var _tb = document.getElementById('themeToggleBtn');
+    if (_tb) _tb.textContent = '☀️';
+  }
   setFontLevel(_fontLevel);
   startClock();
   _startHbdTimer();
@@ -1036,8 +1000,9 @@ document.addEventListener('DOMContentLoaded', function() {
     _initSndBtn.classList.toggle('on', _metAudioOn);
     _initSndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
-  
-  // key mode button removed from topBar
+  // Sync key mode button label
+  var _km = document.getElementById('keyModeBtn');
+  if (_km) _km.textContent = getKeyDisplayMode() === 'number' ? '🔤' : '🔢';
 
   // ── Tap realtime indicator = manual resync (5-tap = debug panel) ──
   document.getElementById('realtimeIndicator').addEventListener('click', function() {
@@ -1242,22 +1207,12 @@ function singerClass(singer) {
 function renderNowPlaying() {
   var s = _playlist[_current];
   if (!s) return;
-  var titleWrap = document.getElementById('nowTitle');
-  var marquee = titleWrap ? titleWrap.querySelector('.marquee-text') : null;
-  if (marquee) {
-    marquee.textContent = s.name;
-    marquee.style.animation = 'none';
-    void marquee.offsetWidth;
-    marquee.style.animation = '';
-    _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColors.length;
-    marquee.className = 'marquee-text ' + _marqueeColors[_marqueeColorIdx];
-    clearTimeout(_marqueeTimer);
-    _marqueeTimer = setTimeout(function() {
-      if (_playlist[_current] === s) renderNowPlaying();
-    }, 9000);
-  }
-  var rawKey = s._key || s.key;
-  document.getElementById('nowKey').textContent = formatKey(rawKey) || '—';
+  var titleEl = document.getElementById('nowTitle');
+  titleEl.textContent = s.name;
+  // Advance color on each song change, then start marquee
+  _marqueeColorIdx = (_marqueeColorIdx + 1) % (_marqueeColorsDark.length);
+  _updateMarquee(titleEl);
+  document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
@@ -1273,43 +1228,56 @@ function renderNowPlaying() {
   startBeatDot(s.bpm);
   // ── Next song preview ──
   renderNextPreview();
+  // ── Nav arrow enable/disable ──
   updateNavButtons();
 }
 
-function _autoFitTitle(el) {
-  if (!el || !el.textContent) return;
-  var text = el.textContent.trim();
-  var hasSpace = text.includes(' ');
-  var size = 4.5;
-  var minSize = 1.0;
-  el.style.display = 'block';
-  el.style.webkitLineClamp = '';
-  el.style.webkitBoxOrient = '';
-  el.style.textOverflow = 'clip';
-  el.style.maxHeight = '';
+// ── Marquee helpers ────────────────────────────────────────────────
+function _getMarqueeColor() {
+  var colors = document.body.classList.contains('light-mode')
+    ? _marqueeColorsLight : _marqueeColorsDark;
+  return colors[_marqueeColorIdx % colors.length];
+}
 
-  if (!hasSpace) {
-    // ไม่มีเว้นวรรค: shrink ให้พอดี 1 บรรทัด ห้ามตัดกลางคำ
-    el.style.whiteSpace = 'nowrap';
-    el.style.wordBreak = 'normal';
-    el.style.overflowWrap = 'normal';
-    for (size = 4.5; size > minSize; size -= 0.1) {
-      el.style.fontSize = size + 'rem';
-      var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
-      if (el.scrollWidth <= el.clientWidth && el.scrollHeight <= lh * 1.1) break;
+function _updateMarquee(el) {
+  if (!el) return;
+  // Remove old animation cleanly
+  el.classList.remove('title-static', 'title-marquee');
+  el.style.animation = 'none';
+  el.style.transform = '';
+  el.offsetHeight; // force reflow
+
+  // Apply current color
+  el.style.color = _getMarqueeColor();
+
+  // Measure text vs container
+  var wrapW = (el.parentElement ? el.parentElement.clientWidth : 0) || window.innerWidth - 84;
+  el.style.display = 'inline-block';
+  el.style.whiteSpace = 'nowrap';
+  var textW = el.scrollWidth;
+
+  if (textW > wrapW * 0.92) {
+    // Marquee needed — speed ~80px/s
+    var totalDist_px = textW + wrapW;
+    var dur = Math.max(6, totalDist_px / 80);
+    el.style.animation = '';
+    el.style.animationDuration = dur + 's';
+    el.classList.add('title-marquee');
+    // Set up color-cycle listener once
+    if (!_marqueeListenerSet) {
+      _marqueeListenerSet = true;
+      el.addEventListener('animationiteration', function() {
+        _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColorsDark.length;
+        el.style.color = _getMarqueeColor();
+      });
     }
   } else {
-    // มีเว้นวรรค: shrink ให้พอดี 2 บรรทัด ตัดตาม space
-    el.style.whiteSpace = 'normal';
-    el.style.wordBreak = 'keep-all';
-    el.style.overflowWrap = 'anywhere';
-    for (size = 4.5; size > minSize; size -= 0.1) {
-      el.style.fontSize = size + 'rem';
-      var lh = parseFloat(getComputedStyle(el).lineHeight) || (size * 16 * 1.5);
-      if (el.scrollHeight <= lh * 2.05) break;
-    }
+    // Fits — show centered, no animation
+    el.classList.add('title-static');
   }
 }
+
+function _autoFitTitle(el) { _updateMarquee(el); } // backward compat
 
 function renderNextPreview() {
   var preview = document.getElementById('nextPreview');
@@ -1502,56 +1470,38 @@ function toggleKeyMode() {
   toggleKeyDisplayMode();
   var newMode = getKeyDisplayMode();
   var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = newMode === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
+  if (btn) btn.textContent = newMode === 'number' ? '🔤' : '🔢';
   renderNowPlaying();
   renderSongList();
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  THEME / SETTINGS
+//  THEME TOGGLE (dark / light)
 // ─────────────────────────────────────────────────────────────────
 function toggleTheme() {
-  var root = document.documentElement;
-  var isLight = root.classList.toggle('light-theme');
-  if (isLight) {
-    root.style.setProperty('--bg', '#f7fafc');
-    root.style.setProperty('--bg2', '#e5e7eb');
-    root.style.setProperty('--bg3', '#f3f4f6');
-    root.style.setProperty('--bg4', '#d1d5db');
-    root.style.setProperty('--text', '#222');
-    root.style.setProperty('--text2', '#555');
-    root.style.setProperty('--text3', '#888');
-    root.style.setProperty('--gold', '#b7891a');
-    document.getElementById('themeToggleBtn').textContent = '☀️';
-    localStorage.setItem('liveTheme', 'light');
-  } else {
-    root.style.removeProperty('--bg');
-    root.style.removeProperty('--bg2');
-    root.style.removeProperty('--bg3');
-    root.style.removeProperty('--bg4');
-    root.style.removeProperty('--text');
-    root.style.removeProperty('--text2');
-    root.style.removeProperty('--text3');
-    root.style.removeProperty('--gold');
-    document.getElementById('themeToggleBtn').textContent = '🌙';
-    localStorage.setItem('liveTheme', 'dark');
-  }
+  var isLight = document.body.classList.toggle('light-mode');
+  localStorage.setItem('liveTheme', isLight ? 'light' : 'dark');
+  var btn = document.getElementById('themeToggleBtn');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
+  // Re-apply marquee color for new theme
+  var titleEl = document.getElementById('nowTitle');
+  if (titleEl) titleEl.style.color = _getMarqueeColor();
 }
 
-function applySavedTheme() {
-  if (localStorage.getItem('liveTheme') === 'light' && !document.documentElement.classList.contains('light-theme')) {
-    toggleTheme();
-  }
+// ─────────────────────────────────────────────────────────────────
+//  SETTINGS PANEL
+// ─────────────────────────────────────────────────────────────────
+function openSettings() {
+  var panel = document.getElementById('liveSettings');
+  if (panel) panel.classList.add('open');
+  // Sync button states
+  var km = document.getElementById('keyModeBtn');
+  if (km) km.textContent = getKeyDisplayMode() === 'number' ? '🔤' : '🔢';
 }
 
-function openSettingsMenu() {
-  var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = getKeyDisplayMode() === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
-  document.getElementById('settingsModal').classList.add('show');
-}
-
-function closeSettingsMenu() {
-  document.getElementById('settingsModal').classList.remove('show');
+function closeSettings() {
+  var panel = document.getElementById('liveSettings');
+  if (panel) panel.classList.remove('open');
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -1571,31 +1521,42 @@ function startClock() {
 
 // ─────────────────────────────────────────────────────────────────
 //  METRONOME — Web Audio API (hardware-precision scheduler)
+//
+//  ใช้ AudioContext.currentTime (hardware clock ±0.01ms)
+//  แทน setTimeout (±4-16ms jitter) เพื่อให้จังหวะนิ่ง
+//
+//  หลักการ "Lookahead Scheduler" (Chris Wilson):
+//    1. setTimeout วน loop ทุก ~25ms (ไม่ต้องแม่น)
+//    2. ในแต่ละ loop: ดูว่า beat ถัดไปอยู่ใน scheduleAhead window ไหม
+//    3. ถ้าใช่ → scheduleNote() ด้วย audioCtx time (แม่นมาก)
+//    4. Visual dot ถูก trigger จาก scheduler เดียวกัน
 // ─────────────────────────────────────────────────────────────────
-var _audioCtx       = null;
-var _metTimer       = null;
+var _audioCtx       = null;  // AudioContext (lazy init on user gesture)
+var _metTimer       = null;  // setTimeout id for lookahead loop
 var _metBpm         = 0;
-var _metInterval    = 0;
-var _metNextTime    = 0;
-var _metBeatCount   = 0;
-var _metTimeSig     = 4;
-var _metEnabled     = true;
-var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';
-var _metVolume      = 0.3;
+var _metInterval    = 0;     // seconds between beats
+var _metNextTime    = 0;     // audioCtx time of next scheduled beat
+var _metBeatCount   = 0;     // running beat counter (for time signature)
+var _metTimeSig     = 4;     // beats per bar (4/4 default)
+var _metEnabled     = true;  // beat dot (light) toggle
+var _metAudioOn     = localStorage.getItem('liveMetAudioOn') === '1';  // sound OFF by default (opt-in)
+var _metVolume      = 0.3;   // click volume (0-1)
 var _beatOffTimer   = null;
-var _metWallOrigin  = 0;
+var _metWallOrigin  = 0;     // Date.now() at beat 0 (for wall-clock sync)
 
-var MET_LOOKAHEAD   = 0.1;
-var MET_INTERVAL    = 25;
+// Lookahead config
+var MET_LOOKAHEAD   = 0.1;  // seconds to look ahead
+var MET_INTERVAL    = 25;   // ms between scheduler calls
 
 function ensureAudioCtx() {
   if (_audioCtx) return _audioCtx;
   try {
     _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch(e) {}
+  } catch(e) { /* fallback: no audio, visual only */ }
   return _audioCtx;
 }
 
+// Resume AudioContext (required after user gesture on mobile)
 function resumeAudio() {
   if (_userHasInteracted && _audioCtx && _audioCtx.state === 'suspended') {
     _audioCtx.resume();
@@ -1607,7 +1568,7 @@ function toggleBeatDot() {
   var btn = document.getElementById('beatToggleBtn');
   if (btn) {
     btn.classList.toggle('off', !_metEnabled);
-    btn.innerHTML = '💡 ไฟกระพริบ';
+    btn.innerHTML = '💡';
   }
   if (!_metEnabled) {
     var bd = document.getElementById('beatDot');
@@ -1623,7 +1584,7 @@ function toggleMetAudio() {
   var btn = document.getElementById('metSoundBtn');
   if (btn) {
     btn.classList.toggle('on', _metAudioOn);
-    btn.innerHTML = _metAudioOn ? '🔊 เสียงคลิก' : '🔇 เสียงคลิก';
+    btn.innerHTML = _metAudioOn ? '🔊' : '🔇';
   }
   resumeAudio();
   showToast(_metAudioOn ? '🔊 เสียงเมโทรนอม: เปิด' : '🔇 เสียงเมโทรนอม: ปิด');
@@ -1632,22 +1593,11 @@ function toggleMetAudio() {
 // Init beat/sound button states on load
 (function() {
   document.addEventListener('DOMContentLoaded', function() {
-    applySavedTheme();
     // Set initial sound button state
     var sndBtn = document.getElementById('metSoundBtn');
     if (sndBtn) {
       sndBtn.classList.toggle('on', _metAudioOn);
-      sndBtn.innerHTML = _metAudioOn ? '🔊 เสียงคลิก' : '🔇 เสียงคลิก';
-    }
-    var keyModeBtn = document.getElementById('keyModeBtn');
-    if (keyModeBtn) {
-      keyModeBtn.textContent = getKeyDisplayMode() === 'number' ? '🎼 แสดงชื่อโน้ต' : '🎼 แสดงตัวเลข';
-    }
-    var settingsModal = document.getElementById('settingsModal');
-    if (settingsModal) {
-      settingsModal.addEventListener('click', function(e) {
-        if (e.target === this) closeSettingsMenu();
-      });
+      sndBtn.innerHTML = _metAudioOn ? '🔊' : '🔇';
     }
     // Create AudioContext on first user gesture to avoid browser warning
     function _initAudioOnGesture() {
