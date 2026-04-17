@@ -1082,13 +1082,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // ── ตรวจ token จาก URL (ถ้ามี) ──
     if (_guestToken) {
       apiCall('verifyGuestToken', { token: _guestToken }, function(rv) {
-        if (!rv || !rv.success) { showInvalidToken(); return; }
-        // token ถูกต้อง — ใช้ข้อมูลจาก token เป็นหลัก
-        if (rv.data.bandId)   _bandId   = rv.data.bandId;
-        if (rv.data.date)     _date     = rv.data.date;
-        if (rv.data.venue)    _venue    = rv.data.venue;
-        if (rv.data.timeSlot) _timeSlot = rv.data.timeSlot;
-        document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+        if (rv && rv.success && rv.data) {
+          // token ถูกต้อง — อัปเดตข้อมูลจาก token เป็นหลัก
+          if (rv.data.bandId)   _bandId   = rv.data.bandId;
+          if (rv.data.date)     _date     = rv.data.date;
+          if (rv.data.venue)    _venue    = rv.data.venue;
+          if (rv.data.timeSlot) _timeSlot = rv.data.timeSlot;
+          document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+        }
+        // token หมดอายุ/ผิด แต่ถ้ายังมี band+date ใน URL → ยังเข้าได้
+        if (!rv || !rv.success) {
+          console.warn('[Live] guest token invalid/expired, proceeding with URL params');
+          if (!_bandId || !_date) { showInvalidToken(); return; }
+        }
         loadPlaylist();
         setupBreakWarning();
         showHintsIfFirstTime();
