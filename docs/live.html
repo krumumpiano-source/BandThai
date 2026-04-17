@@ -849,6 +849,7 @@ var _trStep    = 0;   // current transpose offset for active song (temp, before 
 var _noteIdx   = -1;  // which song is being noted
 var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 0=S,1=M,2=L
 var _wakeLock  = null;
+var _lastLocalAddTime = 0; // timestamp ของครั้งล่าสุดที่เพิ่มเพลงในเครื่องนี้ (ป้องกัน state_sync stale)
 
 // ── Marquee / title display ───────────────────────────────────────
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
@@ -1108,6 +1109,10 @@ document.addEventListener('DOMContentLoaded', function() {
         this.classList.remove('show');
       }
     });
+  });
+  // insertPosModal: tap backdrop → ยกเลิกการเพิ่มเพลง (ต้องเรียก closeInsertPos เพื่อ clear _pendingSong)
+  document.getElementById('insertPosModal').addEventListener('click', function(e) {
+    if (e.target === this) closeInsertPos();
   });
   // nudgeModal uses style.display instead of .show class
   document.getElementById('nudgeModal').addEventListener('click', function(e) {
@@ -2046,7 +2051,18 @@ function chatBarSubmit() {
   var inp = document.getElementById('chatBarInput');
   var name = (inp.value || '').trim();
   if (!name) return;
-  addSongToPlaylist(name, '', 0, '', '', true);
+  // ถ้าชื่อเพลงตรงกับเพลงในคลังพอดี → ใช้ metadata (key/bpm/singer/artist) จากคลัง
+  var s = null;
+  if (_allSongs && _allSongs.length > 0) {
+    var nameLower = name.toLowerCase();
+    s = _allSongs.find ? _allSongs.find(function(x) { return (x.name || '').toLowerCase() === nameLower; })
+      : (function() { for (var i = 0; i < _allSongs.length; i++) { if ((_allSongs[i].name || '').toLowerCase() === nameLower) return _allSongs[i]; } return null; })();
+  }
+  if (s) {
+    addSongToPlaylist(name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+  } else {
+    addSongToPlaylist(name, '', 0, '', '', true);
+  }
 }
 
 /* ── pending song to add (waiting for position pick) ── */
@@ -2138,7 +2154,8 @@ function confirmInsertAt(pos) {
 
   _playlist.splice(pos, 0, song);
   _modified = true;
-  broadcastEvent('request_song', { song: song, insertAfter: pos - 1 });
+  _lastLocalAddTime = Date.now(); // บันทึกเวลาที่เพิ่มเพลงในเครื่องนี้
+  broadcastEvent('request_song', { song: song, insertAt: pos });
   scheduleStateSync();
 
   // Clear chat bar
@@ -2906,8 +2923,13 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.song) {
-        // ใช้ typeof เพื่อป้องกัน insertAfter=0 ถูกมองเป็น falsy
-        var insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
+        // รับ insertAt ตรง ๆ (ตำแหน่งที่แน่นอน) — fallback insertAfter สำหรับ client เก่า
+        var insertPos;
+        if (typeof d.insertAt === 'number') {
+          insertPos = Math.max(0, Math.min(d.insertAt, _playlist.length));
+        } else {
+          insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
+        }
         _playlist.splice(insertPos, 0, d.song);
         _modified = true;
         normalizePlaylistState();
@@ -3076,6 +3098,12 @@ function initRealtime() {
 
       // Always accept on first sync (rejoin scenario — DB state may be stale)
       if (!isFirstSync) {
+        // Guard: ถ้าเพิ่งเพิ่มเพลงในเครื่องนี้ (< 3 วิ) และ incoming state มีเพลงน้อยกว่า
+        // → state นั้น stale (ส่งมาก่อนเราเพิ่ม) — ปฏิเสธ และ broadcast state ใหม่ของเราออกไป
+        if (_lastLocalAddTime > 0 && Date.now() - _lastLocalAddTime < 3000 && d.playlist.length < _playlist.length) {
+          scheduleStateSync();
+          return;
+        }
         // Quick diff: skip re-render if state is already identical
         if (_playlist.length === d.playlist.length && _current === (d.current || 0)) {
           var same = true;
