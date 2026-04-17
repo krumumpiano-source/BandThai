@@ -173,7 +173,6 @@
     #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px;flex-wrap:nowrap}
     #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;text-align:center}
     #actionBar button:active{transform:scale(.96)}
-    #undoBtn{flex:0 0 40px;width:40px;padding:7px 0;font-size:1rem;min-height:40px}
     #endSongBtn{flex:1;background:var(--gold);color:#000;padding:9px 6px;font-size:0.88rem;min-height:40px}
     #actionBar #nudgeBtn{flex:0 0 40px;width:40px;padding:7px 0;font-size:1rem;min-height:40px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
     #chatBtnWrap{flex:0 0 40px;width:40px}
@@ -367,11 +366,6 @@
     #nudgePopup .np-icon{font-size:2.6rem;margin-bottom:4px}
     #nudgePopup .np-from{font-size:0.95rem;font-weight:600;color:var(--gold);margin-bottom:8px}
     #nudgePopup .np-msg{font-size:1.8rem;color:#fff;font-weight:700}
-
-    /* ─── UNDO BUTTON ─── */
-    #undoBtn{background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.4);color:#a5b4fc;display:inline-flex;opacity:.4}
-    #undoBtn:disabled{opacity:.25;pointer-events:none}
-    #undoBtn.active{opacity:1}
 
     /* ─── MINI CHAT PANEL ─── */
     #chatPanel{display:none;border-top:1px solid #444;background:var(--bg2);flex-direction:column;max-height:220px}
@@ -580,7 +574,6 @@
     <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
   </div>
   <div id="actionBar">
-    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับเพลง" disabled>↩</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
     <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
     <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd" title="แชท">💬</button><span id="chatBtnBadge">0</span></span>
