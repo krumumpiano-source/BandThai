@@ -70,8 +70,8 @@
     .key-hint.hide{opacity:0}
     #nowBpm{font-size:1rem;color:var(--text2);font-weight:500}
     #nowSinger{font-size:0.9rem;color:var(--text2)}
-    #nowNoteWrap{width:100%;overflow:hidden;position:relative;height:1.2em;margin-top:3px}
-    #nowNote{font-size:0.82rem;color:var(--gold);font-style:italic;white-space:nowrap;display:inline-block}
+    #nowNoteWrap{width:100%;overflow:hidden;position:relative;height:1.4em;margin-top:4px}
+    #nowNote{font-size:1rem;color:var(--gold);font-style:italic;white-space:nowrap;display:inline-block}
     #nowNote.note-static{display:block;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     #nowNoteScroll{display:inline-flex;white-space:nowrap;will-change:transform;align-items:center}
     /* pulse animation — bright white strobe flash */
@@ -1382,7 +1382,7 @@ function _updateNoteMarquee(text) {
   var gapSpan = document.createElement('span');
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
   var spanB = document.createElement('span');
-  spanB.style.cssText = 'font-size:0.82rem;font-style:italic;color:var(--gold);white-space:nowrap;flex-shrink:0;';
+  spanB.style.cssText = 'font-size:1rem;font-style:italic;color:var(--gold);white-space:nowrap;flex-shrink:0;';
   spanB.textContent = text;
   el.style.flexShrink = '0';
   wrap.removeChild(el);
