@@ -9,6 +9,7 @@
   <title>Live Mode</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/nosleep.js@0.12.0/dist/NoSleep.min.js"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase-api.js"></script>
   <script src="js/key-utils.js"></script>
@@ -173,6 +174,9 @@
     #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px;flex-wrap:nowrap}
     #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;text-align:center}
     #actionBar button:active{transform:scale(.96)}
+    /* ─── HAPTIC VISUAL FEEDBACK (iOS fallback) ─── */
+    @keyframes _hapticPulse{0%,100%{opacity:1;transform:scale(1)}40%{opacity:.75;transform:scale(.97)}}
+    .haptic-flash{animation:_hapticPulse .15s ease!important}
     #endSongBtn{flex:1;background:var(--gold);color:#000;padding:9px 6px;font-size:0.88rem;min-height:40px}
     #actionBar #nudgeBtn{flex:0 0 40px;width:40px;padding:7px 0;font-size:1rem;min-height:40px;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.4);color:#fdba74}
     #chatBtnWrap{flex:0 0 40px;width:40px}
@@ -1082,10 +1086,21 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('touchend', onDragEnd);
   document.addEventListener('touchcancel', onDragEnd);
 
-  // beforeunload guard
+  // beforeunload guard (desktop browsers)
   window.addEventListener('beforeunload', function(e) {
     if (_modified) { e.preventDefault(); e.returnValue = ''; }
   });
+  // pagehide: iOS Safari fallback — broadcast state ก่อนปิด tab/กด back
+  // (iOS ไม่รองรับ beforeunload dialog แต่ pagehide fires ได้เสมอ)
+  window.addEventListener('pagehide', function() {
+    if (_modified && _channel && _channelStatus === 'SUBSCRIBED') {
+      broadcastEvent('state_sync', getState());
+    }
+  });
+  // NoSleep: เปิดใช้งานหลัง user gesture (iOS ต้องการ gesture ก่อน play video)
+  if (_noSleep && !_noSleepEnabled) {
+    try { _noSleep.enable(); _noSleepEnabled = true; } catch(e) {}
+  }
   // touch close modals
   ['transposeModal','noteModal','editSongModal','bpmModal','clipModal','qrModal'].forEach(function(id) {
     document.getElementById(id).addEventListener('click', function(e) {
@@ -1765,13 +1780,21 @@ function stopBeatDot() {
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  WAKE LOCK
+//  WAKE LOCK  (Screen Wake Lock API + NoSleep.js fallback for iOS ≤15)
 // ─────────────────────────────────────────────────────────────────
+var _noSleep = (typeof NoSleep !== 'undefined') ? new NoSleep() : null;
+var _noSleepEnabled = false;
+
 function acquireWakeLock() {
-  if (!('wakeLock' in navigator)) return;
-  navigator.wakeLock.request('screen').then(function(wl) {
-    _wakeLock = wl;
-  }).catch(function(){});
+  if ('wakeLock' in navigator) {
+    // iOS 16.4+, Chrome Android, Edge
+    navigator.wakeLock.request('screen').then(function(wl) {
+      _wakeLock = wl;
+    }).catch(function(){});
+  } else if (_noSleep && !_noSleepEnabled) {
+    // iOS 13-15 fallback: silent video loop via NoSleep.js (requires user gesture)
+    try { _noSleep.enable(); _noSleepEnabled = true; } catch(e) {}
+  }
 }
 // Register visibilitychange handler once (avoid duplicate listeners)
 if ('wakeLock' in navigator) {
@@ -1781,13 +1804,23 @@ if ('wakeLock' in navigator) {
 }
 function releaseWakeLock() {
   if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+  if (_noSleep && _noSleepEnabled) { try { _noSleep.disable(); } catch(e) {} _noSleepEnabled = false; }
 }
 
 // ─────────────────────────────────────────────────────────────────
-//  HAPTIC
+//  HAPTIC  (vibrate on Android + visual flash fallback on iOS)
 // ─────────────────────────────────────────────────────────────────
 function haptic(ms) {
-  if (_userHasInteracted && navigator.vibrate) try { navigator.vibrate(ms); } catch(e) {}
+  if (_userHasInteracted && navigator.vibrate) {
+    try { navigator.vibrate(ms); return; } catch(e) {}
+  }
+  // iOS Safari: visual flash บนปุ่มหลัก
+  var el = document.getElementById('endSongBtn');
+  if (!el) return;
+  el.classList.remove('haptic-flash');
+  void el.offsetWidth; // reflow to restart animation
+  el.classList.add('haptic-flash');
+  setTimeout(function(){ el.classList.remove('haptic-flash'); }, 200);
 }
 
 // ─────────────────────────────────────────────────────────────────
