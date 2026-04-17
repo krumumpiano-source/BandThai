@@ -493,6 +493,7 @@
   <!-- ── TOP BAR ── -->
   <div id="topBar">
     <div class="tb-left">
+      <button id="settingsBtn" onclick="openSettings()" title="ตั้งค่า" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:0 6px 0 0;line-height:1;flex-shrink:0;">⚙️</button>
       <div id="clock">--:--:--</div>
       <div id="realtimeIndicator" title="แตะเพื่อซิงค์ข้อมูลกับเครื่องอื่น"></div>
       <div id="songCounter">- / -</div>
@@ -524,17 +525,15 @@
       <div id="nowSinger"></div>
     </div>
     <div id="nowNote"></div>
-    <div class="now-side now-side-left">
-      <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
-    </div>
-    <div class="now-side now-side-right">
-      <button id="settingsBtn" class="s-btn" onclick="openSettings()" title="ตั้งค่า">⚙️</button>
-    </div>
     <!-- ── SETTINGS PANEL ── -->
     <div id="liveSettings">
       <div class="ls-header">
         <span class="ls-title">⚙️ ตั้งค่า</span>
         <button class="ls-close" onclick="closeSettings()">✕</button>
+      </div>
+      <div class="ls-row">
+        <span class="ls-label">🌙 โทนสี</span>
+        <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
       </div>
       <div class="ls-row">
         <span class="ls-label">💡 ไฟกระพริบ (Beat)</span>
