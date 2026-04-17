@@ -84,14 +84,15 @@
     .now-side-right{right:6px}
     .now-side .s-btn{cursor:pointer;border-radius:8px;width:32px;height:32px;font-size:.9rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:all .15s;line-height:1;border:1px solid #444;background:var(--bg3);color:var(--text2)}
     .now-side .s-btn:active{transform:scale(.9);border-color:var(--gold);color:var(--gold)}
-    /* ─── SETTINGS PANEL (inside nowPlaying) ─── */
-    #liveSettings{position:absolute;inset:0;background:rgba(10,10,10,.96);backdrop-filter:blur(12px);z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:16px 24px;opacity:0;pointer-events:none;transition:opacity .2s}
+    /* ─── SETTINGS PANEL (full-screen overlay) ─── */
+    #liveSettings{position:fixed;inset:0;background:rgba(10,10,10,.96);backdrop-filter:blur(12px);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:0;overflow-y:auto;opacity:0;pointer-events:none;transition:opacity .2s}
     #liveSettings.open{opacity:1;pointer-events:auto}
-    .ls-header{width:100%;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+    .ls-header{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #333;flex-shrink:0}
     .ls-title{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.06em}
     .ls-close{background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1}
     .ls-close:active{color:var(--gold)}
-    .ls-row{width:100%;display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #222}
+    .ls-body{width:100%;max-width:480px;padding:0 20px 20px}
+    .ls-row{width:100%;display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid #222}
     .ls-label{font-size:0.9rem;color:var(--text)}
     .ls-row .s-btn{width:48px;height:38px;font-size:1rem;border-radius:8px;border:1px solid #444;background:var(--bg3);color:var(--text2)}
     /* ─── LIGHT MODE ─── */
@@ -495,7 +496,7 @@
   <!-- ── TOP BAR ── -->
   <div id="topBar">
     <div class="tb-left">
-      <button id="settingsBtn" onclick="openSettings()" title="ตั้งค่า" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:0 6px 0 0;line-height:1;flex-shrink:0;">⚙️</button>
+      <button id="settingsBtn" onclick="toggleSettings()" title="ตั้งค่า" style="background:none;border:none;color:var(--text2);font-size:1.3rem;cursor:pointer;padding:0 6px 0 0;line-height:1;flex-shrink:0;">⚙️</button>
       <div id="clock">--:--:--</div>
       <div id="realtimeIndicator" title="แตะเพื่อซิงค์ข้อมูลกับเครื่องอื่น"></div>
       <div id="songCounter">- / -</div>
@@ -532,21 +533,23 @@
         <span class="ls-title">⚙️ ตั้งค่า</span>
         <button class="ls-close" onclick="closeSettings()">✕</button>
       </div>
-      <div class="ls-row">
-        <span class="ls-label">🌙 โทนสี</span>
-        <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
-      </div>
-      <div class="ls-row">
-        <span class="ls-label">💡 ไฟกระพริบ (Beat)</span>
-        <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
-      </div>
-      <div class="ls-row">
-        <span class="ls-label">🔇 เสียงคลิก (Metronome)</span>
-        <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
-      </div>
-      <div class="ls-row">
-        <span class="ls-label">🎵 รูปแบบคีย์</span>
-        <button id="keyModeBtn" class="s-btn" onclick="toggleKeyMode()" title="เปลี่ยนรูปแบบคีย์">🔤</button>
+      <div class="ls-body">
+        <div class="ls-row">
+          <span class="ls-label">🌙 โทนสี</span>
+          <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
+        </div>
+        <div class="ls-row">
+          <span class="ls-label">💡 ไฟกระพริบ (Beat)</span>
+          <button id="beatToggleBtn" class="s-btn" onclick="toggleBeatDot()" title="ไฟกระพริบ">💡</button>
+        </div>
+        <div class="ls-row">
+          <span class="ls-label">🔇 เสียงคลิก (Metronome)</span>
+          <button id="metSoundBtn" class="s-btn" onclick="toggleMetAudio()" title="เสียงคลิก">🔇</button>
+        </div>
+        <div class="ls-row">
+          <span class="ls-label">🎵 รูปแบบคีย์</span>
+          <button id="keyModeBtn" class="s-btn" onclick="toggleKeyMode()" title="เปลี่ยนรูปแบบคีย์">🔤</button>
+        </div>
       </div>
     </div>
     <div id="nextPreview" class="hidden">
@@ -1617,6 +1620,12 @@ function toggleTheme() {
 // ─────────────────────────────────────────────────────────────────
 //  SETTINGS PANEL
 // ─────────────────────────────────────────────────────────────────
+function toggleSettings() {
+  var panel = document.getElementById('liveSettings');
+  if (!panel) return;
+  if (panel.classList.contains('open')) { closeSettings(); } else { openSettings(); }
+}
+
 function openSettings() {
   var panel = document.getElementById('liveSettings');
   if (panel) panel.classList.add('open');
