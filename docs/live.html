@@ -59,11 +59,10 @@
     /* NOW label */
     #nowLabel{font-size:0.68rem;font-weight:700;letter-spacing:.12em;color:#7dd3fc;text-transform:uppercase;margin-bottom:4px;opacity:.85}
     /* ── Marquee title ── */
-    #nowTitleWrap{width:100%;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;margin-bottom:4px}
-    #nowTitle{font-weight:700;line-height:1.3;color:#fde68a;font-size:2.8rem;white-space:nowrap;display:inline-block}
-    #nowTitle.title-static{display:block;text-align:center;width:100%}
-    #nowTitle.title-marquee{animation:nowMarquee linear infinite}
-    @keyframes nowMarquee{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+    #nowTitleWrap{width:100%;overflow:hidden;position:relative;display:block;margin-bottom:4px;height:calc(2.8rem * 1.3 + 2px)}
+    #nowTitle{font-weight:700;line-height:1.3;font-size:2.8rem;white-space:nowrap;display:inline;flex-shrink:0;color:#fde68a}
+    #nowTitle.title-static{display:block;text-align:center;width:100%;line-height:calc(2.8rem * 1.3 + 2px)}
+    #nowTitleScroll{display:inline-flex;white-space:nowrap;will-change:transform;align-items:center;line-height:calc(2.8rem * 1.3 + 2px)}
     .now-meta{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:4px;margin-bottom:2px;order:10}
     #nowKey{font-size:1.6rem;font-weight:700;color:var(--gold);cursor:pointer;background:rgba(212,168,67,0.15);border-radius:8px;padding:4px 16px;border:1.5px solid rgba(212,168,67,0.4);transition:background .15s;min-width:44px;text-align:center}
     #nowKey:active{background:rgba(212,168,67,0.3)}
@@ -857,7 +856,7 @@ var _wakeLock  = null;
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
 var _marqueeColorsLight = ['#92400e','#14532d','#1e3a8a','#831843'];
 var _marqueeColorIdx    = 0;
-var _marqueeListenerSet = false;
+var _marqueeRAF         = null;  // requestAnimationFrame id
 var _endingTimer = null;
 var _isEnding  = false;
 var _allSongs  = [];   // preloaded band song library for autocomplete
@@ -1238,42 +1237,91 @@ function _getMarqueeColor() {
   return colors[_marqueeColorIdx % colors.length];
 }
 
+function _stopMarquee() {
+  if (_marqueeRAF) { cancelAnimationFrame(_marqueeRAF); _marqueeRAF = null; }
+}
+
 function _updateMarquee(el) {
   if (!el) return;
-  // Remove old animation cleanly
-  el.classList.remove('title-static', 'title-marquee');
-  el.style.animation = 'none';
-  el.style.transform = '';
-  el.offsetHeight; // force reflow
+  _stopMarquee();
 
-  // Apply current color
-  el.style.color = _getMarqueeColor();
+  var wrap = document.getElementById('nowTitleWrap');
+  if (!wrap) return;
 
-  // Measure text vs container
-  var wrapW = (el.parentElement ? el.parentElement.clientWidth : 0) || window.innerWidth - 84;
+  var text = el.textContent.trim();
+  var colors = document.body.classList.contains('light-mode')
+    ? _marqueeColorsLight : _marqueeColorsDark;
+
+  // — safely re-parent el back to wrap —
+  if (el.parentNode && el.parentNode !== wrap) el.parentNode.removeChild(el);
+  // clear all wrap children except el
+  var c = wrap.firstChild;
+  while (c) { var nx = c.nextSibling; if (c !== el) wrap.removeChild(c); c = nx; }
+  if (!el.parentNode) wrap.appendChild(el);
+
+  // reset el
+  el.classList.remove('title-static');
   el.style.display = 'inline-block';
   el.style.whiteSpace = 'nowrap';
+  el.style.position = ''; el.style.transform = '';
+  el.offsetHeight; // reflow to measure
+
+  var wrapW = wrap.clientWidth || (window.innerWidth - 84);
   var textW = el.scrollWidth;
 
-  if (textW > wrapW * 0.92) {
-    // Marquee needed — speed ~80px/s
-    var totalDist_px = textW + wrapW;
-    var dur = Math.max(6, totalDist_px / 80);
-    el.style.animation = '';
-    el.style.animationDuration = dur + 's';
-    el.classList.add('title-marquee');
-    // Set up color-cycle listener once
-    if (!_marqueeListenerSet) {
-      _marqueeListenerSet = true;
-      el.addEventListener('animationiteration', function() {
-        _marqueeColorIdx = (_marqueeColorIdx + 1) % _marqueeColorsDark.length;
-        el.style.color = _getMarqueeColor();
-      });
-    }
-  } else {
-    // Fits — show centered, no animation
+  if (textW <= wrapW * 0.92) {
+    // — fits — show centered, static
+    el.style.color = colors[_marqueeColorIdx % colors.length];
     el.classList.add('title-static');
+    return;
   }
+
+  // — marquee needed — build scroll container —
+  var GAP = Math.max(80, wrapW * 0.28); // gap between end of title and start of next
+  var cycleW = textW + GAP;
+
+  // Build: wrap > #nowTitleScroll > [el (spanA)] [gap] [spanB]
+  var scroll = document.createElement('div');
+  scroll.id = 'nowTitleScroll';
+
+  var gapSpan = document.createElement('span');
+  gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
+
+  var spanB = document.createElement('span');
+  spanB.style.cssText = 'font-weight:700;font-size:2.8rem;line-height:1.3;white-space:nowrap;flex-shrink:0;';
+  spanB.textContent = text;
+  spanB.style.color = colors[(_marqueeColorIdx + 1) % colors.length];
+
+  el.style.color = colors[_marqueeColorIdx % colors.length];
+  el.style.display = 'inline'; el.style.flexShrink = '0';
+
+  if (el.parentNode) el.parentNode.removeChild(el);
+  scroll.appendChild(el);
+  scroll.appendChild(gapSpan);
+  scroll.appendChild(spanB);
+  wrap.appendChild(scroll);
+
+  // Start position: just off the right edge
+  var pos = wrapW;
+  var lastTs = null;
+  var SPEED = 80; // px per second
+
+  function _tick(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min((ts - lastTs) / 1000, 0.1); // cap for tab-switch
+    lastTs = ts;
+    pos -= SPEED * dt;
+    // when spanA has fully cycled, reset and advance colors
+    if (pos <= -cycleW) {
+      pos += cycleW;
+      _marqueeColorIdx = (_marqueeColorIdx + 1) % colors.length;
+      el.style.color    = colors[_marqueeColorIdx % colors.length];
+      spanB.style.color = colors[(_marqueeColorIdx + 1) % colors.length];
+    }
+    scroll.style.transform = 'translateX(' + pos + 'px)';
+    _marqueeRAF = requestAnimationFrame(_tick);
+  }
+  _marqueeRAF = requestAnimationFrame(_tick);
 }
 
 function _autoFitTitle(el) { _updateMarquee(el); } // backward compat
