@@ -1058,7 +1058,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   if (_isGuest) {
-    // guest mode — ใครก็ได้สแกน QR เข้าใช้งานได้เลย ไม่ต้องมีบัญชี
+    // guest mode — สแกน QR เข้าใช้งาน
     document.getElementById('guestBadge').style.display = 'inline-block';
     document.getElementById('endBreakBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
@@ -1072,12 +1072,33 @@ document.addEventListener('DOMContentLoaded', function() {
       // เป็นสมาชิก — อัปเกรดเป็น member mode
       _isGuest = false;
       document.getElementById('guestBadge').style.display = 'none';
+      loadPlaylist();
+      preGenerateToken();
+      setupBreakWarning();
+      showHintsIfFirstTime();
+      return;
     }
-    // guest หรือ member — ใช้งานได้เหมือนกันทุกอย่าง
-    loadPlaylist();
-    if (!_isGuest) preGenerateToken(); // สร้าง QR ได้เฉพาะ member
-    setupBreakWarning();
-    showHintsIfFirstTime();
+
+    // ── ตรวจ token จาก URL (ถ้ามี) ──
+    if (_guestToken) {
+      apiCall('verifyGuestToken', { token: _guestToken }, function(rv) {
+        if (!rv || !rv.success) { showInvalidToken(); return; }
+        // token ถูกต้อง — ใช้ข้อมูลจาก token เป็นหลัก
+        if (rv.data.bandId)   _bandId   = rv.data.bandId;
+        if (rv.data.date)     _date     = rv.data.date;
+        if (rv.data.venue)    _venue    = rv.data.venue;
+        if (rv.data.timeSlot) _timeSlot = rv.data.timeSlot;
+        document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+        loadPlaylist();
+        setupBreakWarning();
+        showHintsIfFirstTime();
+      });
+    } else {
+      // ไม่มี token — เข้าได้เลยถ้ามี band+date
+      loadPlaylist();
+      setupBreakWarning();
+      showHintsIfFirstTime();
+    }
   } else {
     // member mode — require login
     if (!_bandId || !localStorage.getItem('auth_token')) {
@@ -2434,7 +2455,7 @@ function preGenerateToken() {
   if (!_bandId || !_date) return;
   apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
     if (r && r.success && r.data) {
-      _guestLinkToken = r.data;
+      _guestLinkToken = r.data; // { token, expiresAt }
     }
   });
 }
@@ -3981,16 +4002,37 @@ function showInvalidToken() {
 
 // ─── QR CODE / SHARE ──────────────────────────────────────────────
 function shareQR() {
-  // สร้าง QR URL ตรง ไม่ต้องใช้ token — ใครก็ได้สแกนเข้าได้เลย
+  // ถ้า token พร้อมแล้ว → แสดง QR ทันที
+  if (_guestLinkToken && _guestLinkToken.token) {
+    _renderQR(_guestLinkToken);
+    return;
+  }
+  // ยังไม่มี token → สร้างใหม่ก่อน
+  showToast('⏳ กำลังสร้าง QR...');
+  apiCall('createGuestToken', { date: _date, venue: _venue, timeSlot: _timeSlot }, function(r) {
+    if (r && r.success && r.data) {
+      _guestLinkToken = r.data;
+      _renderQR(_guestLinkToken);
+    } else {
+      showToast('⚠️ สร้าง QR ไม่ได้');
+    }
+  });
+}
+
+function _renderQR(tok) {
   var base = location.origin + location.pathname;
   var url  = base + '?guest=1&band=' + encodeURIComponent(_bandId) +
              '&date=' + encodeURIComponent(_date) +
              '&venue=' + encodeURIComponent(_venue) +
-             '&timeSlot=' + encodeURIComponent(_timeSlot);
+             '&timeSlot=' + encodeURIComponent(_timeSlot) +
+             '&token=' + encodeURIComponent(tok.token);
   var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(url);
   document.getElementById('qrCode').src = qrSrc;
   document.getElementById('qrUrl').textContent = url;
-  document.getElementById('qrExpiry').textContent = 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
+  var exp = tok.expiresAt ? new Date(tok.expiresAt) : null;
+  document.getElementById('qrExpiry').textContent = exp
+    ? '⏱ หมดอายุ: ' + exp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' (' + exp.toLocaleDateString('th-TH') + ')'
+    : '✅ ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
   document.getElementById('qrModal').classList.add('show');
 }
 
