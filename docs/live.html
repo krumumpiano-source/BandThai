@@ -52,7 +52,7 @@
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
 
     /* ─── NOW PLAYING ─── */
-    #nowPlaying{flex-shrink:0;padding:10px 42px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+    #nowPlaying{flex-shrink:0;padding:10px 42px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
     .singer-strip{position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:3px 0 0 3px}
     .singer-strip.male{background:var(--blue)}
     .singer-strip.female{background:var(--pink)}
@@ -70,7 +70,10 @@
     .key-hint.hide{opacity:0}
     #nowBpm{font-size:1rem;color:var(--text2);font-weight:500}
     #nowSinger{font-size:0.9rem;color:var(--text2)}
-    #nowNote{font-size:0.82rem;color:var(--gold);margin-top:2px;font-style:italic;min-height:14px}
+    #nowNoteWrap{width:100%;overflow:hidden;position:relative;height:1.2em;margin-top:3px}
+    #nowNote{font-size:0.82rem;color:var(--gold);font-style:italic;white-space:nowrap;display:inline-block}
+    #nowNote.note-static{display:block;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #nowNoteScroll{display:inline-flex;white-space:nowrap;will-change:transform;align-items:center}
     /* pulse animation — bright white strobe flash */
     @keyframes songEndPulse{0%{background:#fff;color:#000}8%{background:var(--card);color:var(--text)}16%{background:#fff;color:#000}24%{background:var(--card);color:var(--text)}32%{background:#fff;color:#000}40%{background:var(--card);color:var(--text)}50%{background:#fff;color:#000}60%{background:var(--card);color:var(--text)}72%{background:#fff;color:#000}80%{background:var(--card);color:var(--text)}90%{background:#fff;color:#000}100%{background:var(--card);color:var(--text)}}
     #nowPlaying.pulsing{animation:songEndPulse 2.5s ease-in-out}
@@ -171,7 +174,7 @@
     #nextPreview.hidden{display:none}
 
     /* ─── BOTTOM ACTION BAR ─── */
-    #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 2px;flex-wrap:nowrap}
+    #actionBar{display:flex;align-items:center;gap:6px;padding:4px 10px 10px;flex-wrap:nowrap}
     #actionBar button,#actionBar #chatBtnWrap{pointer-events:auto;border:none;border-radius:10px;font-family:inherit;font-weight:600;cursor:pointer;transition:transform .1s,opacity .15s;text-align:center}
     #actionBar button:active{transform:scale(.96)}
     /* ─── HAPTIC VISUAL FEEDBACK (iOS fallback) ─── */
@@ -413,7 +416,7 @@
       #topBar{padding:8px 10px}
       #topBar .tb-left{flex:1;min-width:0}
       #topBar .tb-right{flex-shrink:0}
-      #nowPlaying{padding:14px 12px 10px;height:280px}
+      #nowPlaying{padding:14px 12px 10px;height:250px}
       #nextPreview{width:100%;max-width:100%;flex-wrap:wrap;justify-content:center}
       #songList{padding-bottom:220px}
     }
@@ -522,7 +525,7 @@
       </div>
       <div id="nowSinger"></div>
     </div>
-    <div id="nowNote"></div>
+    <div id="nowNoteWrap"><div id="nowNote"></div></div>
     <!-- ── SETTINGS PANEL ── -->
     <div id="liveSettings">
       <div class="ls-header">
@@ -856,6 +859,7 @@ var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
 var _marqueeColorsLight = ['#92400e','#14532d','#1e3a8a','#831843'];
 var _marqueeColorIdx    = 0;
 var _marqueeRAF         = null;  // requestAnimationFrame id
+var _noteMarqueeRAF     = null;  // requestAnimationFrame id for note marquee
 var _endingTimer = null;
 var _isEnding  = false;
 var _allSongs  = [];   // preloaded band song library for autocomplete
@@ -1239,7 +1243,7 @@ function renderNowPlaying() {
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
   document.getElementById('nowSinger').textContent = sc ? '🎤 ' + (singerNames[sc] || s.singer) : '';
-  document.getElementById('nowNote').textContent = s._note || '';
+  _updateNoteMarquee(s._note || '');
   var strip = document.getElementById('singerStrip');
   strip.className = 'singer-strip' + (sc ? ' ' + sc : '');
   // song counter
@@ -1350,6 +1354,56 @@ function _updateMarquee(el) {
 }
 
 function _autoFitTitle(el) { _updateMarquee(el); } // backward compat
+
+function _updateNoteMarquee(text) {
+  if (_noteMarqueeRAF) { cancelAnimationFrame(_noteMarqueeRAF); _noteMarqueeRAF = null; }
+  var wrap = document.getElementById('nowNoteWrap');
+  var el   = document.getElementById('nowNote');
+  if (!wrap || !el) return;
+  // clear any scroll container
+  while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+  if (!text) { wrap.appendChild(el); el.textContent = ''; el.classList.add('note-static'); return; }
+  el.textContent = text;
+  el.className = '';
+  el.style.transform = '';
+  wrap.appendChild(el);
+  el.offsetHeight; // reflow
+  var wrapW = wrap.clientWidth || window.innerWidth;
+  var textW = el.scrollWidth;
+  if (textW <= wrapW * 0.95) {
+    el.classList.add('note-static');
+    return;
+  }
+  // needs marquee
+  var GAP = Math.max(60, wrapW * 0.25);
+  var cycleW = textW + GAP;
+  var scroll = document.createElement('div');
+  scroll.id = 'nowNoteScroll';
+  var gapSpan = document.createElement('span');
+  gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
+  var spanB = document.createElement('span');
+  spanB.style.cssText = 'font-size:0.82rem;font-style:italic;color:var(--gold);white-space:nowrap;flex-shrink:0;';
+  spanB.textContent = text;
+  el.style.flexShrink = '0';
+  wrap.removeChild(el);
+  scroll.appendChild(el);
+  scroll.appendChild(gapSpan);
+  scroll.appendChild(spanB);
+  wrap.appendChild(scroll);
+  var pos = wrapW;
+  var lastTs = null;
+  var SPEED = 80;
+  function _tick(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min((ts - lastTs) / 1000, 0.1);
+    lastTs = ts;
+    pos -= SPEED * dt;
+    if (pos <= -cycleW) pos += cycleW;
+    scroll.style.transform = 'translateX(' + pos + 'px)';
+    _noteMarqueeRAF = requestAnimationFrame(_tick);
+  }
+  _noteMarqueeRAF = requestAnimationFrame(_tick);
+}
 
 function renderNextPreview() {
   var preview = document.getElementById('nextPreview');
@@ -2446,7 +2500,7 @@ function submitNote() {
   _playlist[_noteIdx]._note = note;
   _modified = true;
   broadcastEvent('note_update', { idx: _noteIdx, note: note });
-  if (_noteIdx === _current) document.getElementById('nowNote').textContent = note;
+  if (_noteIdx === _current) _updateNoteMarquee(note);
   closeNote();
   renderSongList();
 }
@@ -2913,7 +2967,7 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; _modified = true; }
-      if (d.idx === _current) document.getElementById('nowNote').textContent = d.note || '';
+      if (d.idx === _current) _updateNoteMarquee(d.note || '');
       renderSongList();
     })
     .on('broadcast', { event: 'edit_keybpm' }, function(payload) {
