@@ -1409,7 +1409,7 @@ function renderSongList() {
           (meta.length ? '<div class="si-meta">' + meta.join(' · ') + '</div>' : '') +
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
-        (badges ? '<div class="si-badges">' + badges + '</div>' : '') +
+        '<div class="si-badges">' + badges + '</div>' +
         '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
       '</div>'
     );
