@@ -867,13 +867,20 @@ function apPrintVenueReceipt() {
   var tableRows = '', stripeIdx = 0;
   apDateRange.forEach(function(ds) {
     var dtObj = new Date(ds), dow = dtObj.getDay(), slots = apSlotsForDay(dow);
+    var extraSlots = apGetExtraSlotsForDate(ds);
+    // Merge regular + extra, sorted by start time
+    var allSlots = [];
+    slots.forEach(function(s) { allSlots.push({ slot: s, isExtra: false }); });
+    extraSlots.forEach(function(s) { allSlots.push({ slot: s, isExtra: true }); });
+    allSlots.sort(function(a, b) { return a.slot.start < b.slot.start ? -1 : a.slot.start > b.slot.start ? 1 : 0; });
     var accent = DAY_ACCENT[dow];
     var rowBg = DAY_STRIPE[stripeIdx % 2];
     stripeIdx++;
-    slots.forEach(function(slot, si) {
+    allSlots.forEach(function(item, si) {
+      var slot = item.slot, isExtra = item.isExtra;
       var sk = slot.start + '-' + slot.end;
       var isFirst = si === 0;
-      var isLast  = si === slots.length - 1;
+      var isLast  = si === allSlots.length - 1;
       // Accent line spans full row
       var cellTopBd = isFirst ? 'border-top:2px solid ' + accent : 'border-top:none';
       var cellBotBd = isLast  ? 'border-bottom:1px solid #ddd'   : 'border-bottom:none';
@@ -884,10 +891,11 @@ function apPrintVenueReceipt() {
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds] && apCheckInSub[m.id][ds][sk]) || null;
         var hasSub = subInfo && subInfo.name;
         var slotCovered = checked || hasSub;
-        var amt = slotCovered ? apSlotPay(slot, m.id) : 0;
+        var amt = slotCovered ? (isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id)) : 0;
         mGrand[m.id] += amt; dayTotal += amt;
         if (slotCovered) mBreaks[m.id]++;
-        var cellContent = slotCovered ? '<span style="color:#27ae60;font-size:16px">✓</span>' : '';
+        var cellContent = slotCovered ? '<span style="color:' + (isExtra ? '#2b6cb0' : '#27ae60') + ';font-size:16px">✓</span>' : '';
+        if (isExtra && slotCovered) cellContent += '<br><span style="font-size:9px;color:#2b6cb0">พิเศษ</span>';
         if (hasSub) cellContent += '<br><span style="font-size:10px;color:#8e44ad;font-weight:700">↳ ' + apEsc(subInfo.name) + '</span>';
         cells += '<td style="text-align:center;padding:8px 6px;background:' + rowBg + ';' + cellBorder + ';font-size:13px">' + cellContent + '</td>';
       });
@@ -972,11 +980,19 @@ function apPrintMemberReceipt() {
     var totalSlots = 0, totalAmt = 0;
     apDateRange.forEach(function(ds) {
       var daySlots = apSlotsForDay(new Date(ds).getDay());
+      var dayExtraSlots = apGetExtraSlotsForDate(ds);
       daySlots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
         // นับทุก slot ที่ checked รวมทั้ง leave+sub slots
         if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) {
           totalSlots++; totalAmt += apSlotPay(slot, m.id);
+        }
+      });
+      // นับรอบพิเศษ (extra slots)
+      dayExtraSlots.forEach(function(slot) {
+        var sk = slot.start+'-'+slot.end;
+        if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) {
+          totalSlots++; totalAmt += apExtraSlotPay(slot, m.id);
         }
       });
     });
@@ -991,6 +1007,15 @@ function apPrintMemberReceipt() {
         if (!mSubMap[sub.name]) mSubMap[sub.name] = { name: sub.name, contact: sub.contact||'', shifts: 0, amount: 0 };
         mSubMap[sub.name].shifts++;
         mSubMap[sub.name].amount += apSlotPay(slot, m.id);
+      });
+      // รวม substitute info จากรอบพิเศษ
+      apGetExtraSlotsForDate(ds).forEach(function(slot) {
+        var sk = slot.start+'-'+slot.end;
+        var sub = subsForDate[sk];
+        if (!sub || !sub.name) return;
+        if (!mSubMap[sub.name]) mSubMap[sub.name] = { name: sub.name, contact: sub.contact||'', shifts: 0, amount: 0 };
+        mSubMap[sub.name].shifts++;
+        mSubMap[sub.name].amount += apExtraSlotPay(slot, m.id);
       });
     });
     var mSubList = Object.values ? Object.values(mSubMap) : Object.keys(mSubMap).map(function(k){ return mSubMap[k]; });
