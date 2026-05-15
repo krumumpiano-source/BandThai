@@ -81,7 +81,7 @@ var POSITIONS = [
   'ไวโอลิน (Violin)','เชลโล (Cello)','อุคูเลเล (Ukulele)',
   'DJ / โปรแกรมเมอร์','เสียง (Sound Engineer)','อื่นๆ'
 ];
-var BANNED_GENRE_OPTIONS = ['ป๊อป','ร็อค','ดิสโก้','แร็ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้','โจ๊ะ/ฮา'];
+var BANNED_GENRE_OPTIONS = ['ป๊อป','ร็อค','ดิสโก้','แร็ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้'];
 
 function getVenueColor(venueId) {
   var idx = venues.findIndex(function(v) { return v.id === venueId; });
