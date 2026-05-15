@@ -50,6 +50,15 @@
     #metSoundBtn.on{background:rgba(59,130,246,.22);border-color:rgba(59,130,246,.5);color:#60a5fa}
     #endBreakBtn{background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;cursor:pointer;border-radius:8px;padding:6px 14px;font-size:0.82rem;font-weight:600;font-family:inherit;white-space:nowrap;transition:background .15s}
     #endBreakBtn:active{background:rgba(16,185,129,.3)}
+    #startBreakBtn{background:rgba(34,197,94,.25);border:2px solid rgba(34,197,94,.6);color:#4ade80;cursor:pointer;border-radius:10px;padding:9px 18px;font-size:.92rem;font-weight:700;font-family:inherit;white-space:nowrap;transition:all .15s;box-shadow:0 0 10px rgba(34,197,94,.18)}
+    #startBreakBtn:active{background:rgba(34,197,94,.45);transform:scale(.97)}
+    #breakTimerBar{background:rgba(10,10,10,.6);border-bottom:1px solid #222;padding:5px 12px;display:none;align-items:center;gap:8px;flex-shrink:0}
+    #breakTimerText{font-size:.76rem;font-weight:600;color:var(--text2);white-space:nowrap}
+    #breakTimerProg{flex:1;height:5px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+    #breakTimerFill{height:100%;width:0%;background:#22c55e;border-radius:3px;transition:width .6s,background .4s}
+    #breakTimerFill.warn{background:#f59e0b}
+    #breakTimerFill.done{background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5)}
+    #lateBadge{font-size:.66rem;font-weight:700;color:#f97316;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.3);border-radius:8px;padding:2px 6px;white-space:nowrap;display:none}
 
     /* ─── NOW PLAYING ─── */
     #nowPlaying{flex-shrink:0;padding:10px 42px 6px;background:var(--bg2);border-bottom:1px solid #2a2a2a;position:relative;height:250px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;overflow:hidden}
@@ -429,6 +438,7 @@
       .font-btn{min-width:40px;min-height:40px;padding:6px 8px;font-size:.8rem}
       .btn-hint{display:none}
       #endBreakBtn{padding:8px 10px;font-size:.74rem;min-height:40px}
+      #startBreakBtn{padding:9px 10px;font-size:.8rem;min-height:40px}
       #nowPlaying{padding-top:10px}
       #nowTitle{font-size:3.2rem}
       .now-meta{gap:8px}
@@ -504,8 +514,17 @@
     <div id="venueLabel"></div>
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
-      <button id="endBreakBtn" onclick="endBreak()">✅ จบเบรค</button>
+      <button id="startBreakBtn" onclick="startBreak()">▶ เริ่มเบรค</button>
+      <button id="endBreakBtn" onclick="endBreak()" style="display:none">✅ จบเบรค</button>
     </div>
+  </div>
+
+  <!-- ── BREAK TIMER BAR ── -->
+  <div id="breakTimerBar">
+    <span id="lateBadge"></span>
+    <span id="breakTimerText">เล่นมา 0 / 60 นาที</span>
+    <div id="breakTimerProg"><div id="breakTimerFill"></div></div>
+    <span id="breakTimerDone" style="font-size:.7rem;color:#4ade80;font-weight:700;white-space:nowrap;display:none">✅ ครบแล้ว!</span>
   </div>
 
   <!-- ── NOW PLAYING ── -->
@@ -869,6 +888,15 @@ var _allSongs  = [];   // preloaded band song library for autocomplete
 var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
+// ── Break Timer ──────────────────────────────────────────────────
+var _breakStarted    = false;
+var _breakStartTime  = 0;     // Date.now() when startBreak() called
+var _breakTargetMin  = 60;    // target minutes (from venue settings)
+var _breakTimerIval  = null;
+var _scheduledStartMin = -1;  // minutes-from-midnight parsed from timeSlot
+var _breakWarnedAt55 = false;
+var _breakWarnedDone = false;
+// ────────────────────────────────────────────────────────────────
 var _clockTimer = null;
 var _ctxIdx = -1; // context menu target song index
 var _clientId = 'live-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
@@ -998,6 +1026,43 @@ document.addEventListener('DOMContentLoaded', function() {
   _startHbdTimer();
   acquireWakeLock();
   document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+
+  // ── Break Timer Init ────────────────────────────────────────────
+  try {
+    var _bsData = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+    var _vMatch2 = (_bsData.venues || []).find(function(v){ return v.name === _venue; });
+    _breakTargetMin = (_vMatch2 && _vMatch2.breakMinutes > 0) ? parseInt(_vMatch2.breakMinutes, 10) : 60;
+  } catch(e) { _breakTargetMin = 60; }
+  // Parse scheduled start (minutes-from-midnight) from timeSlot e.g. "20:00-01:00"
+  if (_timeSlot) {
+    var _tsM = _timeSlot.match(/(\d{1,2}):(\d{2})/);
+    if (_tsM) _scheduledStartMin = parseInt(_tsM[1], 10) * 60 + parseInt(_tsM[2], 10);
+  }
+  // Restore timer if page was refreshed mid-break
+  try {
+    var _savedBst = sessionStorage.getItem('_breakStartTime');
+    if (_savedBst && !_isGuest) {
+      _breakStartTime = parseInt(_savedBst, 10);
+      _breakStarted = true;
+      var _sb = document.getElementById('startBreakBtn');
+      var _eb = document.getElementById('endBreakBtn');
+      var _tb = document.getElementById('breakTimerBar');
+      if (_sb) _sb.style.display = 'none';
+      if (_eb) _eb.style.display = '';
+      if (_tb) _tb.style.display = 'flex';
+      updateBreakTimer();
+      _breakTimerIval = setInterval(updateBreakTimer, 30000);
+    }
+  } catch(e) {}
+  // Guest mode: skip startBreakBtn flow
+  if (_isGuest) {
+    var _gsb = document.getElementById('startBreakBtn');
+    var _geb = document.getElementById('endBreakBtn');
+    if (_gsb) _gsb.style.display = 'none';
+    if (_geb) _geb.style.display = '';
+  }
+  // ────────────────────────────────────────────────────────────────
+
   // Set initial metronome button states
   var _initSndBtn = document.getElementById('metSoundBtn');
   if (_initSndBtn) {
@@ -2712,20 +2777,91 @@ function _doSaveKeyBpm(songName, key, bpm) {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  BREAK TIMER
+// ─────────────────────────────────────────────────────────────────
+function startBreak() {
+  if (_isGuest) return;
+  _breakStarted    = true;
+  _breakStartTime  = Date.now();
+  _breakWarnedAt55 = false;
+  _breakWarnedDone = false;
+  try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
+
+  var sbtn = document.getElementById('startBreakBtn');
+  var ebtn = document.getElementById('endBreakBtn');
+  var tbar = document.getElementById('breakTimerBar');
+  if (sbtn) sbtn.style.display = 'none';
+  if (ebtn) ebtn.style.display = '';
+  if (tbar) tbar.style.display = 'flex';
+
+  // Show late badge if started after scheduled time
+  if (_scheduledStartMin >= 0) {
+    var nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    var lateMin = nowMin - _scheduledStartMin;
+    if (lateMin > 12 * 60) lateMin -= 24 * 60; // midnight wrap
+    if (lateMin > 2) {
+      var lb = document.getElementById('lateBadge');
+      if (lb) { lb.textContent = 'ช้า ' + Math.round(lateMin) + ' นาที'; lb.style.display = ''; }
+    }
+  }
+
+  updateBreakTimer();
+  _breakTimerIval = setInterval(updateBreakTimer, 30000);
+}
+
+function updateBreakTimer() {
+  if (!_breakStarted) return;
+  var elapsed = Math.floor((Date.now() - _breakStartTime) / 60000);
+  var pct = Math.min(100, Math.round(elapsed / _breakTargetMin * 100));
+
+  var txt  = document.getElementById('breakTimerText');
+  var fill = document.getElementById('breakTimerFill');
+  var done = document.getElementById('breakTimerDone');
+
+  if (txt)  txt.textContent = 'เล่นมา ' + elapsed + ' / ' + _breakTargetMin + ' นาที';
+  if (fill) {
+    fill.style.width = pct + '%';
+    fill.className = pct >= 100 ? 'done' : pct >= 80 ? 'warn' : '';
+  }
+
+  var warn5 = _breakTargetMin - 5;
+  if (!_breakWarnedAt55 && elapsed >= warn5 && elapsed < _breakTargetMin) {
+    _breakWarnedAt55 = true;
+    showToast('⏰ อีก ' + (_breakTargetMin - elapsed) + ' นาทีครบเป้า!');
+  }
+  if (!_breakWarnedDone && elapsed >= _breakTargetMin) {
+    _breakWarnedDone = true;
+    if (done) done.style.display = '';
+    showToast('✅ ครบ ' + _breakTargetMin + ' นาทีแล้ว!');
+    clearInterval(_breakTimerIval); _breakTimerIval = null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  END BREAK (จบเบรค)
 // ─────────────────────────────────────────────────────────────────
 var _endBreakSaving = false; // guard against concurrent saves (multi-device race)
 var _endBreakDone  = false; // true = someone already saved this session (broadcast received)
 
 function endBreak() {
+  var warnParts = [];
+  // Check break duration
+  if (_breakStarted && _breakTargetMin > 0) {
+    var elapsed = Math.floor((Date.now() - _breakStartTime) / 60000);
+    if (elapsed < _breakTargetMin - 1) {
+      warnParts.push('เล่นมาแค่ <b>' + elapsed + '</b> นาที ยังขาดอีก <b>' + (_breakTargetMin - elapsed) + '</b> นาที (เป้า ' + _breakTargetMin + ' นาที/เบรค)');
+    }
+  }
   // Count unplayed songs (after current, not skipped)
   var unplayed = 0;
   for (var i = _current + 1; i < _playlist.length; i++) {
     if (!_playlist[i]._skipped) unplayed++;
   }
   if (unplayed > 0) {
-    var msg = 'ยังมีเพลงที่ยังไม่ได้เล่นอีก <b>' + unplayed + '</b> เพลง';
-    document.getElementById('endBreakWarningMsg').innerHTML = msg;
+    warnParts.push('ยังมีเพลงที่ยังไม่ได้เล่นอีก <b>' + unplayed + '</b> เพลง');
+  }
+  if (warnParts.length) {
+    document.getElementById('endBreakWarningMsg').innerHTML = warnParts.join('<br>');
     document.getElementById('endBreakModal').classList.add('show');
     return;
   }
@@ -2734,6 +2870,9 @@ function endBreak() {
 
 function endBreakConfirmed() {
   if (_endBreakSaving || _endBreakDone) return; // prevent double-call or already-saved
+  // Stop break timer
+  if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+  try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
     doExit();

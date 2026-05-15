@@ -213,6 +213,21 @@
   var autoSaveTimer = null;   // debounce handle
   var lastSavedHash = '';     // detect real changes
   var _dateChangeReqId = 0;
+  var todayBannedGenres = []; // genres banned at today's venue(s)
+
+  function loadVenueBannedGenres(venueNamesList) {
+    todayBannedGenres = [];
+    try {
+      var bs = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+      (bs.venues || []).forEach(function(v) {
+        if (v.name && venueNamesList.indexOf(v.name) >= 0 && Array.isArray(v.bannedGenres)) {
+          v.bannedGenres.forEach(function(g) {
+            if (todayBannedGenres.indexOf(g) < 0) todayBannedGenres.push(g);
+          });
+        }
+      });
+    } catch(e) { todayBannedGenres = []; }
+  }
 
   var PLAN_LIMIT = { free: 8, lite: 8, pro: 8 }; // ฟรีทุกฟีเจอร์ — ทุก plan ได้ 8 เซ็ต
 
@@ -313,6 +328,9 @@
       if (reqId !== _dateChangeReqId) return;
       todaySlots  = (r && r.slots)     || [];
       var scheds  = (r && r.schedules) || [];
+      // Load banned genres for today's venues
+      var todayVenueNames = scheds.map(function(s){ return s.venueName || s.venue || ''; }).filter(Boolean);
+      loadVenueBannedGenres(todayVenueNames);
       var infoEl  = document.getElementById('scheduleInfoEl');
       if (!scheds.length) {
         infoEl.innerHTML = '<span style="opacity:.6">ไม่มีตารางงานในวันนี้</span>';
@@ -503,9 +521,11 @@
       var check   = already ? '<span style="color:var(--premium-gold);margin-right:4px">✓</span>' : '';
       var key     = s.key ? ('<span style="font-size:.68rem;color:var(--premium-text-muted);margin-left:3px">(' + escapeHtml(formatKey(s.key)) + ')</span>') : '';
       var dur     = s.duration ? ('<span class="song-dur">' + parseFloat(s.duration).toFixed(1) + 'm</span>') : '';
+      var isBanned = todayBannedGenres.length > 0 && s.tags && todayBannedGenres.indexOf(s.tags) >= 0;
+      var warnBadge = isBanned ? '<span style="background:rgba(249,115,22,.15);color:#f97316;font-size:.58rem;border:1px solid rgba(249,115,22,.4);border-radius:5px;padding:1px 4px;flex-shrink:0;margin-left:3px" title="แนวเพลงนี้ไม่เหมาะกับร้านปัจจุบัน">⚠️</span>' : '';
       return '<div class="song-pill' + extraClass + '"' + onclickAttr + '>'
         + '<span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'
-        + check + escapeHtml(s.name || s.title || '—') + key + '</span>' + dur + '</div>';
+        + check + escapeHtml(s.name || s.title || '—') + key + '</span>' + warnBadge + dur + '</div>';
     }).join('');
   }
 
@@ -536,9 +556,11 @@
       var fullSong  = allSongs.find(function(x){ return (x.songId || x.id) === s.id; });
       var titleShow = (fullSong && (fullSong.name || fullSong.title)) || s.title || s.name || '—';
       var artShow   = (fullSong && fullSong.artist) || s.artist || '';
+      var isBanned2 = todayBannedGenres.length > 0 && fullSong && fullSong.tags && todayBannedGenres.indexOf(fullSong.tags) >= 0;
+      var warnTag   = isBanned2 ? ' <span style="color:#f97316;font-size:.65rem" title="แนวเพลงนี้ไม่เหมาะกับร้าน">⚠️</span>' : '';
       return '<div class="setlist-slot">'
         + '<div class="slot-num">' + (i + 1) + '</div>'
-        + '<div class="slot-info"><div class="slot-title">' + escapeHtml(titleShow) + '</div>'
+        + '<div class="slot-info"><div class="slot-title">' + escapeHtml(titleShow) + warnTag + '</div>'
         + '<div class="slot-artist">' + escapeHtml(artShow) + '</div></div>'
         + '<span class="slot-dur">' + (parseFloat(s.duration) || 0).toFixed(1) + 'm</span>'
         + '<div class="slot-actions">'

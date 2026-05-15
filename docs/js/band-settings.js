@@ -81,6 +81,7 @@ var POSITIONS = [
   'ไวโอลิน (Violin)','เชลโล (Cello)','อุคูเลเล (Ukulele)',
   'DJ / โปรแกรมเมอร์','เสียง (Sound Engineer)','อื่นๆ'
 ];
+var BANNED_GENRE_OPTIONS = ['ป๊อป','ร็อค','ดิสโก้','แร็ฟ/ฮิปฮอป','ลูกทุ่ง / อีสาน','เพื่อชีวิต','อาร์แอนด์บี','แจ๊ส / บลูส์','เรกเก้','อินดี้','โจ๊ะ/ฮา'];
 
 function getVenueColor(venueId) {
   var idx = venues.findIndex(function(v) { return v.id === venueId; });
@@ -198,7 +199,7 @@ function loadBandSettings() {
       // Venues — new format: [{id,name}], old format: [{id,name,address,phone,schedule}]
       if (s.venues) {
         venues = s.venues.map(function(v) {
-          return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '' };
+          return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '', breakMinutes: v.breakMinutes || 0, bannedGenres: v.bannedGenres || [] };
         });
       }
       // Schedule — new flat format
@@ -261,7 +262,7 @@ function loadBandSettings() {
         var d = r.data;
         if (d.bandName)    bandNameVal        = d.bandName;
         if (d.bandManager) currentBandManager = d.bandManager;
-        if (d.venues)  venues = d.venues.map(function(v) { return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '' }; });
+        if (d.venues)  venues = d.venues.map(function(v) { return { id: v.id || v.venueId || ('venue_' + Math.random().toString(36).substr(2,6)), name: v.name || v.venueName || '', breakMinutes: v.breakMinutes || 0, bannedGenres: v.bannedGenres || [] }; });
         if (d.schedule && typeof d.schedule === 'object') schedule = d.schedule;
         if (d.payroll) payroll = Object.assign({ period: 'daily', weekStart: 1, weekEnd: 0 }, d.payroll);
         if (d.members) bandMembersData = d.members;
@@ -594,14 +595,48 @@ function renderVenueNames() {
     return;
   }
   list.innerHTML = venues.map(function(v, vi) {
-    return '<div class="vn-row" data-vi="' + vi + '">' +
-      '<span class="vn-num">' + (vi + 1) + '</span>' +
-      '<input type="text" class="vn-input" data-vi="' + vi + '" value="' + esc(v.name) + '" placeholder="ชื่อร้าน">' +
-      '<button type="button" class="vn-del" data-vi="' + vi + '">🗑️</button>' +
+    var bm = (v.breakMinutes > 0) ? String(v.breakMinutes) : '';
+    var bannedChecks = BANNED_GENRE_OPTIONS.map(function(g) {
+      var chked = Array.isArray(v.bannedGenres) && v.bannedGenres.indexOf(g) >= 0 ? ' checked' : '';
+      return '<label style="display:inline-flex;align-items:center;gap:2px;font-size:.67rem;color:#94a3b8;cursor:pointer;white-space:nowrap">'
+        + '<input type="checkbox" class="vn-banned-chk" data-vi="' + vi + '" value="' + esc(g) + '"' + chked + ' style="accent-color:#f97316;cursor:pointer;width:11px;height:11px">'
+        + esc(g) + '</label>';
+    }).join('');
+    return '<div class="vn-row" data-vi="' + vi + '">'
+      + '<span class="vn-num">' + (vi + 1) + '</span>'
+      + '<input type="text" class="vn-input" data-vi="' + vi + '" value="' + esc(v.name) + '" placeholder="ชื่อร้าน">'
+      + '<button type="button" class="vn-del" data-vi="' + vi + '">🗑️</button>'
+      + '</div>'
+      + '<div style="padding:3px 8px 8px 28px;display:flex;flex-wrap:wrap;gap:4px;align-items:center;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<span style="font-size:.64rem;color:#64748b;flex-shrink:0;margin-right:2px">🚫 ห้ามเล่น:</span>'
+      + bannedChecks
+      + '<span style="font-size:.64rem;color:#64748b;flex-shrink:0;margin-left:6px">⏱ เบรคละ</span>'
+      + '<input type="number" class="vn-breakmin" data-vi="' + vi + '" value="' + esc(bm) + '" min="15" max="360" placeholder="60" style="width:48px;text-align:center;background:#1a1a2e;border:1px solid rgba(255,255,255,.15);border-radius:6px;color:#e2e8f0;padding:2px 4px;font-size:.72rem;font-family:inherit">'
+      + '<span style="font-size:.64rem;color:#64748b">นาที</span>'
       '</div>';
   }).join('');
   list.querySelectorAll('.vn-input').forEach(function(inp) {
     inp.addEventListener('input', function() { venues[+this.dataset.vi].name = this.value; autoSaveLocal(); renderScheduleGrid(); });
+  });
+  list.querySelectorAll('.vn-banned-chk').forEach(function(chk) {
+    chk.addEventListener('change', function() {
+      var vi = +this.dataset.vi;
+      var genre = this.value;
+      if (!Array.isArray(venues[vi].bannedGenres)) venues[vi].bannedGenres = [];
+      if (this.checked) {
+        if (venues[vi].bannedGenres.indexOf(genre) < 0) venues[vi].bannedGenres.push(genre);
+      } else {
+        venues[vi].bannedGenres = venues[vi].bannedGenres.filter(function(g){ return g !== genre; });
+      }
+      autoSaveLocal();
+    });
+  });
+  list.querySelectorAll('.vn-breakmin').forEach(function(inp) {
+    inp.addEventListener('input', function() {
+      var v = parseInt(this.value, 10);
+      venues[+this.dataset.vi].breakMinutes = isNaN(v) ? 0 : v;
+      autoSaveLocal();
+    });
   });
   list.querySelectorAll('.vn-del').forEach(function(btn) {
     btn.addEventListener('click', function() {
@@ -616,7 +651,7 @@ function renderVenueNames() {
   });
 }
 function addVenue() {
-  venues.push({ id: 'venue_' + Date.now(), name: '' });
+  venues.push({ id: 'venue_' + Date.now(), name: '', breakMinutes: 0, bannedGenres: [] });
   renderVenueNames();
   setTimeout(function() {
     var inp = document.querySelector('.vn-input[data-vi="' + (venues.length - 1) + '"]');
