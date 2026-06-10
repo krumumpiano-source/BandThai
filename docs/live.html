@@ -724,8 +724,9 @@
 <div class="modal-backdrop" id="insertPosModal">
   <div class="modal-sheet">
     <h3 id="insertPosTitle">📍 เลือกตำแหน่งเพิ่มเพลง</h3>
-    <div id="insertPosSongName" style="font-size:0.95rem;color:var(--gold);margin-bottom:10px;font-weight:600"></div>
-    <div id="insertPosList" style="max-height:55vh;overflow-y:auto;margin:0 -8px"></div>
+    <div id="insertPosSongName" style="font-size:0.95rem;color:var(--gold);margin-bottom:8px;font-weight:600"></div>
+    <button id="insertReqToggleBtn" onclick="togglePendingRequest()" style="display:block;width:100%;text-align:left;background:var(--bg3);border:1px solid #333;border-radius:10px;padding:10px 14px;font-family:inherit;font-size:.88rem;font-weight:600;color:var(--text);cursor:pointer;margin-bottom:10px;transition:background .12s,border-color .12s">🙏 ทำเครื่องหมายเป็นเพลงขอ</button>
+    <div id="insertPosList" style="max-height:50vh;overflow-y:auto;margin:0 -8px"></div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn secondary" onclick="closeInsertPos()">ยกเลิก</button>
     </div>
@@ -2260,10 +2261,44 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   openInsertPos();
 }
 
+function togglePendingRequest() {
+  if (!_pendingSong) return;
+  _pendingSong._isRequest = !_pendingSong._isRequest;
+  var btn = document.getElementById('insertReqToggleBtn');
+  if (!btn) return;
+  if (_pendingSong._isRequest) {
+    btn.textContent = '🙏 เพลงขอ ✓';
+    btn.style.background = '#4c1d95';
+    btn.style.borderColor = '#7c3aed';
+    btn.style.color = '#e9d5ff';
+  } else {
+    btn.textContent = '🙏 ทำเครื่องหมายเป็นเพลงขอ';
+    btn.style.background = 'var(--bg3)';
+    btn.style.borderColor = '#333';
+    btn.style.color = 'var(--text)';
+  }
+}
+
 function openInsertPos() {
   if (!_pendingSong) return;
   var modal = document.getElementById('insertPosModal');
   document.getElementById('insertPosSongName').textContent = '🎵 ' + _pendingSong.name;
+
+  // Update request toggle button state
+  var btn = document.getElementById('insertReqToggleBtn');
+  if (btn) {
+    if (_pendingSong._isRequest) {
+      btn.textContent = '🙏 เพลงขอ ✓';
+      btn.style.background = '#4c1d95';
+      btn.style.borderColor = '#7c3aed';
+      btn.style.color = '#e9d5ff';
+    } else {
+      btn.textContent = '🙏 ทำเครื่องหมายเป็นเพลงขอ';
+      btn.style.background = 'var(--bg3)';
+      btn.style.borderColor = '#333';
+      btn.style.color = 'var(--text)';
+    }
+  }
 
   // Build position list
   var visible = _playlist.filter(function(s) { return !s._skipped; });
@@ -4222,6 +4257,11 @@ function openCtx(idx) {
   btns.push({ icon: '📝', label: 'เพิ่มโน้ต', action: 'note' });
   btns.push({ icon: '🎹', label: 'แก้คีย์/BPM', action: 'editkeybpm' });
   btns.push({ icon: '🔁', label: 'Encore', action: 'encore' });
+  if (s._isRequest) {
+    btns.push({ icon: '🙏', label: 'ยกเลิกเพลงขอ', action: 'unrequest' });
+  } else {
+    btns.push({ icon: '🙏', label: 'ทำเครื่องหมายเป็นเพลงขอ', action: 'request' });
+  }
   btns.push({ icon: '', label: 'ลบ', action: 'remove' });
 
   grid.innerHTML = btns.map(function(b) {
@@ -4257,6 +4297,22 @@ function ctxAction(action) {
     case 'note':   openNote(idx);     break;
     case 'editkeybpm': openEditSong(idx); break;
     case 'encore': addEncore(idx);    break;
+    case 'request':
+      _playlist[idx]._isRequest = true;
+      _modified = true;
+      broadcastEvent('state_sync', getState());
+      scheduleStateSync();
+      renderSongList();
+      showToast('🙏 ทำเครื่องหมายเป็นเพลงขอแล้ว');
+      break;
+    case 'unrequest':
+      _playlist[idx]._isRequest = false;
+      _modified = true;
+      broadcastEvent('state_sync', getState());
+      scheduleStateSync();
+      renderSongList();
+      showToast('✓ ยกเลิกเครื่องหมายเพลงขอแล้ว');
+      break;
     case 'remove': removeSongDirect(idx); break;
   }
 }
