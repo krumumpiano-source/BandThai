@@ -2367,6 +2367,9 @@ function confirmInsertAt(pos) {
   _pendingSong = null;
   closeInsertPos();
 
+  // จับเวลา insert จริง (แม่นกว่าเวลาที่กด toggle)
+  if (song._isRequest) { song._isRequestTime = _nowHHMM(); }
+
   _playlist.splice(pos, 0, song);
   _modified = true;
   _lastLocalAddTime = Date.now(); // บันทึกเวลาที่เพิ่มเพลงในเครื่องนี้
