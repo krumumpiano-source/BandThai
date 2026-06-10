@@ -517,7 +517,7 @@
           songs.forEach(function(s,i){
             var sec=getSongDurCached(s.name,s.artist);brkDurSec+=sec+GAP_SEC;
             html+='<div class="sl-song"><div class="sl-song-num">'+(i+1)+'</div>'+
-              '<div class="sl-song-name">'+esc(s.name||'\u2014')+(s._isRequest?'<span class="sl-song-req">\u0e02\u0e2d</span>':'')+'</div>'+
+              '<div class="sl-song-name">'+esc(s.name||'\u2014')+(s._isRequest?'<span class="sl-song-req">\u0e02\u0e2d'+(s._isRequestTime?' '+esc(s._isRequestTime):'')+'</span>':'')+'</div>'+
               '<div class="sl-song-artist">'+esc(s.artist||'')+'</div>'+
               '<div class="sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx')+'" id="sldur_'+brkId+'_'+i+'">'+fmtDur(sec)+'</div></div>';
           });

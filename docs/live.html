@@ -2261,9 +2261,15 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   openInsertPos();
 }
 
+function _nowHHMM() {
+  var n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
 function togglePendingRequest() {
   if (!_pendingSong) return;
   _pendingSong._isRequest = !_pendingSong._isRequest;
+  if (_pendingSong._isRequest) { _pendingSong._isRequestTime = _nowHHMM(); }
+  else { _pendingSong._isRequestTime = ''; }
   var btn = document.getElementById('insertReqToggleBtn');
   if (!btn) return;
   if (_pendingSong._isRequest) {
@@ -2932,7 +2938,11 @@ function endBreakConfirmed() {
 
   var snapshotPlaylist = _playlist.slice(); // snapshot ก่อน async call ป้องกัน Realtime เขียนทับ
   var songs = snapshotPlaylist.map(function(s) {
-    return { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0 };
+    var song = { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0,
+      artist: s.artist || '', singer: s.singer || '' };
+    if (s._isRequest) { song._isRequest = true; if (s._isRequestTime) song._isRequestTime = s._isRequestTime; }
+    if (s._isEncore) song._isEncore = true;
+    return song;
   });
   apiCall('savePlaylistHistory', {
     bandId: _bandId,
@@ -4299,6 +4309,7 @@ function ctxAction(action) {
     case 'encore': addEncore(idx);    break;
     case 'request':
       _playlist[idx]._isRequest = true;
+      _playlist[idx]._isRequestTime = _nowHHMM();
       _modified = true;
       broadcastEvent('state_sync', getState());
       scheduleStateSync();
@@ -4307,6 +4318,7 @@ function ctxAction(action) {
       break;
     case 'unrequest':
       _playlist[idx]._isRequest = false;
+      _playlist[idx]._isRequestTime = '';
       _modified = true;
       broadcastEvent('state_sync', getState());
       scheduleStateSync();
