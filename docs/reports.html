@@ -119,6 +119,14 @@
     .dist-shield.ok{background:#f0fff4;color:#276749;border:1.5px solid #68d391}
     .dist-shield.warn{background:#fffbeb;color:#92400e;border:1.5px solid #fbbf24}
     .dist-no-meta{text-align:center;padding:16px;color:var(--premium-text-muted);font-size:var(--text-xs)}
+    .sl-break-dist{padding:8px 14px 10px;border-top:1px solid var(--premium-border);background:var(--premium-off-white)}
+    .sl-break-dist .dist-row{margin-bottom:3px}
+    .sl-break-dist .dist-label{font-size:10px;min-width:90px}
+    .sl-break-dist .dist-bar-wrap{height:12px}
+    .sl-break-dist .dist-count{font-size:10px}
+    .sl-break-dist .dist-pct{font-size:10px}
+    .sl-break-dist .dist-section{margin-bottom:6px}
+    .sl-break-dist .dist-section-title{font-size:9px}
   </style>
 </head>
 <body>
@@ -269,14 +277,9 @@
     function getSongMeta(name){
       return _songMeta[(name||'').trim().toLowerCase()]||{genre:'',era:'',mood:''};
     }
-    function renderDistribution(history){
-      var dc=document.getElementById('slDistCard');
-      if(!dc)return;
-      var allSongs=[];
-      history.forEach(function(brk){(brk.songs||[]).forEach(function(s){allSongs.push(s);});});
-      if(!allSongs.length){dc.style.display='none';return;}
-      var genreMap={},eraMap={},totalG=0,totalE=0,reqSongs=0;
-      allSongs.forEach(function(s){
+    function calcDist(songs){
+      var genreMap={},eraMap={},reqSongs=0,totalG=0,totalE=0;
+      (songs||[]).forEach(function(s){
         var m=getSongMeta(s.name);
         var g=m.genre||s.genre||'';
         var e=m.era||s.era||'';
@@ -284,36 +287,57 @@
         if(g){genreMap[g]=(genreMap[g]||0)+1;totalG++;}
         if(e){eraMap[e]=(eraMap[e]||0)+1;totalE++;}
       });
-      var noMeta=(totalG===0&&totalE===0);
-      var reqPct=allSongs.length?Math.round(reqSongs/allSongs.length*100):0;
+      return{genreMap:genreMap,eraMap:eraMap,reqSongs:reqSongs,total:(songs||[]).length,totalG:totalG,totalE:totalE};
+    }
+    function distBarRows(map,total,cls){
+      return Object.keys(map).sort(function(a,b){return map[b]-map[a];}).map(function(k){
+        var pct=total?Math.round(map[k]/total*100):0;
+        return'<div class="dist-row"><div class="dist-label">'+esc(k)+'</div>'+
+          '<div class="dist-bar-wrap"><div class="dist-bar '+cls+'" style="width:'+pct+'%"></div></div>'+
+          '<div class="dist-count">'+map[k]+'</div><div class="dist-pct">'+pct+'%</div></div>';
+      }).join('');
+    }
+    function breakDistHtml(songs){
+      if(!songs||!songs.length)return'';
+      var d=calcDist(songs);
+      if(d.totalG===0&&d.totalE===0&&d.reqSongs===0)return'';
+      var reqPct=d.total?Math.round(d.reqSongs/d.total*100):0;
+      var h='<div class="sl-break-dist">';
+      if(d.totalG>0)h+='<div class="dist-section"><div class="dist-section-title">🎸 แนวเพลง</div>'+distBarRows(d.genreMap,d.totalG,'genre')+'</div>';
+      if(d.totalE>0)h+='<div class="dist-section"><div class="dist-section-title">📅 ยุค</div>'+distBarRows(d.eraMap,d.totalE,'era')+'</div>';
+      if(d.reqSongs>0)h+='<div class="dist-section"><div class="dist-section-title">🙏 ลูกค้าขอ '+d.reqSongs+'/'+d.total+' ('+reqPct+'%)</div>'+
+        '<div class="dist-row"><div class="dist-label">เพลงขอ</div><div class="dist-bar-wrap"><div class="dist-bar req" style="width:'+reqPct+'%"></div></div><div class="dist-count">'+d.reqSongs+'</div><div class="dist-pct">'+reqPct+'%</div></div>'+
+        '<div class="dist-row"><div class="dist-label">วงเลือกเอง</div><div class="dist-bar-wrap"><div class="dist-bar" style="width:'+(100-reqPct)+'%;background:#6b7280"></div></div><div class="dist-count">'+(d.total-d.reqSongs)+'</div><div class="dist-pct">'+(100-reqPct)+'%</div></div></div>';
+      h+='</div>';
+      return h;
+    }
+    function renderDistribution(history){
+      var dc=document.getElementById('slDistCard');
+      if(!dc)return;
+      var allSongs=[];
+      history.forEach(function(brk){(brk.songs||[]).forEach(function(s){allSongs.push(s);});});
+      if(!allSongs.length){dc.style.display='none';return;}
+      var d=calcDist(allSongs);
+      var noMeta=(d.totalG===0&&d.totalE===0);
+      var reqPct=d.total?Math.round(d.reqSongs/d.total*100):0;
       var shieldMsg='';
-      if(reqPct>=30)shieldMsg='<div class="dist-shield ok">🛡️  '+reqPct+'% ของเพลงทั้งหมดเป็นเพลงที่ลูกค้าขอ — วงตอบสนองลูกค้าดีเยี่ยม</div>';
-      else if(reqSongs>0)shieldMsg='<div class="dist-shield warn">🙏  มีเพลงขอ '+reqSongs+' เพลง ('+reqPct+'%) — ลูกค้ามีส่วนร่วมกับวง</div>';
-      function barRows(map,total,cls){
-        var sorted=Object.keys(map).sort(function(a,b){return map[b]-map[a];});
-        return sorted.map(function(k){
-          var pct=total?Math.round(map[k]/total*100):0;
-          return '<div class="dist-row"><div class="dist-label">'+esc(k)+'</div>'+
-            '<div class="dist-bar-wrap"><div class="dist-bar '+cls+'" style="width:'+pct+'%"></div></div>'+
-            '<div class="dist-count">'+map[k]+' เพลง</div>'+
-            '<div class="dist-pct">'+pct+'%</div></div>';
-        }).join('');
-      }
-      var html=shieldMsg+'<h3>📊 สัดส่วนแนวเพลงและยุค</h3>';
+      if(reqPct>=30)shieldMsg='<div class="dist-shield ok">🛡️  '+reqPct+'% เป็นเพลงที่ลูกค้าขอ — วงตอบสนองดีเยี่ยม</div>';
+      else if(d.reqSongs>0)shieldMsg='<div class="dist-shield warn">🙏  มีเพลงขอ '+d.reqSongs+' เพลง ('+reqPct+'%) — ลูกค้ามีส่วนร่วมกับวง</div>';
+      var html=shieldMsg+'<h3>📊 สัดส่วนรวมช่วงนี้</h3>';
       if(noMeta){
         html+='<div class="dist-no-meta">ℹ️ ยังไม่มีข้อมูล genre/ยุค — ไปที่ <strong>คลังเพลง</strong> แล้วกดแก้ไขเพลงเพื่อระบุแนวเพลงและยุค</div>';
       } else {
-        if(totalG>0)html+='<div class="dist-section"><div class="dist-section-title">🎸 แนวเพลง (genre)</div>'+barRows(genreMap,totalG,'genre')+'</div>';
-        if(totalE>0)html+='<div class="dist-section"><div class="dist-section-title">📅 ยุค (era)</div>'+barRows(eraMap,totalE,'era')+'</div>';
+        if(d.totalG>0)html+='<div class="dist-section"><div class="dist-section-title">🎸 แนวเพลง (genre)</div>'+distBarRows(d.genreMap,d.totalG,'genre')+'</div>';
+        if(d.totalE>0)html+='<div class="dist-section"><div class="dist-section-title">📅 ยุค (era)</div>'+distBarRows(d.eraMap,d.totalE,'era')+'</div>';
       }
-      if(reqSongs>0){
+      if(d.reqSongs>0){
         html+='<div class="dist-section"><div class="dist-section-title">🙏 เพลงขอจากลูกค้า</div>'+
           '<div class="dist-row"><div class="dist-label">เพลงขอ</div>'+
           '<div class="dist-bar-wrap"><div class="dist-bar req" style="width:'+reqPct+'%"></div></div>'+
-          '<div class="dist-count">'+reqSongs+' เพลง</div><div class="dist-pct">'+reqPct+'%</div></div>'+
+          '<div class="dist-count">'+d.reqSongs+' เพลง</div><div class="dist-pct">'+reqPct+'%</div></div>'+
           '<div class="dist-row"><div class="dist-label">วงเลือกเอง</div>'+
           '<div class="dist-bar-wrap"><div class="dist-bar" style="width:'+(100-reqPct)+'%;background:#6b7280"></div></div>'+
-          '<div class="dist-count">'+(allSongs.length-reqSongs)+' เพลง</div><div class="dist-pct">'+(100-reqPct)+'%</div></div></div>';
+          '<div class="dist-count">'+(d.total-d.reqSongs)+' เพลง</div><div class="dist-pct">'+(100-reqPct)+'%</div></div></div>';
       }
       dc.innerHTML=html;
       dc.style.display='';
@@ -608,7 +632,8 @@
               '<div class="sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx')+'" id="sldur_'+brkId+'_'+i+'">'+fmtDur(sec)+'</div></div>';
           });
           totalDurSec+=brkDurSec;
-          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e23\u0e27\u0e21 gap)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+fmtDurLong(brkDurSec)+'</span></div></div>';
+          var brkDistH=breakDistHtml(songs);
+          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e23\u0e27\u0e21 gap)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+ fmtDurLong(brkDurSec)+'</span></div>'+brkDistH+'</div>';
         });
         html+='</div></div>';
       });
