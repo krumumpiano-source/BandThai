@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon-180.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1a1a1a">
+  <title>รายงานวง — BandThai</title>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/nav.css">
+  <link rel="stylesheet" href="css/compat.css">
+  <style>
+    .main-tabs{display:flex;gap:0;margin-bottom:var(--spacing-xl);border-radius:var(--radius-lg);overflow:hidden;border:1.5px solid var(--premium-border);background:var(--premium-off-white)}
+    .main-tab{flex:1;padding:12px 8px;border:none;background:transparent;font-family:inherit;font-size:var(--text-sm);font-weight:600;cursor:pointer;transition:.18s;color:var(--premium-text-muted)}
+    .main-tab.active{background:var(--premium-gold);color:#fff}
+    .main-tab:not(:last-child){border-right:1px solid var(--premium-border)}
+    .period-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:var(--spacing-lg)}
+    .period-tab{padding:8px 18px;border-radius:var(--radius-full);border:1.5px solid var(--premium-border);background:#fff;font-size:var(--text-sm);font-weight:600;cursor:pointer;transition:.2s;color:var(--premium-text)}
+    .period-tab.active{background:var(--premium-gold);color:#fff;border-color:var(--premium-gold)}
+    .period-nav{display:flex;align-items:center;gap:var(--spacing-md);margin-bottom:var(--spacing-lg);flex-wrap:wrap}
+    .period-nav .nav-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--premium-border);background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .period-label{font-weight:700;font-size:var(--text-base);color:var(--premium-text)}
+    .shield-banner{border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:var(--spacing-xl);display:flex;align-items:flex-start;gap:14px}
+    .shield-banner.green{background:#f0fff4;border:2px solid #38a169}
+    .shield-banner.yellow{background:#fffbeb;border:2px solid #d97706}
+    .shield-banner.red{background:#fff5f5;border:2px solid #e53e3e}
+    .shield-banner.neutral{background:var(--premium-off-white);border:2px solid var(--premium-border)}
+    .shield-icon{font-size:2rem;flex-shrink:0;line-height:1}
+    .shield-text{flex:1}
+    .shield-title{font-size:var(--text-base);font-weight:700;color:var(--premium-text)}
+    .shield-subtitle{font-size:var(--text-sm);color:var(--premium-text-muted);margin-top:3px}
+    .shield-stats{display:flex;flex-wrap:wrap;gap:10px 24px;margin-top:8px}
+    .shield-stat{font-size:var(--text-sm);font-weight:600;color:var(--premium-text)}
+    .shield-stat span{font-weight:400;color:var(--premium-text-muted)}
+    .print-note{font-size:var(--text-xs);color:var(--premium-text-muted);font-style:italic;margin-top:4px}
+    .member-selector{margin-bottom:var(--spacing-lg);display:flex;gap:var(--spacing-md);align-items:center;flex-wrap:wrap}
+    .member-selector select{padding:8px 14px;border-radius:var(--radius-md);border:1.5px solid var(--premium-border);font-size:var(--text-sm);font-family:inherit;min-width:180px}
+    .member-selector .mgr-badge{background:#805ad5;color:#fff;font-size:11px;padding:2px 10px;border-radius:var(--radius-full);font-weight:600}
+    .overview-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:var(--spacing-md);margin-bottom:var(--spacing-xl)}
+    .ov-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-lg);text-align:center;border-top:4px solid var(--premium-gold)}
+    .ov-card .ico{font-size:24px;margin-bottom:4px}
+    .ov-card .val{font-size:var(--text-xl);font-weight:700;color:var(--premium-text)}
+    .ov-card .lbl{font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px}
+    .ov-card.green{border-top-color:#38a169}.ov-card.green .val{color:#276749}
+    .ov-card.red{border-top-color:#e53e3e}.ov-card.red .val{color:#c53030}
+    .ov-card.purple{border-top-color:#805ad5}.ov-card.purple .val{color:#553c9a}
+    .ov-card.blue{border-top-color:#3182ce}.ov-card.blue .val{color:#2b6cb0}
+    .report-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
+    .report-card h3{font-size:var(--text-sm);font-weight:700;margin-bottom:var(--spacing-md);color:var(--premium-text)}
+    .report-table{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+    .report-table th,.report-table td{padding:8px 10px;border-bottom:1px solid var(--premium-border);text-align:left}
+    .report-table th{background:var(--premium-off-white);font-weight:600;color:var(--premium-text-muted);font-size:var(--text-xs);white-space:nowrap}
+    .report-table tr:last-child td{border-bottom:none}
+    .report-table .num{text-align:right}
+    .report-table .ctr{text-align:center}
+    .badge-ok{display:inline-flex;align-items:center;gap:3px;background:#f0fff4;color:#276749;border:1px solid #68d391;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+    .badge-leave{display:inline-flex;align-items:center;gap:3px;background:#fffbeb;color:#92400e;border:1px solid #fbbf24;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+    .badge-absent{display:inline-flex;align-items:center;gap:3px;background:#fff5f5;color:#c53030;border:1px solid #fc8181;font-size:11px;font-weight:600;padding:2px 7px;border-radius:20px}
+    .date-picker-row{display:flex;align-items:center;gap:10px;margin-bottom:var(--spacing-lg);flex-wrap:wrap}
+    .date-picker-row input[type=date]{padding:9px 14px;border-radius:var(--radius-md);border:1.5px solid var(--premium-border);font-size:var(--text-sm);font-family:inherit}
+    .sl-day{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:var(--spacing-lg);overflow:hidden}
+    .sl-day-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--premium-off-white);border-bottom:1px solid var(--premium-border);cursor:pointer;gap:8px;user-select:none}
+    .sl-day-title{font-size:var(--text-sm);font-weight:700;color:var(--premium-text)}
+    .sl-day-badge{font-size:var(--text-xs);font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap;background:#e9d5ff;color:#553c9a}
+    .sl-day-badge.ok{background:#c6f6d5;color:#276749}
+    .sl-day-badge.warn{background:#fef3c7;color:#92400e}
+    .sl-break{border-bottom:1px solid var(--premium-border)}
+    .sl-break:last-child{border-bottom:none}
+    .sl-break-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;gap:8px}
+    .sl-break-time{font-size:var(--text-xs);font-weight:700;color:var(--premium-gold);background:#fffbeb;padding:2px 8px;border-radius:20px;white-space:nowrap}
+    .sl-break-stats{font-size:var(--text-xs);color:var(--premium-text-muted)}
+    .sl-break-warn{color:#d97706;font-weight:600}
+    .sl-songs{padding:0 16px 12px;display:flex;flex-direction:column;gap:2px}
+    .sl-song{display:flex;align-items:center;gap:8px;font-size:var(--text-sm);color:var(--premium-text);padding:4px 0;border-bottom:1px dashed var(--premium-border)}
+    .sl-song:last-child{border-bottom:none}
+    .sl-song-num{font-size:var(--text-xs);color:var(--premium-text-muted);width:22px;flex-shrink:0;text-align:right}
+    .sl-song-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sl-song-artist{font-size:var(--text-xs);color:var(--premium-text-muted);min-width:80px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .sl-song-dur{font-size:var(--text-xs);color:var(--premium-text-muted);white-space:nowrap;min-width:44px;text-align:right}
+    .sl-song-dur.approx{color:#d97706}
+    .sl-song-req{font-size:10px;background:#ede9fe;color:#5b21b6;padding:1px 5px;border-radius:10px;flex-shrink:0}
+    .sl-break-total{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 16px;background:var(--premium-off-white);font-size:var(--text-xs);font-weight:600;color:var(--premium-text)}
+    .sl-time-badge{background:var(--premium-gold);color:#fff;padding:3px 10px;border-radius:20px;font-size:var(--text-xs);font-weight:700}
+    .sl-empty{padding:32px;text-align:center;color:var(--premium-text-muted);font-size:var(--text-sm)}
+    .sl-stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:var(--spacing-md);margin-bottom:var(--spacing-xl)}
+    .sl-stat-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-md);text-align:center;border-top:3px solid var(--premium-gold)}
+    .sl-stat-card .sv{font-size:var(--text-xl);font-weight:700;color:var(--premium-text)}
+    .sl-stat-card .sl{font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:2px}
+    .loading-state{text-align:center;padding:40px;color:var(--premium-text-muted)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @media print{
+      .main-tabs,.period-tabs,.period-nav .nav-btn,.member-selector button,.print-hide,
+      .nav-sidebar,.nav-topbar,.nav-backdrop,.page-header button{display:none!important}
+      .shield-banner,.sl-day,.report-card{break-inside:avoid}
+      .print-header{display:block!important}
+    }
+    .print-header{display:none;margin-bottom:16px;border-bottom:2px solid #333;padding-bottom:10px}
+    .print-header h2{font-size:1.2rem;font-weight:700}
+    .print-header p{font-size:.85rem;color:#666}
+  </style>
+</head>
+<body>
+  <div id="mainNav"></div>
+  <div id="toast"></div>
+  <main>
+    <div class="container">
+      <div class="print-header" id="printHeader">
+        <h2>&#x1F6E1;&#xFE0F; รายงานวงดนตรี</h2>
+        <p id="printSubtitle"></p>
+      </div>
+      <div class="page-header">
+        <h1 class="page-title">&#x1F6E1;&#xFE0F; รายงานวง</h1>
+        <button class="btn btn-secondary print-hide" onclick="printReport()">&#x1F5A8;&#xFE0F; พิมพ์รายงาน</button>
+      </div>
+      <div class="main-tabs print-hide">
+        <button class="main-tab active" id="mainTabWork" onclick="switchMainTab('work')">&#x1F454; การทำงาน</button>
+        <button class="main-tab" id="mainTabSetlist" onclick="switchMainTab('setlist')">&#x1F3B5; ลิสเพลง</button>
+      </div>
+
+      <!-- TAB การทำงาน -->
+      <div id="tabWork">
+        <div class="period-tabs">
+          <button class="period-tab" data-work-period="week">สัปดาห์</button>
+          <button class="period-tab active" data-work-period="month">เดือน</button>
+          <button class="period-tab" data-work-period="year">ปี</button>
+        </div>
+        <div class="period-nav">
+          <button class="nav-btn" id="wPrev">&#9664;</button>
+          <span class="period-label" id="wPeriodLabel">&#8212;</span>
+          <button class="nav-btn" id="wNext">&#9654;</button>
+        </div>
+        <div class="member-selector" id="wMemberSelector" style="display:none">
+          <span class="mgr-badge">&#x1F451; ผู้จัดการ</span>
+          <select id="wMemberPicker"><option value="__all">&#x1F4CA; ทุกคนรวม</option></select>
+        </div>
+        <div id="shieldBanner"></div>
+        <div class="overview-cards" id="wCards">
+          <div class="ov-card"><div class="ico">&#x23F3;</div><div class="lbl">กำลังโหลด...</div></div>
+        </div>
+        <div class="report-card" id="wDetailCard">
+          <h3>&#x1F4CB; รายละเอียดแต่ละวัน</h3>
+          <div style="overflow-x:auto">
+            <table class="report-table">
+              <thead><tr><th>วันที่</th><th>วัน</th><th>สถานะ</th><th class="ctr">เบรค</th><th class="num">ชั่วโมง</th><th class="num">รายได้</th><th>หมายเหตุ</th></tr></thead>
+              <tbody id="wDetailTbody"><tr><td colspan="7" class="loading-state">กำลังโหลด...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="report-card" id="wAllMembersCard" style="display:none">
+          <h3>&#x1F465; สรุปสมาชิกทั้งวง</h3>
+          <div style="overflow-x:auto">
+            <table class="report-table">
+              <thead><tr><th>ชื่อ</th><th class="ctr">เบรค</th><th class="num">ชั่วโมง</th><th class="num">รายได้</th><th class="ctr">ลา(มีแทน)</th><th class="ctr">ลา(ไม่มี)</th><th class="num">อัตราเข้างาน</th></tr></thead>
+              <tbody id="wAllTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB ลิสเพลง -->
+      <div id="tabSetlist" style="display:none">
+        <div class="period-tabs">
+          <button class="period-tab active" data-sl-period="day">รายวัน</button>
+          <button class="period-tab" data-sl-period="week">รายสัปดาห์</button>
+          <button class="period-tab" data-sl-period="month">รายเดือน</button>
+        </div>
+        <div class="date-picker-row" id="slDatePickerRow">
+          <label style="font-size:var(--text-sm);font-weight:600">&#x1F4C5; เลือกวัน</label>
+          <input type="date" id="slDateInput">
+        </div>
+        <div class="period-nav" id="slPeriodNav" style="display:none">
+          <button class="nav-btn" id="slPrev">&#9664;</button>
+          <span class="period-label" id="slPeriodLabel">&#8212;</span>
+          <button class="nav-btn" id="slNext">&#9654;</button>
+        </div>
+        <div class="sl-stat-cards" id="slStatCards" style="display:none"></div>
+        <div id="slContent">
+          <div class="sl-empty">&#x1F4C5; เลือกวันที่เพื่อดูรายงานลิสเพลง</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/i18n.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/nav.js?v=20260610"></script>
+  <script>
+  (function() {
+    'use strict';
+    var activeTab='work', workPeriod='month', workOffset=0, slPeriod='day', slOffset=0;
+    var scheduleData={}, bandMembers=[], weekStart=1, weekEnd=0;
+    var myId='', myRole='', bandId='', wSelectedMember='__self';
+    var _allCheckIns=[], _allLeaves=[], _currentRange=null, _loadReqId=0;
+    var _slHistory=[], _slHistoryLoaded=false, _slDateInput='';
+    var DN=['\u0e2d\u0e32.','\u0e08.','\u0e2d.','\u0e1e.','\u0e1e\u0e24.','\u0e28.','\u0e2a.'];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      requireAuth(); checkAdGate(); renderMainNav('mainNav'); applyTranslations();
+      bandId=localStorage.getItem('bandId')||'';
+      myRole=localStorage.getItem('userRole')||'';
+      try { var a=JSON.parse(localStorage.getItem('sb-wsorngsyowgxikiepice-auth-token')||'null'); if(a&&a.user)myId=a.user.id||''; } catch(e){}
+      if(!myId)myId=localStorage.getItem('odooMemberId')||localStorage.getItem('memberId')||'';
+
+      document.querySelectorAll('[data-work-period]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          document.querySelectorAll('[data-work-period]').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active'); workPeriod=btn.dataset.workPeriod; workOffset=0; loadWork();
+        });
+      });
+      document.getElementById('wPrev').onclick=function(){workOffset--;loadWork();};
+      document.getElementById('wNext').onclick=function(){workOffset++;loadWork();};
+      document.getElementById('wMemberPicker').onchange=function(){wSelectedMember=this.value;renderWork();};
+
+      document.querySelectorAll('[data-sl-period]').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          document.querySelectorAll('[data-sl-period]').forEach(function(b){b.classList.remove('active');});
+          btn.classList.add('active'); slPeriod=btn.dataset.slPeriod; slOffset=0; updateSlUI();
+          if(activeTab==='setlist')loadSetlist();
+        });
+      });
+      document.getElementById('slPrev').onclick=function(){slOffset--;loadSetlist();};
+      document.getElementById('slNext').onclick=function(){slOffset++;loadSetlist();};
+
+      var today=new Date();
+      var ts=today.getFullYear()+'-'+p2(today.getMonth()+1)+'-'+p2(today.getDate());
+      var dp=document.getElementById('slDateInput'); dp.value=ts; _slDateInput=ts;
+      dp.onchange=function(){_slDateInput=this.value;loadSetlist();};
+      loadBandSettings(function(){loadWork();});
+    });
+
+    window.switchMainTab=function(tab){
+      activeTab=tab;
+      document.getElementById('mainTabWork').classList.toggle('active',tab==='work');
+      document.getElementById('mainTabSetlist').classList.toggle('active',tab==='setlist');
+      document.getElementById('tabWork').style.display=tab==='work'?'':'none';
+      document.getElementById('tabSetlist').style.display=tab==='setlist'?'':'none';
+      if(tab==='setlist'&&!_slHistoryLoaded)loadSetlist();
+    };
+
+    function loadBandSettings(cb){
+      var stored=null; try{stored=JSON.parse(localStorage.getItem('bandSettings')||'null');}catch(e){}
+      function apply(s){
+        scheduleData=s.scheduleData||s.schedule||{}; bandMembers=s.members||[];
+        if(s.payroll){
+          if(s.payroll.weekStart!==undefined)weekStart=parseInt(s.payroll.weekStart,10);
+          if(s.payroll.weekEnd!==undefined)weekEnd=parseInt(s.payroll.weekEnd,10);
+        }
+        setupWMemberSelector();
+      }
+      if(stored&&(stored.schedule||stored.scheduleData)&&stored.members){
+        apply(stored); if(cb)cb();
+        if(bandId&&typeof apiCall==='function')apiCall('getBandSettings',{bandId:bandId},function(r){if(r&&r.success&&r.data){try{localStorage.setItem('bandSettings',JSON.stringify(r.data));}catch(e){} apply(r.data);}});
+        return;
+      }
+      if(bandId&&typeof apiCall==='function')apiCall('getBandSettings',{bandId:bandId},function(r){if(r&&r.success&&r.data){try{localStorage.setItem('bandSettings',JSON.stringify(r.data));}catch(e){} apply(r.data);}if(cb)cb();});
+      else{if(cb)cb();}
+    }
+
+    function setupWMemberSelector(){
+      var isMgr=(myRole==='admin'||myRole==='manager');
+      var sel=document.getElementById('wMemberSelector'), picker=document.getElementById('wMemberPicker');
+      if(!isMgr||!bandMembers.length){sel.style.display='none';wSelectedMember='__self';return;}
+      sel.style.display='flex';
+      picker.innerHTML='<option value="__all">\u{1F4CA} \u0e17\u0e38\u0e01\u0e04\u0e19\u0e23\u0e27\u0e21</option><option value="__self">\u{1F464} \u0e02\u0e2d\u0e07\u0e09\u0e31\u0e19</option>';
+      bandMembers.forEach(function(m){var o=document.createElement('option');o.value=m.memberId||m.id;o.textContent='\u{1F464} '+(m.name||'\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38');picker.appendChild(o);});
+      wSelectedMember='__all'; picker.value='__all';
+    }
+
+    function getWorkRange(){
+      var today=new Date(),start,end,label;
+      if(workPeriod==='week'){
+        var ref=new Date(today);ref.setDate(ref.getDate()+workOffset*7);
+        var dow=ref.getDay(),diff=(dow-weekStart+7)%7;
+        start=new Date(ref);start.setDate(ref.getDate()-diff);
+        var span=(weekEnd-weekStart+7)%7;if(span===0)span=6;
+        end=new Date(start);end.setDate(start.getDate()+span);
+        label=formatThaiDateFull(start,{year:false})+' \u2013 '+formatThaiDateFull(end);
+      } else if(workPeriod==='month'){
+        var mRef=new Date(today.getFullYear(),today.getMonth()+workOffset,1);
+        start=new Date(mRef.getFullYear(),mRef.getMonth(),1);
+        end=new Date(mRef.getFullYear(),mRef.getMonth()+1,0);
+        label=THAI_MONTHS_LONG[mRef.getMonth()]+' '+(mRef.getFullYear()+543);
+      } else {
+        var yRef=today.getFullYear()+workOffset;
+        start=new Date(yRef,0,1);end=new Date(yRef,11,31);
+        label='\u0e1b\u0e35 '+(yRef+543);
+      }
+      var dates=[];
+      for(var dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
+        var _d=new Date(dd);
+        dates.push(_d.getFullYear()+'-'+p2(_d.getMonth()+1)+'-'+p2(_d.getDate()));
+      }
+      return {start:start,end:end,dates:dates,label:label};
+    }
+
+    function p2(n){return String(n).padStart(2,'0');}
+    function parseMin(t){if(!t)return 0;var pp=t.split(':').map(Number);return pp[0]*60+(pp[1]||0);}
+    function calcH(s,e){var d=e-s;if(d<0)d+=1440;return d/60;}
+    function getSlotsForDow(dow){var dd=scheduleData[dow]||scheduleData[String(dow)];if(Array.isArray(dd))return dd;if(dd&&dd.timeSlots)return dd.timeSlots;return[];}
+    function getMemberRate(slot,mid){var ms=slot.members||[];for(var i=0;i<ms.length;i++){if(ms[i].memberId===mid)return{rate:ms[i].rate||0,type:ms[i].rateType||'shift',assigned:true};}return{rate:0,type:'shift',assigned:false};}
+    function slotPay(slot,mid){var r=getMemberRate(slot,mid);if(r.rate<=0)return 0;if(r.type==='hourly')return calcH(parseMin(slot.startTime),parseMin(slot.endTime))*r.rate;return r.rate;}
+    function slotHours(slot){return calcH(parseMin(slot.startTime),parseMin(slot.endTime));}
+    function fmt(n){return Number(n).toLocaleString('th-TH');}
+    function fmtH(h){return Number(h).toFixed(1);}
+    function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+    function loadWork(){
+      var range=getWorkRange();_currentRange=range;
+      document.getElementById('wPeriodLabel').textContent=range.label;
+      document.getElementById('wCards').innerHTML='<div class="ov-card"><div class="ico" style="display:inline-block;animation:spin 1s linear infinite">\u23f3</div><div class="lbl">\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...</div></div>';
+      document.getElementById('shieldBanner').innerHTML='';
+      _allCheckIns=[];_allLeaves=[];
+      if(!range.dates.length){renderWork();return;}
+      var dateFrom=range.dates[0],dateTo=range.dates[range.dates.length-1];
+      var rid=++_loadReqId,ciDone=false,lvDone=false;
+      var isMgr=(myRole==='admin'||myRole==='manager'),mf=isMgr?undefined:myId;
+      apiCall('getCheckInsForRange',{bandId:bandId,dateFrom:dateFrom,dateTo:dateTo,memberId:mf},function(r){
+        if(rid!==_loadReqId)return;if(r&&r.success&&r.data)_allCheckIns=r.data;ciDone=true;if(lvDone)renderWork();
+      });
+      apiCall('getLeaveRequestsForRange',{bandId:bandId,dateFrom:dateFrom,dateTo:dateTo,memberId:mf},function(r){
+        if(rid!==_loadReqId)return;if(r&&r.success&&r.data)_allLeaves=r.data;lvDone=true;if(ciDone)renderWork();
+      });
+    }
+
+    function computeMember(mid){
+      var range=_currentRange;if(!range)return null;
+      var myCI={};
+      _allCheckIns.forEach(function(ci){
+        if(ci.memberId!==mid)return;
+        if(!myCI[ci.date])myCI[ci.date]={slots:[],status:'',substitute:null};
+        (ci.slots||[]).forEach(function(s){if(myCI[ci.date].slots.indexOf(s)<0)myCI[ci.date].slots.push(s);});
+        if(ci.status)myCI[ci.date].status=ci.status;
+        if(ci.substitute)myCI[ci.date].substitute=ci.substitute;
+      });
+      var myLV=_allLeaves.filter(function(lv){return lv.memberId===mid;});
+      var totalBreaks=0,totalHours=0,totalEarnings=0,leaveSub=0,leaveNoSub=0,scheduledDays=0,attendedDays=0,daily=[];
+      range.dates.forEach(function(ds){
+        var dtObj=new Date(ds),dow=dtObj.getDay(),daySlots=getSlotsForDow(dow);
+        if(!daySlots.length)return;scheduledDays++;
+        var ci=myCI[ds],ciSlots=ci?ci.slots:[],isLeave=ci&&ci.status==='leave';
+        var hasSub=false,subName='';
+        if(isLeave)myLV.forEach(function(lv){if(lv.date===ds&&lv.substituteName){hasSub=true;subName=lv.substituteName;}});
+        var dayBreaks=0,dayHours=0,dayAmt=0,status='none';
+        if(isLeave){
+          if(hasSub){leaveSub++;status='leave_sub';daySlots.forEach(function(slot){var mr=getMemberRate(slot,mid);if(!mr.assigned)return;dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid);});}
+          else{leaveNoSub++;status='leave_nosub';}
+        } else {
+          daySlots.forEach(function(slot){
+            var sk=(slot.startTime||'')+'-'+(slot.endTime||'');
+            var mr=getMemberRate(slot,mid);if(!mr.assigned)return;
+            if(ciSlots.indexOf(sk)>=0){status='ok';dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid);}
+          });
+          if(status==='ok')attendedDays++;
+        }
+        totalBreaks+=dayBreaks;totalHours+=dayHours;totalEarnings+=dayAmt;
+        daily.push({date:ds,dow:dow,dayBreaks:dayBreaks,dayHours:dayHours,dayAmt:dayAmt,status:status,subName:subName});
+      });
+      var attendRate=scheduledDays>0?Math.round((attendedDays+leaveSub)/scheduledDays*100):0;
+      return{totalBreaks:totalBreaks,totalHours:totalHours,totalEarnings:totalEarnings,leaveSub:leaveSub,leaveNoSub:leaveNoSub,scheduledDays:scheduledDays,attendedDays:attendedDays,attendRate:attendRate,daily:daily};
+    }
+
+    function renderWork(){
+      var isMgr=(myRole==='admin'||myRole==='manager'),showAll=isMgr&&wSelectedMember==='__all';
+      document.getElementById('wAllMembersCard').style.display=showAll?'':'none';
+      document.getElementById('wDetailCard').style.display=showAll?'none':'';
+      if(showAll)renderAllMembers();
+      else{var mid=(wSelectedMember==='__self'||!wSelectedMember)?myId:wSelectedMember;renderSelfWork(mid);}
+    }
+
+    function renderSelfWork(mid){
+      var stats=computeMember(mid),range=_currentRange,banner=document.getElementById('shieldBanner');
+      if(!stats||stats.scheduledDays===0){
+        banner.innerHTML='<div class="shield-banner neutral"><div class="shield-icon">\u{1F4CB}</div><div class="shield-text"><div class="shield-title">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e31\u0e19\u0e17\u0e33\u0e07\u0e32\u0e19\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e19\u0e35\u0e49</div><div class="shield-subtitle">\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e15\u0e32\u0e23\u0e32\u0e07 schedule \u0e43\u0e19\u0e01\u0e32\u0e23\u0e15\u0e31\u0e49\u0e07\u0e04\u0e48\u0e32\u0e27\u0e07</div></div></div>';
+        document.getElementById('wCards').innerHTML='';
+        document.getElementById('wDetailTbody').innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--premium-text-muted)">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</td></tr>';
+        return;
+      }
+      var rate=stats.attendRate,cls=rate>=90?'green':rate>=75?'yellow':'red';
+      var icon=rate>=90?'\u{1F6E1}\uFE0F':rate>=75?'\u26A0\uFE0F':'\u{1F6A8}';
+      var msg=rate>=90?'\u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19\u0e40\u0e01\u0e13\u0e11\u0e4c\u0e14\u0e35\u0e40\u0e22\u0e35\u0e48\u0e22\u0e21':rate>=75?'\u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19\u0e40\u0e01\u0e13\u0e11\u0e4c\u0e1b\u0e32\u0e19\u0e01\u0e25\u0e32\u0e07':'\u0e01\u0e32\u0e23\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19\u0e15\u0e48\u0e33 \u2014 \u0e15\u0e49\u0e2d\u0e07\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07';
+      var bandN=localStorage.getItem('bandName')||'\u0e27\u0e07';
+      banner.innerHTML='<div class="shield-banner '+cls+'"><div class="shield-icon">'+icon+'</div><div class="shield-text"><div class="shield-title">'+msg+'</div><div class="shield-subtitle">'+esc(bandN)+' \u00b7 '+esc(range?range.label:'')+'</div><div class="shield-stats"><div class="shield-stat">\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19 <span>'+stats.attendedDays+'/'+stats.scheduledDays+' \u0e27\u0e31\u0e19</span></div><div class="shield-stat">\u0e40\u0e1a\u0e23\u0e04\u0e23\u0e27\u0e21 <span>'+stats.totalBreaks+' \u0e40\u0e1a\u0e23\u0e04</span></div><div class="shield-stat">\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07\u0e23\u0e27\u0e21 <span>'+fmtH(stats.totalHours)+' \u0e0a\u0e21.</span></div>'+(stats.totalEarnings>0?'<div class="shield-stat">\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49 <span>\u0e3f'+fmt(stats.totalEarnings)+'</span></div>':'')+'</div><div class="print-note">\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e08\u0e32\u0e01\u0e23\u0e30\u0e1a\u0e1a BandThai \u00b7 '+new Date().toLocaleDateString('th-TH')+'</div></div></div>';
+
+      document.getElementById('wCards').innerHTML=
+        '<div class="ov-card green"><div class="ico">\u2705</div><div class="val">'+rate+'%</div><div class="lbl">\u0e2d\u0e31\u0e15\u0e23\u0e32\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19</div></div>'+
+        '<div class="ov-card"><div class="ico">\u{1F3AF}</div><div class="val">'+stats.attendedDays+'<span style="font-size:.9rem;font-weight:400"> \u0e27\u0e31\u0e19</span></div><div class="lbl">\u0e27\u0e31\u0e19\u0e17\u0e33\u0e07\u0e32\u0e19</div></div>'+
+        '<div class="ov-card blue"><div class="ico">\u23f1\uFE0F</div><div class="val">'+fmtH(stats.totalHours)+'<span style="font-size:.9rem;font-weight:400"> \u0e0a\u0e21.</span></div><div class="lbl">\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07\u0e23\u0e27\u0e21</div></div>'+
+        (stats.totalEarnings>0?'<div class="ov-card purple"><div class="ico">\u{1F4B0}</div><div class="val" style="font-size:1rem">\u0e3f'+fmt(stats.totalEarnings)+'</div><div class="lbl">\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49\u0e23\u0e27\u0e21</div></div>':'')+
+        (stats.leaveNoSub>0?'<div class="ov-card red"><div class="ico">\u26A0\uFE0F</div><div class="val">'+stats.leaveNoSub+'<span style="font-size:.9rem;font-weight:400"> \u0e27\u0e31\u0e19</span></div><div class="lbl">\u0e25\u0e32\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e19\u0e41\u0e17\u0e19</div></div>':'');
+
+      var rows='';
+      stats.daily.forEach(function(d){
+        var dtObj=new Date(d.date),dayLabel=DN[d.dow],dd2=p2(dtObj.getDate()),mm2=p2(dtObj.getMonth()+1);
+        var sb=d.status==='ok'?'<span class="badge-ok">\u2705 \u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19</span>':
+          d.status==='leave_sub'?'<span class="badge-leave">\u{1F504} \u0e25\u0e32/\u0e21\u0e35\u0e41\u0e17\u0e19</span>':
+          d.status==='leave_nosub'?'<span class="badge-absent">\u274C \u0e25\u0e32/\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e17\u0e19</span>':
+          '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">\u2014</span>';
+        rows+='<tr><td>'+dd2+'/'+mm2+'</td><td>'+dayLabel+'</td><td>'+sb+'</td>'+
+          '<td class="ctr">'+(d.dayBreaks||'\u2014')+'</td>'+
+          '<td class="num">'+(d.dayHours>0?fmtH(d.dayHours):'\u2014')+'</td>'+
+          '<td class="num">'+(d.dayAmt>0?'\u0e3f'+fmt(d.dayAmt):'\u2014')+'</td>'+
+          '<td style="font-size:var(--text-xs);color:var(--premium-text-muted)">'+(d.subName?'\u0e04\u0e19\u0e41\u0e17\u0e19: '+esc(d.subName):'')+'</td></tr>';
+      });
+      document.getElementById('wDetailTbody').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:var(--premium-text-muted)">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</td></tr>';
+    }
+
+    function renderAllMembers(){
+      document.getElementById('shieldBanner').innerHTML='';document.getElementById('wCards').innerHTML='';
+      var ids=[];
+      _allCheckIns.forEach(function(ci){if(ci.memberId&&ids.indexOf(ci.memberId)<0)ids.push(ci.memberId);});
+      bandMembers.forEach(function(m){var mid=m.memberId||m.id;if(mid&&ids.indexOf(mid)<0)ids.push(mid);});
+      var allStats=ids.map(function(mid){
+        var s=computeMember(mid);if(!s||s.scheduledDays===0)return null;
+        var mInfo=bandMembers.find(function(m){return(m.memberId||m.id)===mid;});
+        return{mid:mid,name:mInfo?(mInfo.name||'\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38'):(mid.substring(0,8)+'\u2026'),stats:s};
+      }).filter(Boolean);
+      if(allStats.length>0){
+        var avgRate=Math.round(allStats.reduce(function(s,m){return s+m.stats.attendRate;},0)/allStats.length);
+        var totalH=allStats.reduce(function(s,m){return s+m.stats.totalHours;},0);
+        var cls2=avgRate>=90?'green':avgRate>=75?'yellow':'red';
+        var icon2=avgRate>=90?'\u{1F6E1}\uFE0F':avgRate>=75?'\u26A0\uFE0F':'\u{1F6A8}';
+        document.getElementById('shieldBanner').innerHTML='<div class="shield-banner '+cls2+'"><div class="shield-icon">'+icon2+'</div><div class="shield-text"><div class="shield-title">\u0e2a\u0e23\u0e38\u0e1b\u0e17\u0e31\u0e49\u0e07\u0e27\u0e07 \u2014 \u0e2d\u0e31\u0e15\u0e23\u0e32\u0e40\u0e02\u0e49\u0e32\u0e07\u0e32\u0e19\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22 '+avgRate+'%</div><div class="shield-subtitle">'+esc(document.getElementById('wPeriodLabel').textContent)+'</div><div class="shield-stats"><div class="shield-stat">\u0e2a\u0e21\u0e32\u0e0a\u0e34\u0e01 <span>'+allStats.length+' \u0e04\u0e19</span></div><div class="shield-stat">\u0e0a\u0e31\u0e48\u0e27\u0e42\u0e21\u0e07\u0e23\u0e27\u0e21 <span>'+fmtH(totalH)+' \u0e0a\u0e21.</span></div></div><div class="print-note">\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e08\u0e32\u0e01\u0e23\u0e30\u0e1a\u0e1a BandThai \u00b7 '+new Date().toLocaleDateString('th-TH')+'</div></div></div>';
+      }
+      var rows='';
+      allStats.forEach(function(item){
+        var s=item.stats,rc=s.attendRate>=90?'color:#276749;font-weight:700':s.attendRate>=75?'color:#92400e;font-weight:700':'color:#c53030;font-weight:700';
+        rows+='<tr><td>'+esc(item.name)+'</td><td class="ctr">'+s.totalBreaks+'</td><td class="num">'+fmtH(s.totalHours)+'</td>'+
+          '<td class="num">'+(s.totalEarnings>0?'\u0e3f'+fmt(s.totalEarnings):'\u2014')+'</td>'+
+          '<td class="ctr">'+(s.leaveSub||'\u2014')+'</td>'+
+          '<td class="ctr">'+(s.leaveNoSub>0?'<span style="color:#c53030;font-weight:700">'+s.leaveNoSub+'</span>':'\u2014')+'</td>'+
+          '<td class="num"><span style="'+rc+'">'+s.attendRate+'%</span></td></tr>';
+      });
+      document.getElementById('wAllTbody').innerHTML=rows||'<tr><td colspan="7" style="text-align:center;color:var(--premium-text-muted)">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</td></tr>';
+    }
+
+    function updateSlUI(){
+      var isDay=slPeriod==='day';
+      document.getElementById('slDatePickerRow').style.display=isDay?'':'none';
+      document.getElementById('slPeriodNav').style.display=isDay?'none':'';
+    }
+
+    function getSlRange(){
+      var today=new Date(),start,end,label;
+      if(slPeriod==='week'){
+        var ref=new Date(today);ref.setDate(ref.getDate()+slOffset*7);
+        var dow=ref.getDay(),diff=(dow-weekStart+7)%7;
+        start=new Date(ref);start.setDate(ref.getDate()-diff);
+        var span=(weekEnd-weekStart+7)%7;if(span===0)span=6;
+        end=new Date(start);end.setDate(start.getDate()+span);
+        label=formatThaiDateFull(start,{year:false})+' \u2013 '+formatThaiDateFull(end);
+      } else {
+        var mRef=new Date(today.getFullYear(),today.getMonth()+slOffset,1);
+        start=new Date(mRef.getFullYear(),mRef.getMonth(),1);
+        end=new Date(mRef.getFullYear(),mRef.getMonth()+1,0);
+        label=THAI_MONTHS_LONG[mRef.getMonth()]+' '+(mRef.getFullYear()+543);
+      }
+      var dates=[];
+      for(var dd=new Date(start);dd<=end;dd.setDate(dd.getDate()+1)){
+        var _d=new Date(dd);
+        dates.push(_d.getFullYear()+'-'+p2(_d.getMonth()+1)+'-'+p2(_d.getDate()));
+      }
+      return{dates:dates,label:label};
+    }
+
+    function loadSetlist(){
+      document.getElementById('slContent').innerHTML='<div class="loading-state">\u23f3 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...</div>';
+      document.getElementById('slStatCards').style.display='none';
+      if(slPeriod==='day'){
+        var d=_slDateInput;if(!d)return;
+        apiCall('getPlaylistHistoryByDate',{date:d},function(r){
+          renderSetlist([d],(r&&r.success&&r.data)?r.data:[]);
+        });
+      } else {
+        var range=getSlRange();document.getElementById('slPeriodLabel').textContent=range.label;
+        if(!_slHistoryLoaded){
+          apiCall('getPlaylistHistory',{},function(r){
+            _slHistory=(r&&r.success&&r.data)?r.data:[];_slHistoryLoaded=true;
+            renderSetlist(range.dates,_slHistory.filter(function(h){return range.dates.indexOf(h.date)>=0;}));
+          });
+        } else {
+          var r2=getSlRange();
+          renderSetlist(r2.dates,_slHistory.filter(function(h){return r2.dates.indexOf(h.date)>=0;}));
+        }
+      }
+    }
+
+    function renderSetlist(dates,history){
+      if(!history.length){
+        document.getElementById('slContent').innerHTML='<div class="sl-empty">\u{1F4ED} \u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e34\u0e2a\u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e19\u0e35\u0e49<br><span style="font-size:var(--text-xs);color:var(--premium-text-muted)">\u0e25\u0e34\u0e2a\u0e40\u0e1e\u0e25\u0e07\u0e08\u0e30\u0e16\u0e39\u0e01\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e08\u0e1a\u0e40\u0e1a\u0e23\u0e04\u0e43\u0e19 Live Mode</span></div>';
+        document.getElementById('slStatCards').style.display='none';return;
+      }
+      var byDate={};history.forEach(function(h){if(!byDate[h.date])byDate[h.date]=[];byDate[h.date].push(h);});
+      var sortedDates=Object.keys(byDate).sort().reverse();
+      var totalSongs=0,totalBreaks=0,totalDurSec=0,songsPerBreak=[];
+      var html='';
+      sortedDates.forEach(function(dt){
+        var breaks=byDate[dt];
+        breaks.sort(function(a,b){return(a.timeSlot||'').localeCompare(b.timeSlot||'');});
+        var dtObj=new Date(dt+'T00:00:00');
+        var dayLabel=DN[dtObj.getDay()]+' '+p2(dtObj.getDate())+'/'+p2(dtObj.getMonth()+1)+'/'+(dtObj.getFullYear()+543);
+        var daySongs=0;breaks.forEach(function(b){daySongs+=(b.songs||[]).length;});
+        totalSongs+=daySongs;totalBreaks+=breaks.length;
+        songsPerBreak=songsPerBreak.concat(breaks.map(function(b){return(b.songs||[]).length;}));
+        var dayBadgeClass=daySongs>=breaks.length*10?'ok':'warn';
+        html+='<div class="sl-day"><div class="sl-day-header" onclick="var b=this.nextElementSibling;b.style.display=b.style.display===\'none\'?\'\':\' none\'"><div><div class="sl-day-title">\u{1F4C5} '+dayLabel+'</div></div><span class="sl-day-badge '+dayBadgeClass+'">'+daySongs+' \u0e40\u0e1e\u0e25\u0e07 \u00b7 '+breaks.length+' \u0e40\u0e1a\u0e23\u0e04</span></div><div class="sl-day-body">';
+        breaks.forEach(function(brk){
+          var songs=brk.songs||[],brkDurSec=0,brkId=bt(brk.id||dt+(brk.timeSlot||''));
+          var warnBrk=songs.length<10;
+          html+='<div class="sl-break"><div class="sl-break-header"><div><span class="sl-break-time">'+esc(brk.timeSlot||'\u2014')+'</span>'+
+            (brk.venue?'<span style="margin-left:8px;font-size:var(--text-xs);color:var(--premium-text-muted)">\u{1F4CD} '+esc(brk.venue)+'</span>':'')+
+            '</div><div class="sl-break-stats'+(warnBrk?' sl-break-warn':'')+'">'+songs.length+' \u0e40\u0e1e\u0e25\u0e07'+(warnBrk?' \u26A0\uFE0F &lt;10':'')+' </div></div><div class="sl-songs">';
+          songs.forEach(function(s,i){
+            var sec=getSongDurCached(s.name,s.artist);brkDurSec+=sec;
+            html+='<div class="sl-song"><div class="sl-song-num">'+(i+1)+'</div>'+
+              '<div class="sl-song-name">'+esc(s.name||'\u2014')+(s._isRequest?'<span class="sl-song-req">\u0e02\u0e2d</span>':'')+'</div>'+
+              '<div class="sl-song-artist">'+esc(s.artist||'')+'</div>'+
+              '<div class="sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx')+'" id="sldur_'+brkId+'_'+i+'">'+fmtDur(sec)+'</div></div>';
+          });
+          totalDurSec+=brkDurSec;
+          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+fmtDurLong(brkDurSec)+'</span></div></div>';
+        });
+        html+='</div></div>';
+      });
+      document.getElementById('slContent').innerHTML=html;
+      var avgSPB=songsPerBreak.length?(songsPerBreak.reduce(function(a,b){return a+b;},0)/songsPerBreak.length).toFixed(1):'0';
+      var avgBadge=parseFloat(avgSPB)>=10?'<span style="color:#276749">&#x2705;</span> ':'<span style="color:#d97706">&#x26A0;&#xFE0F;</span> ';
+      document.getElementById('slStatCards').innerHTML=
+        '<div class="sl-stat-card"><div class="sv">'+totalSongs+'</div><div class="sl">\u0e40\u0e1e\u0e25\u0e07\u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14</div></div>'+
+        '<div class="sl-stat-card"><div class="sv">'+totalBreaks+'</div><div class="sl">\u0e08\u0e33\u0e19\u0e27\u0e19\u0e40\u0e1a\u0e23\u0e04</div></div>'+
+        '<div class="sl-stat-card"><div class="sv">'+avgBadge+avgSPB+'</div><div class="sl">\u0e40\u0e1e\u0e25\u0e07\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22/\u0e40\u0e1a\u0e23\u0e04</div></div>'+
+        '<div class="sl-stat-card"><div class="sv" style="font-size:1rem">'+fmtDurLong(totalDurSec)+'</div><div class="sl">\u0e40\u0e27\u0e25\u0e32\u0e40\u0e25\u0e48\u0e19\u0e23\u0e27\u0e21 (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13)</div></div>';
+      document.getElementById('slStatCards').style.display='';
+      var toFetch=[];
+      history.forEach(function(brk){
+        var brkId=bt(brk.id||brk.date+(brk.timeSlot||''));
+        (brk.songs||[]).forEach(function(s,i){if(!mbHasExact(s.name,s.artist))toFetch.push({name:s.name,artist:s.artist,brkId:brkId,idx:i});});
+      });
+      if(toFetch.length)fetchMbBatch(toFetch,history);
+    }
+
+    function bt(s){return(s||'').replace(/[^a-zA-Z0-9]/g,'_').substring(0,28);}
+    function fmtDur(sec){var m=Math.floor(sec/60),s=sec%60;return m+':'+p2(s);}
+    function fmtDurLong(sec){
+      if(sec<=0)return'\u2014';
+      var h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=sec%60;
+      if(h>0)return h+' \u0e0a\u0e21. '+m+' \u0e19\u0e32\u0e17\u0e35';
+      if(m>0)return m+' \u0e19\u0e32\u0e17\u0e35 '+s+' \u0e27\u0e34\u0e19\u0e32\u0e17\u0e35';
+      return s+' \u0e27\u0e34\u0e19\u0e32\u0e17\u0e35';
+    }
+
+    var _mbCache={},_mbExact={},_mbQueue=[],_mbRunning=false,MB_FALLBACK=210;
+    function mbKey(n,a){return((n||'')+'|||'+(a||'')).toLowerCase();}
+    function mbHasExact(n,a){return!!_mbExact[mbKey(n,a)];}
+    function getSongDurCached(n,a){
+      var k=mbKey(n,a);if(_mbCache[k]!==undefined)return _mbCache[k];
+      try{var sv=sessionStorage.getItem('mb_dur_'+k.substring(0,60));if(sv!==null){var p=JSON.parse(sv);_mbCache[k]=p.sec;if(p.exact)_mbExact[k]=true;return p.sec;}}catch(e){}
+      return MB_FALLBACK;
+    }
+    function fetchMbBatch(infos,history){
+      var seen={};
+      infos.forEach(function(s){var k=mbKey(s.name,s.artist);if(!seen[k]&&!_mbExact[k]){seen[k]=true;_mbQueue.push(s);}});
+      if(!_mbRunning)processMbQueue(history);
+    }
+    function processMbQueue(history){
+      if(!_mbQueue.length){_mbRunning=false;return;}
+      _mbRunning=true;
+      var item=_mbQueue.shift();
+      fetchMb(item.name,item.artist,function(sec,exact){
+        var k=mbKey(item.name,item.artist);_mbCache[k]=sec;if(exact)_mbExact[k]=true;
+        try{sessionStorage.setItem('mb_dur_'+k.substring(0,60),JSON.stringify({sec:sec,exact:exact}));}catch(e){}
+        updateDurInDom(history);
+        setTimeout(function(){processMbQueue(history);},1200);
+      });
+    }
+    function fetchMb(name,artist,cb){
+      var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
+      if(artist)q+='+AND+artist:'+encodeURIComponent('"'+artist+'"');
+      fetch('https://musicbrainz.org/ws/2/recording/?query='+q+'&fmt=json&limit=1',{
+        headers:{'User-Agent':'BandThai/1.0','Accept':'application/json'}
+      }).then(function(r){return r.json();})
+        .then(function(data){var r=data&&data.recordings;if(r&&r.length&&r[0].length>0){cb(Math.round(r[0].length/1000),true);}else cb(MB_FALLBACK,false);})
+        .catch(function(){cb(MB_FALLBACK,false);});
+    }
+    function updateDurInDom(history){
+      history.forEach(function(brk){
+        var brkId=bt(brk.id||brk.date+(brk.timeSlot||'')),brkSec=0;
+        (brk.songs||[]).forEach(function(s,i){
+          var sec=getSongDurCached(s.name,s.artist);brkSec+=sec;
+          var el=document.getElementById('sldur_'+brkId+'_'+i);
+          if(el){el.textContent=fmtDur(sec);el.className='sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx');}
+        });
+        var te=document.getElementById('slbt_'+brkId);if(te)te.textContent=fmtDurLong(brkSec);
+      });
+    }
+
+    window.printReport=function(){
+      var tab=activeTab==='work'?'\u{1F454} \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e01\u0e32\u0e23\u0e17\u0e33\u0e07\u0e32\u0e19':'\u{1F3B5} \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e25\u0e34\u0e2a\u0e40\u0e1e\u0e25\u0e07';
+      var period=activeTab==='work'?document.getElementById('wPeriodLabel').textContent:
+        (slPeriod==='day'?_slDateInput:document.getElementById('slPeriodLabel').textContent);
+      document.getElementById('printSubtitle').textContent=tab+' \u00b7 '+period+' \u00b7 \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e21\u0e37\u0e48\u0e2d '+new Date().toLocaleDateString('th-TH');
+      window.print();
+    };
+  })();
+  </script>
+</body>
+</html>

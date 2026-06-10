@@ -96,6 +96,7 @@ function renderMainNav(containerId) {
         )
     ) +
     navLink('schedule', '📅 ' + _t('nav_schedule'), 'ปฏิทินงานและตารางนัด') +
+    navLink('reports', '🛡️ รายงานวง', 'รายงานการทำงานและลิสเพลง') +
     (_simpleMenu ? '' : navSubmenu('💰', 'การเงิน', 'รายได้และเงินกองกลาง', ['statistics', 'band-fund'],
         navLink('statistics', '💰 รายได้รวม',   'สรุปรายได้รายเดือน') +
         navLink('band-fund',  '💰 เงินกองกลาง', 'บัญชีรายรับรายจ่ายกองกลาง')
