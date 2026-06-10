@@ -515,14 +515,14 @@
             (brk.venue?'<span style="margin-left:8px;font-size:var(--text-xs);color:var(--premium-text-muted)">\u{1F4CD} '+esc(brk.venue)+'</span>':'')+
             '</div><div class="sl-break-stats'+(warnBrk?' sl-break-warn':'')+'">'+songs.length+' \u0e40\u0e1e\u0e25\u0e07'+(warnBrk?' \u26A0\uFE0F &lt;10':'')+' </div></div><div class="sl-songs">';
           songs.forEach(function(s,i){
-            var sec=getSongDurCached(s.name,s.artist);brkDurSec+=sec;
+            var sec=getSongDurCached(s.name,s.artist);brkDurSec+=sec+GAP_SEC;
             html+='<div class="sl-song"><div class="sl-song-num">'+(i+1)+'</div>'+
               '<div class="sl-song-name">'+esc(s.name||'\u2014')+(s._isRequest?'<span class="sl-song-req">\u0e02\u0e2d</span>':'')+'</div>'+
               '<div class="sl-song-artist">'+esc(s.artist||'')+'</div>'+
               '<div class="sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx')+'" id="sldur_'+brkId+'_'+i+'">'+fmtDur(sec)+'</div></div>';
           });
           totalDurSec+=brkDurSec;
-          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+fmtDurLong(brkDurSec)+'</span></div></div>';
+          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e23\u0e27\u0e21 gap)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+fmtDurLong(brkDurSec)+'</span></div></div>';
         });
         html+='</div></div>';
       });
@@ -553,7 +553,7 @@
       return s+' \u0e27\u0e34\u0e19\u0e32\u0e17\u0e35';
     }
 
-    var _mbCache={},_mbExact={},_mbQueue=[],_mbRunning=false,MB_FALLBACK=210;
+    var _mbCache={},_mbExact={},_mbQueue=[],_mbRunning=false,MB_FALLBACK=240,GAP_SEC=20;
     function mbKey(n,a){return((n||'')+'|||'+(a||'')).toLowerCase();}
     function mbHasExact(n,a){return!!_mbExact[mbKey(n,a)];}
     function getSongDurCached(n,a){
@@ -570,12 +570,27 @@
       if(!_mbQueue.length){_mbRunning=false;return;}
       _mbRunning=true;
       var item=_mbQueue.shift();
-      fetchMb(item.name,item.artist,function(sec,exact){
+      fetchDuration(item.name,item.artist,function(sec,exact){
         var k=mbKey(item.name,item.artist);_mbCache[k]=sec;if(exact)_mbExact[k]=true;
         try{sessionStorage.setItem('mb_dur_'+k.substring(0,60),JSON.stringify({sec:sec,exact:exact}));}catch(e){}
         updateDurInDom(history);
-        setTimeout(function(){processMbQueue(history);},1200);
+        setTimeout(function(){processMbQueue(history);},600);
       });
+    }
+    function fetchDuration(name,artist,cb){
+      var term=encodeURIComponent((name||'')+(artist?' '+artist:''));
+      fetch('https://itunes.apple.com/search?term='+term+'&media=music&entity=song&limit=5&country=TH')
+        .then(function(r){return r.json();})
+        .then(function(data){
+          var results=(data&&data.results)||[];
+          var nm=(name||'').toLowerCase();
+          var match=results.find(function(r){
+            return r.trackTimeMillis>0&&r.trackName&&r.trackName.toLowerCase().indexOf(nm.substring(0,Math.min(nm.length,5)))>=0;
+          })||results.find(function(r){return r.trackTimeMillis>0;});
+          if(match&&match.trackTimeMillis>0){cb(Math.round(match.trackTimeMillis/1000),true);}
+          else{fetchMb(name,artist,cb);}
+        })
+        .catch(function(){fetchMb(name,artist,cb);});
     }
     function fetchMb(name,artist,cb){
       var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
@@ -590,7 +605,7 @@
       history.forEach(function(brk){
         var brkId=bt(brk.id||brk.date+(brk.timeSlot||'')),brkSec=0;
         (brk.songs||[]).forEach(function(s,i){
-          var sec=getSongDurCached(s.name,s.artist);brkSec+=sec;
+          var sec=getSongDurCached(s.name,s.artist);brkSec+=sec+GAP_SEC;
           var el=document.getElementById('sldur_'+brkId+'_'+i);
           if(el){el.textContent=fmtDur(sec);el.className='sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx');}
         });
