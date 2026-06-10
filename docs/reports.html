@@ -257,21 +257,20 @@
       var ts=today.getFullYear()+'-'+p2(today.getMonth()+1)+'-'+p2(today.getDate());
       var dp=document.getElementById('slDateInput'); dp.value=ts; _slDateInput=ts;
       dp.onchange=function(){_slDateInput=this.value;loadSetlist();};
-      loadSongMeta();
       loadBandSettings(function(){loadWork();});
     });
 
-    function loadSongMeta(){
-      if(_songMetaLoaded)return;
-      if(!bandId||typeof apiCall==='function'===false)return;
+    function loadSongMeta(cb){
+      if(_songMetaLoaded){if(cb)cb();return;}
+      if(!bandId){_songMetaLoaded=true;if(cb)cb();return;}
       apiCall('getSongs',{bandId:bandId,source:'band'},function(r){
         if(r&&r.success&&r.data){
-          _songMetaLoaded=true;
           (r.data||[]).forEach(function(s){
             var k=(s.name||'').trim().toLowerCase();
             if(k)_songMeta[k]={genre:s.tags||'',era:s.era||'',mood:s.mood||''};
           });
         }
+        _songMetaLoaded=true;if(cb)cb();
       });
     }
     function getSongMeta(name){
@@ -580,6 +579,7 @@
     function loadSetlist(){
       document.getElementById('slContent').innerHTML='<div class="loading-state">\u23f3 \u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14...</div>';
       document.getElementById('slStatCards').style.display='none';
+      loadSongMeta(function(){
       if(slPeriod==='day'){
         var d=_slDateInput;if(!d)return;
         apiCall('getPlaylistHistoryByDate',{date:d},function(r){
@@ -597,6 +597,7 @@
           renderSetlist(r2.dates,_slHistory.filter(function(h){return r2.dates.indexOf(h.date)>=0;}));
         }
       }
+      });
     }
 
     function renderSetlist(dates,history){
