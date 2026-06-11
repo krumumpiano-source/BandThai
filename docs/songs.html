@@ -899,8 +899,17 @@ html{scroll-behavior:smooth}
   </div>
 
   <ul id="playlist" class="list"></ul>
-</div>
-</div>
+  <!-- Duration Bar -->
+  <div id="plDurBar" style="display:none;margin-top:10px;padding:12px 14px;border-radius:10px;background:#f8fafc;border:1.5px solid #e2e8f0">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:12px;font-weight:700;color:#4a5568" id="plDurLabel">⏱ เวลารวม</span>
+      <span style="font-size:12px;font-weight:700" id="plDurText">—</span>
+    </div>
+    <div style="background:#e2e8f0;border-radius:20px;height:10px;overflow:hidden">
+      <div id="plDurFill" style="height:100%;border-radius:20px;transition:width .4s,background .3s;width:0%;background:#38a169"></div>
+    </div>
+    <div id="plDurNote" style="font-size:11px;color:#718096;margin-top:5px"></div>
+  </div>
 
 <!-- Floating Playlist Counter -->
 <div id="playlistFloating" onclick="document.getElementById('playlist').scrollIntoView({behavior:'smooth',block:'start'})">
@@ -2505,7 +2514,146 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// date input is now set in window.onload before loadBandSettings()
+// ── Duration tracking ──────────────────────────────────────────
+var _durCache={},_durExact={},_durQueue=[],_durRunning=false;
+var DUR_FALLBACK=240,DUR_GAP=20;
+function _durKey(n,a){return((n||'')+'|||'+(a||'')).toLowerCase();}
+function _getDurCached(n,a){
+  var k=_durKey(n,a);if(_durCache[k]!==undefined)return _durCache[k];
+  try{var sv=sessionStorage.getItem('dur_'+k.substring(0,60));if(sv!==null){var p=JSON.parse(sv);_durCache[k]=p.s;if(p.e)_durExact[k]=true;return p.s;}}catch(e){}
+  return DUR_FALLBACK;
+}
+function _fetchDur(name,artist,cb){
+  var term=encodeURIComponent((name||'')+(artist?' '+artist:''));
+  fetch('https://itunes.apple.com/search?term='+term+'&media=music&entity=song&limit=5&country=TH')
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var results=(data&&data.results)||[];
+      var nm=(name||'').toLowerCase();
+      var match=results.find(function(r){return r.trackTimeMillis>0&&r.trackName&&r.trackName.toLowerCase().indexOf(nm.substring(0,Math.min(nm.length,5)))>=0;})||results.find(function(r){return r.trackTimeMillis>0;});
+      if(match&&match.trackTimeMillis>0){cb(Math.round(match.trackTimeMillis/1000),true);}
+      else{
+        var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
+        if(artist)q+='+AND+artist:'+encodeURIComponent('"'+artist+'"');
+        fetch('https://musicbrainz.org/ws/2/recording/?query='+q+'&fmt=json&limit=1',{headers:{'User-Agent':'BandThai/1.0'}})
+          .then(function(r){return r.json();})
+          .then(function(d){var rr=d&&d.recordings;if(rr&&rr.length&&rr[0].length>0)cb(Math.round(rr[0].length/1000),true);else cb(DUR_FALLBACK,false);})
+          .catch(function(){cb(DUR_FALLBACK,false);});
+      }
+    }).catch(function(){cb(DUR_FALLBACK,false);});
+}
+function _processDurQueue(){
+  if(!_durQueue.length){_durRunning=false;updatePlDurBar();return;}
+  _durRunning=true;
+  var item=_durQueue.shift();
+  var k=_durKey(item.n,item.a);
+  _fetchDur(item.n,item.a,function(sec,exact){
+    _durCache[k]=sec;if(exact)_durExact[k]=true;
+    try{sessionStorage.setItem('dur_'+k.substring(0,60),JSON.stringify({s:sec,e:exact}));}catch(e){}
+    updatePlDurBar();
+    setTimeout(_processDurQueue,600);
+  });
+}
+function _queueDurFetch(songs){
+  var seen={};
+  songs.forEach(function(s){
+    if(s.break)return;
+    var k=_durKey(s.name,s.artist);
+    if(!seen[k]&&!_durExact[k]){seen[k]=true;_durQueue.push({n:s.name,a:s.artist||''});}
+  });
+  if(!_durRunning&&_durQueue.length)_processDurQueue();
+}
+
+function _parseSlotMinutes(slot){
+  if(!slot)return 0;
+  var m=slot.match(/(\d{1,2})[:.](\d{2})\s*-\s*(\d{1,2})[:.](\d{2})/);
+  if(!m)return 0;
+  var sh=parseInt(m[1]),sm=parseInt(m[2]),eh=parseInt(m[3]),em=parseInt(m[4]);
+  var start=sh*60+sm,end=eh*60+em;
+  if(end<=start)end+=1440;
+  return end-start;
+}
+
+function updatePlDurBar(){
+  var bar=document.getElementById('plDurBar');
+  if(!bar)return;
+  var songs=playlistData.filter(function(s){return!s.break;});
+  if(!songs.length){bar.style.display='none';return;}
+  bar.style.display='';
+  var totalSec=songs.reduce(function(acc,s){return acc+_getDurCached(s.name,s.artist)+DUR_GAP;},0);
+  var totalMin=Math.round(totalSec/60);
+  var slot=getActiveTimeSlotValue?getActiveTimeSlotValue():'';
+  var targetMin=_parseSlotMinutes(slot);
+  var fill=document.getElementById('plDurFill');
+  var text=document.getElementById('plDurText');
+  var label=document.getElementById('plDurLabel');
+  var note=document.getElementById('plDurNote');
+  var h=Math.floor(totalSec/3600),m=Math.floor((totalSec%3600)/60),sc=totalSec%60;
+  var durStr=h>0?(h+' ชม. '+m+' นาที'):(m+' นาที '+sc+' วิ');
+  text.textContent=durStr;
+  if(targetMin>0){
+    var pct=Math.min(100,Math.round(totalMin/targetMin*100));
+    fill.style.width=pct+'%';
+    fill.style.background=pct>=95?'#38a169':pct>=75?'#d97706':'#e53e3e';
+    label.textContent='⏱ '+totalMin+' / '+targetMin+' นาที ('+pct+'%)';
+    var diff=targetMin-totalMin;
+    if(diff>0)note.innerHTML='<span style="color:#c53030">⚠️ ขาดอีก '+diff+' นาที ('+Math.ceil(diff/4)+' เพลง)</span>';
+    else if(diff>=-3)note.innerHTML='<span style="color:#276749">✅ ครบเบรคแล้ว!</span>';
+    else note.innerHTML='<span style="color:#2b6cb0">✅ ครบแล้ว (เกิน '+Math.abs(diff)+' นาที)</span>';
+  } else {
+    fill.style.width='100%';fill.style.background='#3182ce';
+    label.textContent='⏱ เวลารวม (ประมาณ)';
+    note.textContent='ไม่มีข้อมูลช่วงเวลา — คำนวณแบบประมาณ';
+  }
+  _queueDurFetch(songs);
+}
+
+// ── Validate duration before save/live ───────────────────────────
+function _checkDurBeforeAction(actionName, onOk) {
+  var songs=playlistData.filter(function(s){return!s.break;});
+  if(!songs.length){onOk();return;}
+  var slot=getActiveTimeSlotValue?getActiveTimeSlotValue():'';
+  var targetMin=_parseSlotMinutes(slot);
+  if(!targetMin){onOk();return;} // ไม่มีข้อมูลช่วงเวลา ผ่านได้
+  var totalSec=songs.reduce(function(acc,s){return acc+_getDurCached(s.name,s.artist)+DUR_GAP;},0);
+  var totalMin=Math.round(totalSec/60);
+  var diff=targetMin-totalMin;
+  if(diff>3){
+    var confirmMsg='⚠️ เวลารวมยังขาดอยู่ '+diff+' นาที ('+totalMin+'/'+targetMin+' นาที)\n'+actionName+'ต่อไปหรือไม่?';
+    if(!confirm(confirmMsg))return;
+  }
+  onOk();
+}
+
+// ── Patch goLiveMode and copyPlaylist ───────────────────────────
+var _origGoLiveMode = goLiveMode;
+goLiveMode = function() {
+  _checkDurBeforeAction('เข้า Live Mode ', function(){ _origGoLiveMode(); });
+};
+var _origCopyPlaylist = copyPlaylist;
+copyPlaylist = function() {
+  _checkDurBeforeAction('บันทึกลิส ', function(){ _origCopyPlaylist(); });
+};
+
+// ── Patch renderPlaylist to also update duration bar ────────────
+var _origRenderForDur = renderPlaylist;
+renderPlaylist = function(){
+  _origRenderForDur();
+  setTimeout(updatePlDurBar, 0);
+};
+
+// ── Update bar when timeSlot changes ────────────────────────────
+(function(){
+  var origOTSC = typeof onTimeSlotChange === 'function' ? onTimeSlotChange : null;
+  if(origOTSC) onTimeSlotChange = function(){
+    origOTSC();
+    setTimeout(updatePlDurBar, 50);
+  };
+  ['manualTimeSlot','customTimeSlot'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.addEventListener('input',function(){setTimeout(updatePlDurBar,50);});
+  });
+})();
 </script>
 
 <script>
