@@ -2620,9 +2620,20 @@ function _checkDurBeforeAction(actionName, onOk) {
   var totalSec=songs.reduce(function(acc,s){return acc+_getDurCached(s.name,s.artist)+DUR_GAP;},0);
   var totalMin=Math.round(totalSec/60);
   var diff=targetMin-totalMin;
-  if(diff>3){
-    var confirmMsg='⚠️ เวลารวมยังขาดอยู่ '+diff+' นาที ('+totalMin+'/'+targetMin+' นาที)\n'+actionName+'ต่อไปหรือไม่?';
-    if(!confirm(confirmMsg))return;
+  if(diff>0){
+    var toastEl=document.getElementById('toast');
+    var msg='⛔ เวลารวมยังขาดอีก '+diff+' นาที ('+totalMin+' / '+targetMin+' นาที)\nกรุณาเพิ่มเพลงอีกประมาณ '+Math.ceil(diff/4)+' เพลงก่อน'+actionName;
+    if(toastEl){
+      toastEl.style.background='#c53030';
+      toastEl.style.color='#fff';
+      toastEl.textContent=msg.replace('\n',' — ');
+      toastEl.style.display='block';
+      toastEl.classList.add('show');
+      setTimeout(function(){toastEl.classList.remove('show');setTimeout(function(){toastEl.style.display='none';toastEl.style.background='';toastEl.style.color='';},300);},4000);
+    } else {
+      alert(msg);
+    }
+    return; // บล็อก — ไม่ให้บันทึก
   }
   onOk();
 }
