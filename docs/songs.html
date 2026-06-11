@@ -910,6 +910,8 @@ html{scroll-behavior:smooth}
     </div>
     <div id="plDurNote" style="font-size:11px;color:#718096;margin-top:5px"></div>
   </div>
+</div>
+</div>
 
 <!-- Floating Playlist Counter -->
 <div id="playlistFloating" onclick="document.getElementById('playlist').scrollIntoView({behavior:'smooth',block:'start'})">
@@ -2625,16 +2627,6 @@ function _checkDurBeforeAction(actionName, onOk) {
   onOk();
 }
 
-// ── Patch goLiveMode and copyPlaylist ───────────────────────────
-var _origGoLiveMode = goLiveMode;
-goLiveMode = function() {
-  _checkDurBeforeAction('เข้า Live Mode ', function(){ _origGoLiveMode(); });
-};
-var _origCopyPlaylist = copyPlaylist;
-copyPlaylist = function() {
-  _checkDurBeforeAction('บันทึกลิส ', function(){ _origCopyPlaylist(); });
-};
-
 // ── Patch renderPlaylist to also update duration bar ────────────
 var _origRenderForDur = renderPlaylist;
 renderPlaylist = function(){
@@ -3262,6 +3254,16 @@ var _origRenderPlaylist = renderPlaylist;
 renderPlaylist = function() {
   _origRenderPlaylist();
   updatePlaylistFloating();
+};
+
+// ── Patch goLiveMode and copyPlaylist (after they are defined) ──
+var _origGoLiveMode = goLiveMode;
+goLiveMode = function() {
+  _checkDurBeforeAction('เข้า Live Mode ', function(){ _origGoLiveMode(); });
+};
+var _origCopyPlaylist = copyPlaylist;
+copyPlaylist = function() {
+  _checkDurBeforeAction('บันทึกลิส ', function(){ _origCopyPlaylist(); });
 };
 
 // highlightText alias for external use
