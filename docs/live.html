@@ -2835,6 +2835,8 @@ function _doSaveKeyBpm(songName, key, bpm) {
 // ─────────────────────────────────────────────────────────────────
 function startBreak() {
   if (_isGuest) return;
+  if (_endBreakDone) return; // เบรคนี้จบแล้ว ห้ามเริ่มใหม่
+  if (_breakStarted) return; // กำลังนับอยู่แล้ว
   _breakStarted    = true;
   _breakStartTime  = Date.now();
   _breakWarnedAt55 = false;
@@ -2924,9 +2926,17 @@ function endBreak() {
 
 function endBreakConfirmed() {
   if (_endBreakSaving || _endBreakDone) return; // prevent double-call or already-saved
-  // Stop break timer
+  // Stop break timer completely
   if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+  _breakStarted = false;
   try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+  // Hide timer bar and both break buttons — break is done, no restart allowed
+  var _tbar = document.getElementById('breakTimerBar');
+  var _sbtn = document.getElementById('startBreakBtn');
+  var _ebtn = document.getElementById('endBreakBtn');
+  if (_tbar) _tbar.style.display = 'none';
+  if (_sbtn) _sbtn.style.display = 'none';
+  if (_ebtn) _ebtn.style.display = 'none';
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
     doExit();
@@ -3511,12 +3521,19 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'end_break_done' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
-      // เครื่องอื่น save สำเร็จแล้ว → แสดง clip modal + ล็อคปุ่ม
+      // เครื่องอื่น save สำเร็จแล้ว → หยุด timer + ซ่อนปุ่ม + แสดง clip modal
       var d = payload.payload || {};
       _endBreakDone = true;
       _endBreakSaving = false;
-      var btn = document.getElementById('endBreakBtn');
-      if (btn) { btn.disabled = true; btn.textContent = 'บันทึกแล้ว ✓'; }
+      _breakStarted = false;
+      if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+      try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+      var _tbar2 = document.getElementById('breakTimerBar');
+      var _sbtn2 = document.getElementById('startBreakBtn');
+      var _ebtn2 = document.getElementById('endBreakBtn');
+      if (_tbar2) _tbar2.style.display = 'none';
+      if (_sbtn2) _sbtn2.style.display = 'none';
+      if (_ebtn2) _ebtn2.style.display = 'none';
       showToast('✅ ' + (d.by || 'สมาชิก') + ' บันทึกลิสเรียบร้อย');
       _showClipModal();
     })
