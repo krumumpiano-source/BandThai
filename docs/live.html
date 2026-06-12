@@ -1303,7 +1303,8 @@ function loadPlaylist() {
       return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0,
                singer: s.singer || '', artist: s.artist || '',
                _key: s.key || '', _note: '', _skipped: false,
-               _isRequest: false, _isEncore: false };
+               _isRequest: !!s._isRequest, _isRequestTime: s._isRequestTime || '',
+               _isEncore: !!s._isEncore };
     });
     _current = 0;
     normalizePlaylistState();
@@ -3422,6 +3423,32 @@ function initRealtime() {
       _modified = true;
       normalizePlaylistState();
       _resetHbdTracking();
+      // ── Restore break timer from synced state ──
+      if (d.breakStarted && d.breakStartTime && !_breakStarted) {
+        _breakStarted   = true;
+        _breakStartTime = d.breakStartTime;
+        try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
+        var _ssb = document.getElementById('startBreakBtn');
+        var _seb = document.getElementById('endBreakBtn');
+        var _stb = document.getElementById('breakTimerBar');
+        if (_ssb) _ssb.style.display = 'none';
+        if (_seb) _seb.style.display = '';
+        if (_stb) _stb.style.display = 'flex';
+        if (_breakTimerIval) clearInterval(_breakTimerIval);
+        updateBreakTimer();
+        _breakTimerIval = setInterval(updateBreakTimer, 30000);
+      } else if (!d.breakStarted && _breakStarted && isFirstSync) {
+        // leader says break not started — trust on first sync only
+        _breakStarted = false;
+        if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+        try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+        var _ssb2 = document.getElementById('startBreakBtn');
+        var _seb2 = document.getElementById('endBreakBtn');
+        var _stb2 = document.getElementById('breakTimerBar');
+        if (_ssb2) _ssb2.style.display = '';
+        if (_seb2) _seb2.style.display = 'none';
+        if (_stb2) _stb2.style.display = 'none';
+      }
       renderNowPlaying();
       renderSongList();
       if (isFirstSync) console.log('[Live-RT] state_sync received, playlist:', _playlist.length, 'current:', _current);
@@ -3488,7 +3515,13 @@ function initRealtime() {
 }
 
 function getState() {
-  return { playlist: _playlist, current: _current, bpm: (_playlist[_current] || {}).bpm || 0 };
+  return {
+    playlist: _playlist,
+    current: _current,
+    bpm: (_playlist[_current] || {}).bpm || 0,
+    breakStarted: _breakStarted,
+    breakStartTime: _breakStartTime
+  };
 }
 
 // ── Realtime tracking helpers ─────────────────────────────────────
