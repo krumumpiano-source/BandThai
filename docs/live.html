@@ -514,6 +514,7 @@
     <div id="venueLabel"></div>
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
+      <button id="showClipBtn" onclick="showLastClip()" title="ดูรายการเพลงล่าสุด" style="display:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap">📋 รายการ</button>
       <button id="startBreakBtn" onclick="startBreak()">▶ เริ่มเบรค</button>
       <button id="endBreakBtn" onclick="endBreak()" style="display:none">✅ จบเบรค</button>
     </div>
@@ -658,7 +659,8 @@
     </div>
 
     <div class="modal-actions" style="margin-top:14px">
-      <button class="modal-btn secondary" onclick="closeClipAndExit()">ปิด & ออก</button>
+      <button class="modal-btn secondary" id="clipCloseBtn" onclick="closeClipAndExit()">ปิด & ออก</button>
+      <button class="modal-btn secondary" id="clipJustCloseBtn" onclick="closeClipOnly()" style="display:none">ปิด</button>
       <button class="modal-btn primary" onclick="copyClip()">📋 คัดลอก</button>
     </div>
   </div>
@@ -1053,6 +1055,13 @@ document.addEventListener('DOMContentLoaded', function() {
       if (_tb) _tb.style.display = 'flex';
       updateBreakTimer();
       _breakTimerIval = setInterval(updateBreakTimer, 30000);
+    }
+  } catch(e) {}
+  // Show 📋 button if there's a saved snapshot from last break
+  try {
+    if (sessionStorage.getItem('_lastBreakSnap')) {
+      var _scbInit = document.getElementById('showClipBtn');
+      if (_scbInit) _scbInit.style.display = '';
     }
   } catch(e) {}
   // Guest mode: skip startBreakBtn flow
@@ -2966,10 +2975,16 @@ function endBreakConfirmed() {
       broadcastEvent('end_break_done', { by: localStorage.getItem('userName') || '' });
     }
     _showClipModal(snapshotPlaylist);
+    // บันทึก snapshot ไว้ใน sessionStorage ให้เปิดดูทีหลังได้
+    try {
+      sessionStorage.setItem('_lastBreakSnap', JSON.stringify(snapshotPlaylist));
+      var _scb = document.getElementById('showClipBtn');
+      if (_scb) _scb.style.display = '';
+    } catch(e) {}
   });
 }
 
-function _showClipModal(overrideList) {
+function _showClipModal(overrideList, isReview) {
   var list = overrideList || _playlist;
   var lines = list.filter(function(s){ return !s._skipped; }).map(function(s, i) {
     var parts = [(i + 1) + '.', s.name];
@@ -3029,6 +3044,16 @@ function _showClipModal(overrideList) {
   }
 
   document.getElementById('clipModal').classList.add('show');
+  // ถ้าเปิดจากปุ่ม "📋 รายการ" (isReview) → ปุ่มเป็น "ปิด" แทน "ปิด & ออก"
+  var exitBtn = document.getElementById('clipCloseBtn');
+  var closeOnlyBtn = document.getElementById('clipJustCloseBtn');
+  if (isReview) {
+    if (exitBtn) exitBtn.style.display = 'none';
+    if (closeOnlyBtn) closeOnlyBtn.style.display = '';
+  } else {
+    if (exitBtn) exitBtn.style.display = '';
+    if (closeOnlyBtn) closeOnlyBtn.style.display = 'none';
+  }
 }
 
 function toggleSelectAllReq() {
@@ -3101,6 +3126,18 @@ function _fallbackCopy(text) {
 function closeClipAndExit() {
   document.getElementById('clipModal').classList.remove('show');
   doExit();
+}
+
+function showLastClip() {
+  try {
+    var snap = JSON.parse(sessionStorage.getItem('_lastBreakSnap') || 'null');
+    if (snap && snap.length) { _showClipModal(snap, true); return; }
+  } catch(e) {}
+  _showClipModal(null, true);
+}
+
+function closeClipOnly() {
+  document.getElementById('clipModal').classList.remove('show');
 }
 
 function exitLive() {
