@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -1054,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (_eb) _eb.style.display = '';
       if (_tb) _tb.style.display = 'flex';
       updateBreakTimer();
-      _breakTimerIval = setInterval(updateBreakTimer, 30000);
+      _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
     }
   } catch(e) {}
   // Show 📋 button if there's a saved snapshot from last break
@@ -2862,19 +2862,29 @@ function startBreak() {
   }
 
   updateBreakTimer();
-  _breakTimerIval = setInterval(updateBreakTimer, 30000);
+  _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
+
+  // ── Broadcast ให้ทุกเครื่องทราบว่าเริ่มนับเวลาแล้ว (พร้อม timestamp ที่ตรงกัน) ──
+  broadcastEvent('break_started', {
+    breakStartTime: _breakStartTime,
+    by: localStorage.getItem('userName') || ''
+  });
 }
 
 function updateBreakTimer() {
   if (!_breakStarted) return;
-  var elapsed = Math.floor((Date.now() - _breakStartTime) / 60000);
+  var elapsedSec = Math.floor((Date.now() - _breakStartTime) / 1000);
+  var elapsed = Math.floor(elapsedSec / 60);
+  var secs = elapsedSec % 60;
   var pct = Math.min(100, Math.round(elapsed / _breakTargetMin * 100));
 
   var txt  = document.getElementById('breakTimerText');
   var fill = document.getElementById('breakTimerFill');
   var done = document.getElementById('breakTimerDone');
 
-  if (txt)  txt.textContent = 'เล่นมา ' + elapsed + ' / ' + _breakTargetMin + ' นาที';
+  // แสดงนาที:วินาที ให้ดูเรียลไทม์มากขึ้น
+  var dispStr = 'เล่นมา ' + elapsed + ':' + String(secs).padStart(2,'0') + ' / ' + _breakTargetMin + ' นาที';
+  if (txt)  txt.textContent = dispStr;
   if (fill) {
     fill.style.width = pct + '%';
     fill.className = pct >= 100 ? 'done' : pct >= 80 ? 'warn' : '';
@@ -3483,7 +3493,7 @@ function initRealtime() {
         if (_stb) _stb.style.display = 'flex';
         if (_breakTimerIval) clearInterval(_breakTimerIval);
         updateBreakTimer();
-        _breakTimerIval = setInterval(updateBreakTimer, 30000);
+        _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
       } else if (!d.breakStarted && _breakStarted && isFirstSync) {
         // leader says break not started — trust on first sync only
         _breakStarted = false;
@@ -3509,6 +3519,28 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.from && d.text) receiveChatMsg(d.from, d.text, d.time);
+    })
+    .on('broadcast', { event: 'break_started' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
+      var d = payload.payload || {};
+      // เครื่องอื่นกดเริ่มเบรค → sync timer พร้อมกันทันที โดยใช้ breakStartTime เดียวกัน
+      if (_endBreakDone || _breakStarted) return; // เบรคนี้จบแล้วหรือนับอยู่แล้ว
+      if (!d.breakStartTime) return;
+      _breakStarted   = true;
+      _breakStartTime = d.breakStartTime; // ใช้ timestamp ของเครื่องที่กด (wall-clock เดียวกัน)
+      _breakWarnedAt55 = false;
+      _breakWarnedDone = false;
+      try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
+      var _sb = document.getElementById('startBreakBtn');
+      var _eb = document.getElementById('endBreakBtn');
+      var _tb = document.getElementById('breakTimerBar');
+      if (_sb) _sb.style.display = 'none';
+      if (_eb) _eb.style.display = '';
+      if (_tb) _tb.style.display = 'flex';
+      if (_breakTimerIval) clearInterval(_breakTimerIval);
+      updateBreakTimer();
+      _breakTimerIval = setInterval(updateBreakTimer, 10000);
+      showToast('▶ ' + (d.by || 'สมาชิก') + ' เริ่มนับเวลาแล้ว');
     })
     .on('broadcast', { event: 'end_break_saving' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
