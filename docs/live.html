@@ -2971,6 +2971,10 @@ function endBreakConfirmed() {
   if (btn) { btn.disabled = true; btn.textContent = 'กำลังบันทึก...'; }
 
   var snapshotPlaylist = _playlist.slice(); // snapshot ก่อน async call ป้องกัน Realtime เขียนทับ
+  var actualBreakSec = 0;
+  if (typeof _breakStartTime !== 'undefined' && _breakStartTime > 0) {
+    actualBreakSec = Math.floor((Date.now() - _breakStartTime) / 1000);
+  }
   var songs = snapshotPlaylist.map(function(s) {
     var song = { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0,
       artist: s.artist || '', singer: s.singer || '' };
@@ -2978,6 +2982,9 @@ function endBreakConfirmed() {
     if (s._isEncore) song._isEncore = true;
     return song;
   });
+  if (songs.length > 0 && actualBreakSec > 0) {
+    songs[0]._actualBreakSec = actualBreakSec;
+  }
   apiCall('savePlaylistHistory', {
     bandId: _bandId,
     bandName: localStorage.getItem('bandName') || '',

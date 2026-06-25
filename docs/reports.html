@@ -621,20 +621,25 @@
         html+='<div class="sl-day"><div class="sl-day-header" onclick="var b=this.nextElementSibling;b.style.display=b.style.display===\'none\'?\'\':\' none\'"><div><div class="sl-day-title">\u{1F4C5} '+dayLabel+'</div></div><span class="sl-day-badge '+dayBadgeClass+'">'+daySongs+' \u0e40\u0e1e\u0e25\u0e07 \u00b7 '+breaks.length+' \u0e40\u0e1a\u0e23\u0e04</span></div><div class="sl-day-body">';
         breaks.forEach(function(brk){
           var songs=brk.songs||[],brkDurSec=0,brkId=bt(brk.id||dt+(brk.timeSlot||''));
+          var actualSec = songs.length > 0 && songs[0]._actualBreakSec ? parseInt(songs[0]._actualBreakSec, 10) : 0;
           var warnBrk=songs.length<10;
           html+='<div class="sl-break"><div class="sl-break-header"><div><span class="sl-break-time">'+esc(brk.timeSlot||'\u2014')+'</span>'+
             (brk.venue?'<span style="margin-left:8px;font-size:var(--text-xs);color:var(--premium-text-muted)">\u{1F4CD} '+esc(brk.venue)+'</span>':'')+
             '</div><div class="sl-break-stats'+(warnBrk?' sl-break-warn':'')+'">'+songs.length+' \u0e40\u0e1e\u0e25\u0e07'+(warnBrk?' \u26A0\uFE0F &lt;10':'')+' </div></div><div class="sl-songs">';
           songs.forEach(function(s,i){
-            var sec=getSongDurCached(s.name,s.artist);brkDurSec+=sec+GAP_SEC;
+            var sec=getSongDurCached(s.name,s.artist);
+            if (!actualSec) brkDurSec+=sec+GAP_SEC;
             html+='<div class="sl-song"><div class="sl-song-num">'+(i+1)+'</div>'+
               '<div class="sl-song-name">'+esc(s.name||'\u2014')+(s._isRequest?'<span class="sl-song-req">\u0e02\u0e2d'+(s._isRequestTime?' '+esc(s._isRequestTime):'')+'</span>':'')+'</div>'+
               '<div class="sl-song-artist">'+esc(s.artist||'')+'</div>'+
               '<div class="sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx')+'" id="sldur_'+brkId+'_'+i+'">'+fmtDur(sec)+'</div></div>';
           });
+          if (actualSec) brkDurSec = actualSec;
           totalDurSec+=brkDurSec;
           var brkDistH=breakDistHtml(songs);
-          html+='</div><div class="sl-break-total"><span>\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e23\u0e27\u0e21 gap)</span><span class="sl-time-badge" id="slbt_'+brkId+'">'+ fmtDurLong(brkDurSec)+'</span></div>'+brkDistH+'</div>';
+          var isActual = actualSec > 0;
+          var durLabel = isActual ? '\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e08\u0e23\u0e34\u0e07' : '\u0e40\u0e27\u0e25\u0e32\u0e40\u0e1a\u0e23\u0e04\u0e19\u0e35\u0e49 (\u0e23\u0e27\u0e21 gap)';
+          html+='</div><div class="sl-break-total"><span>'+durLabel+'</span><span class="sl-time-badge'+(isActual?' actual':'')+'" id="slbt_'+brkId+'">'+ fmtDurLong(brkDurSec)+'</span></div>'+brkDistH+'</div>';
         });
         html+='</div></div>';
       });
@@ -718,11 +723,14 @@
     function updateDurInDom(history){
       history.forEach(function(brk){
         var brkId=bt(brk.id||brk.date+(brk.timeSlot||'')),brkSec=0;
+        var actualSec = brk.songs && brk.songs.length > 0 && brk.songs[0]._actualBreakSec ? parseInt(brk.songs[0]._actualBreakSec, 10) : 0;
         (brk.songs||[]).forEach(function(s,i){
-          var sec=getSongDurCached(s.name,s.artist);brkSec+=sec+GAP_SEC;
+          var sec=getSongDurCached(s.name,s.artist);
+          if(!actualSec) brkSec+=sec+GAP_SEC;
           var el=document.getElementById('sldur_'+brkId+'_'+i);
           if(el){el.textContent=fmtDur(sec);el.className='sl-song-dur'+(mbHasExact(s.name,s.artist)?'':' approx');}
         });
+        if(actualSec) brkSec = actualSec;
         var te=document.getElementById('slbt_'+brkId);if(te)te.textContent=fmtDurLong(brkSec);
       });
     }
