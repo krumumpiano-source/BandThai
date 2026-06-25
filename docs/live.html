@@ -2869,6 +2869,7 @@ function startBreak() {
     breakStartTime: _breakStartTime,
     by: localStorage.getItem('userName') || ''
   });
+  scheduleStateSync(); // ย้ำ sync state อีกรอบ ป้องกัน broadcast ธรรมดาหลุด
 }
 
 function updateBreakTimer() {
@@ -2899,7 +2900,7 @@ function updateBreakTimer() {
     _breakWarnedDone = true;
     if (done) done.style.display = '';
     showToast('✅ ครบ ' + _breakTargetMin + ' นาทีแล้ว!');
-    clearInterval(_breakTimerIval); _breakTimerIval = null;
+    // ไม่ clear interval เพื่อให้เวลาเดินต่อไป (เช่น 61/60, 62/60 นาที) จนกว่าจะกดจบเบรคเอง
   }
 }
 
