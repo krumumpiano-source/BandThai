@@ -671,6 +671,7 @@
     function mbHasExact(n,a){return!!_mbExact[mbKey(n,a)];}
     function getSongDurCached(n,a){
       var k=mbKey(n,a);if(_mbCache[k]!==undefined)return _mbCache[k];
+      try{var lv=localStorage.getItem('mb_dur_'+k.substring(0,60));if(lv!==null){var pl=JSON.parse(lv);_mbCache[k]=pl.sec;if(pl.exact)_mbExact[k]=true;return pl.sec;}}catch(e){}
       try{var sv=sessionStorage.getItem('mb_dur_'+k.substring(0,60));if(sv!==null){var p=JSON.parse(sv);_mbCache[k]=p.sec;if(p.exact)_mbExact[k]=true;return p.sec;}}catch(e){}
       return MB_FALLBACK;
     }
@@ -685,9 +686,9 @@
       var item=_mbQueue.shift();
       fetchDuration(item.name,item.artist,function(sec,exact){
         var k=mbKey(item.name,item.artist);_mbCache[k]=sec;if(exact)_mbExact[k]=true;
-        try{sessionStorage.setItem('mb_dur_'+k.substring(0,60),JSON.stringify({sec:sec,exact:exact}));}catch(e){}
+        try{localStorage.setItem('mb_dur_'+k.substring(0,60),JSON.stringify({sec:sec,exact:exact}));}catch(e){}
         updateDurInDom(history);
-        setTimeout(function(){processMbQueue(history);},600);
+        setTimeout(function(){processMbQueue(history);},1500);
       });
     }
     function fetchDuration(name,artist,cb){
