@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -3509,14 +3509,142 @@ populateArtistFilter = function() {
   }, 800);
 };
 
-// â”€â”€ Init on load â”€â”€
+// ── Save/Restore Draft Playlist State ──
+var DRAFT_PL_KEY = 'draftPlaylist_' + (localStorage.getItem('bandId') || 'default');
+
+function saveDraftPlaylist() {
+  var state = {
+    date: (document.getElementById('useDate') || {}).value || '',
+    venue: (document.getElementById('venue') || {}).value || '',
+    timeSlot: (document.getElementById('timeSlot') || {}).value || '',
+    manualTimeSlot: (document.getElementById('manualTimeSlot') || {}).value || '',
+    customVenue: (document.getElementById('customVenue') || {}).value || '',
+    customTimeSlot: (document.getElementById('customTimeSlot') || {}).value || '',
+    playlistData: playlistData,
+    ts: Date.now()
+  };
+  try { sessionStorage.setItem(DRAFT_PL_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function restoreDraftPlaylist() {
+  try {
+    var state = JSON.parse(sessionStorage.getItem(DRAFT_PL_KEY));
+    if (!state) return false;
+    // Ignore draft older than 12 hours
+    if (Date.now() - state.ts > 12 * 3600 * 1000) return false;
+    // If URL has ?date=... we assume they navigated from dashboard to a specific slot, so ignore draft
+    if (new URLSearchParams(location.search).get('date')) return false;
+
+    window._pendingDraftPlaylist = state;
+    return true;
+  } catch(e) { return false; }
+}
+
+function applyDraftPlaylist() {
+  var state = window._pendingDraftPlaylist;
+  if (!state) return;
+  
+  var venueEl = document.getElementById('venue');
+  
+  // Set date
+  var dateEl = document.getElementById('useDate');
+  if (dateEl && state.date) dateEl.value = state.date;
+  
+  // Set venue / offsite
+  if (state.venue === '__offsite__') {
+    if (venueEl) venueEl.value = '__offsite__';
+    setOffsiteMode(true);
+    if (state.customVenue) { var cv = document.getElementById('customVenue'); if (cv) cv.value = state.customVenue; }
+    if (state.customTimeSlot) { var ct = document.getElementById('customTimeSlot'); if (ct) ct.value = state.customTimeSlot; }
+  } else {
+    setOffsiteMode(false);
+    if (venueEl && state.venue) {
+      // Ensure the venue exists in dropdown, else it will be blank
+      var match = false;
+      for (var vi = 0; vi < venueEl.options.length; vi++) {
+        if (venueEl.options[vi].value === state.venue) { match = true; break; }
+      }
+      if (match) venueEl.value = state.venue;
+    }
+  }
+  
+  refreshTimeSlots();
+  
+  // Set time slot
+  var timeEl = document.getElementById('timeSlot');
+  if (timeEl && state.timeSlot) {
+    var matched = false;
+    for (var i=0; i<timeEl.options.length; i++) {
+      if (timeEl.options[i].value === state.timeSlot) {
+        timeEl.selectedIndex = i;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && state.timeSlot === '__custom__') {
+      timeEl.value = '__custom__';
+    }
+  }
+  
+  var manualWrap = document.getElementById('manualTimeWrap');
+  if (manualWrap) manualWrap.classList.toggle('active', timeEl && timeEl.value === '__custom__');
+  
+  if (state.manualTimeSlot) {
+    var manualEl = document.getElementById('manualTimeSlot');
+    if (manualEl) manualEl.value = state.manualTimeSlot;
+  }
+  
+  // Restore playlist data
+  if (state.playlistData && state.playlistData.length > 0) {
+    playlistData = state.playlistData;
+    renderPlaylist();
+    checkExistingPlaylists(false);
+  }
+  
+  delete window._pendingDraftPlaylist;
+}
+
+function tryApplyDraftPlaylist(tries) {
+  if (!window._pendingDraftPlaylist) return;
+  var venueEl = document.getElementById('venue');
+  if (tries > 0 && venueEl && venueEl.options.length <= 1) {
+    setTimeout(function() { tryApplyDraftPlaylist(tries - 1); }, 200);
+    return;
+  }
+  applyDraftPlaylist();
+}
+
+// Patch renderPlaylist to save draft
+var _origRenderForDraft = renderPlaylist;
+renderPlaylist = function() {
+  _origRenderForDraft();
+  saveDraftPlaylist();
+};
+
+// Listen to context changes to save draft
+setTimeout(function() {
+  ['useDate', 'venue', 'timeSlot', 'manualTimeSlot', 'customVenue', 'customTimeSlot'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('change', saveDraftPlaylist);
+      el.addEventListener('input', saveDraftPlaylist);
+    }
+  });
+}, 1000);
+
+// ── Init on load ──
 var _origOnload = window.onload;
 window.onload = function() {
   // Restore filters BEFORE the original onload calls loadInitial
   var hadFilters = restoreFilterState();
+  var hasDraft = restoreDraftPlaylist();
 
   // Call original onload
   if (_origOnload) _origOnload();
+
+  if (hasDraft) {
+    tryApplyDraftPlaylist(12);
+  }
 
   // Render recent songs
   renderRecentSongs();
