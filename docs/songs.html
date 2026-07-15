@@ -220,7 +220,7 @@
       <span style="font-size:12px;font-weight:700" id="plDurText">—</span>
     </div>
     <div style="background:#e2e8f0;border-radius:20px;height:10px;overflow:hidden">
-      <div id="plDurFill" style="height:100%;border-radius:20px;transition:width .4s,background .3s;width:0%;background:#38a169"></div>
+      <div id="plDurFill" style="height:100%;border-radius:20px;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1),background .3s;width:100%;transform-origin:left;transform:scaleX(0);background:#38a169"></div>
     </div>
     <div id="plDurNote" style="font-size:11px;color:#718096;margin-top:5px"></div>
   </div>
@@ -1360,7 +1360,7 @@ function renderExistingPlaylistsBadge() {
     + '</span>'
     + '</div>'
     + '<div style="height:6px;border-radius:99px;background:#c6f6d5;margin-bottom:' + (used > 0 ? '12px' : '4px') + ';overflow:hidden">'
-    +   '<div style="height:100%;width:' + pct + '%;background:' + barColor + ';border-radius:99px;transition:width .4s"></div>'
+    +   '<div style="height:100%;width:100%;transform-origin:left;transform:scaleX(' + (pct/100) + ');background:' + barColor + ';border-radius:99px;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1)"></div>'
     + '</div>';
 
   var listHtml = _plExistingForDate.map(function(p, idx) {
@@ -1909,7 +1909,7 @@ function updatePlDurBar(){
   text.textContent=durStr;
   if(targetMin>0){
     var pct=Math.min(100,Math.round(totalMin/targetMin*100));
-    fill.style.width=pct+'%';
+    fill.style.transform='scaleX('+(pct/100)+')';
     fill.style.background=pct>=95?'#38a169':pct>=75?'#d97706':'#e53e3e';
     label.textContent='⏱ '+totalMin+' / '+targetMin+' นาที ('+pct+'%)';
     var diff=targetMin-totalMin;
@@ -1917,7 +1917,7 @@ function updatePlDurBar(){
     else if(diff>=-3)note.innerHTML='<span style="color:#276749">✅ ครบเบรคแล้ว!</span>';
     else note.innerHTML='<span style="color:#2b6cb0">✅ ครบแล้ว (เกิน '+Math.abs(diff)+' นาที)</span>';
   } else {
-    fill.style.width='100%';fill.style.background='#3182ce';
+    fill.style.transform='scaleX(1)';fill.style.background='#3182ce';
     label.textContent='⏱ เวลารวม (ประมาณ)';
     note.textContent='ไม่มีข้อมูลช่วงเวลา — คำนวณแบบประมาณ';
   }

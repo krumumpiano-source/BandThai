@@ -340,7 +340,7 @@
     var songs = setsData[si] || [];
     var total = songs.reduce(function(a, s){ return a + (parseFloat(s.duration) || 0); }, 0);
     document.getElementById('totalDuration').textContent = total.toFixed(1) + ' นาที';
-    document.getElementById('durationFill').style.width = Math.min(100, total / 60 * 100) + '%';
+    document.getElementById('durationFill').style.transform = 'scaleX(' + (Math.min(100, total / 60 * 100) / 100) + ')';
 
     if (!songs.length) {
       document.getElementById('setlistSlots').innerHTML =

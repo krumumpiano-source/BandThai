@@ -566,7 +566,7 @@ html{scroll-behavior:smooth}
   40%{background:#fbbf24;color:#fff}
   100%{background:#fef9ee}
 }
-.row-added{background:#fffbeb !important;border-left:3px solid var(--premium-gold)}
+.row-added{background:rgba(212,168,67,0.1) !important;box-shadow:inset 0 0 0 1px rgba(212,168,67,0.3)}
 .row-added .song-title{color:var(--premium-gold-dark)}
 .sel-cb{position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:36px;height:36px}
 .sel-cb input[type=checkbox]{width:20px;height:20px;cursor:pointer;accent-color:var(--premium-gold);margin:0}

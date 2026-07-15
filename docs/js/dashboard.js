@@ -1215,7 +1215,7 @@ function nav(page) {
     document.getElementById('obTitle').textContent = isManager ? strings.managerTitle : strings.memberTitle;
     document.getElementById('obSubtitle').textContent = strings.subtitle(doneCount, steps.length);
     document.getElementById('obDismiss').textContent = strings.dismiss;
-    fill.style.width = pct + '%';
+    fill.style.transform = 'scaleX(' + (pct / 100) + ')';
 
     cont.innerHTML = steps.map(function(s, idx) {
       var done = doneMap[s.key] ? ' done' : '';

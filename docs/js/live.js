@@ -2052,7 +2052,7 @@ function updateBreakTimer() {
   var dispStr = 'เล่นมา ' + elapsed + ':' + String(secs).padStart(2,'0') + ' / ' + _breakTargetMin + ' นาที';
   if (txt)  txt.textContent = dispStr;
   if (fill) {
-    fill.style.width = pct + '%';
+    fill.style.transform = 'scaleX(' + (pct / 100) + ')';
     fill.className = pct >= 100 ? 'done' : pct >= 80 ? 'warn' : '';
   }
 
@@ -3452,7 +3452,7 @@ function receiveNudge(from, msg) {
     popup.classList.remove('active');
     void popup.offsetWidth;
     popup.classList.add('active');
-    setTimeout(function() { popup.classList.remove('active'); }, 5200);
+    // removed auto-hide; now requires manual tap to dismiss
   }
 
   // 3) Vibration (pattern: short-pause-short-pause-long)

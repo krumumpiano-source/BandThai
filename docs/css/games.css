@@ -43,7 +43,7 @@
 
     /* Timer bar */
     .timer-bar{width:100%;height:6px;background:var(--premium-border);border-radius:3px;margin-bottom:var(--spacing-lg);overflow:hidden}
-    .timer-fill{height:100%;background:var(--premium-gold);border-radius:3px;transition:width .3s linear}
+    .timer-fill{height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--premium-gold);border-radius:3px;transition:transform .3s linear}
     .timer-fill.urgent{background:var(--accent-error)}
 
     /* Quiz/Chord answer buttons */

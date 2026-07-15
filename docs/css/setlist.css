@@ -36,7 +36,7 @@
     .slot-move:hover:not(:disabled){background:var(--premium-off-white,#f7fafc);color:var(--premium-text,#1a202c)}
     .slot-move:disabled{opacity:.25;cursor:default}
     .dur-bar{height:4px;background:var(--premium-light-gray);border-radius:99px;overflow:hidden;margin-top:10px}
-    .dur-fill{height:100%;background:var(--premium-gold);border-radius:99px;transition:width .4s}
+    .dur-fill{height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:var(--premium-gold);border-radius:99px;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1)}
     .sl-empty{text-align:center;padding:32px 16px;color:var(--premium-text-muted)}
     .sl-empty .big-icon{font-size:2.5rem;margin-bottom:8px}
     .save-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px}

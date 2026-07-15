@@ -349,7 +349,7 @@
   function updateTimer(seconds, total) {
     var pct = Math.max(0, (seconds / total) * 100);
     var fill = document.getElementById('timerFill');
-    fill.style.width = pct + '%';
+    fill.style.transform = 'scaleX(' + (pct / 100) + ')';
     fill.classList.toggle('urgent', seconds <= 3);
   }
 

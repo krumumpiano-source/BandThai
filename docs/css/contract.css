@@ -23,7 +23,7 @@
     .ct-doc h1{text-align:center;font-size:20px;font-weight:700;font-family:'Kanit',sans-serif;margin-bottom:4px}
     .ct-doc .ct-subtitle{text-align:center;font-size:13px;color:#555;margin-bottom:24px}
     .ct-doc .ct-date{text-align:right;font-size:13px;color:#555;margin-bottom:20px}
-    .ct-section-title{font-weight:700;font-size:14px;margin:20px 0 6px;border-left:4px solid #b8860b;padding-left:10px}
+    .ct-section-title{font-weight:700;font-size:14px;margin:20px 0 6px;background:var(--premium-off-white);padding:6px 12px;border-radius:var(--radius-sm);color:var(--premium-gold-dark)}
     .ct-party-box{background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:14px 18px;margin-bottom:14px}
     .ct-party-title{font-weight:700;color:#b8860b;font-size:13px;margin-bottom:4px}
     .ct-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:2px;font-size:14px}

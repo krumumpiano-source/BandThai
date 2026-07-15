@@ -111,7 +111,7 @@
     .ob-card h3{font-size:var(--text-lg);font-weight:700;color:#1e3a5f;margin:0 0 4px}
     .ob-card .ob-subtitle{font-size:var(--text-sm);color:#3b6ea8;margin:0 0 var(--spacing-lg)}
     .ob-progress-bar{height:6px;background:#bfdbfe;border-radius:999px;margin-bottom:var(--spacing-lg);overflow:hidden}
-    .ob-progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#1d4ed8);border-radius:999px;transition:width .4s ease}
+    .ob-progress-fill{height:100%;width:100%;transform-origin:left;transform:scaleX(0);background:linear-gradient(90deg,#3b82f6,#1d4ed8);border-radius:99px;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1)}
     .ob-steps{display:flex;flex-direction:column;gap:10px}
     .ob-step{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:var(--radius-lg);background:#fff;border:1.5px solid #bfdbfe;text-decoration:none;color:var(--premium-text);transition:all .2s;font-size:var(--text-sm);font-weight:600}
     .ob-step:hover{border-color:#3b82f6;background:#eff6ff;transform:translateX(2px)}

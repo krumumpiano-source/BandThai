@@ -39,7 +39,7 @@
     .wt-day.wt-off{opacity:.5}
     .wt-day-name{font-weight:700;font-size:var(--text-sm);margin-bottom:8px;color:var(--premium-text)}
     .wt-badge-today{background:var(--premium-gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--radius-full,999px);font-weight:600;margin-left:4px}
-    .wt-slot{background:var(--premium-white);border-radius:var(--radius-sm,4px);padding:6px 8px;margin-bottom:4px;font-size:var(--text-xs,12px);border-left:3px solid var(--premium-gold)}
+    .wt-slot{background:rgba(212,168,67,0.1);border-radius:var(--radius-sm,4px);padding:6px 8px;margin-bottom:4px;font-size:var(--text-xs,12px);color:var(--premium-gold-dark)}
     .wt-time{display:block;font-weight:600;color:var(--premium-text)}
     .wt-venue{display:block;color:var(--premium-text-light)}
     .wt-members{display:block;color:var(--premium-text-muted);font-size:11px}

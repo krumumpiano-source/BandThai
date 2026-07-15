@@ -649,7 +649,7 @@ function updateStats() {
   var pct = all.length ? Math.round(completeCnt / all.length * 100) : 0;
   var fill = document.getElementById('completenessFill');
   var txt  = document.getElementById('completenessText');
-  if (fill) fill.style.width = pct + '%';
+  if (fill) fill.style.transform = 'scaleX(' + (pct / 100) + ')';
   if (fill) fill.style.background = pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444';
   if (txt)  txt.textContent = 'ข้อมูลครบ ' + completeCnt + '/' + all.length + ' เพลง (' + pct + '%)';
 }

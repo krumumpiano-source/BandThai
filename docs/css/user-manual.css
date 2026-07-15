@@ -2,8 +2,8 @@
     @media(max-width:1100px){.manual-layout{grid-template-columns:1fr}.manual-toc{display:none}}
     .manual-toc{position:sticky;top:calc(80px + env(safe-area-inset-top,0px));max-height:calc(100vh - 100px);overflow-y:auto}
     .toc-section{font-weight:700;font-size:12px;color:#f6ad55;padding:10px 16px 4px;text-transform:uppercase;letter-spacing:.5px}
-    .toc-item{display:block;padding:6px 16px;border-left:3px solid transparent;font-size:13px;color:#6b7280;cursor:pointer;transition:.15s;text-decoration:none}
-    .toc-item:hover,.toc-item.active{border-left-color:#f6ad55;color:#f6ad55;background:#fffbf0}
+    .toc-item{display:block;padding:6px 16px;border-radius:var(--radius-md);font-size:13px;color:#6b7280;cursor:pointer;transition:.15s;text-decoration:none}
+    .toc-item:hover,.toc-item.active{color:#dd6b20;background:rgba(246,173,85,0.15)}
     .manual-content{min-width:0}
     .m-section{margin-bottom:48px;scroll-margin-top:80px}
     .m-section h2{font-family:Kanit,sans-serif;font-size:1.35rem;font-weight:700;border-bottom:2px solid #f6ad55;padding-bottom:8px;margin:0 0 20px;display:flex;align-items:center;gap:8px}
@@ -13,8 +13,8 @@
     .step-list{counter-reset:step;list-style:none;padding:0}
     .step-list li{counter-increment:step;padding:10px 16px 10px 52px;margin-bottom:8px;background:#f9fafb;border-radius:12px;position:relative;font-size:.95rem}
     .step-list li::before{content:counter(step);position:absolute;left:14px;top:50%;transform:translateY(-50%);width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#f6ad55,#ed8936);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
-    .tip-box{background:#ebf8ff;border-left:4px solid #3182ce;border-radius:0 12px 12px 0;padding:12px 16px;margin:12px 0;font-size:.88rem}
-    .warn-box{background:#fffbeb;border-left:4px solid #f6ad55;border-radius:0 12px 12px 0;padding:12px 16px;margin:12px 0;font-size:.88rem}
+    .tip-box{background:rgba(49,130,206,0.1);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:.88rem;box-shadow:inset 0 0 0 1px rgba(49,130,206,0.2)}
+    .warn-box{background:rgba(246,173,85,0.1);border-radius:12px;padding:12px 16px;margin:12px 0;font-size:.88rem;box-shadow:inset 0 0 0 1px rgba(246,173,85,0.2)}
     .role-table{width:100%;border-collapse:collapse;font-size:.85rem;margin:16px 0}
     .role-table th,.role-table td{padding:8px 12px;border-bottom:1px solid #e5e7eb;text-align:left}
     .role-table th{background:#f9fafb;font-weight:600;position:sticky;top:0}

@@ -42,8 +42,8 @@
     .pending-card-actions { display: flex; gap: 8px; }
     /* ── Form ── */
     .form-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--spacing-md); }
-    .submit-info  { background: #ebf8ff; border-left: 4px solid #3182ce; border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: var(--spacing-md); font-size: var(--text-sm); margin-bottom: var(--spacing-md); }
-    .submit-info.manager-info { background: #f0fff4; border-left-color: #48bb78; }
+    .submit-info  { background: #ebf8ff; border-radius: var(--radius-md); padding: var(--spacing-md); font-size: var(--text-sm); margin-bottom: var(--spacing-md); box-shadow: inset 0 0 0 1px rgba(49,130,206,0.3); }
+    .submit-info.manager-info { background: #f0fff4; box-shadow: inset 0 0 0 1px rgba(72,187,120,0.3); }
     .btn-success { background: #48bb78; color: #fff; border: none; }
     .btn-success:hover { background: #38a169; }
     @media (max-width: 600px) {

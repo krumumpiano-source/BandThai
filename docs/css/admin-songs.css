@@ -164,7 +164,7 @@
     .edit-info{font-size:9px;color:#9CA3AF;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
     .completeness-bar{display:flex;align-items:center;gap:8px;margin-top:4px}
     .completeness-track{flex:1;height:6px;background:#E5E7EB;border-radius:99px;overflow:hidden}
-    .completeness-fill{height:100%;border-radius:99px;transition:width .3s}
+    .completeness-fill{height:100%;width:100%;transform-origin:left;transform:scaleX(0);border-radius:99px;transition:transform .3s cubic-bezier(0.4, 0, 0.2, 1)}
     .completeness-text{font-size:11px;color:#6B7280;white-space:nowrap}
     .sug-panel{display:none;margin-bottom:20px}
     .sug-list{display:flex;flex-direction:column;gap:12px}
