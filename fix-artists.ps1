@@ -14,15 +14,15 @@ Write-Host "`nFound duplicates:"
 Write-Host "  TATTOO COLOUR: $($tattooUpper.Count) songs"
 Write-Host "  Colorpitch: $($colorTitle.Count) songs"
 
-# Create removal list
-$duplicateIds = @()
-$duplicateIds += $tattooUpper.id
-$duplicateIds += $colorTitle.id
+# Normalize names instead of removing
+$tattooUpper | ForEach-Object { $_.artist = "Tattoo Colour" }
+$colorTitle | ForEach-Object { $_.artist = "COLORPITCH" }
 
-# Remove duplicates
-$filtered = $songs | Where-Object { $duplicateIds -notcontains $_.id }
-Write-Host "`nRemoved: $($songs.Count - $filtered.Count) songs"
-Write-Host "New count: $($filtered.Count)"
+Write-Host "`nNormalized artist names for TATTOO COLOUR and Colorpitch."
+
+# The full list is now the normalized $songs
+$filtered = $songs
+Write-Host "New count: $($filtered.Count) (No songs were deleted)"
 
 # Backup
 $backupFile = "existing-songs.backup.$(Get-Date -Format 'yyyyMMdd-HHmmss').json"

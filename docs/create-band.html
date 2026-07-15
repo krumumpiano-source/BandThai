@@ -19,21 +19,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
-  <style>
-    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
-    .auth-wrap{width:100%;max-width:520px}
-    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
-    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
-    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
-    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
-    .err-msg{color:#c53030;font-size:var(--text-xs);margin-top:4px;min-height:16px}
-    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
-    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
-    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
-    @media(max-width:480px){.form-row{grid-template-columns:1fr}}
-    .info-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #93c5fd;border-radius:var(--radius-lg);padding:var(--spacing-md);margin-bottom:var(--spacing-md);font-size:var(--text-sm);color:#1e40af;line-height:1.7}
-    .info-box strong{color:#1e3a8a}
-  </style>
+  <link rel="stylesheet" href="css/create-band.css">
 </head>
 <body>
   <div id="toast"></div>
@@ -96,46 +82,6 @@
   </div>
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('createBandForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      clearErrs();
-      var bandName = val('bandName'), nickname = val('nickname'), email = val('email');
-      var pw = document.getElementById('password').value, cpw = document.getElementById('confirmPassword').value;
-      var ok = true;
-      if (!bandName) { err('bandNameError', 'กรุณากรอกชื่อวง'); ok = false; }
-      if (!nickname) { err('nicknameError', 'กรุณากรอกชื่อเล่น'); ok = false; }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { err('emailError', 'อีเมลไม่ถูกต้อง'); ok = false; }
-      if (pw.length < 8) { err('passwordError', 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร'); ok = false; }
-      if (pw !== cpw) { err('confirmError', 'รหัสผ่านไม่ตรงกัน'); ok = false; }
-      if (!ok) return;
-
-      var btn = document.getElementById('submitBtn');
-      btn.disabled = true; btn.textContent = '⏳ กำลังสร้างวง...';
-
-      apiCall('registerBandRequest', {
-        bandName: bandName, nickname: nickname,
-        firstName: '', lastName: '', title: '', instrument: '',
-        province: '', memberCount: '1',
-        email: email, password: pw
-      }, function(r) {
-        if (r && r.success) {
-          if (typeof showToast === 'function') showToast(r.message || 'สร้างวงสำเร็จ!', 'success');
-          setTimeout(function() { window.location.href = 'dashboard.html'; }, 1500);
-        } else {
-          btn.disabled = false; btn.textContent = '🎵 สร้างวงเลย!';
-          err('generalError', (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
-        }
-      });
-    });
-
-    function val(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; }
-    function err(id, msg) { var el = document.getElementById(id); if (el) el.textContent = msg || ''; }
-    function clearErrs() {
-      ['bandNameError','nicknameError','emailError','passwordError','confirmError','generalError'].forEach(function(id){ err(id); });
-    }
-  });
-  </script>
+  <script src="js/create-band.js"></script>
 </body>
 </html>

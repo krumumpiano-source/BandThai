@@ -1,0 +1,54 @@
+/* ── Filter Bar ── */
+    .filter-bar{display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-bottom:var(--spacing-lg);align-items:center}
+    .filter-bar input,.filter-bar select{padding:8px 12px;border:1px solid var(--premium-border);border-radius:var(--radius-md);background:var(--premium-white);font-family:inherit;font-size:var(--text-sm);color:var(--premium-text)}
+    .filter-bar input{flex:1;min-width:180px}
+
+    /* ── Stat chips ── */
+    .stat-chips{display:flex;flex-wrap:wrap;gap:var(--spacing-sm);margin-bottom:var(--spacing-lg)}
+    .stat-chip{padding:10px 18px;border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;display:flex;flex-direction:column;align-items:center;min-width:110px}
+    .stat-chip .sv{font-size:var(--text-xl);font-weight:700}
+    .chip-total{background:#1a202c;color:#fff}
+    .chip-paid{background:#f0fff4;color:#276749;border:1px solid #c6f6d5}
+    .chip-partial{background:#fffbeb;color:#b7791f;border:1px solid #fef08a}
+    .chip-pending{background:#fff5f5;color:#c53030;border:1px solid #fed7d7}
+
+    /* ── Job Card ── */
+    .job-hist-card{background:var(--premium-white);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);margin-bottom:var(--spacing-md);overflow:hidden;transition:box-shadow .2s}
+    .job-hist-card:hover{box-shadow:var(--shadow-md)}
+    .job-hist-header{display:flex;align-items:stretch;cursor:pointer;user-select:none}
+    .job-date-col{min-width:66px;background:linear-gradient(160deg,#2d3748,#4a5568);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 8px;flex-shrink:0}
+    .job-date-col .jdd{font-size:26px;font-weight:700;line-height:1}
+    .job-date-col .jmm{font-size:11px;text-transform:uppercase;opacity:.8;margin-top:2px}
+    .job-date-col .jyy{font-size:10px;opacity:.6}
+    .job-head-body{flex:1;padding:var(--spacing-md) var(--spacing-lg);min-width:0}
+    .job-head-body h3{margin:0 0 4px;font-size:var(--text-md);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .job-head-meta{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:var(--text-xs);color:var(--premium-text-muted);line-height:1.8}
+    .job-head-right{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:var(--spacing-md) var(--spacing-lg);gap:6px;flex-shrink:0}
+    .payout-badge{font-size:11px;font-weight:700;padding:3px 10px;border-radius:var(--radius-full);white-space:nowrap}
+    .badge-paid{background:#f0fff4;color:#276749;border:1px solid #c6f6d5}
+    .badge-partial{background:#fffbeb;color:#b7791f;border:1px solid #fef08a}
+    .badge-pending{background:#fff5f5;color:#c53030;border:1px solid #fed7d7}
+    .badge-cancelled{background:#f7fafc;color:#718096;border:1px solid #e2e8f0}
+    .job-total-fee{font-size:var(--text-base);font-weight:700;color:var(--premium-gold)}
+
+    /* ── Detail Panel ── */
+    .job-hist-detail{display:none;border-top:1px solid var(--premium-border)}
+    .job-hist-detail.open{display:block}
+    .detail-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:var(--spacing-md);padding:var(--spacing-lg)}
+    .detail-section h4{font-size:11px;font-weight:700;color:var(--premium-text-muted);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px}
+    .detail-section p{font-size:var(--text-sm);margin:0 0 3px;color:var(--premium-text)}
+
+    /* ── Member Fee Table ── */
+    .member-fee-table{width:100%;border-collapse:collapse;font-size:var(--text-sm)}
+    .member-fee-table th{background:#f7fafc;font-weight:700;font-size:10px;text-transform:uppercase;color:var(--premium-text-muted);padding:6px 10px;text-align:left;border-bottom:2px solid var(--premium-border)}
+    .member-fee-table td{padding:8px 10px;border-bottom:1px solid var(--premium-light-gray);vertical-align:middle}
+    .member-fee-table tr:last-child td{border-bottom:none}
+    .fee-paid{color:#276749;font-weight:700}
+    .fee-pending{color:#c53030;font-weight:700}
+
+    /* ── Action row ── */
+    .job-actions{padding:var(--spacing-sm) var(--spacing-lg) var(--spacing-md);display:flex;gap:var(--spacing-sm);flex-wrap:wrap;border-top:1px solid var(--premium-light-gray)}
+
+    /* ── Empty ── */
+    .history-empty{text-align:center;padding:60px 20px;color:var(--premium-text-muted)}
+    .history-empty .big-icon{font-size:48px;margin-bottom:12px}

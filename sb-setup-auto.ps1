@@ -1,4 +1,13 @@
-﻿$PAT = "sbp_8f89f1ff1c856bc2bbd8159a6fa2943d0a9b7222"
+$envPath = Join-Path $PSScriptRoot ".env.local"
+if (Test-Path $envPath) {
+  $envLines = Get-Content $envPath | Where-Object { $_ -match "^[^#]" -and $_ -match "=" }
+  foreach ($line in $envLines) {
+    $parts = $line -split "=", 2
+    Set-Item -Path "Env:$($parts[0].Trim())" -Value $parts[1].Trim()
+  }
+}
+
+$PAT = $env:SUPABASE_PAT
 $REF = "wsorngsyowgxikiepice"
 $H   = @{ Authorization = "Bearer $PAT"; "Content-Type" = "application/json; charset=utf-8" }
 
@@ -39,13 +48,15 @@ try {
 } catch { $raw=""; try{$s=$_.Exception.Response.GetResponseStream();$raw=(New-Object System.IO.StreamReader($s)).ReadToEnd()}catch{}; Write-Host "  [WARN] $raw" -ForegroundColor Yellow }
 
 Write-Host "`n[4/5] Secrets..." -ForegroundColor Cyan
-$sec = @([ordered]@{name="VAPID_PRIVATE_KEY";value="JQcXeB_Am-Pyz3rGnopgA2qKtICNIQTEIoqXKyiHmr4"},[ordered]@{name="VAPID_PUBLIC_KEY";value="BLTV9C7RV2nVM9R-yQXtbfy_SfX7QmNSsA4XPZ_d3Q68ELssl0SioBz8RHjp1FxuAA_Zm2_ZcJ_tjEaRonDHEzA"},[ordered]@{name="VAPID_SUBJECT";value="mailto:admin@soulciety.app"})
+$vapidPri = $env:VAPID_PRIVATE_KEY
+$vapidPub = $env:VAPID_PUBLIC_KEY
+$sec = @([ordered]@{name="VAPID_PRIVATE_KEY";value=$vapidPri},[ordered]@{name="VAPID_PUBLIC_KEY";value=$vapidPub},[ordered]@{name="VAPID_SUBJECT";value="mailto:admin@soulciety.app"})
 $sBytes = [System.Text.Encoding]::UTF8.GetBytes(($sec|ConvertTo-Json -Depth 3))
 try { Invoke-RestMethod -Uri "https://api.supabase.com/v1/projects/$REF/secrets" -Method POST -Headers $H -Body $sBytes|Out-Null; Write-Host "  [OK] VAPID secrets" -ForegroundColor Green }
 catch { Write-Host "  [WARN] $($_.Exception.Message)" -ForegroundColor Yellow }
 
 Write-Host "`n[5/5] Cron job..." -ForegroundColor Cyan
-$anonKey = "sb_publishable_k2zvxeE9SJEEJkw3SVolqg_pkgZQPnm"
+$anonKey = $env:SUPABASE_ANON
 $edgeCall = "SELECT net.http_post(url:='https://wsorngsyowgxikiepice.supabase.co/functions/v1/send-notifications',headers:=jsonb_build_object(''Content-Type'',''application/json'',''Authorization'',''Bearer " + $anonKey + "''),body:=''{}''::jsonb);"
 $cronSql = "DO " + '$c$' + " BEGIN BEGIN PERFORM cron.unschedule('soulciety-send-notifications'); EXCEPTION WHEN OTHERS THEN NULL; END; PERFORM cron.schedule('soulciety-send-notifications','* * * * *','" + $edgeCall + "'); END " + '$c$' + ";"
 RunSQL "cron job" $cronSql

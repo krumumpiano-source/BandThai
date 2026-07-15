@@ -1,0 +1,32 @@
+.form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-r{grid-template-columns:1fr}}
+    /* Singer pill buttons */
+    .singer-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+    .singer-pill{position:relative}
+    .singer-pill input[type=radio]{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+    .singer-pill label{
+      display:flex;align-items:center;gap:6px;padding:8px 18px;
+      border:2px solid #e2e8f0;border-radius:999px;cursor:pointer;
+      font-size:14px;font-weight:600;font-family:inherit;
+      background:var(--premium-off-white,#f9f9f9);color:var(--premium-text,#333);
+      transition:all .15s;user-select:none;line-height:1
+    }
+    .singer-pill label:hover{border-color:var(--premium-gold);color:var(--premium-gold)}
+    /* ชาย = blue */
+    #s-male:checked + label{
+      background:#dbeafe;color:#1e3a8a;
+      border-color:#93c5fd;
+      box-shadow:0 2px 8px rgba(59,130,246,.25)
+    }
+    /* หญิง = pink */
+    #s-female:checked + label{
+      background:#fce7f3;color:#9d174d;
+      border-color:#f9a8d4;
+      box-shadow:0 2px 8px rgba(236,72,153,.25)
+    }
+    /* คู่ = green */
+    #s-duet:checked + label{
+      background:#d1fae5;color:#065f46;
+      border-color:#6ee7b7;
+      box-shadow:0 2px 8px rgba(16,185,129,.25)
+    }

@@ -1,0 +1,52 @@
+/* ── Summary bar ── */
+    .fund-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-lg); margin-bottom: var(--spacing-xl); }
+    .fund-summary-card { border-radius: var(--radius-lg); padding: var(--spacing-lg) var(--spacing-xl); text-align: center; }
+    .fund-summary-card.balance { background: linear-gradient(135deg, #1a1a2e, #16213e); color: #fff; }
+    .fund-summary-card.income  { background: linear-gradient(135deg, #f0fff4, #c6f6d5); }
+    .fund-summary-card.expense { background: linear-gradient(135deg, #fff5f5, #fed7d7); }
+    .fund-summary-card .s-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; opacity: .7; }
+    .fund-summary-card.balance .s-label { color: rgba(255,255,255,.65); }
+    .fund-summary-card.income  .s-label { color: #276749; }
+    .fund-summary-card.expense .s-label { color: #c53030; }
+    .fund-summary-card .s-val  { font-size: var(--text-2xl); font-weight: 700; }
+    .fund-summary-card.balance .s-val  { color: var(--premium-gold); }
+    .fund-summary-card.income  .s-val  { color: #276749; }
+    .fund-summary-card.expense .s-val  { color: #c53030; }
+    /* ── Tabs ── */
+    .fund-tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--premium-border); margin-bottom: var(--spacing-xl); }
+    .fund-tab  { padding: 10px 20px; font-size: var(--text-sm); font-weight: 600; color: var(--premium-text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: color .15s, border-color .15s; display: flex; align-items: center; gap: 6px; border-radius: var(--radius-md) var(--radius-md) 0 0; background: none; border-top: none; border-left: none; border-right: none; }
+    .fund-tab:hover  { color: var(--premium-text); background: var(--premium-off-white); }
+    .fund-tab.active { color: var(--premium-gold); border-bottom-color: var(--premium-gold); }
+    .tab-badge { background: #e53e3e; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: var(--radius-full); min-width: 18px; text-align: center; }
+    .tab-pane  { display: none; }
+    .tab-pane.active { display: block; }
+    /* ── Ledger table ── */
+    .ledger-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+    .ledger-table th { background: var(--premium-off-white); font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--premium-text-muted); padding: 10px 14px; border-bottom: 2px solid var(--premium-border); white-space: nowrap; }
+    .ledger-table td { padding: 11px 14px; border-bottom: 1px solid var(--premium-border); font-size: var(--text-sm); vertical-align: middle; }
+    .ledger-table tr:last-child td { border-bottom: none; }
+    .ledger-table tr:hover td { background: var(--premium-off-white); }
+    .type-income  { color: #276749; font-weight: 700; }
+    .type-expense { color: #c53030; font-weight: 700; }
+    .amount-income  { color: #276749; font-weight: 700; }
+    .amount-expense { color: #c53030; font-weight: 700; }
+    /* ── Status badges ── */
+    .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: var(--radius-full); }
+    .status-approved { background: #c6f6d5; color: #276749; }
+    .status-pending  { background: #fefcbf; color: #744210; }
+    .status-rejected { background: #fed7d7; color: #9b2c2c; }
+    /* ── Pending cards ── */
+    .pending-card { border: 1px solid var(--premium-border); border-radius: var(--radius-lg); padding: var(--spacing-md) var(--spacing-lg); margin-bottom: var(--spacing-md); background: #fff; }
+    .pending-card-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .pending-card-meta   { font-size: var(--text-xs); color: var(--premium-text-muted); display: flex; flex-wrap: wrap; gap: 10px; }
+    .pending-card-actions { display: flex; gap: 8px; }
+    /* ── Form ── */
+    .form-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--spacing-md); }
+    .submit-info  { background: #ebf8ff; border-left: 4px solid #3182ce; border-radius: 0 var(--radius-md) var(--radius-md) 0; padding: var(--spacing-md); font-size: var(--text-sm); margin-bottom: var(--spacing-md); }
+    .submit-info.manager-info { background: #f0fff4; border-left-color: #48bb78; }
+    .btn-success { background: #48bb78; color: #fff; border: none; }
+    .btn-success:hover { background: #38a169; }
+    @media (max-width: 600px) {
+      .fund-summary { grid-template-columns: 1fr; }
+      .fund-tabs    { overflow-x: auto; }
+    }

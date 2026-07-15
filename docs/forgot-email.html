@@ -13,23 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/compat.css">
-  <style>
-    body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
-    .auth-wrap{width:100%;max-width:480px}
-    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
-    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
-    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
-    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
-    .result-card{background:var(--premium-bg);border:1px solid var(--premium-border);border-radius:var(--radius-md);padding:var(--spacing-md);margin-top:var(--spacing-md)}
-    .result-card .email-mask{font-size:var(--text-lg);font-weight:700;color:var(--premium-gold);margin-bottom:4px;word-break:break-all}
-    .result-card .email-info{font-size:var(--text-sm);color:var(--premium-text-light)}
-    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
-    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
-    .form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
-    @media(max-width:480px){.form-row-inline{grid-template-columns:1fr}}
-    .hint-box{background:#fffbeb;border:1px solid #f6e05e;border-radius:var(--radius-md);padding:var(--spacing-md);font-size:var(--text-sm);color:#744210;margin-bottom:var(--spacing-lg)}
-    .no-result{text-align:center;color:var(--premium-text-muted);padding:var(--spacing-lg)}
-  </style>
+  <link rel="stylesheet" href="css/forgot-email.css">
 </head>
 <body>
   <div id="toast"></div>
@@ -76,46 +60,6 @@
 
   <script src="js/i18n.js"></script>
   <script src="js/app.js"></script>
-  <script>
-  document.addEventListener('DOMContentLoaded', function() {
-
-    document.getElementById('lookupForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      var name  = document.getElementById('nameInput').value.trim();
-      var phone = document.getElementById('phoneInput').value.trim();
-      if (!name && !phone) {
-        if (typeof showToast === 'function') showToast('กรุณากรอกชื่อ หรือ เบอร์โทร อย่างน้อย 1 อย่าง', 'error');
-        return;
-      }
-
-      var btn = document.getElementById('searchBtn');
-      btn.disabled = true; btn.textContent = '⏳ กำลังค้นหา...';
-
-      apiCall('lookupEmail', { name: name, phone: phone }, function(r) {
-        btn.disabled = false; btn.textContent = '🔍 ค้นหาอีเมลของฉัน';
-        var container = document.getElementById('results');
-        var list = document.getElementById('resultList');
-        container.style.display = 'block';
-
-        if (r && r.success && r.results && r.results.length > 0) {
-          list.innerHTML = r.results.map(function(item) {
-            return '<div class="result-card">'
-              + '<div class="email-mask">' + escapeHtml(item.masked_email || '') + '</div>'
-              + '<div class="email-info">'
-              + (item.nickname ? '🏷️ ' + escapeHtml(item.nickname) : '')
-              + (item.band_name ? ' · 🎸 ' + escapeHtml(item.band_name) : '')
-              + '</div>'
-              + '</div>';
-          }).join('');
-        } else {
-          list.innerHTML = '<div class="no-result">'
-            + '<p>❌ ไม่พบข้อมูลที่ตรงกัน</p>'
-            + '<p style="font-size:12px;margin-top:8px">กรุณาตรวจสอบชื่อ/เบอร์โทร หรือติดต่อผู้จัดการวง</p>'
-            + '</div>';
-        }
-      });
-    });
-  });
-  </script>
+  <script src="js/forgot-email.js"></script>
 </body>
 </html>

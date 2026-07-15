@@ -14,54 +14,7 @@
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
   <link rel="stylesheet" href="css/compat.css">
-  <style>
-    .filter-card{margin-bottom:var(--spacing-lg)}
-    .filter-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--spacing-md);align-items:flex-end}
-    .summary-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--spacing-md);margin-bottom:var(--spacing-lg)}
-    @media(max-width:640px){.summary-stats{grid-template-columns:repeat(2,1fr)}}
-    .stat-card{background:var(--premium-off-white);border-radius:var(--radius-md);padding:var(--spacing-md);text-align:center}
-    .stat-value{font-size:var(--text-xl,1.5rem);font-weight:700;color:var(--premium-gold)}
-    .stat-label{font-size:var(--text-xs,12px);color:var(--premium-text-muted);margin-top:4px}
-    .gig-type-badge{display:inline-block;padding:2px 8px;border-radius:var(--radius-full,999px);font-size:12px;font-weight:600}
-    .gig-type-badge.regular{background:#d4edda;color:#155724}
-    .gig-type-badge.external{background:#fff3cd;color:#856404}
-    .btn-icon-tiny{padding:3px 8px;border:none;border-radius:4px;cursor:pointer;font-size:12px}
-    .btn-icon-tiny.edit{background:#e2e8f0;color:#333}
-    .btn-icon-tiny.delete{background:#fed7d7;color:#c53030}
-    .btn-icon-tiny.payout{background:#c6f6d5;color:#276749}
-    .gig-actions-cell{white-space:nowrap;display:flex;gap:4px;align-items:center}
-    .modal-backdrop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:1000;align-items:center;justify-content:center}
-    .modal-backdrop[style*="flex"]{display:flex !important}
-    .modal-box{background:var(--premium-white,#fff);border-radius:var(--radius-lg);padding:var(--spacing-xl);max-width:540px;width:90%;max-height:90vh;overflow-y:auto}
-    .modal-header-inner{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--spacing-lg)}
-    .modal-close-btn{background:none;border:none;font-size:24px;cursor:pointer;color:var(--premium-text-muted)}
-    .member-checkbox-item{display:flex;align-items:center;gap:var(--spacing-sm);margin-bottom:var(--spacing-xs,4px)}
-    #memberFilterGroup{display:none}
-    #noScheduleData{display:none;text-align:center;padding:var(--spacing-xl);color:var(--premium-text-muted)}
-    #toast{display:none;position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));right:24px;background:var(--premium-gold);color:#fff;padding:12px 20px;border-radius:var(--radius-md);z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.25)}
-    #toast.show{display:block}
-    @media(max-width:600px){
-      .modal-backdrop{align-items:flex-end}
-      .modal-box{width:100%;max-width:100%!important;border-radius:var(--radius-xl) var(--radius-xl) 0 0;padding-bottom:calc(var(--spacing-xl) + env(safe-area-inset-bottom))}
-      /* Stack 2-col grids inside schedule modal */
-      .modal-box [style*="grid-template-columns"]{grid-template-columns:1fr!important}
-    }
-    /* historyDateGroup spans 2 cols — collapse on narrow screens */
-    @media(max-width:500px){#historyDateGroup{grid-column:span 1!important}}
-    /* Weekly Timetable */
-    .wt-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
-    @media(max-width:768px){.wt-grid{grid-template-columns:1fr}}
-    .wt-day{background:var(--premium-off-white);border-radius:var(--radius-md);padding:10px;min-height:80px}
-    .wt-day.wt-today{border:2px solid var(--premium-gold);background:#fffbeb}
-    .wt-day.wt-off{opacity:.5}
-    .wt-day-name{font-weight:700;font-size:var(--text-sm);margin-bottom:8px;color:var(--premium-text)}
-    .wt-badge-today{background:var(--premium-gold);color:#fff;font-size:10px;padding:1px 6px;border-radius:var(--radius-full,999px);font-weight:600;margin-left:4px}
-    .wt-slot{background:var(--premium-white);border-radius:var(--radius-sm,4px);padding:6px 8px;margin-bottom:4px;font-size:var(--text-xs,12px);border-left:3px solid var(--premium-gold)}
-    .wt-time{display:block;font-weight:600;color:var(--premium-text)}
-    .wt-venue{display:block;color:var(--premium-text-light)}
-    .wt-members{display:block;color:var(--premium-text-muted);font-size:11px}
-    .wt-off-text{color:var(--premium-text-muted);font-size:var(--text-xs,12px);font-style:italic}
-  </style>
+  <link rel="stylesheet" href="css/schedule.css">
 </head>
 <body>
   <div id="mainNav"></div>

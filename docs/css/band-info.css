@@ -1,0 +1,50 @@
+/* ── Band header ── */
+    .band-header-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-xl);margin-bottom:var(--spacing-xl);display:flex;gap:var(--spacing-xl);align-items:center;flex-wrap:wrap}
+    .band-logo{width:72px;height:72px;border-radius:var(--radius-full);background:linear-gradient(135deg,var(--premium-gold),#f5a623);color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px;flex-shrink:0}
+    .band-header-info{flex:1;min-width:0}
+    .band-header-info h2{margin:0 0 4px;font-size:var(--text-2xl);font-weight:700}
+    .band-meta-row{display:flex;gap:var(--spacing-md);flex-wrap:wrap;margin-top:var(--spacing-sm)}
+    .band-meta-chip{font-size:var(--text-xs);color:var(--premium-text-muted);display:flex;align-items:center;gap:4px}
+    .band-stats{display:flex;gap:var(--spacing-xl);margin-top:var(--spacing-md);flex-wrap:wrap}
+    .band-stat{text-align:center}
+    .band-stat .stat-val{font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .band-stat .stat-lbl{font-size:var(--text-xs);color:var(--premium-text-muted)}
+
+    /* ── Venue schedule ── */
+    .venue-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--spacing-lg);margin-bottom:var(--spacing-xl)}
+    .venue-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);overflow:hidden}
+    .venue-card-header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:var(--spacing-md) var(--spacing-lg)}
+    .venue-card-header h4{margin:0;font-size:var(--text-base);font-weight:700}
+    .venue-card-header .vaddr{font-size:var(--text-xs);color:rgba(255,255,255,.65);margin-top:2px}
+    .venue-card-body{padding:var(--spacing-md)}
+    .slot-row{display:flex;align-items:center;gap:var(--spacing-md);padding:8px 0;border-bottom:1px solid var(--premium-border)}
+    .slot-row:last-child{border-bottom:none}
+    .slot-day{font-weight:700;font-size:var(--text-sm);min-width:64px;color:var(--premium-text)}
+    .slot-time{font-size:var(--text-sm);color:var(--premium-gold);font-weight:600;min-width:100px}
+    .slot-members{display:flex;flex-wrap:wrap;gap:4px}
+    .slot-member-pill{font-size:10px;background:var(--premium-off-white);border:1px solid var(--premium-border);border-radius:var(--radius-full);padding:2px 8px;color:var(--premium-text-muted)}
+
+    /* ── Member cards ── */
+    .member-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--spacing-lg)}
+    .member-card{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);padding:var(--spacing-lg);transition:box-shadow .2s;position:relative;display:flex;gap:var(--spacing-md);align-items:flex-start}
+    .member-card:hover{box-shadow:var(--shadow-md)}
+    .member-avatar{width:52px;height:52px;border-radius:var(--radius-full);background:var(--premium-gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;font-weight:700}
+    .member-body{flex:1;min-width:0}
+    .member-name{font-weight:700;font-size:var(--text-base);margin:0 0 2px}
+    .member-position{font-size:11px;background:var(--premium-off-white);border-radius:var(--radius-full);padding:2px 10px;color:var(--premium-text-muted);display:inline-block;margin-bottom:6px}
+    .member-contact{font-size:var(--text-xs);color:var(--premium-text-muted);display:flex;flex-direction:column;gap:3px}
+    .member-contact a{color:var(--premium-gold);text-decoration:none}
+    .member-contact a:hover{text-decoration:underline}
+    .card-actions{position:absolute;top:8px;right:8px;display:flex;gap:4px;opacity:0;transition:opacity .2s}
+    .member-card:hover .card-actions{opacity:1}
+    .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+    .status-dot.active{background:#48bb78}.status-dot.inactive{background:#a0aec0}
+    .member-sched-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--premium-border)}
+    .member-sched-title{font-size:10px;font-weight:700;color:var(--premium-text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+    .sched-pills{display:flex;flex-wrap:wrap;gap:4px}
+    .sched-pill{font-size:10px;background:rgba(249,207,69,.12);border:1px solid rgba(249,207,69,.35);color:#b8860b;border-radius:var(--radius-full);padding:2px 8px;white-space:nowrap}
+
+    @media(max-width:600px){
+      .band-header-card{flex-direction:column;gap:var(--spacing-md)}
+      .venue-grid,.member-cards{grid-template-columns:1fr}
+    }

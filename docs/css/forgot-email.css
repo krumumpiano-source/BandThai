@@ -1,0 +1,15 @@
+body{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:var(--spacing-md)}
+    .auth-wrap{width:100%;max-width:480px}
+    .auth-card{background:var(--premium-white);border-radius:var(--radius-xl);box-shadow:var(--shadow-2xl);padding:var(--spacing-2xl)}
+    .auth-logo{text-align:center;margin-bottom:var(--spacing-xl)}
+    .auth-logo h1{font-family:var(--font-family-display);font-size:var(--text-2xl);font-weight:700;color:var(--premium-gold)}
+    .btn-full{width:100%;justify-content:center;padding:12px;font-size:var(--text-base);margin-top:var(--spacing-sm)}
+    .result-card{background:var(--premium-bg);border:1px solid var(--premium-border);border-radius:var(--radius-md);padding:var(--spacing-md);margin-top:var(--spacing-md)}
+    .result-card .email-mask{font-size:var(--text-lg);font-weight:700;color:var(--premium-gold);margin-bottom:4px;word-break:break-all}
+    .result-card .email-info{font-size:var(--text-sm);color:var(--premium-text-light)}
+    .auth-footer{text-align:center;margin-top:var(--spacing-lg);font-size:var(--text-sm);color:var(--premium-text-light)}
+    .auth-footer a{color:var(--premium-gold);font-weight:600;text-decoration:none}
+    .form-row-inline{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.form-row-inline{grid-template-columns:1fr}}
+    .hint-box{background:#fffbeb;border:1px solid #f6e05e;border-radius:var(--radius-md);padding:var(--spacing-md);font-size:var(--text-sm);color:#744210;margin-bottom:var(--spacing-lg)}
+    .no-result{text-align:center;color:var(--premium-text-muted);padding:var(--spacing-lg)}

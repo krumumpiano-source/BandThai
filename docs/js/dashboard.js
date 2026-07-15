@@ -1,0 +1,1328 @@
+function nav(page) {
+    window.location.href = page + '.html';
+  }
+
+  /* ===== Quick Check-In ===== */
+  var qciBandId = '', qciBandSettings = { venues: [], scheduleData: {} };
+  var qciSelectedVenue = '', qciSelectedSlots = [], qciExistingCheckIn = null;
+  var qciSelectedExtraSlots = []; // ['HH:MM-HH:MM']
+  var qciSelectedDate = new Date();
+  var QCI_DAY_NAMES_TH = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+
+  function qciEsc(s) { var d = document.createElement('div'); d.textContent = s||''; return d.innerHTML; }
+
+  // แปลง Date เป็น 'YYYY-MM-DD' แบบ local timezone (ไม่ใช้ UTC)
+  function qciLocalDateStr(d) {
+    return [d.getFullYear(), String(d.getMonth()+1).padStart(2,'0'), String(d.getDate()).padStart(2,'0')].join('-');
+  }
+
+  function qciUpdateDateBadge() {
+    var dateBadge = document.getElementById('qciDateBadge');
+    if (dateBadge) dateBadge.textContent = QCI_DAY_NAMES_TH[qciSelectedDate.getDay()] + ' ' + formatThaiDateFull(qciSelectedDate);
+    var dp = document.getElementById('qciDatePicker');
+    if (dp) dp.value = qciLocalDateStr(qciSelectedDate);
+  }
+  function qciNavDate(offset) {
+    qciSelectedDate = new Date(qciSelectedDate.getTime() + offset * 86400000);
+    qciOnDateChange();
+  }
+  function qciOnDateChange() {
+    qciUpdateDateBadge();
+    qciSelectedSlots = []; qciExistingCheckIn = null;
+    qciSelectedExtraSlots = [];
+    document.getElementById('qciDone').classList.remove('show');
+    document.getElementById('qciForm').style.display = 'block';
+    document.getElementById('qciSummary').classList.remove('show');
+    document.getElementById('qciConfirmRow').style.display = 'none';
+    var _ew = document.getElementById('qciExtraWrap');
+    if (_ew) { _ew.style.display = 'none'; }
+    qciRenderSlots();
+    qciCheckExisting();
+    dashLoadPlaylistForDate();
+  }
+
+  function qciLoadSettings(cb) {
+    // Use localStorage as immediate cache so UI renders fast
+    var stored = localStorage.getItem('bandSettings');
+    if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
+    // Always fetch fresh settings from API (schedule/members may have changed)
+    if (qciBandId && typeof apiCall === 'function') {
+      apiCall('getBandSettings', { bandId: qciBandId }, function(r) {
+        if (r && r.success && r.data) {
+          qciBandSettings = { venues: r.data.venues||[], scheduleData: r.data.scheduleData||r.data.schedule||{} };
+          try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
+        }
+        cb();
+      });
+    } else { cb(); }
+  }
+
+  /* Returns slots for selected date's day-of-week, filtered by selected venue */
+  function qciGetSlotsForDate() {
+    var dow = qciSelectedDate.getDay();
+    var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
+    var slots = [];
+    if (Array.isArray(dayData)) {
+      slots = dayData;
+    } else if (dayData && dayData.timeSlots && dayData.timeSlots.length) {
+      slots = dayData.timeSlots;
+    }
+    // Filter by selected venue if slots have venueId
+    if (qciSelectedVenue && slots.length && slots[0] && slots[0].venueId !== undefined) {
+      var venueId = qciGetVenueId(qciSelectedVenue);
+      if (venueId) {
+        var filtered = slots.filter(function(s) { return s.venueId === venueId; });
+        if (filtered.length) slots = filtered;
+      }
+    }
+    return slots.map(function(s) {
+      return { key: s.startTime + '-' + s.endTime, label: s.startTime + ' \u2013 ' + s.endTime };
+    });
+  }
+
+  /* Lookup venue ID from venue name */
+  function qciGetVenueId(name) {
+    var venues = qciBandSettings.venues || [];
+    for (var i = 0; i < venues.length; i++) {
+      var v = venues[i];
+      var vName = v.name || v.venueName || String(v);
+      if (vName === name) return v.id || v.venueId || '';
+    }
+    return '';
+  }
+
+  /* Render venue buttons; auto-select + hide if only one venue */
+  function qciRenderVenues() {
+    var venueStep = document.getElementById('qciVenueStep');
+    var container = document.getElementById('qciVenueBtns');
+    if (!container) return;
+    var venues = (qciBandSettings.venues || []);
+    if (!venues.length) venues = [{ name: 'ร้านหลัก' }];
+
+    if (venues.length === 1) {
+      /* เดิมซ่อน venue step เลยถ้ามีร้านเดียว */
+      qciSelectedVenue = venues[0].name || venues[0].venueName || 'ร้านหลัก';
+      if (venueStep) venueStep.style.display = 'none';
+      qciRenderSlots();
+      return;
+    }
+
+    if (venueStep) venueStep.style.display = 'block';
+    container.innerHTML = venues.map(function(v) {
+      var name = v.name || v.venueName || String(v);
+      return '<button type="button" class="qci-venue-btn" data-venue="' + qciEsc(name) + '">📍 ' + qciEsc(name) + '</button>';
+    }).join('');
+    container.querySelectorAll('.qci-venue-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        container.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+        btn.classList.add('selected');
+        qciSelectedVenue = btn.dataset.venue;
+        qciSelectedSlots = [];
+        qciRenderSlots();
+      });
+    });
+    /* Auto-select first venue */
+    var first = container.querySelector('.qci-venue-btn');
+    if (first) first.click();
+    qciRenderSlots();
+  }
+
+  /* Render time slot buttons from manager's schedule for today */
+  function qciRenderSlots() {
+    var container = document.getElementById('qciSlotBtns');
+    var label = document.getElementById('qciSlotLabel');
+    if (!container) return;
+    var dow = qciSelectedDate.getDay();
+    var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
+    if (label) label.textContent = '🕐 รอบวัน' + QCI_DAY_NAMES_TH[dow] + (isToday ? 'นี้' : '');
+    var slots = qciGetSlotsForDate();
+    if (!slots.length) {
+      container.innerHTML = '<div class="qci-no-work">🎵 ไม่มีรอบสำหรับวัน' + QCI_DAY_NAMES_TH[dow] + '<br><span style="font-size:11px;opacity:.7">ผู้จัดการยังไม่ได้กำหนดตารางวันนี้</span></div>';
+      document.getElementById('qciSummary').classList.remove('show');
+      document.getElementById('qciConfirmRow').style.display = 'none';
+      return;
+    }
+    var existingSlots = (qciExistingCheckIn && qciExistingCheckIn.slots) ? qciExistingCheckIn.slots : [];
+    container.innerHTML = slots.map(function(s) {
+      var pre = existingSlots.indexOf(s.key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-slot-btn' + pre + '" data-slot="' + qciEsc(s.key) + '">🕐 ' + qciEsc(s.label) + '</button>';
+    }).join('');
+    if (existingSlots.length) qciSelectedSlots = existingSlots.slice();
+    container.querySelectorAll('.qci-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+        var slot = btn.dataset.slot;
+        if (btn.classList.contains('selected')) {
+          if (qciSelectedSlots.indexOf(slot) === -1) qciSelectedSlots.push(slot);
+        } else {
+          qciSelectedSlots = qciSelectedSlots.filter(function(s) { return s !== slot; });
+        }
+        qciUpdateSummary();
+      });
+    });
+    qciUpdateSummary();
+  }
+
+  /* ===== Extra Slots (substitute band) ===== */
+  /* Collect ALL unique time slots from venue schedule across ALL days, excluding today's normal slots */
+  function qciGetAllVenueExtraSlots() {
+    var todaySlots = qciGetSlotsForDate().map(function(s) { return s.key; });
+    var venueId = qciSelectedVenue ? qciGetVenueId(qciSelectedVenue) : '';
+    var seen = {};
+    var all = [];
+    // Scan all 7 days of the week
+    for (var d = 0; d < 7; d++) {
+      var dayData = qciBandSettings.scheduleData[d] || qciBandSettings.scheduleData[String(d)];
+      var slots = [];
+      if (Array.isArray(dayData)) { slots = dayData; }
+      else if (dayData && dayData.timeSlots && dayData.timeSlots.length) { slots = dayData.timeSlots; }
+      // Filter by selected venue if slots have venueId
+      if (venueId && slots.length && slots[0] && slots[0].venueId !== undefined) {
+        slots = slots.filter(function(s) { return s.venueId === venueId; });
+      }
+      slots.forEach(function(s) {
+        var key = s.startTime + '-' + s.endTime;
+        if (!seen[key]) { seen[key] = true; all.push({ key: key, label: s.startTime + ' \u2013 ' + s.endTime, start: s.startTime }); }
+      });
+    }
+    // Sort by start time
+    all.sort(function(a, b) { return a.start < b.start ? -1 : a.start > b.start ? 1 : 0; });
+    // Exclude slots already shown in today's regular section
+    return all.filter(function(s) { return todaySlots.indexOf(s.key) === -1; });
+  }
+  function qciRenderExtraSlotBtns() {
+    var container = document.getElementById('qciExtraSlotBtns');
+    var emptyMsg = document.getElementById('qciExtraEmpty');
+    if (!container) return;
+    var extraSlots = qciGetAllVenueExtraSlots();
+    if (!extraSlots.length) {
+      container.innerHTML = '';
+      if (emptyMsg) emptyMsg.style.display = 'block';
+      return;
+    }
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    container.innerHTML = extraSlots.map(function(s) {
+      var sel = qciSelectedExtraSlots.indexOf(s.key) !== -1 ? ' selected' : '';
+      return '<button type="button" class="qci-extra-slot-btn' + sel + '" data-extra-slot="' + qciEsc(s.key) + '">🔄 ' + qciEsc(s.label) + '</button>';
+    }).join('');
+    container.querySelectorAll('.qci-extra-slot-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        btn.classList.toggle('selected');
+        var slot = btn.dataset.extraSlot;
+        if (btn.classList.contains('selected')) {
+          if (qciSelectedExtraSlots.indexOf(slot) === -1) qciSelectedExtraSlots.push(slot);
+        } else {
+          qciSelectedExtraSlots = qciSelectedExtraSlots.filter(function(s) { return s !== slot; });
+        }
+        qciUpdateSummary();
+      });
+    });
+  }
+
+  function qciUpdateSummary() {
+    var summary = document.getElementById('qciSummary');
+    var confirmRow = document.getElementById('qciConfirmRow');
+    if (!summary || !confirmRow) return;
+    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots).slice().sort();
+    if (qciSelectedVenue && allSlots.length) {
+      var dateStr = QCI_DAY_NAMES_TH[qciSelectedDate.getDay()] + ' ' + formatThaiDateFull(qciSelectedDate);
+      document.getElementById('sumDate').textContent = dateStr;
+      document.getElementById('sumVenue').textContent = qciSelectedVenue;
+      var fullSlotText = allSlots.map(function(k) { var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+      document.getElementById('sumSlots').textContent = fullSlotText;
+      summary.classList.add('show');
+      confirmRow.style.display = 'block';
+    } else {
+      summary.classList.remove('show');
+      confirmRow.style.display = 'none';
+    }
+  }
+
+  function qciShowDone(slots, venue, status, subName, extraSlots) {
+    var done = document.getElementById('qciDone');
+    var form = document.getElementById('qciForm');
+    var slotStr = (slots||[]).concat(extraSlots||[]).slice().sort().map(function(k){ var p=k.split('-'); return p[0]+' – '+p[1]; }).join(' · ');
+    var extraStr = '';
+    var isToday = qciSelectedDate.toDateString() === new Date().toDateString();
+    var dateLabel = isToday ? 'วันนี้' : formatThaiDateFull(qciSelectedDate, {year:false});
+    var icon = done.querySelector('.done-icon');
+    if (status === 'leave') {
+      if (icon) icon.textContent = '🚫';
+      done.style.background = 'linear-gradient(135deg,#fff5f5,#fed7d7)';
+      document.getElementById('qciDoneSummary').innerHTML = '🚫 ลางาน' + dateLabel;
+      var detail = '';
+      if (venue) detail += '📍 ' + qciEsc(venue);
+      if (slotStr) detail += (detail ? ' · ' : '') + '⏰ ' + slotStr;
+      if (subName) detail += '<br><span style="color:#805ad5;font-weight:600">🔄 คนแทน: ' + qciEsc(subName) + '</span>';
+      else detail += '<br><span style="color:#e53e3e;font-size:13px">ไม่มีคนแทน</span>';
+      document.getElementById('qciDoneDetail').innerHTML = detail;
+    } else {
+      if (icon) icon.textContent = '✅';
+      done.style.background = '';
+      document.getElementById('qciDoneSummary').textContent = '✅ ลงเวลาแล้ว' + dateLabel;
+      var doneDetail = '📍 '+venue+' · ⏰ '+slotStr;
+      document.getElementById('qciDoneDetail').innerHTML = doneDetail;
+    }
+    done.classList.add('show');
+    form.style.display = 'none';
+  }
+
+  function qciCheckExisting() {
+    if (!qciBandId || typeof apiCall !== 'function') return;
+    var dateStr = qciLocalDateStr(qciSelectedDate);
+    apiCall('getMyCheckIn', { date: dateStr, venue: '', bandId: qciBandId }, function(r) {
+      if (r && r.success && r.checkIn) {
+        qciExistingCheckIn = r.checkIn;
+        var ci = r.checkIn;
+        if (ci.status === 'confirmed' || ci.status === 'pending' || ci.status === 'leave') {
+          var subName = '';
+          if (ci.status === 'leave') {
+            if (ci.substitute && ci.substitute.name) subName = ci.substitute.name;
+            else if (ci.notes) { var _m = ci.notes.match(/คนแทน:\s*(.+)/); if (_m) subName = _m[1].trim(); }
+          }
+          qciShowDone(ci.slots, ci.venue, ci.status, subName, ci.extraSlots);
+        }
+      }
+      // Check-in reminder: show banner if today + no check-in
+      _updateCheckinReminder();
+    });
+  }
+
+  function _updateCheckinReminder() {
+    var banner = document.getElementById('checkinReminderBanner');
+    if (!banner) return;
+    var today = new Date();
+    var isToday = qciLocalDateStr(qciSelectedDate) === qciLocalDateStr(today);
+    if (isToday && !qciExistingCheckIn) {
+      banner.style.display = 'block';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  function qciConfirm() {
+    if (!qciSelectedVenue) { alert('กรุณาเลือกสถานที่ก่อน'); return; }
+    var allSlots = qciSelectedSlots.concat(qciSelectedExtraSlots);
+    if (!allSlots.length) { alert('กรุณาเลือกช่วงเวลาอย่างน้อย 1 ช่วง'); return; }
+    var btn = document.getElementById('qciConfirmBtn');
+    btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...';
+    var dateStr = qciLocalDateStr(qciSelectedDate);
+    var payload = { bandId: qciBandId, date: dateStr, venue: qciSelectedVenue, slots: allSlots, notes: '' };
+    if (qciSelectedExtraSlots.length) payload.extraSlots = qciSelectedExtraSlots;
+    apiCall('memberCheckIn', payload, function(r) {
+      btn.disabled = false; btn.textContent = '✅ ยืนยันลงเวลา';
+      if (r && r.success) {
+        qciExistingCheckIn = { status: 'pending', slots: allSlots, venue: qciSelectedVenue, extraSlots: qciSelectedExtraSlots };
+        qciShowDone(qciSelectedSlots, qciSelectedVenue, 'pending', '', qciSelectedExtraSlots);
+        showDashToast('ลงเวลาเรียบร้อย — รอผู้จัดการยืนยัน', 'success');
+        _updateCheckinReminder();
+      } else {
+        alert((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      }
+    });
+  }
+
+  function qciReset() {
+    qciSelectedVenue = ''; qciSelectedSlots = []; qciExistingCheckIn = null;
+    qciSelectedExtraSlots = [];
+    document.getElementById('qciDone').classList.remove('show');
+    document.getElementById('qciForm').style.display = 'block';
+    document.getElementById('qciSummary').classList.remove('show');
+    document.getElementById('qciConfirmRow').style.display = 'none';
+    document.querySelectorAll('.qci-venue-btn').forEach(function(b) { b.classList.remove('selected'); });
+    qciSelectedSlots = [];
+    var extraWrap = document.getElementById('qciExtraWrap');
+    if (extraWrap) extraWrap.style.display = 'none';
+    var extraBtns = document.getElementById('qciExtraSlotBtns');
+    if (extraBtns) extraBtns.innerHTML = '';
+    qciRenderVenues();
+  }
+
+  function showDashToast(msg, type) {
+    var t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.style.background = type === 'success' ? '#276749' : type === 'error' ? '#c53030' : 'var(--premium-gold)';
+    t.style.display = 'block'; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.style.display='none'; }, 300); }, 3500);
+  }
+
+  // ===== LEAVE BUTTON (simple: just enter substitute name) =====
+  function qciSubmitLeave() {
+    var noSub = document.getElementById('qciLeaveNoSub') && document.getElementById('qciLeaveNoSub').checked;
+    var subName = (document.getElementById('qciLeaveSubName') ? document.getElementById('qciLeaveSubName').value : '').trim();
+    if (!noSub && !subName) { showDashToast('กรุณากรอกชื่อคนแทน หรือเลือก "ไม่มีคนแทน"', 'error'); return; }
+    if (noSub) subName = '';
+
+    var dateStr = qciLocalDateStr(qciSelectedDate);
+    var venue = qciSelectedVenue || '';
+    // Get leave slots — use selected slots if any, otherwise infer all slots for the day
+    var slots = qciSelectedSlots.length ? qciSelectedSlots : qciGetSlotsForDate().map(function(s) { return s.key; });
+    var reason = noSub ? 'ลางาน (ไม่มีคนแทน)' : 'ลางาน';
+
+    var btn = document.getElementById('qciLeaveSubmit');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังบันทึก...'; }
+
+    var payload = {
+      bandId: qciBandId,
+      memberId: localStorage.getItem('odooMemberId') || localStorage.getItem('memberId') || '',
+      memberName: localStorage.getItem('userName') || '',
+      date: dateStr,
+      venue: venue,
+      slots: JSON.stringify(slots),
+      reason: reason,
+      substituteName: subName,
+      substituteContact: ''
+    };
+
+    if (typeof apiCall === 'function') {
+      apiCall('requestLeave', payload, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+        if (r && r.success) {
+          showDashToast('บันทึกลาเรียบร้อย' + (subName ? ' — คนแทน: ' + subName : ' (ไม่มีคนแทน)'), 'success');
+          document.getElementById('qciLeaveForm').classList.remove('show');
+          document.getElementById('qciLeaveSubName').value = '';
+          qciExistingCheckIn = { status: 'leave' };
+          qciShowDone(slots, venue, 'leave', subName);
+          _updateCheckinReminder();
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+        }
+      });
+    } else {
+      // Fallback: redirect to leave page
+      if (btn) { btn.disabled = false; btn.textContent = '✅ ยืนยันลา'; }
+      var params = '?date=' + encodeURIComponent(dateStr) +
+        '&venue=' + encodeURIComponent(venue) +
+        '&sub=' + encodeURIComponent(subName);
+      showDashToast('ไม่สามารถบันทึกลาได้ กรุณารีเฟรชหน้าแล้วลองใหม่', 'error');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    requireAuth();
+      checkAdGate();
+    renderMainNav('mainNav');
+    applyTranslations();
+
+    // Notification permission prompt (shows banner if not yet granted)
+    if (typeof showNotificationPrompt === 'function') {
+      showNotificationPrompt('notifPromptWrap');
+    }
+
+    var name = localStorage.getItem('userName') || 'ผู้ใช้งาน';
+    var band = localStorage.getItem('bandName') || '';
+    if (!band) {
+      try { var bs = JSON.parse(localStorage.getItem('bandSettings') || '{}'); band = bs.bandName || ''; } catch(e) {}
+    }
+    if (!band) band = 'วงดนตรี';
+    document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
+    document.getElementById('welcomeBand').textContent = '🎵 ' + band;
+    // Refresh band name from server (in case localStorage is stale/empty)
+    var _wbBandId = localStorage.getItem('bandId') || '';
+    if (_wbBandId) {
+      apiCall('getBandSettings', { bandId: _wbBandId }, function(r) {
+        if (r && r.success && r.data && r.data.bandName) {
+          localStorage.setItem('bandName', r.data.bandName);
+          document.getElementById('welcomeBand').textContent = '🎵 ' + r.data.bandName;
+        }
+      });
+    }
+
+    // Quick Check-In init
+    qciBandId = localStorage.getItem('bandId') || '';
+    qciSelectedDate = new Date();
+    qciUpdateDateBadge();
+
+    // Date navigation
+    document.getElementById('qciPrevDay').addEventListener('click', function() { qciNavDate(-1); });
+    document.getElementById('qciNextDay').addEventListener('click', function() { qciNavDate(1); });
+    document.getElementById('qciTodayBtn').addEventListener('click', function() { qciSelectedDate = new Date(); qciOnDateChange(); });
+    var dp = document.getElementById('qciDatePicker');
+    if (dp) dp.addEventListener('change', function() {
+      var parts = this.value.split('-');
+      qciSelectedDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+      qciOnDateChange();
+    });
+
+    qciLoadSettings(function() {
+      qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
+      qciCheckExisting();
+      dashLoadPlaylistForDate();
+      loadEarningsSummary('week'); // ต้องรอ settings โหลดเสร็จก่อน
+    });
+
+    document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
+    document.getElementById('qciResetBtn').addEventListener('click', qciReset);
+
+    // ===== Leave Button (simple inline form) =====
+    var qciLeaveBtn = document.getElementById('qciLeaveBtn');
+    var qciLeaveForm = document.getElementById('qciLeaveForm');
+    if (qciLeaveBtn && qciLeaveForm) {
+      qciLeaveBtn.addEventListener('click', function() {
+        qciLeaveForm.classList.toggle('show');
+        if (qciLeaveForm.classList.contains('show')) {
+          var input = document.getElementById('qciLeaveSubName');
+          if (input) { input.value = ''; input.focus(); }
+        }
+      });
+      document.getElementById('qciLeaveCancel').addEventListener('click', function() {
+        qciLeaveForm.classList.remove('show');
+      });
+      var _noSubCb = document.getElementById('qciLeaveNoSub');
+      if (_noSubCb) _noSubCb.addEventListener('change', function() {
+        var inp = document.getElementById('qciLeaveSubName');
+        if (inp) { inp.disabled = this.checked; inp.style.opacity = this.checked ? '0.4' : '1'; if (this.checked) inp.value = ''; }
+      });
+      document.getElementById('qciLeaveSubmit').addEventListener('click', qciSubmitLeave);
+      // Enter key to submit
+      var leaveInput = document.getElementById('qciLeaveSubName');
+      if (leaveInput) leaveInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') qciSubmitLeave();
+      });
+    }
+
+    document.getElementById('qciEditBtn').addEventListener('click', function() {
+      document.getElementById('qciDone').classList.remove('show');
+      document.getElementById('qciForm').style.display = 'block';
+      if (qciExistingCheckIn && qciExistingCheckIn.venue) {
+        qciSelectedVenue = qciExistingCheckIn.venue;
+        var vBtn = document.querySelector('.qci-venue-btn[data-venue="'+qciSelectedVenue+'"]');
+        if (vBtn) vBtn.classList.add('selected');
+        qciRenderSlots();
+      }
+      // Restore extra slots if editing
+      if (qciExistingCheckIn && qciExistingCheckIn.extraSlots && qciExistingCheckIn.extraSlots.length) {
+        qciSelectedExtraSlots = qciExistingCheckIn.extraSlots.slice();
+        document.getElementById('qciExtraWrap').style.display = '';
+        qciRenderExtraSlotBtns();
+      }
+    });
+
+    // Extra slot toggle
+    document.getElementById('qciExtraToggle').addEventListener('click', function() {
+      var wrap = document.getElementById('qciExtraWrap');
+      if (wrap.style.display === 'none') {
+        wrap.style.display = '';
+        qciRenderExtraSlotBtns();
+      } else {
+        wrap.style.display = 'none';
+        qciSelectedExtraSlots = [];
+        document.getElementById('qciExtraSlotBtns').innerHTML = '';
+        qciUpdateSummary();
+      }
+    });
+
+    document.getElementById('qciCancelBtn').addEventListener('click', function() {
+      if (!confirm('ต้องการยกเลิกการลงเวลาวันนี้ใช่หรือไม่?')) return;
+      var btn = document.getElementById('qciCancelBtn');
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังยกเลิก...'; }
+      var dateStr = qciLocalDateStr(qciSelectedDate);
+      apiCall('cancelCheckIn', { bandId: qciBandId, date: dateStr }, function(r) {
+        if (btn) { btn.disabled = false; btn.textContent = '❌ ยกเลิกลงเวลา'; }
+        if (r && r.success) {
+          showDashToast('ยกเลิกการลงเวลาเรียบร้อย', 'success');
+          qciExistingCheckIn = null;
+          document.getElementById('qciDone').classList.remove('show');
+          document.getElementById('qciForm').style.display = 'block';
+          qciReset();
+        } else {
+          showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+        }
+      });
+    });
+
+    loadDashboard();
+    // loadEarningsSummary ถูกเรียกใน qciLoadSettings callback แทน (รอ schedule data)
+    // Tab switching
+    document.querySelectorAll('.earn-tab').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.earn-tab').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        loadEarningsSummary(btn.dataset.period);
+      });
+    });
+    // Load pending member requests (manager/admin only)
+    var _role = localStorage.getItem('userRole') || '';
+    if (_role === 'manager' || _role === 'admin') {
+      loadDashPendingMembers();
+    }
+    // show pending band approval for managers without band_id
+    var _bandId = localStorage.getItem('bandId') || '';
+    if (_role === 'manager' && !_bandId) {
+      document.getElementById('dashPendingBandCard').style.display = '';
+    }
+    // Onboarding
+    initOnboarding();
+
+    // Welcome Modal (first login only)
+    if (!localStorage.getItem('welcome_done')) {
+      var wm = document.getElementById('welcomeModal');
+      if (wm) {
+        wm.style.display = 'flex';
+        var wmIdx = 0;
+        var slides = wm.querySelectorAll('.wm-slide');
+        var dots = wm.querySelectorAll('.wm-dot');
+        var nextBtn = document.getElementById('wmNext');
+        function wmGo(i) {
+          wmIdx = i;
+          for (var s = 0; s < slides.length; s++) { slides[s].classList.toggle('active', s === i); dots[s].classList.toggle('active', s === i); }
+          nextBtn.textContent = i === slides.length - 1 ? 'เริ่มเลย!' : 'ถัดไป';
+        }
+        nextBtn.addEventListener('click', function() {
+          if (wmIdx < slides.length - 1) { wmGo(wmIdx + 1); }
+          else { localStorage.setItem('welcome_done', '1'); wm.style.display = 'none'; }
+        });
+        document.getElementById('wmSkip').addEventListener('click', function() {
+          localStorage.setItem('welcome_done', '1'); wm.style.display = 'none';
+        });
+      }
+    }
+
+    // Streak Counter
+    if (typeof apiCall === 'function') {
+      apiCall('getMyStreak', {}, function(r) {
+        if (!r || !r.success) return;
+        var streak = (r.data || {}).streak || 0;
+        if (streak > 0) {
+          document.getElementById('streakCount').textContent = streak;
+          var badge = streak >= 100 ? '🏆' : streak >= 30 ? '⭐' : streak >= 7 ? '🔥' : '';
+          document.getElementById('streakBadge').textContent = badge;
+          document.getElementById('dashStreak').classList.add('show');
+        }
+      });
+      apiCall('getMonthlyLeaderboard', {}, function(r) {
+        if (!r || !r.success || !r.data || !r.data.length) return;
+        var lbCard = document.getElementById('dashLeaderboard');
+        var lbList = document.getElementById('lbList');
+        if (!lbCard || !lbList) return;
+        lbList.innerHTML = r.data.map(function(m, i) {
+          var rank = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          return '<div class="lb-row"><span class="lb-rank">' + rank + '</span><span class="lb-name">' + escapeHtml(m.name) + '</span><span class="lb-count">' + m.count + ' วัน</span></div>';
+        }).join('');
+        lbCard.style.display = '';
+      });
+    }
+
+    // Re-check check-in status when page restored from bfcache
+    window.addEventListener('pageshow', function(e) {
+      if (e.persisted) { qciCheckExisting(); }
+    });
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden && qciBandId) { qciCheckExisting(); }
+    });
+
+    // Admin Online Panel — only for admin/manager
+    if (_role === 'admin' || _role === 'manager') {
+      document.getElementById('onlinePanelCard').style.display = '';
+      initOnlinePanel();
+    }
+  });
+
+  function loadDashPendingMembers() {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) return;
+    apiCall('getPendingMembers', { bandId: bandId }, function(r) {
+      var card = document.getElementById('dashPendingCard');
+      var list = document.getElementById('dashPendingList');
+      var badge = document.getElementById('dashPendingBadge');
+      if (!card || !list) return;
+      if (!r || !r.success || !r.data || r.data.length === 0) { card.style.display = 'none'; return; }
+      card.style.display = '';
+      badge.textContent = r.data.length + ' คำขอ';
+      list.innerHTML = r.data.map(function(m) {
+        var name = (m.nickname || m.first_name || m.user_name || m.email || '?');
+        var detail = (m.instrument ? m.instrument + ' · ' : '') + (m.email || '');
+        var created = m.created_at ? formatThaiDateFull(new Date(m.created_at)) : '';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--premium-off-white);border-radius:var(--radius-sm);margin-bottom:6px;flex-wrap:wrap">' +
+          '<div style="flex:1;min-width:120px">' +
+            '<div style="font-weight:700;font-size:var(--text-sm)">' + escapeHtml(name) + '</div>' +
+            '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + escapeHtml(detail) + (created ? ' · ' + created : '') + '</div>' +
+          '</div>' +
+          '<button class="btn btn-sm btn-primary" style="padding:4px 12px" onclick="dashApproveMember(\'' + m.id + '\')">✅ อนุมัติ</button>' +
+          '<button class="btn btn-sm" style="padding:4px 12px;background:#e53e3e;color:#fff" onclick="dashRejectMember(\'' + m.id + '\')">❌ ปฏิเสธ</button>' +
+        '</div>';
+      }).join('');
+    });
+  }
+  function dashApproveMember(userId) {
+    if (!confirm('อนุมัติสมาชิกคนนี้เข้าร่วมวง?')) return;
+    apiCall('approveMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+      if (r && r.success) { showDashToast('อนุมัติเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
+  function dashRejectMember(userId) {
+    if (!confirm('ปฏิเสธคำขอเข้าร่วมวงนี้?')) return;
+    apiCall('rejectMember', { userId: userId, bandId: localStorage.getItem('bandId') }, function(r) {
+      if (r && r.success) { showDashToast('ปฏิเสธเรียบร้อย', 'success'); loadDashPendingMembers(); }
+      else showDashToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
+    });
+  }
+
+  /* ===== Playlist of the Day ===== */
+  function dashLoadPlaylistForDate() {
+    var card = document.getElementById('dashPlaylistCard');
+    var body = document.getElementById('dashPlaylistBody');
+    var badge = document.getElementById('dashPlaylistBadge');
+    if (!card || !body) return;
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId || typeof apiCall !== 'function') {
+      body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">🎵 ยังไม่มีลิสเพลงของวันนี้</p>';
+      badge.textContent = '';
+      return;
+    }
+    var dateStr = qciLocalDateStr(qciSelectedDate);
+    body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:12px 0">⏳ กำลังโหลด...</p>';
+    badge.textContent = '';
+    apiCall('getPlaylistHistoryByDate', { bandId: bandId, date: dateStr }, function(r) {
+      var lists = (r && r.success && r.data) ? r.data : [];
+      // เรียงตามช่วงเวลา (timeSlot เช่น "19:00-21:00") จากเร็วไปช้า
+      lists.sort(function(a, b) {
+        return (a.timeSlot || '').localeCompare(b.timeSlot || '');
+      });
+      if (lists.length === 0) {
+        body.innerHTML = '<p style="text-align:center;color:var(--premium-text-muted);padding:16px 0">🎵 ยังไม่มีลิสเพลงของวันนี้<br><a href="songs.html" style="color:#3b82f6;font-size:var(--text-sm)">➕ ไปสร้างลิสเพลง</a></p>';
+        badge.textContent = '';
+        return;
+      }
+      badge.textContent = lists.length + ' ลิส';
+      body.innerHTML = lists.map(function(h, li) {
+        var label = [h.venue, h.timeSlot].filter(Boolean).join(' · ') || 'ลิสที่ ' + (li + 1);
+        var ts = h.createdAt ? new Date(h.createdAt).toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' }) : '';
+        var creator = h.createdBy || '';
+        var meta = [creator ? '👤 ' + escapeHtml(creator) : '', ts ? '🕐 ' + ts : ''].filter(Boolean).join(' · ');
+        var songCount = h.songs ? h.songs.length : 0;
+        var songs = (h.songs || []).map(function(s, n) {
+          return '<div style="padding:4px 0;font-size:var(--text-sm);border-bottom:1px solid var(--premium-border);display:flex;align-items:center;gap:6px">' +
+            '<span style="color:var(--premium-text-muted);font-size:var(--text-xs);min-width:20px">' + (n + 1) + '.</span>' +
+            '<strong>' + escapeHtml(s.name || '') + '</strong>' +
+            (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">' + escapeHtml(typeof formatKey === 'function' ? formatKey(s.key) : s.key) + '</span>' : '') +
+            (s.bpm ? ' <span style="color:var(--premium-text-muted);font-size:11px">▸ ' + s.bpm + '</span>' : '') +
+            '</div>';
+        }).join('');
+        var cardId = 'dashPl_' + li;
+        return '<div style="border:1.5px solid var(--premium-border);border-radius:var(--radius-md);margin-bottom:10px;background:var(--premium-off-white);overflow:hidden">' +
+          /* Header — always visible */
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;flex-wrap:wrap;gap:4px;background:linear-gradient(135deg,#f8f4ff,#eee8fb);border-bottom:1px solid var(--premium-border)">' +
+            '<div style="font-weight:700;font-size:var(--text-base)">🎵 ' + escapeHtml(label) + '</div>' +
+            (meta ? '<div style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + meta + '</div>' : '') +
+          '</div>' +
+          /* Songs — hidden by default */
+          '<div id="' + cardId + '" style="display:none;padding:10px 14px">' + songs + '</div>' +
+          /* Footer — always visible */
+          '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;gap:6px">' +
+            '<span style="font-size:var(--text-xs);color:var(--premium-text-muted)">' + songCount + ' เพลง</span>' +
+            '<div style="display:flex;gap:6px;align-items:center">' +
+              '<button onclick="dashDeletePlaylist(\'' + h.id + '\',\'' + escapeHtml(label).replace(/'/g,'\\\'') + '\')" style="background:none;border:1px solid #ef4444;color:#ef4444;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);cursor:pointer" title="ลบลิสนี้">🗑</button>' +
+              '<a href="songs.html?date=' + encodeURIComponent(dateStr) + '&venue=' + encodeURIComponent(h.venue || '') + '&timeSlot=' + encodeURIComponent(h.timeSlot || '') + '" style="background:none;border:1px solid #3b82f6;color:#3b82f6;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);font-weight:700;text-decoration:none" title="แก้ไขลิส">✏️</a>' +
+              '<button onclick="dashShareQR(\'' + encodeURIComponent(dateStr) + '\',\'' + encodeURIComponent(h.venue || '') + '\',\'' + encodeURIComponent(h.timeSlot || '') + '\')" style="background:none;border:1px solid #3b82f6;color:#3b82f6;border-radius:8px;padding:4px 10px;font-size:var(--text-xs);font-weight:700;cursor:pointer" title="แชร์ QR เข้า Live">📱 แชร์</button>' +
+              '<a href="live.html?from=dashboard.html&band=' + encodeURIComponent(bandId) + '&date=' + encodeURIComponent(dateStr) + '&venue=' + encodeURIComponent(h.venue || '') + '&timeSlot=' + encodeURIComponent(h.timeSlot || '') + '" style="background:#0d9488;color:#fff;border-radius:8px;padding:4px 14px;font-size:var(--text-xs);font-weight:700;text-decoration:none">🎤 Live</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+      /* Add click-to-expand on each card header */
+      body.querySelectorAll('[id^="dashPl_"]').forEach(function(el) {
+        var header = el.previousElementSibling;
+        if (!header) return;
+        header.style.cursor = 'pointer';
+        header.title = 'กดเพื่อดูรายชื่อเพลง';
+        header.insertAdjacentHTML('beforeend', '<span class="dashPl-arrow" style="margin-left:auto;font-size:12px;transition:transform .2s">▼</span>');
+        header.addEventListener('click', function() {
+          var open = el.style.display !== 'none';
+          el.style.display = open ? 'none' : 'block';
+          var arrow = header.querySelector('.dashPl-arrow');
+          if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+        });
+      });
+    });
+  }
+
+  /* ===== Delete Playlist History ===== */
+  function dashDeletePlaylist(id, label) {
+    if (!confirm('ลบลิส: ' + label + ' ใช่ไหม?')) return;
+    apiCall('deletePlaylistHistory', { id: id, bandId: localStorage.getItem('bandId') || '' }, function(r) {
+      if (r && r.success) {
+        showDashToast('🗑 ลบลิส ' + label + ' แล้ว', 'success');
+        dashLoadPlaylistForDate(); // reload
+      } else {
+        showDashToast((r && r.message) || 'ลบไม่สำเร็จ', 'error');
+      }
+    });
+  }
+
+  /* ===== Earnings Summary (week/month/year) ===== */
+  var _earnCache = {}; // cache loaded data per period
+
+  function loadEarningsSummary(period) {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId || typeof apiCall !== 'function') return;
+
+    // Settings
+    var settings = qciBandSettings || {};
+    var scheduleData = settings.scheduleData || {};
+    var weekStart = 1, weekEnd = 0;
+    try {
+      var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+      scheduleData = stored.scheduleData || stored.schedule || scheduleData;
+      if (stored.payroll) {
+        if (stored.payroll.weekStart !== undefined) weekStart = parseInt(stored.payroll.weekStart, 10);
+        if (stored.payroll.weekEnd !== undefined) weekEnd = parseInt(stored.payroll.weekEnd, 10);
+      }
+    } catch(e) {}
+
+    // Calculate date range based on period
+    var today = new Date();
+    var startDate, endDate, periodLabel;
+
+    if (period === 'week') {
+      var dow = today.getDay();
+      var diff = (dow - weekStart + 7) % 7;
+      startDate = new Date(today); startDate.setDate(today.getDate() - diff);
+      var span = (weekEnd - weekStart + 7) % 7; if (span === 0) span = 6;
+      endDate = new Date(startDate); endDate.setDate(startDate.getDate() + span);
+      periodLabel = '📅 สัปดาห์: ' + formatThaiDateFull(startDate, {year:false}) + ' – ' + formatThaiDateFull(endDate);
+    } else if (period === 'month') {
+      startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+      endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+      periodLabel = '📅 เดือน: ' + formatThaiDateFull(today, {day:false});
+    } else {
+      startDate = new Date(today.getFullYear(), 0, 1);
+      endDate = new Date(today.getFullYear(), 11, 31);
+      periodLabel = '📅 ปี: ' + (today.getFullYear() + 543);
+    }
+
+    document.getElementById('earningsPeriodLabel').textContent = periodLabel;
+    // Reset display
+    document.getElementById('earnHours').textContent = '⏳';
+    document.getElementById('earnAmount').textContent = '⏳';
+    document.getElementById('earnBreakdown').innerHTML = '<span style="color:var(--premium-text-muted)">กำลังโหลด...</span>';
+    document.getElementById('earnSubInfo').style.display = 'none';
+
+    // Build date list
+    var dates = [];
+    for (var d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d).toISOString().split('T')[0]);
+    }
+
+    // Helpers
+    function parseMin(t) { if (!t) return 0; var p = t.split(':').map(Number); return p[0]*60 + (p[1]||0); }
+    function calcH(s, e) { var d = e - s; if (d < 0) d += 1440; return d / 60; }
+    function getSlotsForDow(dow) {
+      var dayData = scheduleData[dow] || scheduleData[String(dow)];
+      if (Array.isArray(dayData)) return dayData;
+      if (dayData && dayData.timeSlots) return dayData.timeSlots;
+      return [];
+    }
+    function getMemberRate(slot, mid) {
+      var members = slot.members || [];
+      for (var i = 0; i < members.length; i++) {
+        if (members[i].memberId === mid) return { rate: members[i].rate || 0, type: members[i].rateType || 'shift', assigned: true };
+      }
+      return { rate: 0, type: 'shift', assigned: false };
+    }
+    function slotPay(slot, mid) {
+      var r = getMemberRate(slot, mid);
+      if (r.rate <= 0) return 0;
+      if (r.type === 'hourly') return calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate;
+      return r.rate;
+    }
+
+    // Get current user's member ID (custom JWT auth — use localStorage directly)
+    var myId = localStorage.getItem('userId') ||
+               localStorage.getItem('odooMemberId') ||
+               localStorage.getItem('memberId') || '';
+    if (!myId) {
+      // Last-resort: try Supabase session token
+      try {
+        var _sessKeys = Object.keys(localStorage).filter(function(k){ return k.indexOf('auth-token') !== -1; });
+        if (_sessKeys.length) { var _sd = JSON.parse(localStorage.getItem(_sessKeys[0]) || '{}'); myId = (_sd.user && _sd.user.id) || ''; }
+      } catch(e) {}
+    }
+    if (!myId) { document.getElementById('earnHours').textContent = '—'; document.getElementById('earnAmount').textContent = '—'; document.getElementById('earnBreakdown').innerHTML = '<span style="color:var(--premium-text-muted)">กรุณาล็อกอินใหม่</span>'; return; }
+
+    // Load all check-ins + leave for the date range
+    var allCheckIns = [];
+    var leaveLoaded = false, ciLoaded = false;
+    var myLeaves = [];
+
+    function renderEarnings() {
+      if (!ciLoaded || !leaveLoaded) return;
+
+      var myCheckins = {};
+      allCheckIns.forEach(function(ci) {
+        if (ci.memberId !== myId) return;
+        if (!myCheckins[ci.date]) myCheckins[ci.date] = { slots: [], status: ci.status, substitute: ci.substitute || null };
+        (ci.slots || []).forEach(function(s) {
+          if (myCheckins[ci.date].slots.indexOf(s) === -1) myCheckins[ci.date].slots.push(s);
+        });
+        if (ci.status) myCheckins[ci.date].status = ci.status;
+        if (ci.substitute) myCheckins[ci.date].substitute = ci.substitute;
+      });
+
+      // Substitute deductions from leave (deduplicate by date)
+      var subDeductions = [];
+      var _subDateDone = {};
+      myLeaves.forEach(function(lv) {
+        if (!lv.substituteName) return;
+        var dk = lv.date + '|' + lv.substituteName;
+        if (_subDateDone[dk]) return;   // ป้องกันนับซ้ำจาก leave_request ที่ซ้ำกัน
+        _subDateDone[dk] = true;
+        var existing = subDeductions.find(function(x) { return x.subName === lv.substituteName; });
+        if (!existing) { existing = { subName: lv.substituteName, shifts: 0, amount: 0, dates: [] }; subDeductions.push(existing); }
+        existing.dates.push(lv.date);
+        // Only count slots that are actually in the leave request
+        var lvSlots = lv.slots || [];
+        if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
+        var lvDow = new Date(lv.date).getDay();
+        // Fallback: if leave has no specific slots, use check-in slots for that date
+        var ciForDate = myCheckins[lv.date];
+        var ciSlotsForDate = ciForDate ? ciForDate.slots : [];
+        getSlotsForDow(lvDow).forEach(function(slot) {
+          var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
+          var mr = getMemberRate(slot, myId);
+          // If leave has specific slots, only count those; fallback to check-in slots; last resort count all
+          var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
+          if (mr.assigned && slotMatch) {
+            existing.shifts++; existing.amount += slotPay(slot, myId);
+          }
+        });
+      });
+
+      // Calculate hours + earnings
+      var totalHours = 0, totalEarnings = 0, totalShifts = 0;
+      var breakdown = [];
+      var DN = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
+
+      dates.forEach(function(dateStr) {
+        var dtObj = new Date(dateStr), dayDow = dtObj.getDay();
+        var daySlots = getSlotsForDow(dayDow);
+        if (!daySlots.length) return;
+        var ci = myCheckins[dateStr];
+        var ciSlots = ci ? ci.slots : [];
+        var isLeave = ci && ci.status === 'leave';
+        // Collect leave slot keys for this date
+        var leaveSlotKeys = [];
+        var hasSub = false;
+        if (isLeave) {
+          myLeaves.forEach(function(lv) {
+            if (lv.date !== dateStr) return;
+            var lvSlots = lv.slots || [];
+            if (typeof lvSlots === 'string') { try { lvSlots = JSON.parse(lvSlots); } catch(e) { lvSlots = []; } }
+            if (lv.substituteName) {
+              hasSub = true;
+              lvSlots.forEach(function(s) { if (leaveSlotKeys.indexOf(s) === -1) leaveSlotKeys.push(s); });
+            }
+          });
+        }
+        var dayHours = 0, dayAmt = 0, daySlotCount = 0;
+
+        daySlots.forEach(function(slot) {
+          var sk = (slot.startTime || '') + '-' + (slot.endTime || '');
+          var mr = getMemberRate(slot, myId);
+          if (!mr.assigned) return;
+          // ลามีคนแทนเฉพาะ slot ที่ลา = ยังได้เงิน, slot อื่นต้อง check-in จริง
+          var isLeaveSlotWithSub = isLeave && hasSub && leaveSlotKeys.indexOf(sk) !== -1;
+          if (ciSlots.indexOf(sk) !== -1 || isLeaveSlotWithSub) {
+            dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
+            dayAmt += slotPay(slot, myId);
+            daySlotCount++;
+          }
+        });
+
+        if (daySlotCount > 0 || isLeave) {
+          totalShifts += daySlotCount;
+          var label = DN[dayDow] + ' ' + formatThaiDateFull(dtObj, {year:false});
+          if (isLeave && !hasSub) {
+            label += ' 🚫ลา (ไม่มีคนแทน)';
+            breakdown.push(label + ': 0 ฿');
+          } else if (isLeave && hasSub) {
+            label += ' 🚫ลา (มีคนแทน)';
+            breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          } else {
+            breakdown.push(label + ': ' + daySlotCount + ' เบรค = ' + dayAmt.toLocaleString('th-TH') + ' ฿');
+          }
+          totalHours += dayHours;
+          totalEarnings += dayAmt;
+        }
+      });
+
+      // Render
+      document.getElementById('earnHours').textContent = totalHours > 0 ? totalHours.toFixed(1) + ' ชม.' : '0';
+      document.getElementById('earnAmount').textContent = totalEarnings > 0 ? totalEarnings.toLocaleString('th-TH') + ' ฿' : '0 ฿';
+
+      var bdEl = document.getElementById('earnBreakdown');
+      if (period === 'week') {
+        bdEl.innerHTML = breakdown.length ? breakdown.join('<br>') : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างาน</span>';
+      } else {
+        // For month/year show summary instead of daily detail
+        bdEl.innerHTML = breakdown.length
+          ? '<span style="font-weight:600">รวม ' + totalShifts + ' เบรค / ' + breakdown.length + ' วัน</span>'
+          : '<span style="color:var(--premium-text-muted)">ยังไม่มีข้อมูลเข้างาน</span>';
+      }
+
+      // Substitute info
+      var subEl = document.getElementById('earnSubInfo');
+      if (subDeductions.length) {
+        subEl.style.display = 'block';
+        var subHtml = '<div style="font-weight:700;font-size:var(--text-sm);color:#553c9a;margin-bottom:6px">🔄 ต้องจ่ายคนแทน</div>';
+        var totalSubAmt = 0;
+        subDeductions.forEach(function(sd) {
+          totalSubAmt += sd.amount;
+          subHtml += '<div style="font-size:var(--text-sm);padding:4px 0;display:flex;justify-content:space-between;align-items:center">' +
+            '<span>🔄 ' + qciEsc(sd.subName) + ' (' + sd.shifts + ' เบรค)</span>' +
+            '<strong style="color:#e53e3e">' + sd.amount.toLocaleString('th-TH') + ' ฿</strong></div>';
+        });
+        if (totalSubAmt > 0) {
+          var net = totalEarnings - totalSubAmt;
+          subHtml += '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #d6bcfa;display:flex;justify-content:space-between;font-weight:700;font-size:var(--text-sm)">' +
+            '<span>💰 คงเหลือหลังจ่ายคนแทน</span>' +
+            '<span style="color:' + (net >= 0 ? '#276749' : '#e53e3e') + '">' + net.toLocaleString('th-TH') + ' ฿</span></div>';
+        }
+        subEl.innerHTML = subHtml;
+      } else {
+        subEl.style.display = 'none';
+      }
+    }
+
+    // Fetch check-ins — single range query filtered by current user
+    function toLocalStr(d) { return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-'); }
+    var rangeFrom = toLocalStr(startDate);
+    var rangeTo   = toLocalStr(endDate);
+    apiCall('getCheckInsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo, memberId: myId }, function(r) {
+      if (r && r.success && r.data) allCheckIns = r.data;
+      ciLoaded = true; renderEarnings();
+    });
+
+    // Fetch leave requests — single range query filtered by current user
+    apiCall('getLeaveRequestsForRange', { bandId: bandId, dateFrom: rangeFrom, dateTo: rangeTo, memberId: myId }, function(r) {
+      if (r && r.success && r.data) {
+        myLeaves = r.data; // already filtered server-side by memberId
+      }
+      leaveLoaded = true; renderEarnings();
+    });
+  }
+
+  function loadExternalJobsDash() {
+    apiCall('getUpcomingExternalJobs', {}, function(r) {
+      var jobs = (r && r.data) || [];
+      var card = document.getElementById('extJobsCard');
+      var list = document.getElementById('extJobsList');
+      if (!card || !list) return;
+      if (!jobs.length) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+
+      var myName  = (localStorage.getItem('userName')      || '').toLowerCase();
+      var myFirst = (localStorage.getItem('userFirstName') || '').toLowerCase();
+      var myNick  = (localStorage.getItem('userNickname')  || '').toLowerCase();
+
+      function findMyFee(fees) {
+        if (!Array.isArray(fees)) return null;
+        return fees.find(function(mf) {
+          var n = (mf.name || '').toLowerCase();
+          return myName && (n === myName || n === myFirst || n === myNick);
+        }) || null;
+      }
+
+      list.innerHTML = jobs.map(function(job) {
+        var ds = job.eventDate || '';
+        var d  = ds ? new Date(ds + 'T00:00:00') : null;
+        var dateLabel = d ? d.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) : 'ไม่ระบุวัน';
+        var myFee  = findMyFee(job.memberFees);
+        var travel = (job.travelInfo  && typeof job.travelInfo  === 'object') ? job.travelInfo  : {};
+        var accom  = (job.accommodation && typeof job.accommodation === 'object') ? job.accommodation : {};
+        var feeHtml = myFee
+          ? '<div style="background:#f0fff4;border-radius:var(--radius-md);padding:var(--spacing-sm) var(--spacing-md)">'
+              + '<div style="font-size:11px;color:#276749;font-weight:700;margin-bottom:2px">💰 ค่าตัวของคุณ</div>'
+              + '<div style="font-size:var(--text-xl);font-weight:700;color:#276749">'+(myFee.fee||0).toLocaleString('th-TH')+' บาท</div>'
+              + '<div style="font-size:11px;color:var(--premium-text-muted)">'+(myFee.paid?'✅ ได้รับเงินแล้ว '+(myFee.paidDate||''):'⏸ รอรับเงิน')+'</div>'
+            + '</div>'
+          : '';
+        return '<div style="border:1px solid var(--premium-border);border-radius:var(--radius-md);margin-bottom:var(--spacing-md);overflow:hidden">'
+          +'<div style="background:linear-gradient(135deg,#2d3748,#4a5568);color:#fff;padding:var(--spacing-md) var(--spacing-lg);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">'
+            +'<div>'
+              +'<div style="font-weight:700;font-size:var(--text-md)">🎤 '+escapeHtml(job.jobName||'งานนอก')+'</div>'
+              +'<div style="font-size:var(--text-xs);color:#a0aec0;margin-top:2px">📅 '+dateLabel+'</div>'
+            +'</div>'
+            +(myFee?'<div style="background:var(--premium-gold);color:#1a1a1a;border-radius:var(--radius-full);padding:4px 16px;font-weight:700;font-size:var(--text-sm)">💰 '+(myFee.fee||0).toLocaleString('th-TH')+' ฿</div>':'')
+          +'</div>'
+          +'<div style="padding:var(--spacing-md) var(--spacing-lg);display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:var(--spacing-sm)">'
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">📍 สถานที่</div>'
+              +'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(job.venue||'ไม่ระบุ')+'</div>'
+              +(job.venueAddress?'<div style="font-size:11px;color:var(--premium-text-muted)">'+escapeHtml(job.venueAddress)+'</div>':'')
+            +'</div>'
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">⏰ เวลาแสดง</div>'
+              +'<div style="font-size:var(--text-sm);font-weight:600">'+(job.startTime&&job.endTime?job.startTime+' – '+job.endTime+' น.':job.startTime?job.startTime+' น.':'ไม่ระบุ')+'</div>'
+              +(job.showDuration?'<div style="font-size:11px;color:var(--premium-text-muted)">'+escapeHtml(job.showDuration)+'</div>':'')
+            +'</div>'
+            +(travel.destination||travel.origin
+              ?'<div>'
+                +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">🚗 เดินทาง</div>'
+                +(travel.destination?'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(travel.destination)+'</div>':'')
+                +(travel.distanceKm?'<div style="font-size:11px;color:var(--premium-text-muted)">'+travel.distanceKm+' กม.</div>':'')
+              +'</div>':'')
+            +'<div>'
+              +'<div style="font-size:11px;color:var(--premium-text-muted);font-weight:700;margin-bottom:2px">🏨 ที่พัก</div>'
+              +(accom.hasAccom
+                ?'<div style="font-size:var(--text-sm);font-weight:600">'+escapeHtml(accom.hotel||'มีที่พัก')+'</div>'
+                  +'<div style="font-size:11px;color:var(--premium-text-muted)">'+(accom.rooms||0)+' ห้อง × '+(accom.nights||0)+' คืน</div>'
+                :'<div style="font-size:var(--text-sm);color:var(--premium-text-muted)">ไป-กลับวันเดียว</div>')
+            +'</div>'
+            +feeHtml
+          +'</div>'
+        +'</div>';
+      }).join('');
+    });
+  }
+
+  // ===== Onboarding =====
+  var OB_KEY = 'ob_dismissed_v1';
+  var OB_DONE_KEY = 'ob_steps_done';
+
+  var OB_STEPS = {
+    manager: {
+      th: [
+        { key: 'profile',  icon: '👤', label: 'กรอกโปรไฟล์',       desc: 'ใส่ชื่อ เครื่องดนตรี และข้อมูลวง',     href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'เพิ่มเพลง',          desc: 'เพิ่มเพลงเข้าคลังเพลงของวง',           href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'สร้าง Setlist แรก',  desc: 'จัดเซ็ตลิสต์สำหรับงานแสดงสด',         href: 'setlist.html' },
+      ],
+      en: [
+        { key: 'profile',  icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & band info', href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'Add Songs',           desc: 'Add songs to your band library',        href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'Create First Setlist',desc: 'Build a setlist for your live show',    href: 'setlist.html' },
+      ]
+    },
+    member: {
+      th: [
+        { key: 'profile',  icon: '👤', label: 'กรอกโปรไฟล์',       desc: 'ใส่ชื่อ เครื่องดนตรี และอัตราค่าตัว',  href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'เพิ่มเพลง',          desc: 'เพิ่มเพลงเข้าคลังเพลงของวง',           href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'สร้าง Setlist แรก',  desc: 'จัดเซ็ตลิสต์สำหรับงานแสดงสด',         href: 'setlist.html' },
+      ],
+      en: [
+        { key: 'profile',  icon: '👤', label: 'Set Up Profile',     desc: 'Add your name, instrument & pay rate',  href: 'my-profile.html' },
+        { key: 'songs',    icon: '🎵', label: 'Add Songs',           desc: 'Add songs to your band library',        href: 'add-song.html' },
+        { key: 'setlist',  icon: '🎼', label: 'Create First Setlist',desc: 'Build a setlist for your live show',    href: 'setlist.html' },
+      ]
+    }
+  };
+
+  var OB_TEXT = {
+    th: {
+      managerTitle: '🚀 เริ่มต้นสร้างวงของคุณ',
+      memberTitle:  '🎸 เริ่มต้นใช้งาน BandThai',
+      subtitle: function(done, total) { return '✅ ทำเสร็จแล้ว ' + done + '/' + total + ' ขั้นตอน — กดขั้นตอนที่ยังไม่เสร็จเพื่อเริ่มใช้งาน'; },
+      dismiss: 'ไม่ต้องแสดงอีก ✕'
+    },
+    en: {
+      managerTitle: '🚀 Set Up Your Band',
+      memberTitle:  '🎸 Get Started with BandThai',
+      subtitle: function(done, total) { return '✅ Done ' + done + '/' + total + ' steps — Click any remaining step to get started'; },
+      dismiss: 'Don\'t show again ✕'
+    }
+  };
+
+  // ── Admin Online Panel ──────────────────────────────────────────
+  function initOnlinePanel() {
+    var myId = localStorage.getItem('userId') || '';
+
+    function renderOnlinePanel(state) {
+      var grid = document.getElementById('opGrid');
+      var countEl = document.getElementById('opCount');
+      if (!grid) return;
+      var users = [];
+      var keys = Object.keys(state || {});
+      for (var i = 0; i < keys.length; i++) {
+        var entries = state[keys[i]];
+        if (entries && entries.length > 0) users.push(entries[entries.length - 1]);
+      }
+      if (countEl) countEl.textContent = users.length;
+      if (!users.length) {
+        grid.innerHTML = '<span class="op-empty">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e43\u0e04\u0e23\u0e2d\u0e2d\u0e19\u0e44\u0e25\u0e19\u0e4c</span>';
+        return;
+      }
+      // Sort: me first, then admin, then others
+      users.sort(function(a, b) {
+        if (a.userId === myId) return -1;
+        if (b.userId === myId) return 1;
+        var ra = a.role || '', rb = b.role || '';
+        if (ra === 'admin' && rb !== 'admin') return -1;
+        if (rb === 'admin' && ra !== 'admin') return 1;
+        return (a.name || '').localeCompare(b.name || '', 'th');
+      });
+      grid.innerHTML = users.map(function(u) {
+        var isMe = u.userId === myId;
+        var initial = (u.name || '?').charAt(0).toUpperCase();
+        var roleClass = u.role === 'admin' ? 'role-admin' : u.role === 'manager' ? 'role-manager' : '';
+        var chipClass = 'op-chip' + (isMe ? ' me' : '') + (roleClass ? ' ' + roleClass : '');
+        var activity = u.activity || u.page || '\u0e14\u0e39\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23';
+        var roleLabel = u.role === 'admin' ? ' \u2605' : u.role === 'manager' ? ' \u25cf' : '';
+        return '<div class="' + chipClass + '" title="' + escapeHtml(u.name) + (isMe ? ' (\u0e04\u0e38\u0e13)' : '') + '">'
+          + '<div class="op-avatar">' + escapeHtml(initial) + '</div>'
+          + '<div class="op-info">'
+          + '<span class="op-name">' + escapeHtml(u.name || '\u0e44\u0e21\u0e48\u0e17\u0e23\u0e32\u0e1a\u0e0a\u0e37\u0e48\u0e2d') + (isMe ? ' <span style="color:#16a34a;font-size:10px">(\u0e04\u0e38\u0e13)</span>' : roleLabel) + '</span>'
+          + '<span class="op-activity">' + escapeHtml(activity) + '</span>'
+          + '</div>'
+          + '</div>';
+      }).join('');
+    }
+
+    // Wait for global presence channel to be ready
+    var _opTries = 0;
+    function _trySubscribe() {
+      var bandId = localStorage.getItem('bandId') || '';
+      if (!bandId) return;
+      if (window._sb && window._globalPresenceCh) {
+        // Reuse the global channel
+        window._onGlobalPresenceSync = function() {
+          renderOnlinePanel(window._globalPresenceCh.presenceState());
+        };
+        // Render initial state after short delay
+        setTimeout(function() {
+          renderOnlinePanel(window._globalPresenceCh.presenceState());
+        }, 600);
+        return;
+      }
+      // Keep waiting — global channel will be created by app.js
+      if (++_opTries < 100) setTimeout(_trySubscribe, 200);
+    }
+    _trySubscribe();
+  }
+
+  function initOnboarding() {
+    if (localStorage.getItem(OB_KEY)) return;
+    var role = localStorage.getItem('userRole') || 'member';
+    var isManager = role === 'manager' || role === 'admin';
+    var lang = typeof getLang === 'function' ? getLang() : 'th';
+    var langKey = (lang === 'en') ? 'en' : 'th';
+    var steps = isManager ? OB_STEPS.manager[langKey] : OB_STEPS.member[langKey];
+    var strings = OB_TEXT[langKey];
+    var doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(OB_DONE_KEY) || '{}'); } catch(e) {}
+
+    var doneCount = steps.filter(function(s){ return doneMap[s.key]; }).length;
+    var pct = Math.round(doneCount / steps.length * 100);
+
+    if (doneCount === steps.length) { localStorage.setItem(OB_KEY, '1'); return; }
+
+    var card = document.getElementById('obCard');
+    var fill = document.getElementById('obProgressFill');
+    var cont = document.getElementById('obSteps');
+    if (!card || !cont) return;
+
+    document.getElementById('obTitle').textContent = isManager ? strings.managerTitle : strings.memberTitle;
+    document.getElementById('obSubtitle').textContent = strings.subtitle(doneCount, steps.length);
+    document.getElementById('obDismiss').textContent = strings.dismiss;
+    fill.style.width = pct + '%';
+
+    cont.innerHTML = steps.map(function(s, idx) {
+      var done = doneMap[s.key] ? ' done' : '';
+      var check = doneMap[s.key] ? '✓' : (idx + 1);
+      var isAnchor = s.href.charAt(0) === '#';
+      var clickAttr = isAnchor
+        ? 'onclick="return obScrollTo(\'' + s.href.slice(1) + '\',\'' + s.key + '\')"'
+        : 'onclick="obMarkDone(\'' + s.key + '\')"';
+      return '<a class="ob-step' + done + '" href="' + s.href + '" ' + clickAttr + '>'
+        + '<span class="ob-step-icon">' + s.icon + '</span>'
+        + '<span class="ob-step-text">' + s.label + '<small>' + s.desc + '</small></span>'
+        + '<span class="ob-check">' + check + '</span>'
+        + '</a>';
+    }).join('');
+
+    card.style.display = 'block';
+
+    var dismissBtn = document.getElementById('obDismiss');
+    if (dismissBtn && !dismissBtn._bound) {
+      dismissBtn._bound = true;
+      dismissBtn.addEventListener('click', function() {
+        localStorage.setItem(OB_KEY, '1');
+        card.style.opacity = '0'; card.style.transform = 'translateY(-8px)';
+        card.style.transition = 'all .3s';
+        setTimeout(function(){ card.style.display = 'none'; }, 300);
+      });
+    }
+  }
+
+  function obMarkDone(key) {
+    var doneMap = {};
+    try { doneMap = JSON.parse(localStorage.getItem(OB_DONE_KEY) || '{}'); } catch(e) {}
+    doneMap[key] = 1;
+    localStorage.setItem(OB_DONE_KEY, JSON.stringify(doneMap));
+  }
+
+  function obScrollTo(id, key) {
+    obMarkDone(key);
+    var el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(initOnboarding, 400);
+    return false;
+  }
+
+  function loadDashboard() {
+    loadExternalJobsDash();
+    apiCall('getDashboardSummary', {}, function(r) {
+      if (!r || !r.success) return;
+      var d = r.data || {};
+
+      // jobs
+      var jl = document.getElementById('jobList');
+      if (d.jobs && d.jobs.length) {
+        jl.innerHTML = d.jobs.slice(0,5).map(function(j) {
+          var dt = new Date(j.date);
+          var dd = isNaN(dt) ? '?' : dt.getDate();
+          var mm = isNaN(dt) ? '' : THAI_MONTHS_SHORT[dt.getMonth()];
+          return '<div class="job-item"><div class="job-date-box"><div class="dd">'+dd+'</div><div class="mm">'+mm+'</div></div>'
+            +'<div class="job-info"><h4>'+escapeHtml(j.venue||'')+'</h4>'
+            +'<p>'+escapeHtml(j.band||'')+' · '+escapeHtml(j.type||'')+'</p></div></div>';
+        }).join('');
+      } else { jl.innerHTML = '<div class="empty-state"><p>ยังไม่มีงาน</p></div>'; }
+
+      // Daily Digest Banner — check if today has a gig
+      var digestEl = document.getElementById('dashDigest');
+      if (digestEl && d.jobs && d.jobs.length) {
+        var today = new Date(); today.setHours(0,0,0,0);
+        var todayJob = d.jobs.find(function(j) {
+          var jd = new Date(j.date); jd.setHours(0,0,0,0);
+          return jd.getTime() === today.getTime();
+        });
+        if (todayJob) {
+          digestEl.innerHTML = '📅 <strong>วันนี้มีงานที่ ' + escapeHtml(todayJob.venue || 'ไม่ระบุ') + '</strong> — <a href="setlist.html" style="color:#92400e;font-weight:700">Setlist พร้อมหรือยัง?</a>';
+          digestEl.classList.add('show');
+        }
+      }
+
+      // finance
+      var fl = document.getElementById('financeList');
+      var fin = d.finance || {};
+      var balance = (fin.income||0) - (fin.expense||0);
+      fl.innerHTML = [
+        ['รายรับรวม', formatCurrency(fin.income||0), 'val-pos'],
+        ['รายจ่ายรวม', formatCurrency(fin.expense||0), 'val-neg'],
+        ['ยอดคงเหลือ', formatCurrency(balance), balance >= 0 ? 'val-pos' : 'val-neg'],
+      ].map(function(row){
+        return '<div class="finance-row"><span class="label">'+row[0]+'</span><span class="'+row[2]+'">'+row[1]+'</span></div>';
+      }).join('');
+    });
+  }
+
+  /* ── Dashboard Share QR ── */
+  function dashShareQR(date, venue, timeSlot) {
+    var bandId = localStorage.getItem('bandId') || '';
+    if (!bandId) { alert('ไม่พบ bandId'); return; }
+    var modal = document.getElementById('dashQrModal');
+    var img = document.getElementById('dashQrCode');
+    var urlEl = document.getElementById('dashQrUrl');
+    var expiryEl = document.getElementById('dashQrExpiry');
+
+    var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+    var url = base + 'live.html?guest=1&band=' + encodeURIComponent(bandId) +
+              '&date=' + encodeURIComponent(decodeURIComponent(date)) +
+              '&venue=' + encodeURIComponent(decodeURIComponent(venue)) +
+              '&timeSlot=' + encodeURIComponent(decodeURIComponent(timeSlot));
+    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    urlEl.textContent = url;
+    expiryEl.textContent = 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
+    modal.classList.add('show');
+  }

@@ -1,7 +1,8 @@
 const https = require('https');
 const fs = require('fs');
 
-const PAT = 'sbp_8f89f1ff1c856bc2bbd8159a6fa2943d0a9b7222';
+let _pat; try { _pat = fs.readFileSync('.env.local', 'utf8').match(/SUPABASE_PAT=(.+)/)[1].trim(); } catch(e) { _pat = process.env.SUPABASE_PAT; }
+const PAT = _pat;
 const PROJECT = 'wsorngsyowgxikiepice';
 
 function query(sql) {
@@ -19,7 +20,10 @@ function query(sql) {
     }, res => {
       let data = '';
       res.on('data', c => data += c);
-      res.on('end', () => { try { resolve(JSON.parse(data)); } catch(e) { reject(data); } });
+      res.on('end', () => {
+        if (res.statusCode >= 400) { reject(new Error(`API Error: ${res.statusCode} - ${data}`)); return; }
+        try { resolve(JSON.parse(data)); } catch(e) { reject(data); }
+      });
     });
     req.on('error', reject);
     req.write(body);

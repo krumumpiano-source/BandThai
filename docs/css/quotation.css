@@ -1,0 +1,48 @@
+/* ── Quotation list ── */
+    .q-modal-form .form-r{display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)}
+    @media(max-width:480px){.q-modal-form .form-r{grid-template-columns:1fr}}
+    .item-row{display:grid;grid-template-columns:3fr 1fr 1fr 40px;gap:var(--spacing-sm);align-items:center;margin-bottom:var(--spacing-sm)}
+    .item-row input{font-size:var(--text-sm)}
+
+    /* ── Status badges ── */
+    .badge-draft{background:rgba(156,163,175,.2);color:#9ca3af}
+    .badge-sent{background:rgba(59,130,246,.15);color:#3b82f6}
+    .badge-approved{background:rgba(34,197,94,.15);color:#16a34a}
+    .badge-cancelled{background:rgba(239,68,68,.15);color:#ef4444}
+
+    /* ── Print / PDF document styles ── */
+    #quotPreview{display:none}
+    @media print{
+      body *{visibility:hidden}
+      #quotPreview,#quotPreview *{visibility:visible}
+      #quotPreview{display:block!important;position:fixed;left:0;top:0;width:100%;background:#fff}
+      #mainNav,#toast,.btn,.no-print{display:none!important}
+    }
+    .quot-doc{background:#fff;color:#111;padding:40px 48px;max-width:800px;margin:0 auto;font-family:'Sarabun',sans-serif;font-size:14px;line-height:1.7}
+    .quot-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1a1a1a;padding-bottom:16px;margin-bottom:24px}
+    .quot-band-name{font-size:24px;font-weight:700;font-family:'Kanit',sans-serif}
+    .quot-band-sub{font-size:12px;color:#555;margin-top:2px}
+    .quot-title-block{text-align:right}
+    .quot-title{font-size:22px;font-weight:700;color:#b8860b;font-family:'Kanit',sans-serif}
+    .quot-no{font-size:13px;color:#555;margin-top:4px}
+    .quot-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+    .quot-info-box{background:#f9f9f9;border:1px solid #e5e5e5;border-radius:8px;padding:12px 16px}
+    .quot-info-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px}
+    .quot-info-val{font-weight:600;font-size:14px}
+    .quot-info-val-sm{font-size:13px;color:#444;margin-top:2px}
+    .quot-section-title{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:#888;border-bottom:1px solid #e5e5e5;padding-bottom:4px;margin:18px 0 10px}
+    .quot-table{width:100%;border-collapse:collapse;margin-bottom:16px}
+    .quot-table th{background:#1a1a1a;color:#fff;padding:8px 10px;text-align:left;font-size:12px;font-weight:600}
+    .quot-table td{padding:8px 10px;border-bottom:1px solid #eee;font-size:13px}
+    .quot-table tr:last-child td{border-bottom:none}
+    .quot-table .text-right{text-align:right}
+    .quot-table .text-center{text-align:center}
+    .quot-total-box{background:#1a1a1a;color:#fff;border-radius:8px;padding:16px 20px;margin:16px 0}
+    .quot-total-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0}
+    .quot-total-row.main{font-size:20px;font-weight:700;color:#ffd700;margin-top:8px;border-top:1px solid #444;padding-top:8px}
+    .quot-terms{font-size:12px;color:#555;margin-top:16px;padding:12px;background:#fafafa;border-left:3px solid #b8860b;border-radius:0 6px 6px 0}
+    .quot-sig{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:32px}
+    .quot-sig-box{text-align:center;padding-top:48px;border-top:1px solid #333;font-size:12px}
+    .quot-footer{margin-top:24px;border-top:1px solid #e5e5e5;padding-top:12px;text-align:center;font-size:11px;color:#999}
+    .quot-members-list{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+    .quot-member-chip{background:#f1f1f1;border-radius:20px;padding:2px 10px;font-size:12px}
