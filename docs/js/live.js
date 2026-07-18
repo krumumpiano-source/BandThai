@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
       if (_eb) _eb.style.display = '';
       if (_tb) _tb.style.display = 'flex';
       updateBreakTimer();
-      _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
+      _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
     }
   } catch(e) {}
   // Show 📋 button if there's a saved snapshot from last break
@@ -2027,7 +2027,7 @@ function startBreak() {
   }
 
   updateBreakTimer();
-  _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
+  _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
 
   // ── Broadcast ให้ทุกเครื่องทราบว่าเริ่มนับเวลาแล้ว (พร้อม timestamp ที่ตรงกัน) ──
   broadcastEvent('break_started', {
@@ -2666,18 +2666,36 @@ function initRealtime() {
         if (_stb) _stb.style.display = 'flex';
         if (_breakTimerIval) clearInterval(_breakTimerIval);
         updateBreakTimer();
-        _breakTimerIval = setInterval(updateBreakTimer, 10000); // อัพเดททุก 10 วินาที
-      } else if (!d.breakStarted && _breakStarted && isFirstSync) {
-        // leader says break not started — trust on first sync only
+        _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
+      } else if (d.endBreakDone && _breakStarted) {
+        // leader says break was definitively ended - we should stop our local timer
+        _endBreakDone = true;
         _breakStarted = false;
         if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
         try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
         var _ssb2 = document.getElementById('startBreakBtn');
         var _seb2 = document.getElementById('endBreakBtn');
         var _stb2 = document.getElementById('breakTimerBar');
-        if (_ssb2) _ssb2.style.display = '';
+        if (_ssb2) _ssb2.style.display = 'none'; // fully hide since break is done
         if (_seb2) _seb2.style.display = 'none';
         if (_stb2) _stb2.style.display = 'none';
+      } else if (!d.breakStarted && _breakStarted && isFirstSync) {
+        // leader says break not started, but we have it running locally.
+        // DO NOT KILL IT if d.endBreakDone is false. The leader might have been asleep
+        // and missed our break_started broadcast. We will keep it running, and our next 
+        // periodic state_sync will update the leader instead.
+        if (Date.now() - _breakStartTime > 8 * 60 * 60 * 1000) {
+           // unless it's obviously a stale timer from yesterday (>8 hours old)
+           _breakStarted = false;
+           if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+           try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+           var _ssb3 = document.getElementById('startBreakBtn');
+           var _seb3 = document.getElementById('endBreakBtn');
+           var _stb3 = document.getElementById('breakTimerBar');
+           if (_ssb3) _ssb3.style.display = '';
+           if (_seb3) _seb3.style.display = 'none';
+           if (_stb3) _stb3.style.display = 'none';
+        }
       }
       renderNowPlaying();
       renderSongList();
@@ -2712,7 +2730,7 @@ function initRealtime() {
       if (_tb) _tb.style.display = 'flex';
       if (_breakTimerIval) clearInterval(_breakTimerIval);
       updateBreakTimer();
-      _breakTimerIval = setInterval(updateBreakTimer, 10000);
+      _breakTimerIval = setInterval(updateBreakTimer, 1000);
       showToast('▶ ' + (d.by || 'สมาชิก') + ' เริ่มนับเวลาแล้ว');
     })
     .on('broadcast', { event: 'end_break_saving' }, function(payload) {
@@ -2779,7 +2797,8 @@ function getState() {
     current: _current,
     bpm: (_playlist[_current] || {}).bpm || 0,
     breakStarted: _breakStarted,
-    breakStartTime: _breakStartTime
+    breakStartTime: _breakStartTime,
+    endBreakDone: _endBreakDone
   };
 }
 
