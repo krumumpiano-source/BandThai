@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -47,11 +47,55 @@
     </div>
   </div>
 
+  <!-- Leave Request Modal -->
+  <div id="leaveRequestModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-header-inner">
+        <h3>🛑 แจ้งลาล่วงหน้า</h3>
+        <button class="modal-close-btn" id="closeLeaveModalBtn">×</button>
+      </div>
+      <form id="leaveRequestForm">
+        <div class="form-group">
+          <label>วันที่ต้องการลา *</label>
+          <input type="date" id="leaveDate" required>
+        </div>
+        <div class="form-group">
+          <label>รูปแบบการลา *</label>
+          <select id="leaveType" required>
+            <option value="full">ลาทั้งวัน (ทุกเบรค)</option>
+            <option value="partial">ลาเฉพาะบางเบรค</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>รายละเอียด/เหตุผล</label>
+          <textarea id="leaveNote" rows="2" placeholder="เช่น ลาเบรคแรก"></textarea>
+        </div>
+        
+        <div id="substitutesContainer" style="margin-top: var(--spacing-md); padding: var(--spacing-md); background: rgba(255,255,255,0.05); border-radius: var(--radius-md);">
+          <h4>🧑‍🤝‍🧑 คนมาแทน</h4>
+          <p style="font-size: var(--text-sm); color: var(--premium-text-muted); margin-bottom: var(--spacing-sm);">หากไม่มีคนแทนเว้นว่างไว้ หากมีสามารถเลือกคนในวงหรือพิมพ์ชื่อได้</p>
+          <div id="substitutesList" style="display: flex; flex-direction: column; gap: var(--spacing-sm);">
+            <!-- Dynamic Sub rows injected here -->
+          </div>
+          <button type="button" id="addSubstituteBtn" class="btn btn-secondary btn-sm" style="margin-top: var(--spacing-sm); width: 100%;">+ เพิ่มคนมาแทน</button>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);margin-top:var(--spacing-md)">
+          <button type="button" class="btn btn-secondary" id="cancelLeaveBtn">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">ส่งใบลา</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <main>
     <div class="container">
       <div class="page-header">
         <h1 class="page-title">📅 <span data-i18n="nav_schedule">ตารางงาน</span></h1>
-        <button id="addExternalGigBtn" class="btn btn-primary">➕ เพิ่มงานนอก</button>
+        <div style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
+          <button id="leaveRequestBtn" class="btn btn-secondary">🛑 แจ้งลา</button>
+          <button id="addExternalGigBtn" class="btn btn-primary">➕ เพิ่มงานนอก</button>
+        </div>
       </div>
 
       <!-- Weekly Timetable from Band Settings -->

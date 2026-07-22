@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Schedule Page JavaScript
  * ตารางงาน — ดูรายคน/ทั้งวง เพิ่มงานนอก ดูย้อนหลัง
  * Ported from old frontend — uses apiCall() instead of apiCall()
@@ -8,6 +8,7 @@ var _schIsManager = (function(){ var r = localStorage.getItem('userRole')||'memb
 var currentBandId = null;
 var bandMembersData = [];
 var scheduleData = [];
+var leaveRequestsData = [];
 var filters = {
   viewType: 'all',
   memberId: '',
@@ -99,9 +100,16 @@ function loadBandData() {
         var ls = localStorage.getItem('scheduleData');
         if (ls) try { scheduleData = JSON.parse(ls); } catch(e) { scheduleData = []; }
       }
-      renderMemberFilter();
-      renderScheduleTable();
-      updateSummary();
+
+      // Chain loading leave requests
+      apiCall('getLeaveRequests', { bandId: currentBandId }, function(lrResult) {
+        if (lrResult && lrResult.success && Array.isArray(lrResult.data)) {
+          leaveRequestsData = lrResult.data;
+        }
+        renderMemberFilter();
+        renderScheduleTable();
+        updateSummary();
+      });
     });
   } else {
     var ls = localStorage.getItem('scheduleData');
@@ -231,8 +239,34 @@ function renderScheduleTable() {
     var actions = payoutLink(gig, idx) +
       (_schIsManager ? '<button type="button" class="btn-icon-tiny edit" onclick="editGig(' + idx + ')" title="แก้ไข">✏️</button>' +
       '<button type="button" class="btn-icon-tiny delete" onclick="deleteGig(' + idx + ')" title="ลบ">🗑️</button>' : '');
+    
+    // Check if anyone is on leave for this date
+    var leavesHtml = '';
+    var leavesForDate = leaveRequestsData.filter(function(lr) { return lr.leaveDate === gig.date; });
+    if (leavesForDate.length > 0) {
+      leavesHtml = '<div style="margin-top: 4px; font-size: 0.85em;">';
+      leavesForDate.forEach(function(lr) {
+        var lrUser = bandMembersData.find(function(m) { return m.id === lr.userId; });
+        var lrUserName = lrUser ? escapeHtml(lrUser.name) : 'สมาชิก';
+        var subs = (lr.advancedLeaveSubstitutes || []).map(function(sub) {
+          var sName = sub.substituteName || '';
+          if (sub.substituteUserId) {
+            var sUser = bandMembersData.find(function(m) { return m.id === sub.substituteUserId; });
+            if (sUser) sName = sUser.name;
+          }
+          return sName ? sName + (sub.breakNumber ? ' (เบรค ' + sub.breakNumber + ')' : '') : '';
+        }).filter(Boolean).join(', ');
+        
+        leavesHtml += '<span style="display:inline-block; background: rgba(255,50,50,0.15); color: #ff6b6b; padding: 2px 6px; border-radius: 4px; margin-right: 4px; margin-bottom: 2px;">' + 
+          '🛑 ' + lrUserName + ' ลา ' + (subs ? ' -> แทน: ' + escapeHtml(subs) : '(ไม่มีคนแทน)') + 
+          '</span>';
+      });
+      leavesHtml += '</div>';
+    }
+
     var details = '<div class="gig-title">' + escapeHtml(gig.description || '-') + '</div>' +
-      (gig.contact ? '<div class="gig-info">📞 ' + escapeHtml(gig.contact) + '</div>' : '');
+      (gig.contact ? '<div class="gig-info">📞 ' + escapeHtml(gig.contact) + '</div>' : '') +
+      leavesHtml;
 
     body += '<tr class="gig-row">';
     if (filters.periodType === 'daily') {
@@ -548,8 +582,103 @@ document.addEventListener('DOMContentLoaded', function() {
   if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
   var gigForm = getEl('externalGigForm');
   if (gigForm) gigForm.addEventListener('submit', saveExternalGig);
-  var modal = getEl('addExternalGigModal');
-  if (modal) modal.addEventListener('click', function(e) { if (e.target === modal) closeModal(); });
+  // Leave Request logic
+  var leaveBtn = getEl('leaveRequestBtn');
+  var leaveModal = getEl('leaveRequestModal');
+  var closeLeaveModalBtn = getEl('closeLeaveModalBtn');
+  var cancelLeaveBtn = getEl('cancelLeaveBtn');
+  var leaveForm = getEl('leaveRequestForm');
+  var addSubBtn = getEl('addSubstituteBtn');
+  var subsList = getEl('substitutesList');
+  
+  function renderSubstitutesOptions() {
+    var opts = '<option value="">-- เลือกสมาชิกในวง --</option>';
+    bandMembersData.forEach(function(m) {
+      opts += '<option value="' + escapeHtml(m.id) + '">' + escapeHtml(m.name) + '</option>';
+    });
+    return opts;
+  }
+
+  function addSubRow() {
+    var div = document.createElement('div');
+    div.style.display = 'grid';
+    div.style.gridTemplateColumns = '1fr 2fr 1fr auto';
+    div.style.gap = '8px';
+    div.style.alignItems = 'center';
+    
+    div.innerHTML = `
+      <input type="number" placeholder="เบรคที่ (ใส่ตัวเลข)" class="sub-break" min="1" max="10">
+      <select class="sub-user">` + renderSubstitutesOptions() + `</select>
+      <input type="text" placeholder="พิมพ์ชื่อคนนอก" class="sub-name">
+      <button type="button" class="btn-icon-tiny delete" onclick="this.parentElement.remove()">🗑️</button>
+    `;
+    subsList.appendChild(div);
+  }
+
+  if (leaveBtn) {
+    leaveBtn.addEventListener('click', function() {
+      if (leaveModal) {
+        subsList.innerHTML = '';
+        addSubRow();
+        getEl('leaveDate').value = schLocalDate(new Date());
+        leaveModal.style.display = 'block';
+      }
+    });
+  }
+  
+  function closeLeaveModal() {
+    if (leaveModal) leaveModal.style.display = 'none';
+  }
+  
+  if (closeLeaveModalBtn) closeLeaveModalBtn.addEventListener('click', closeLeaveModal);
+  if (cancelLeaveBtn) cancelLeaveBtn.addEventListener('click', closeLeaveModal);
+  if (addSubBtn) addSubBtn.addEventListener('click', addSubRow);
+  if (leaveModal) leaveModal.addEventListener('click', function(e) { if (e.target === leaveModal) closeLeaveModal(); });
+
+  if (leaveForm) {
+    leaveForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var reqData = {
+        leaveDate: getEl('leaveDate').value,
+        leaveType: getEl('leaveType').value,
+        note: getEl('leaveNote').value,
+        substitutes: []
+      };
+      
+      var rows = subsList.querySelectorAll('div');
+      rows.forEach(function(row) {
+        var brk = row.querySelector('.sub-break').value;
+        var usr = row.querySelector('.sub-user').value;
+        var nam = row.querySelector('.sub-name').value;
+        if (usr || nam) {
+          reqData.substitutes.push({
+            breakNumber: brk ? parseInt(brk) : null,
+            substituteUserId: usr || null,
+            substituteName: nam || null
+          });
+        }
+      });
+      
+      var submitLeave = function(confirmOverwrite) {
+        reqData.confirmOverwrite = confirmOverwrite || false;
+        apiCall('addLeaveRequest', reqData, function(res) {
+          if (res.isWarning) {
+            if (confirm(res.message)) {
+              submitLeave(true);
+            }
+          } else if (res.success) {
+            showToast('ส่งใบลาเรียบร้อยแล้ว');
+            closeLeaveModal();
+            loadBandData(); // refresh data
+          } else {
+            showToast(res.message || 'เกิดข้อผิดพลาด');
+          }
+        });
+      };
+      
+      submitLeave(false);
+    });
+  }
 
   loadBandData();
   loadWeeklyTimetable();

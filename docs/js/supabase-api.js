@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BandThai — Supabase API Wrapper
  * แทนที่ apiCall() ทุก action ด้วย Supabase REST SDK
  *
@@ -310,6 +310,12 @@
         // ── Schedule ───────────────────────────────────────────────
         case 'saveSchedule':  return doSaveSchedule(d);
         case 'getSchedule':   return doGetSchedule(d);
+        
+        // ── Leave System ───────────────────────────────────────────────
+        case 'addLeaveRequest': return doAddLeaveRequest(d);
+        case 'getLeaveRequests':return doGetLeaveRequests(d);
+        case 'cancelLeaveRequest': return doDelete('advanced_leave_requests', d.leaveId);
+
 
         // ── Equipment ──────────────────────────────────────────────
         case 'getAllEquipment':        return doSelect('equipment', { band_id: getBandId() }, 'name');
@@ -1225,6 +1231,61 @@
         return { success: false, message: 'ไม่พบข้อมูลลงเวลาที่จะยกเลิก' };
       }
       return { success: true, message: 'ยกเลิกการลงเวลาเรียบร้อย' };
+    }
+
+    // ── Leave System ──────────────────────────────────────────────
+    async function doGetLeaveRequests(d) {
+      var bandId = d.bandId || getBandId();
+      var month = d.month || ''; // e.g., '2026-07'
+      
+      var q = sb.from('advanced_leave_requests').select('*, advanced_leave_substitutes(*)').eq('band_id', bandId);
+      if (month) {
+        q = q.like('leave_date', month + '%');
+      }
+      
+      var { data, error } = await q;
+      if (error) return { success: false, message: error.message };
+      return { success: true, data: toCamelList(data) };
+    }
+
+    async function doAddLeaveRequest(d) {
+      var bandId = getBandId();
+      var userId = localStorage.getItem('userId');
+      if (!userId) return { success: false, message: 'กรุณาเข้าสู่ระบบใหม่' };
+
+      // Check for duplicates
+      var { data: existing } = await sb.from('advanced_leave_requests')
+        .select('*')
+        .eq('band_id', bandId)
+        .eq('leave_date', d.leaveDate);
+
+      // Warn if > 1 person (meaning > 0 already exists) and we haven't confirmed
+      if (existing && existing.length > 0 && !d.confirmOverwrite) {
+        return { success: false, isWarning: true, message: 'มีสมาชิกคนอื่นแจ้งลาในวันนี้แล้ว คุณแน่ใจหรือไม่ที่จะแจ้งลาซ้ำ?' };
+      }
+
+      var { data: lrData, error: lrError } = await sb.from('advanced_leave_requests').insert({
+        band_id: bandId,
+        user_id: userId,
+        leave_date: d.leaveDate,
+        leave_type: d.leaveType,
+        note: d.note || ''
+      }).select().single();
+
+      if (lrError) return { success: false, message: lrError.message };
+
+      if (d.substitutes && d.substitutes.length > 0) {
+        var subs = d.substitutes.map(s => ({
+          leave_request_id: lrData.id,
+          break_number: s.breakNumber || null,
+          substitute_user_id: s.substituteUserId || null,
+          substitute_name: s.substituteName || null
+        }));
+        await sb.from('advanced_leave_substitutes').insert(subs);
+      }
+      
+      _logMemberAct('leave_request', 'แจ้งลา', lrData.id, d.leaveDate, 1);
+      return { success: true, data: toCamel(lrData) };
     }
 
     // ── Schedule ──────────────────────────────────────────────────
