@@ -682,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function addSubRow() {
     var div = document.createElement('div');
-    div.style.cssText = 'display:grid;grid-template-columns:1.5fr 2fr 1fr auto;gap:8px;align-items:center;';
+    div.className = 'sub-row';
     
     div.innerHTML =
       '<select class="sub-break">' + renderBreakOptions() + '</select>' +
