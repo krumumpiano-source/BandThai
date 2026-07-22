@@ -66,9 +66,17 @@
             <option value="partial">ลาเฉพาะบางเบรค</option>
           </select>
         </div>
+
+        <!-- Break selection (shown when partial) -->
+        <div id="leaveBreaksContainer" style="display:none; margin-top: var(--spacing-sm);">
+          <label style="font-weight:600; margin-bottom: 6px; display:block;">🕒 เลือกเบรคที่ต้องการลา</label>
+          <div id="leaveBreaksList" style="display:flex; flex-direction:column; gap:6px;"></div>
+          <p id="leaveNoBreaks" style="font-size:var(--text-sm); color:var(--premium-text-muted); display:none;">ไม่พบรอบการทำงานสำหรับวันนี้ กรุณาเลือกวันที่มีคิว</p>
+        </div>
+
         <div class="form-group">
           <label>รายละเอียด/เหตุผล</label>
-          <textarea id="leaveNote" rows="2" placeholder="เช่น ลาเบรคแรก"></textarea>
+          <textarea id="leaveNote" rows="2" placeholder="เช่น ติดธุระ, ไม่สบาย"></textarea>
         </div>
         
         <div id="substitutesContainer" style="margin-top: var(--spacing-md); padding: var(--spacing-md); background: rgba(255,255,255,0.05); border-radius: var(--radius-md);">

@@ -254,12 +254,18 @@ function renderScheduleTable() {
             var sUser = bandMembersData.find(function(m) { return m.id === sub.substituteUserId; });
             if (sUser) sName = sUser.name;
           }
-          return sName ? sName + (sub.breakNumber ? ' (เบรค ' + sub.breakNumber + ')' : '') : '';
+          if (sName) {
+            return sName + (sub.breakNumber ? ' (เบรค ' + sub.breakNumber + ')' : '');
+          } else if (sub.breakNumber) {
+            return 'เบรค ' + sub.breakNumber + ' (ไม่มีคนแทน)';
+          }
+          return '';
         }).filter(Boolean).join(', ');
         
+        var typeLabel = (lr.leaveType === 'partial') ? 'ลาบางเบรค' : 'ลา';
+        
         leavesHtml += '<span style="display:inline-block; background: rgba(255,50,50,0.15); color: #ff6b6b; padding: 2px 6px; border-radius: 4px; margin-right: 4px; margin-bottom: 2px;">' + 
-          '🛑 ' + lrUserName + ' ลา ' + (subs ? ' -> แทน: ' + escapeHtml(subs) : '(ไม่มีคนแทน)') + 
-          '</span>';
+          '🛑 ' + typeLabel + ': ' + lrUserName + (subs ? ' 🔄 ' + subs : '') + '</span>';
       });
       leavesHtml += '</div>';
     }
@@ -582,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
   var gigForm = getEl('externalGigForm');
   if (gigForm) gigForm.addEventListener('submit', saveExternalGig);
-  // Leave Request logic
+  // ═══ Leave Request Logic ═══
   var leaveBtn = getEl('leaveRequestBtn');
   var leaveModal = getEl('leaveRequestModal');
   var closeLeaveModalBtn = getEl('closeLeaveModalBtn');
@@ -590,7 +596,82 @@ document.addEventListener('DOMContentLoaded', function() {
   var leaveForm = getEl('leaveRequestForm');
   var addSubBtn = getEl('addSubstituteBtn');
   var subsList = getEl('substitutesList');
-  
+  var leaveBreaksContainer = getEl('leaveBreaksContainer');
+  var leaveBreaksList = getEl('leaveBreaksList');
+  var leaveNoBreaks = getEl('leaveNoBreaks');
+  var leaveTypeSelect = getEl('leaveType');
+  var leaveDateInput = getEl('leaveDate');
+
+  // Current slots for the selected leave date
+  var _leaveSlots = [];
+
+  // ── Get time slots for a date from weeklySchedule (bandSettings) ──
+  function getSlotsForDate(dateStr) {
+    var d = new Date(dateStr);
+    var dow = d.getDay(); // 0=Sun, 6=Sat
+    var dayData = weeklySchedule[dow] || weeklySchedule[String(dow)];
+    var slots = [];
+    if (Array.isArray(dayData) && dayData.length > 0) {
+      slots = dayData;
+    } else if (dayData && dayData.timeSlots && dayData.timeSlots.length > 0) {
+      slots = dayData.timeSlots;
+    }
+    return slots.map(function(s, idx) {
+      var st = s.startTime || '', et = s.endTime || '';
+      var venueName = '';
+      if (s.venueId && weeklyVenues.length) {
+        var v = weeklyVenues.find(function(wv) { return wv.id === s.venueId; });
+        if (v) venueName = v.name;
+      }
+      return {
+        index: idx + 1,
+        key: st + '-' + et,
+        startTime: st,
+        endTime: et,
+        label: 'เบรค ' + (idx + 1) + ': ' + st + ' – ' + et + (venueName ? ' (' + venueName + ')' : ''),
+        venueName: venueName
+      };
+    });
+  }
+
+  // ── Render break checkboxes ──
+  function renderLeaveBreaks() {
+    if (!leaveBreaksList || !leaveDateInput) return;
+    var dateVal = leaveDateInput.value;
+    _leaveSlots = dateVal ? getSlotsForDate(dateVal) : [];
+
+    if (_leaveSlots.length === 0) {
+      leaveBreaksList.innerHTML = '';
+      if (leaveNoBreaks) leaveNoBreaks.style.display = 'block';
+      return;
+    }
+    if (leaveNoBreaks) leaveNoBreaks.style.display = 'none';
+
+    leaveBreaksList.innerHTML = _leaveSlots.map(function(slot) {
+      return '<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(255,255,255,0.05);border-radius:8px;cursor:pointer;">' +
+        '<input type="checkbox" name="leaveBreak" value="' + escapeHtml(String(slot.index)) + '" data-key="' + escapeHtml(slot.key) + '">' +
+        '<span>🕐 ' + escapeHtml(slot.label) + '</span>' +
+        '</label>';
+    }).join('');
+  }
+
+  // ── Show/hide breaks based on leaveType ──
+  function toggleBreaksVisibility() {
+    if (!leaveBreaksContainer) return;
+    var isPartial = leaveTypeSelect && leaveTypeSelect.value === 'partial';
+    leaveBreaksContainer.style.display = isPartial ? 'block' : 'none';
+    if (isPartial) renderLeaveBreaks();
+  }
+
+  // ── Build break dropdown options for substitute row ──
+  function renderBreakOptions() {
+    var opts = '<option value="">ทุกเบรค / ทั้งคืน</option>';
+    _leaveSlots.forEach(function(slot) {
+      opts += '<option value="' + slot.index + '">' + escapeHtml(slot.label) + '</option>';
+    });
+    return opts;
+  }
+
   function renderSubstitutesOptions() {
     var opts = '<option value="">-- เลือกสมาชิกในวง --</option>';
     bandMembersData.forEach(function(m) {
@@ -601,31 +682,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
   function addSubRow() {
     var div = document.createElement('div');
-    div.style.display = 'grid';
-    div.style.gridTemplateColumns = '1fr 2fr 1fr auto';
-    div.style.gap = '8px';
-    div.style.alignItems = 'center';
+    div.style.cssText = 'display:grid;grid-template-columns:1.5fr 2fr 1fr auto;gap:8px;align-items:center;';
     
-    div.innerHTML = `
-      <input type="number" placeholder="เบรคที่ (ใส่ตัวเลข)" class="sub-break" min="1" max="10">
-      <select class="sub-user">` + renderSubstitutesOptions() + `</select>
-      <input type="text" placeholder="พิมพ์ชื่อคนนอก" class="sub-name">
-      <button type="button" class="btn-icon-tiny delete" onclick="this.parentElement.remove()">🗑️</button>
-    `;
+    div.innerHTML =
+      '<select class="sub-break">' + renderBreakOptions() + '</select>' +
+      '<select class="sub-user">' + renderSubstitutesOptions() + '</select>' +
+      '<input type="text" placeholder="ชื่อคนนอก" class="sub-name">' +
+      '<button type="button" class="btn-icon-tiny delete" onclick="this.parentElement.remove()">🗑️</button>';
     subsList.appendChild(div);
   }
 
+  // ── Open modal ──
   if (leaveBtn) {
     leaveBtn.addEventListener('click', function() {
       if (leaveModal) {
         subsList.innerHTML = '';
+        leaveDateInput.value = schLocalDate(new Date());
+        if (leaveTypeSelect) leaveTypeSelect.value = 'full';
+        if (getEl('leaveNote')) getEl('leaveNote').value = '';
+        
+        // Load slots for today
+        _leaveSlots = getSlotsForDate(leaveDateInput.value);
+        toggleBreaksVisibility();
         addSubRow();
-        getEl('leaveDate').value = schLocalDate(new Date());
         leaveModal.style.display = 'block';
       }
     });
   }
-  
+
+  // ── Date/type change handlers ──
+  if (leaveDateInput) {
+    leaveDateInput.addEventListener('change', function() {
+      _leaveSlots = getSlotsForDate(this.value);
+      toggleBreaksVisibility();
+      // Refresh break dropdowns in existing substitute rows
+      var allSubBreaks = subsList.querySelectorAll('.sub-break');
+      var opts = renderBreakOptions();
+      allSubBreaks.forEach(function(sel) { sel.innerHTML = opts; });
+    });
+  }
+  if (leaveTypeSelect) {
+    leaveTypeSelect.addEventListener('change', toggleBreaksVisibility);
+  }
+
   function closeLeaveModal() {
     if (leaveModal) leaveModal.style.display = 'none';
   }
@@ -635,22 +734,41 @@ document.addEventListener('DOMContentLoaded', function() {
   if (addSubBtn) addSubBtn.addEventListener('click', addSubRow);
   if (leaveModal) leaveModal.addEventListener('click', function(e) { if (e.target === leaveModal) closeLeaveModal(); });
 
+  // ── Form submit ──
   if (leaveForm) {
     leaveForm.addEventListener('submit', function(e) {
       e.preventDefault();
+      var leaveType = leaveTypeSelect ? leaveTypeSelect.value : 'full';
+
+      // Validate partial: at least 1 break selected
+      if (leaveType === 'partial') {
+        var checked = leaveBreaksList.querySelectorAll('input[name="leaveBreak"]:checked');
+        if (!checked.length) {
+          showToast('กรุณาเลือกเบรคที่ต้องการลาอย่างน้อย 1 เบรค');
+          return;
+        }
+      }
+
       var reqData = {
-        leaveDate: getEl('leaveDate').value,
-        leaveType: getEl('leaveType').value,
+        leaveDate: leaveDateInput.value,
+        leaveType: leaveType,
         note: getEl('leaveNote').value,
         substitutes: []
       };
       
+      // Collect selected break indices for partial leave
+      if (leaveType === 'partial') {
+        var checkedBreaks = Array.from(leaveBreaksList.querySelectorAll('input[name="leaveBreak"]:checked'));
+        reqData.leaveBreaks = checkedBreaks.map(function(cb) { return parseInt(cb.value); });
+      }
+      
       var rows = subsList.querySelectorAll('div');
       rows.forEach(function(row) {
-        var brk = row.querySelector('.sub-break').value;
+        var brkSel = row.querySelector('.sub-break');
+        var brk = brkSel ? brkSel.value : '';
         var usr = row.querySelector('.sub-user').value;
         var nam = row.querySelector('.sub-name').value;
-        if (usr || nam) {
+        if (usr || nam || brk) { // Even if only break is selected, we record it if they want to explicitly state no substitute for a specific break via the dropdown. But normally they select breaks via checkboxes.
           reqData.substitutes.push({
             breakNumber: brk ? parseInt(brk) : null,
             substituteUserId: usr || null,
@@ -658,6 +776,21 @@ document.addEventListener('DOMContentLoaded', function() {
           });
         }
       });
+      
+      // If partial leave, ensure every checked break has a representation in substitutes (so the backend records it)
+      if (leaveType === 'partial' && reqData.leaveBreaks) {
+        reqData.leaveBreaks.forEach(function(brkNum) {
+          // Check if this break number is already in substitutes
+          var exists = reqData.substitutes.some(function(s) { return s.breakNumber === brkNum; });
+          if (!exists) {
+            reqData.substitutes.push({
+              breakNumber: brkNum,
+              substituteUserId: null,
+              substituteName: null
+            });
+          }
+        });
+      }
       
       var submitLeave = function(confirmOverwrite) {
         reqData.confirmOverwrite = confirmOverwrite || false;
@@ -669,7 +802,7 @@ document.addEventListener('DOMContentLoaded', function() {
           } else if (res.success) {
             showToast('ส่งใบลาเรียบร้อยแล้ว');
             closeLeaveModal();
-            loadBandData(); // refresh data
+            loadBandData();
           } else {
             showToast(res.message || 'เกิดข้อผิดพลาด');
           }
