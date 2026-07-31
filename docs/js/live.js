@@ -2000,8 +2000,7 @@ function _doSaveKeyBpm(songName, key, bpm) {
 // ─────────────────────────────────────────────────────────────────
 function startBreak() {
   if (_isGuest) return;
-  if (_endBreakDone) return; // เบรคนี้จบแล้ว ห้ามเริ่มใหม่
-  if (_breakStarted) return; // กำลังนับอยู่แล้ว
+  _endBreakDone    = false;
   _breakStarted    = true;
   _breakStartTime  = Date.now();
   _breakWarnedAt55 = false;
@@ -2101,17 +2100,20 @@ function endBreak() {
 }
 
 function endBreakConfirmed() {
-  if (_endBreakSaving || _endBreakDone) return; // prevent double-call or already-saved
+  if (_endBreakSaving) return; // prevent double-call
+  var oldBreakStartTime = _breakStartTime;
   // Stop break timer completely
   if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
   _breakStarted = false;
+  _breakStartTime = 0;
+  _endBreakDone = false;
   try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
-  // Hide timer bar and both break buttons — break is done, no restart allowed
+  // Hide timer bar and reset start button so user can start next break when ready
   var _tbar = document.getElementById('breakTimerBar');
   var _sbtn = document.getElementById('startBreakBtn');
   var _ebtn = document.getElementById('endBreakBtn');
   if (_tbar) _tbar.style.display = 'none';
-  if (_sbtn) _sbtn.style.display = 'none';
+  if (_sbtn) _sbtn.style.display = '';
   if (_ebtn) _ebtn.style.display = 'none';
   if (!_modified) {
     // No changes made — just exit without saving or showing clipboard
@@ -2137,8 +2139,8 @@ function endBreakConfirmed() {
 
   var snapshotPlaylist = _playlist.slice(); // snapshot ก่อน async call ป้องกัน Realtime เขียนทับ
   var actualBreakSec = 0;
-  if (typeof _breakStartTime !== 'undefined' && _breakStartTime > 0) {
-    actualBreakSec = Math.floor((Date.now() - _breakStartTime) / 1000);
+  if (oldBreakStartTime > 0) {
+    actualBreakSec = Math.floor((Date.now() - oldBreakStartTime) / 1000);
   }
   var songs = snapshotPlaylist.map(function(s) {
     var song = { name: s.name, key: s._key || s.key || '', bpm: s.bpm || 0,
@@ -2156,15 +2158,14 @@ function endBreakConfirmed() {
     date: _date, venue: _venue, timeSlot: _timeSlot,
     songs: songs
   }, function(r) {
+    _endBreakSaving = false;
+    if (btn) { btn.disabled = false; btn.textContent = '⏹ จบเบรค'; }
     if (!r || !r.success) {
       // บันทึกไม่สำเร็จ — คืน state ให้กดใหม่ได้
-      _endBreakSaving = false;
-      if (btn) { btn.disabled = false; btn.textContent = 'จบเบรค'; }
       showToast('⚠️ บันทึกไม่สำเร็จ — คัดลอกรายการแทนได้');
     } else {
-      // สำเร็จแล้ว — ล็อคปุ่ม + broadcast ให้เครื่องอื่นรู้
-      _endBreakDone = true;
-      if (btn) { btn.textContent = 'บันทึกแล้ว ✓'; }
+      // สำเร็จแล้ว — broadcast ให้เครื่องอื่นรู้
+      _endBreakDone = false;
       broadcastEvent('end_break_done', { by: localStorage.getItem('userName') || '' });
     }
     _showClipModal(snapshotPlaylist);
@@ -2715,10 +2716,10 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       // เครื่องอื่นกดเริ่มเบรค → sync timer พร้อมกันทันที โดยใช้ breakStartTime เดียวกัน
-      if (_endBreakDone || _breakStarted) return; // เบรคนี้จบแล้วหรือนับอยู่แล้ว
       if (!d.breakStartTime) return;
-      _breakStarted   = true;
-      _breakStartTime = d.breakStartTime; // ใช้ timestamp ของเครื่องที่กด (wall-clock เดียวกัน)
+      _endBreakDone    = false;
+      _breakStarted    = true;
+      _breakStartTime  = d.breakStartTime; // ใช้ timestamp ของเครื่องที่กด (wall-clock เดียวกัน)
       _breakWarnedAt55 = false;
       _breakWarnedDone = false;
       try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
@@ -2744,18 +2745,19 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'end_break_done' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
-      // เครื่องอื่น save สำเร็จแล้ว → หยุด timer + ซ่อนปุ่ม + แสดง clip modal
+      // เครื่องอื่น save สำเร็จแล้ว → หยุด timer + ซ่อน bar + แสดงปุ่มเริ่มเบรคสำหรับเบรคถัดไป
       var d = payload.payload || {};
-      _endBreakDone = true;
+      _endBreakDone   = false;
       _endBreakSaving = false;
-      _breakStarted = false;
+      _breakStarted   = false;
+      _breakStartTime = 0;
       if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
       try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
       var _tbar2 = document.getElementById('breakTimerBar');
       var _sbtn2 = document.getElementById('startBreakBtn');
       var _ebtn2 = document.getElementById('endBreakBtn');
       if (_tbar2) _tbar2.style.display = 'none';
-      if (_sbtn2) _sbtn2.style.display = 'none';
+      if (_sbtn2) _sbtn2.style.display = '';
       if (_ebtn2) _ebtn2.style.display = 'none';
       showToast('✅ ' + (d.by || 'สมาชิก') + ' บันทึกลิสเรียบร้อย');
       _showClipModal();
