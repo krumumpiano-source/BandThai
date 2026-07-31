@@ -1935,19 +1935,24 @@ function _checkDurBeforeAction(actionName, onOk) {
   var totalMin=Math.round(totalSec/60);
   var diff=targetMin-totalMin;
   if(diff>0){
-    var toastEl=document.getElementById('toast');
-    var msg='⛔ เวลารวมยังขาดอีก '+diff+' นาที ('+totalMin+' / '+targetMin+' นาที)\nกรุณาเพิ่มเพลงอีกประมาณ '+Math.ceil(diff/4)+' เพลงก่อน'+actionName;
-    if(toastEl){
-      toastEl.style.background='#c53030';
-      toastEl.style.color='#fff';
-      toastEl.textContent=msg.replace('\n',' — ');
-      toastEl.style.display='block';
-      toastEl.classList.add('show');
-      setTimeout(function(){toastEl.classList.remove('show');setTimeout(function(){toastEl.style.display='none';toastEl.style.background='';toastEl.style.color='';},300);},4000);
+    var actName = (actionName || '').trim();
+    var title = '⚠️ เวลาแสดงยังไม่ครบ ' + targetMin + ' นาที';
+    var message = 'เวลารวมเพลงในลิสยังขาดอีก ' + diff + ' นาที (' + totalMin + ' / ' + targetMin + ' นาที — ขาดอีกประมาณ ' + Math.ceil(diff/4) + ' เพลง)\n\nคุณต้องการ' + (actName ? actName : 'ดำเนินการ') + 'ต่อไปหรือไม่?';
+    if (typeof showConfirm === 'function') {
+      showConfirm({
+        title: title,
+        message: message,
+        confirmText: 'ยืนยัน' + (actName ? ' (' + actName + ')' : ''),
+        danger: false
+      }).then(function(ok) {
+        if (ok) onOk();
+      });
     } else {
-      alert(msg);
+      if (confirm(title + '\n\n' + message)) {
+        onOk();
+      }
     }
-    return; // บล็อก — ไม่ให้บันทึก
+    return;
   }
   onOk();
 }
@@ -2581,15 +2586,21 @@ renderPlaylist = function() {
   updatePlaylistFloating();
 };
 
-// ── Patch goLiveMode and copyPlaylist (after they are defined) ──
+// ── Patch goLiveMode, copyPlaylist and saveHistoryManual (after they are defined) ──
 var _origGoLiveMode = goLiveMode;
 goLiveMode = function() {
-  _checkDurBeforeAction('เข้า Live Mode ', function(){ _origGoLiveMode(); });
+  _checkDurBeforeAction('เข้า Live Mode', function(){ _origGoLiveMode(); });
 };
 var _origCopyPlaylist = copyPlaylist;
 copyPlaylist = function() {
-  _checkDurBeforeAction('บันทึกลิส ', function(){ _origCopyPlaylist(); });
+  _checkDurBeforeAction('บันทึกลิส', function(){ _origCopyPlaylist(); });
 };
+if (typeof saveHistoryManual === 'function') {
+  var _origSaveHistoryManual = saveHistoryManual;
+  saveHistoryManual = function() {
+    _checkDurBeforeAction('บันทึกลิส', function(){ _origSaveHistoryManual(); });
+  };
+}
 
 // highlightText alias for external use
 function highlightText(text, query) { return _highlightText(text, query); }
