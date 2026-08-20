@@ -448,6 +448,46 @@ function updateSelectBar() {
   if (addBtn)  addBtn.disabled = count === 0;
 }
 
+var _bandLibraryMap = {};
+var _bandLibraryMapById = {};
+
+function enrichSongFromBandLibrary(s) {
+  if (!s || !s.name) return s;
+  var nameKey = (s.name || '').trim().toLowerCase();
+  var lib = (s.id && _bandLibraryMapById[s.id]) || (s.songId && _bandLibraryMapById[s.songId]) || _bandLibraryMap[nameKey];
+  if (lib) {
+    if (lib.bpm && !s.bpm) s.bpm = lib.bpm;
+    else if (lib.bpm && s.bpm !== lib.bpm) s.bpm = lib.bpm;
+    if (lib.key && (!s.key || s.key === '-')) s.key = lib.key;
+    else if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) s.key = lib.key;
+    if (lib.singer && !s.singer) s.singer = lib.singer;
+    if (lib.artist && !s.artist) s.artist = lib.artist;
+    if (lib.tags && !s.tags) s.tags = lib.tags;
+    if (lib.era && !s.era) s.era = lib.era;
+    if (lib.mood && !s.mood) s.mood = lib.mood;
+    if (lib.id && !s.songId) s.songId = lib.id;
+  }
+  return s;
+}
+
+function refreshPlaylistFromLibrary() {
+  if (!playlistData || !playlistData.length) return;
+  var changed = false;
+  playlistData.forEach(function(s) {
+    if (s.break) return;
+    var nameKey = (s.name || '').trim().toLowerCase();
+    var lib = (s.id && _bandLibraryMapById[s.id]) || (s.songId && _bandLibraryMapById[s.songId]) || _bandLibraryMap[nameKey];
+    if (lib) {
+      if (lib.bpm && s.bpm !== lib.bpm) { s.bpm = lib.bpm; changed = true; }
+      if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) { s.key = lib.key; changed = true; }
+      if (lib.singer && s.singer !== lib.singer) { s.singer = lib.singer; changed = true; }
+      if (lib.artist && s.artist !== lib.artist) { s.artist = lib.artist; changed = true; }
+      if (lib.tags && s.tags !== lib.tags) { s.tags = lib.tags; changed = true; }
+    }
+  });
+  if (changed) renderPlaylist();
+}
+
 function loadBandLibrary() {
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
@@ -455,10 +495,20 @@ function loadBandLibrary() {
   apiCall('getAllSongs', { source: 'band', bandId: bandId, bandName: bandName }, function(r) {
     _bandLibraryLoaded = true;
     _bandLibraryIds = {};
+    _bandLibraryMap = {};
+    _bandLibraryMapById = {};
     if (r && r.success && r.data) {
       r.data.forEach(function(s) {
-        _bandLibraryIds[s.id || s.songId || ''] = true;
+        var sid = s.id || s.songId || '';
+        if (sid) {
+          _bandLibraryIds[sid] = true;
+          _bandLibraryMapById[sid] = s;
+        }
+        if (s.name) {
+          _bandLibraryMap[s.name.trim().toLowerCase()] = s;
+        }
       });
+      refreshPlaylistFromLibrary();
     }
     if (_selectMode) renderPage();
   });
@@ -466,18 +516,18 @@ function loadBandLibrary() {
 
 function cloneSelectedToBand() {
   var ids = Object.keys(_selectedIds);
-  if (!ids.length) { showSongsAlert('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e1e\u0e25\u0e07\u0e01\u0e48\u0e2d\u0e19'); return; }
+  if (!ids.length) { showSongsAlert('กรุณาเลือกเพลงก่อน'); return; }
   var btn = document.getElementById('sbAddBtn');
-  if (btn) { btn.disabled = true; btn.textContent = '\u0e01\u0e33\u0e25\u0e31\u0e07\u0e40\u0e1e\u0e34\u0e48\u0e21...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเพิ่ม...'; }
   apiCall('cloneSongsToBand', { ids: ids }, function(r) {
-    if (btn) { btn.disabled = false; btn.textContent = '\u2795 \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07'; }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ เพิ่มในคลังวง'; }
     if (r && r.success) {
-      showSongsAlert('\u2705 \u0e40\u0e1e\u0e34\u0e48\u0e21 ' + r.added + ' \u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07\u0e41\u0e25\u0e49\u0e27' + (r.skipped ? ' (' + r.skipped + ' \u0e0b\u0e49\u0e33)' : ''));
+      showSongsAlert('✅ เพิ่ม ' + r.added + ' เพลงในคลังวงแล้ว' + (r.skipped ? ' (' + r.skipped + ' ซ้ำ)' : ''));
       _bandLibraryLoaded = false;
       exitSelectMode();
       loadBandLibrary();
     } else {
-      showSongsAlert((r && r.message) || '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14');
+      showSongsAlert((r && r.message) || 'เกิดข้อผิดพลาด');
     }
   });
 }
@@ -1405,7 +1455,16 @@ function loadExistingPlaylist(idx, silent) {
   if (!p) return;
   if (!silent && playlistData.length > 0 && !confirm('แทนที่ลิสปัจจุบัน ' + playlistData.length + ' เพลง ด้วยลิสที่เลือก?')) return;
   playlistData = (p.songs || []).map(function(s) {
-    return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
+    return enrichSongFromBandLibrary({
+      name: s.name || '',
+      key: s.key || '',
+      bpm: s.bpm || 0,
+      singer: s.singer || '',
+      artist: s.artist || '',
+      tags: s.tags || '',
+      transpose: 0,
+      mode: 'major'
+    });
   });
   renderPlaylist();
   applyPlaylistContext(p);
@@ -1441,7 +1500,16 @@ function autoLoadPlaylistForSlot() {
   if (playlistData.length > 0) return; // don't overwrite if user already has songs
   // Auto-load silently
   playlistData = (_plExistingForDate[idx].songs || []).map(function(s) {
-    return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: 'major' };
+    return enrichSongFromBandLibrary({
+      name: s.name || '',
+      key: s.key || '',
+      bpm: s.bpm || 0,
+      singer: s.singer || '',
+      artist: s.artist || '',
+      tags: s.tags || '',
+      transpose: 0,
+      mode: 'major'
+    });
   });
   renderPlaylist();
   showSongsAlert('✅ โหลดลิสของสล็อตนี้อัตโนมัติ (' + playlistData.length + ' เพลง)');
@@ -2083,8 +2151,17 @@ function goLiveMode() {
   var date = (document.getElementById('useDate') || {}).value || '';
   var venue = getActiveVenueValue();
   var slot = getActiveTimeSlotValue();
-  location.href = 'live.html?from=songs.html&date=' + encodeURIComponent(date) +
+  var liveUrl = 'live.html?from=songs.html&date=' + encodeURIComponent(date) +
     '&venue=' + encodeURIComponent(venue) + '&timeSlot=' + encodeURIComponent(slot);
+
+  // บันทึกลิสปัจจุบันลง DB อัตโนมัติก่อนเข้า Live Mode เพื่อให้ Live Mode ได้ข้อมูลเพลงล่าสุดตรงกันทันที
+  if (playlistData.filter(function(s){ return !s.break; }).length > 0) {
+    saveHistory(function() {
+      location.href = liveUrl;
+    });
+  } else {
+    location.href = liveUrl;
+  }
 }
 
 function saveHistoryManual() {
@@ -2114,10 +2191,22 @@ function saveHistory(onDone) {
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var useDateEl = document.getElementById('useDate');
-  var venueEl   = document.getElementById('venue');
-  var timeEl    = document.getElementById('timeSlot');
   var songs = playlistData.filter(function(s){ return !s.break; }).map(function(s){
-    return { name: s.name, key: s.key || '', bpm: s.bpm || 0 };
+    var actualKey = s.key || '';
+    if (s.transpose && s.transpose !== 0 && typeof transposeKey === 'function') {
+      actualKey = formatKey(transposeKey(s.key, s.transpose, s.mode));
+    }
+    return {
+      name:   s.name || '',
+      key:    actualKey,
+      bpm:    s.bpm || 0,
+      singer: s.singer || '',
+      artist: s.artist || '',
+      tags:   s.tags || '',
+      notes:  s.notes || '',
+      era:    s.era || '',
+      mood:   s.mood || ''
+    };
   });
   apiCall('savePlaylistHistory', {
     bandId:   bandId,
@@ -2193,7 +2282,16 @@ function loadHistoryEntry(idx) {
   if (!h || !h.songs) return;
   if (playlistData.length > 0 && !confirm('ล้างลิสปัจจุบันแล้วโหลดลิสนี้?')) return;
   playlistData = h.songs.map(function(s){
-    return { name: s.name, key: s.key || '', bpm: s.bpm || 0, transpose: 0, mode: '' };
+    return enrichSongFromBandLibrary({
+      name:      s.name || '',
+      key:       s.key || '',
+      bpm:       s.bpm || 0,
+      singer:    s.singer || '',
+      artist:    s.artist || '',
+      tags:      s.tags || '',
+      transpose: 0,
+      mode:      ''
+    });
   });
   renderPlaylist();
   applyPlaylistContext(h);
@@ -2412,13 +2510,43 @@ function submitSuggestion() {
         showToast('✅ บันทึกการแก้ไขเรียบร้อย', 'success');
         closeSuggestModal();
         // อัพเดทข้อมูลใน _pageData แบบ in-place แล้ว re-render
+        var editedName = changes.name || (_sugOriginal ? _sugOriginal.name : '');
         for (var pi = 0; pi < _pageData.length; pi++) {
           if ((_pageData[pi].id || _pageData[pi].songId || '') === songId) {
             Object.assign(_pageData[pi], changes);
+            if (!editedName) editedName = _pageData[pi].name;
             break;
           }
         }
         renderPage();
+
+        // อัพเดท _bandLibraryMap และ _bandLibraryMapById
+        if (songId && _bandLibraryMapById[songId]) {
+          Object.assign(_bandLibraryMapById[songId], changes);
+        }
+        if (editedName) {
+          var ek = editedName.trim().toLowerCase();
+          if (!_bandLibraryMap[ek]) _bandLibraryMap[ek] = {};
+          Object.assign(_bandLibraryMap[ek], changes);
+        }
+
+        // อัพเดทเพลงใน playlistData ทันทีหากเพลงนี้อยู่ในลิสปัจจุบัน
+        var plChanged = false;
+        var editedNameLower = (editedName || '').trim().toLowerCase();
+        playlistData.forEach(function(ps) {
+          if (ps.break) return;
+          var matchById = (ps.id && ps.id === songId) || (ps.songId && ps.songId === songId);
+          var matchByName = editedNameLower && (ps.name || '').trim().toLowerCase() === editedNameLower;
+          if (matchById || matchByName) {
+            if (changes.key && (ps.transpose === 0 || ps.transpose === undefined)) ps.key = changes.key;
+            if (changes.bpm !== undefined) ps.bpm = changes.bpm;
+            if (changes.singer !== undefined) ps.singer = changes.singer;
+            if (changes.artist !== undefined) ps.artist = changes.artist;
+            if (changes.tags !== undefined) ps.tags = changes.tags;
+            plChanged = true;
+          }
+        });
+        if (plChanged) renderPlaylist();
       } else {
         var msg = (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
         errBanner.textContent = '❌ ' + msg;

@@ -65,7 +65,7 @@
     if (keyBtn) keyBtn.textContent = getKeyDisplayMode() === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
 
     // Load songs pool
-    apiCall('getAllSongs', {}, function(r) {
+    apiCall('getAllSongs', { source: 'band' }, function(r) {
       allSongs = (r && r.success && r.data) ? r.data : [];
       renderPool();
     });
@@ -83,7 +83,7 @@
     // Auto-refresh when user comes back from another page
     document.addEventListener('visibilitychange', function() {
       if (!document.hidden) {
-        apiCall('getAllSongs', {}, function(r) {
+        apiCall('getAllSongs', { source: 'band' }, function(r) {
           allSongs = (r && r.success && r.data) ? r.data : [];
           renderPool();
         });
@@ -484,10 +484,34 @@
     if (!date) { showToast('กรุณาเลือกวันที่ก่อน', 'error'); return; }
     var si = currentSetIdx || '1';
     var ts = todaySlots[parseInt(si) - 1];
+    var venue = (ts && (ts.venue_name || ts.venue)) || '';
+    var timeSlot = (ts && ts.time_slot) || '';
+    var currentSongs = (setsData[si] || []).map(function(s) {
+      return {
+        name:   s.name || '',
+        key:    s.key || '',
+        bpm:    s.bpm || 0,
+        singer: s.singer || '',
+        artist: s.artist || ''
+      };
+    });
+
     var params = 'date=' + encodeURIComponent(date);
-    if (ts && ts.time_slot) params += '&timeSlot=' + encodeURIComponent(ts.time_slot);
-    if (ts && (ts.venue_name || ts.venue)) params += '&venue=' + encodeURIComponent(ts.venue_name || ts.venue);
-    window.location.href = 'live.html?' + params;
+    if (timeSlot) params += '&timeSlot=' + encodeURIComponent(timeSlot);
+    if (venue) params += '&venue=' + encodeURIComponent(venue);
+
+    if (currentSongs.length > 0) {
+      apiCall('savePlaylistHistory', {
+        date: date,
+        venue: venue,
+        timeSlot: timeSlot,
+        songs: currentSongs
+      }, function() {
+        window.location.href = 'live.html?' + params;
+      });
+    } else {
+      window.location.href = 'live.html?' + params;
+    }
   }
 
   // ── Load previous setlist ────────────────────────────────────────────────

@@ -415,11 +415,71 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ─────────────────────────────────────────────────────────────────
+//  PRELOAD BAND SONGS & SYNC WITH LIBRARY
+// ─────────────────────────────────────────────────────────────────
+function preloadBandSongs(onDone) {
+  if (!_bandId) { if (onDone) onDone(); return; }
+  apiCall('getAllSongs', { source: 'band', bandId: _bandId }, function(r) {
+    if (r && r.success && r.data) {
+      _allSongs = r.data.slice().sort(function(a, b) {
+        return (a.name || '').localeCompare(b.name || '', 'th');
+      });
+      _allSongsLoaded = true;
+      syncPlaylistWithLibrary();
+    }
+    if (onDone) onDone();
+  });
+}
+
+function syncPlaylistWithLibrary() {
+  if (!_allSongsLoaded || !_allSongs.length || !_playlist || !_playlist.length) return;
+  var changed = false;
+  _playlist.forEach(function(s) {
+    if (!s || !s.name) return;
+    var nameLower = (s.name || '').trim().toLowerCase();
+    var match = null;
+    for (var i = 0; i < _allSongs.length; i++) {
+      if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
+        match = _allSongs[i];
+        break;
+      }
+    }
+    if (match) {
+      if (match.bpm && s.bpm !== match.bpm) {
+        s.bpm = match.bpm;
+        changed = true;
+      }
+      // อัปเดตคีย์หากไม่ได้ transpose เองใน Live Mode
+      if (match.key && s.key !== match.key && (!s._key || s._key === s.key)) {
+        s.key = match.key;
+        s._key = match.key;
+        changed = true;
+      }
+      if (match.singer && s.singer !== match.singer) {
+        s.singer = match.singer;
+        changed = true;
+      }
+      if (match.artist && s.artist !== match.artist) {
+        s.artist = match.artist;
+        changed = true;
+      }
+    }
+  });
+  if (changed) {
+    renderSongList();
+    renderNowPlaying();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  LOAD PLAYLIST
 // ─────────────────────────────────────────────────────────────────
 function loadPlaylist() {
   if (!_date) { showEmpty(); initRealtime(); return; }
   console.log('[Live] loadPlaylist:', { bandId: _bandId, date: _date, venue: _venue, timeSlot: _timeSlot });
+  // Preload band song library in parallel so songs have updated key/bpm/singer
+  preloadBandSongs();
+
   // Timeout: ถ้า API ไม่ตอบใน 8 วิ → แสดง waiting + init realtime
   var _loadTimeout = setTimeout(function() {
     _loadTimeout = null;
@@ -474,9 +534,30 @@ function loadPlaylist() {
       document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
     }
     _playlist = row.songs.map(function(s) {
-      return { name: s.name || '', key: s.key || '', bpm: s.bpm || 0,
-               singer: s.singer || '', artist: s.artist || '',
-               _key: s.key || '', _note: '', _skipped: false,
+      var name = s.name || '';
+      var key = s.key || '';
+      var bpm = s.bpm || 0;
+      var singer = s.singer || '';
+      var artist = s.artist || '';
+
+      // Cross-check with band library if already loaded
+      if (_allSongsLoaded && _allSongs.length > 0) {
+        var nameLower = name.trim().toLowerCase();
+        for (var i = 0; i < _allSongs.length; i++) {
+          if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
+            var match = _allSongs[i];
+            if (match.bpm) bpm = match.bpm;
+            if (match.key && (!s._key || s._key === s.key)) key = match.key;
+            if (match.singer) singer = match.singer;
+            if (match.artist) artist = match.artist;
+            break;
+          }
+        }
+      }
+
+      return { name: name, key: key, bpm: bpm,
+               singer: singer, artist: artist,
+               _key: s._key || key, _note: s._note || '', _skipped: !!s._skipped,
                _isRequest: !!s._isRequest, _isRequestTime: s._isRequestTime || '',
                _isEncore: !!s._isEncore };
     });
@@ -1314,14 +1395,7 @@ function initChatBar() {
   // Preload band songs on first focus
   inp.addEventListener('focus', function() {
     if (!_allSongsLoaded) {
-      apiCall('getSongs', { bandId: _bandId }, function(r) {
-        if (r && r.success && r.data) {
-          _allSongs = r.data.slice().sort(function(a, b) {
-            return (a.name || '').localeCompare(b.name || '', 'th');
-          });
-        }
-        _allSongsLoaded = true;
-      });
+      preloadBandSongs();
     }
   }, { once: true });
 }
@@ -1959,13 +2033,8 @@ function submitEditSong() {
 function _saveKeyBpmToLibrary(songName, key, bpm) {
   // Find song in _allSongs by name to get its ID
   if (!_allSongsLoaded || _allSongs.length === 0) {
-    // Load songs first then save
-    apiCall('getSongs', { bandId: _bandId }, function(r) {
-      if (r && r.success && r.data) {
-        _allSongs = r.data;
-        _allSongsLoaded = true;
-        _doSaveKeyBpm(songName, key, bpm);
-      }
+    preloadBandSongs(function() {
+      _doSaveKeyBpm(songName, key, bpm);
     });
   } else {
     _doSaveKeyBpm(songName, key, bpm);
