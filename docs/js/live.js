@@ -2094,6 +2094,8 @@ function startBreak() {
     }
   }
 
+  // ── Clear interval เก่าก่อนเสมอ ป้องกัน interval ซ้อนกันเมื่อเริ่มเบรคครั้งที่ 2+ ──
+  if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
   updateBreakTimer();
   _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
 
@@ -2110,7 +2112,7 @@ function updateBreakTimer() {
   var elapsedSec = Math.floor((Date.now() - _breakStartTime) / 1000);
   var elapsed = Math.floor(elapsedSec / 60);
   var secs = elapsedSec % 60;
-  var pct = Math.min(100, Math.round(elapsed / _breakTargetMin * 100));
+  var pct = Math.min(100, Math.round(elapsedSec / (_breakTargetMin * 60) * 100));
 
   var txt  = document.getElementById('breakTimerText');
   var fill = document.getElementById('breakTimerFill');
@@ -2410,6 +2412,7 @@ function exitLive() {
 
 function doExit() {
   if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
+  if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
   if (_breakWarningTimer) clearTimeout(_breakWarningTimer);
   if (_syncRetryTimer) { clearTimeout(_syncRetryTimer); _syncRetryTimer = null; }
   if (_periodicSyncTimer) { clearInterval(_periodicSyncTimer); _periodicSyncTimer = null; }
