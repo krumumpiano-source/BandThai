@@ -57,13 +57,14 @@ var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
 // ── Break Timer ──────────────────────────────────────────────────
-var _breakStarted    = false;
-var _breakStartTime  = 0;     // Date.now() when startBreak() called
-var _breakTargetMin  = 60;    // target minutes (from venue settings)
-var _breakTimerIval  = null;
+var _breakStarted      = false;
+var _breakStartedByMe  = false; // true = this device pressed startBreak() directly (not sessionStorage restore)
+var _breakStartTime    = 0;     // Date.now() when startBreak() called
+var _breakTargetMin    = 60;    // target minutes (from venue settings)
+var _breakTimerIval    = null;
 var _scheduledStartMin = -1;  // minutes-from-midnight parsed from timeSlot
-var _breakWarnedAt55 = false;
-var _breakWarnedDone = false;
+var _breakWarnedAt55   = false;
+var _breakWarnedDone   = false;
 // ────────────────────────────────────────────────────────────────
 var _clockTimer = null;
 var _ctxIdx = -1; // context menu target song index
@@ -2069,11 +2070,12 @@ function _doSaveKeyBpm(songName, key, bpm) {
 // ─────────────────────────────────────────────────────────────────
 function startBreak() {
   if (_isGuest) return;
-  _endBreakDone    = false;
-  _breakStarted    = true;
-  _breakStartTime  = Date.now();
-  _breakWarnedAt55 = false;
-  _breakWarnedDone = false;
+  _endBreakDone      = false;
+  _breakStarted      = true;
+  _breakStartedByMe  = true;  // this device pressed the button
+  _breakStartTime    = Date.now();
+  _breakWarnedAt55   = false;
+  _breakWarnedDone   = false;
   try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
 
   var sbtn = document.getElementById('startBreakBtn');
@@ -2175,9 +2177,10 @@ function endBreakConfirmed() {
   var oldBreakStartTime = _breakStartTime;
   // Stop break timer completely
   if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
-  _breakStarted = false;
-  _breakStartTime = 0;
-  _endBreakDone = false;
+  _breakStarted     = false;
+  _breakStartedByMe = false;
+  _breakStartTime   = 0;
+  _endBreakDone     = false;
   try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
   // Hide timer bar and reset start button so user can start next break when ready
   var _tbar = document.getElementById('breakTimerBar');
@@ -2411,11 +2414,20 @@ function exitLive() {
 }
 
 function doExit() {
-  if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
-  if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
-  if (_breakWarningTimer) clearTimeout(_breakWarningTimer);
-  if (_syncRetryTimer) { clearTimeout(_syncRetryTimer); _syncRetryTimer = null; }
-  if (_periodicSyncTimer) { clearInterval(_periodicSyncTimer); _periodicSyncTimer = null; }
+  // ── Timers ──────────────────────────────────────────────
+  if (_clockTimer)         { clearInterval(_clockTimer);          _clockTimer         = null; }
+  if (_breakTimerIval)     { clearInterval(_breakTimerIval);      _breakTimerIval     = null; }
+  if (_hbdTimer)           { clearInterval(_hbdTimer);            _hbdTimer           = null; }
+  if (_rtHeartbeatTimer)   { clearInterval(_rtHeartbeatTimer);    _rtHeartbeatTimer   = null; }
+  if (_periodicSyncTimer)  { clearInterval(_periodicSyncTimer);   _periodicSyncTimer  = null; }
+  if (_breakWarningTimer)  { clearTimeout(_breakWarningTimer);    _breakWarningTimer  = null; }
+  if (_syncRetryTimer)     { clearTimeout(_syncRetryTimer);        _syncRetryTimer     = null; }
+  if (_stateSyncTimer)     { clearTimeout(_stateSyncTimer);        _stateSyncTimer     = null; }
+  if (_endingTimer)        { clearTimeout(_endingTimer);           _endingTimer        = null; }
+  // ── Animation frames ────────────────────────────────────
+  if (_marqueeRAF)         { cancelAnimationFrame(_marqueeRAF);   _marqueeRAF         = null; }
+  if (_noteMarqueeRAF)     { cancelAnimationFrame(_noteMarqueeRAF); _noteMarqueeRAF   = null; }
+  // ── Realtime + hardware ─────────────────────────────────
   if (_channel) { _channel.unsubscribe(); _channel = null; }
   stopBeatDot();
   releaseWakeLock();
@@ -2741,25 +2753,25 @@ function initRealtime() {
         updateBreakTimer();
         _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
       } else if (d.endBreakDone && _breakStarted) {
-        // leader says break was definitively ended - we should stop our local timer
-        _endBreakDone = true;
-        _breakStarted = false;
+        // leader says break was definitively ended — stop our local timer
+        _endBreakDone     = true;
+        _breakStarted     = false;
+        _breakStartedByMe = false;
         if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
         try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
         var _ssb2 = document.getElementById('startBreakBtn');
         var _seb2 = document.getElementById('endBreakBtn');
         var _stb2 = document.getElementById('breakTimerBar');
-        if (_ssb2) _ssb2.style.display = 'none'; // fully hide since break is done
+        if (_ssb2) _ssb2.style.display = ''; // ✅ คืนปุ่มเริ่มเบรค ให้กดเริ่มเบรคต่อไปได้
         if (_seb2) _seb2.style.display = 'none';
         if (_stb2) _stb2.style.display = 'none';
       } else if (!d.breakStarted && _breakStarted && isFirstSync) {
         // leader says break not started, but we have it running locally.
-        // DO NOT KILL IT if d.endBreakDone is false. The leader might have been asleep
-        // and missed our break_started broadcast. We will keep it running, and our next 
-        // periodic state_sync will update the leader instead.
-        if (Date.now() - _breakStartTime > 8 * 60 * 60 * 1000) {
-           // unless it's obviously a stale timer from yesterday (>8 hours old)
-           _breakStarted = false;
+        // ถ้าเครื่องนี้ไม่ได้กด startBreak() เอง (เช่น restore จาก sessionStorage หลัง refresh)
+        // ให้เชื่อ leader และหยุด timer ทันที เพื่อป้องกันเวลาเบรคเก่าฟื้นชีพ
+        if (!_breakStartedByMe || Date.now() - _breakStartTime > 8 * 60 * 60 * 1000) {
+           _breakStarted     = false;
+           _breakStartedByMe = false;
            if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
            try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
            var _ssb3 = document.getElementById('startBreakBtn');
@@ -2769,6 +2781,8 @@ function initRealtime() {
            if (_seb3) _seb3.style.display = 'none';
            if (_stb3) _stb3.style.display = 'none';
         }
+        // else: เครื่องนี้กด startBreak() เอง แต่ leader ยังไม่รู้ (อาจ broadcast หลุด)
+        // → คงนับต่อไป และรอ periodic sync ส่ง breakStartTime ไปอัพเดต leader
       }
       renderNowPlaying();
       renderSongList();
@@ -2789,11 +2803,12 @@ function initRealtime() {
       var d = payload.payload || {};
       // เครื่องอื่นกดเริ่มเบรค → sync timer พร้อมกันทันที โดยใช้ breakStartTime เดียวกัน
       if (!d.breakStartTime) return;
-      _endBreakDone    = false;
-      _breakStarted    = true;
-      _breakStartTime  = d.breakStartTime; // ใช้ timestamp ของเครื่องที่กด (wall-clock เดียวกัน)
-      _breakWarnedAt55 = false;
-      _breakWarnedDone = false;
+      _endBreakDone      = false;
+      _breakStarted      = true;
+      _breakStartedByMe  = false; // เครื่องอื่นกด ไม่ใช่เครื่องนี้
+      _breakStartTime    = d.breakStartTime; // ใช้ timestamp ของเครื่องที่กด (wall-clock เดียวกัน)
+      _breakWarnedAt55   = false;
+      _breakWarnedDone   = false;
       try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
       var _sb = document.getElementById('startBreakBtn');
       var _eb = document.getElementById('endBreakBtn');
