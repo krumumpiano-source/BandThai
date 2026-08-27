@@ -43,6 +43,8 @@ var _noteIdx   = -1;  // which song is being noted
 var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 0=S,1=M,2=L
 var _wakeLock  = null;
 var _lastLocalAddTime = 0; // timestamp ของครั้งล่าสุดที่เพิ่มเพลงในเครื่องนี้ (ป้องกัน state_sync stale)
+var _lastLocalCurrentChange = 0; // timestamp เมื่อกดเปลี่ยนเพลงในเครื่องนี้ (ป้องกัน state_sync เก่าดึงเด้งกลับ)
+var _currentUpdatedAt = Date.now(); // timestamp ของ _current ล่าสุด (versioning for current song)
 
 // ── Marquee / title display ───────────────────────────────────────
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
@@ -1265,10 +1267,12 @@ function endSong() {
   if (_isEnding) return;
   haptic(200);
   _pushUndo();
+  _currentUpdatedAt = Date.now();
+  _lastLocalCurrentChange = Date.now();
   var next = _current + 1;
   while (next < _playlist.length && _playlist[next]._skipped) next++;
   var nextIdx = (next < _playlist.length) ? next : -1;
-  broadcastEvent('song_ending', { from: _current, next: nextIdx });
+  broadcastEvent('song_ending', { from: _current, next: nextIdx, currentUpdatedAt: _currentUpdatedAt });
   triggerEnding(nextIdx);
 }
 
@@ -1289,6 +1293,8 @@ function triggerEnding(nextIdx) {
     _isEnding = false;
     if (nextIdx >= 0 && nextIdx < _playlist.length) {
       _current  = nextIdx;
+      _currentUpdatedAt = Date.now();
+      _lastLocalCurrentChange = Date.now();
       _modified = true;
       normalizePlaylistState();
       haptic(100);
@@ -1313,10 +1319,12 @@ function advanceSong() {
   if (next < _playlist.length) {
     _pushUndo();
     _current  = next;
+    _currentUpdatedAt = Date.now();
+    _lastLocalCurrentChange = Date.now();
     _modified = true;
     normalizePlaylistState();
     haptic(100);
-    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
     scheduleStateSync();
     startBeatDot((_playlist[_current] || {}).bpm || 0);
     renderNowPlaying();
@@ -1332,10 +1340,12 @@ function prevSong() {
   while (prev >= 0 && _playlist[prev]._skipped) prev--;
   if (prev >= 0) {
     _current = prev;
+    _currentUpdatedAt = Date.now();
+    _lastLocalCurrentChange = Date.now();
     _modified = true;
     normalizePlaylistState();
     haptic(80);
-    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
     scheduleStateSync();
     renderNowPlaying();
     renderSongList();
@@ -1351,10 +1361,12 @@ function nextSongDirect() {
   if (next < _playlist.length) {
     _pushUndo();
     _current = next;
+    _currentUpdatedAt = Date.now();
+    _lastLocalCurrentChange = Date.now();
     _modified = true;
     normalizePlaylistState();
     haptic(80);
-    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+    broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
     scheduleStateSync();
     renderNowPlaying();
     renderSongList();
@@ -1688,11 +1700,13 @@ function updateNavButtons() {
 function playNow(idx) {
   if (idx === _current) return;
   _current = idx;
+  _currentUpdatedAt = Date.now();
+  _lastLocalCurrentChange = Date.now();
   _modified = true;
   normalizePlaylistState();
   haptic(80);
   // broadcast ให้ทุกเครื่องเปลี่ยนเพลงพร้อมกัน
-  broadcastEvent('current_changed', { idx: idx, bpm: (_playlist[idx] || {}).bpm || 0 });
+  broadcastEvent('current_changed', { idx: idx, bpm: (_playlist[idx] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
   scheduleStateSync();
   renderNowPlaying();
   renderSongList();
@@ -2496,10 +2510,19 @@ function initRealtime() {
     .on('broadcast', { event: 'song_ending' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
+      var remoteUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
+      // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ event นี้เก่ากว่า → ignore ป้องกันเด้งกลับ
+      if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && remoteUpdatedAt < _currentUpdatedAt) {
+        scheduleStateSync();
+        return;
+      }
       // sync _current ให้ตรงกับผู้กดก่อน จากนั้น advance ไป next เดียวกัน
       if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
-        _current = d.from;
+        if (remoteUpdatedAt >= _currentUpdatedAt || _current <= d.from) {
+          _current = d.from;
+        }
       }
+      _currentUpdatedAt = Math.max(_currentUpdatedAt, remoteUpdatedAt);
       if (_isEnding) {
         // เครื่องนี้กำลังทำ animation อยู่ (หรือ animation ค้าง) — force-reset และรับคำสั่งจากเครื่องอื่น
         if (_endingTimer) { clearTimeout(_endingTimer); _endingTimer = null; }
@@ -2512,8 +2535,15 @@ function initRealtime() {
     .on('broadcast', { event: 'current_changed' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
+      var remoteUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
       if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
+        // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ event นี้เก่ากว่า → ignore ป้องกันเด้งกลับ
+        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && remoteUpdatedAt < _currentUpdatedAt) {
+          scheduleStateSync();
+          return;
+        }
         _current = d.idx;
+        _currentUpdatedAt = Math.max(_currentUpdatedAt, remoteUpdatedAt);
         _modified = true;
         normalizePlaylistState();
         renderNowPlaying();
@@ -2732,6 +2762,9 @@ function initRealtime() {
       }
 
       // Always accept on first sync (rejoin scenario — DB state may be stale)
+      var incomingCurrent = typeof d.current === 'number' ? d.current : 0;
+      var incomingCurrentUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
+
       if (!isFirstSync) {
         // Guard: ถ้าเพิ่งเพิ่มเพลงในเครื่องนี้ (< 3 วิ) และ incoming state มีเพลงน้อยกว่า
         // → state นั้น stale (ส่งมาก่อนเราเพิ่ม) — ปฏิเสธ และ broadcast state ใหม่ของเราออกไป
@@ -2739,8 +2772,19 @@ function initRealtime() {
           scheduleStateSync();
           return;
         }
+        // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ incoming state เก่ากว่า → ไม่ให้เด้งกลับเพลงเดิม
+        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && incomingCurrentUpdatedAt < _currentUpdatedAt) {
+          scheduleStateSync();
+          incomingCurrent = _current;
+          incomingCurrentUpdatedAt = _currentUpdatedAt;
+        } else if (incomingCurrentUpdatedAt < _currentUpdatedAt && incomingCurrent !== _current) {
+          // incoming state เก่ากว่าการเปลี่ยนเพลงล่าสุดของเรา → คง _current ของเราไว้
+          incomingCurrent = _current;
+          incomingCurrentUpdatedAt = _currentUpdatedAt;
+        }
+
         // Quick diff: skip re-render if state is already identical
-        if (_playlist.length === d.playlist.length && _current === (d.current || 0)) {
+        if (_playlist.length === d.playlist.length && _current === incomingCurrent) {
           var same = true;
           for (var si = 0; si < _playlist.length; si++) {
             var a = _playlist[si], b = d.playlist[si];
@@ -2755,7 +2799,8 @@ function initRealtime() {
       }
 
       _playlist = d.playlist;
-      _current  = typeof d.current === 'number' ? d.current : 0;
+      _current  = incomingCurrent;
+      _currentUpdatedAt = Math.max(_currentUpdatedAt, incomingCurrentUpdatedAt);
       _isSyncLeader = false; // someone else is senior — they own broadcast
       _modified = true;
       normalizePlaylistState();
@@ -2924,6 +2969,7 @@ function getState() {
   return {
     playlist: _playlist,
     current: _current,
+    currentUpdatedAt: _currentUpdatedAt,
     bpm: (_playlist[_current] || {}).bpm || 0,
     breakStarted: _breakStarted,
     breakStartTime: _breakStartTime,
@@ -3089,10 +3135,12 @@ function undoSong() {
   if (_undoStack.length === 0) { showToast('ไม่มีอะไรให้ย้อนกลับ'); return; }
   var state = _undoStack.pop();
   _current = state.current;
+  _currentUpdatedAt = Date.now();
+  _lastLocalCurrentChange = Date.now();
   _modified = true;
   normalizePlaylistState();
   haptic(80);
-  broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0 });
+  broadcastEvent('current_changed', { idx: _current, bpm: (_playlist[_current] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
   scheduleStateSync();
   renderNowPlaying();
   renderSongList();
