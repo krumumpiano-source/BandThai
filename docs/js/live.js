@@ -1700,7 +1700,7 @@ function playNow(idx) {
 }
 
 function setAsNext(idx) {
-  if (idx === _current) return;
+  if (idx === _current || _isEnding) return; // ไม่อนุญาตเปลี่ยนลำดับขณะ transition กำลังทำงาน
   var nextPos = _current + 1;
   if (idx === nextPos) { showToast('"' + (_playlist[idx]||{name:''}).name + '" เป็นเพลงถัดไปอยู่แล้ว ✅'); return; }
   var song = _playlist.splice(idx, 1)[0];
@@ -1842,11 +1842,16 @@ function preGenerateToken() {
 // ─────────────────────────────────────────────────────────────────
 function addEncore(idx) {
   var s = _playlist[idx];
+  if (!s) return;
   var clone = Object.assign({}, s, { _isEncore: true, _skipped: false, _note: '' });
-  _playlist.splice(_current + 1, 0, clone);
+  var insertAt = idx + 1; // ✅ แทรกหลังเพลงที่เลือก (ไม่ใช่หลัง _current เสมอ)
+  // ถ้า encore อยู่หลัง idx และ idx < _current, _current ต้อง shift +1
+  if (insertAt <= _current) _current++;
+  _playlist.splice(insertAt, 0, clone);
   _modified = true;
-  broadcastEvent('request_song', { song: clone, insertAt: _current + 1 });
+  broadcastEvent('request_song', { song: clone, insertAt: insertAt });
   scheduleStateSync();
+  renderNowPlaying();
   renderSongList();
   showToast('🔁 Encore: ' + s.name);
 }
@@ -2427,6 +2432,7 @@ function doExit() {
   if (_syncRetryTimer)     { clearTimeout(_syncRetryTimer);        _syncRetryTimer     = null; }
   if (_stateSyncTimer)     { clearTimeout(_stateSyncTimer);        _stateSyncTimer     = null; }
   if (_endingTimer)        { clearTimeout(_endingTimer);           _endingTimer        = null; }
+  if (_tapTimer)           { clearTimeout(_tapTimer);             _tapTimer           = null; }
   // ── Animation frames ────────────────────────────────────
   if (_marqueeRAF)         { cancelAnimationFrame(_marqueeRAF);   _marqueeRAF         = null; }
   if (_noteMarqueeRAF)     { cancelAnimationFrame(_noteMarqueeRAF); _noteMarqueeRAF   = null; }
@@ -2459,12 +2465,18 @@ function _sanitizeChannelPart(str) {
   return out.replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
 }
 
+var _initRealtimePending = false; // debounce guard: ป้องกัน re-entrant call
+
 function initRealtime() {
   if (!window._sb) {
     console.warn('[Live-RT] _sb not ready, retrying in 500ms...');
     setTimeout(initRealtime, 500);
     return;
   }
+  // Debounce: ถ้ามี call ที่รออยู่ใน queue แล้ว ไม่ต้องเริ่มใหม่
+  if (_initRealtimePending) { return; }
+  _initRealtimePending = true;
+  setTimeout(function() { _initRealtimePending = false; }, 2000);
   _channelStatus = '';
   // Clean up existing channel before creating a new one (prevent duplicate listeners)
   if (_channel) { try { _channel.unsubscribe(); } catch(e) {} _channel = null; }
@@ -2488,7 +2500,14 @@ function initRealtime() {
       if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
         _current = d.from;
       }
-      if (!_isEnding) triggerEnding(typeof d.next === 'number' ? d.next : -1);
+      if (_isEnding) {
+        // เครื่องนี้กำลังทำ animation อยู่ (หรือ animation ค้าง) — force-reset และรับคำสั่งจากเครื่องอื่น
+        if (_endingTimer) { clearTimeout(_endingTimer); _endingTimer = null; }
+        _isEnding = false;
+        var _npEl = document.getElementById('nowPlaying');
+        if (_npEl) _npEl.classList.remove('pulsing');
+      }
+      triggerEnding(typeof d.next === 'number' ? d.next : -1);
     })
     .on('broadcast', { event: 'current_changed' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
