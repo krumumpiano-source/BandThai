@@ -57,14 +57,15 @@ var _allSongsLoaded = false;
 var _guestLinkToken = null; // pre-generated QR token
 var _breakWarningTimer = null;
 // ── Break Timer ──────────────────────────────────────────────────
-var _breakStarted      = false;
-var _breakStartedByMe  = false; // true = this device pressed startBreak() directly (not sessionStorage restore)
-var _breakStartTime    = 0;     // Date.now() when startBreak() called
-var _breakTargetMin    = 60;    // target minutes (from venue settings)
-var _breakTimerIval    = null;
-var _scheduledStartMin = -1;  // minutes-from-midnight parsed from timeSlot
-var _breakWarnedAt55   = false;
-var _breakWarnedDone   = false;
+var _breakStarted            = false;
+var _breakStartedByMe        = false; // true = this device pressed startBreak() directly (not sessionStorage restore)
+var _breakStartTime          = 0;     // Date.now() when startBreak() called
+var _lastEndedBreakStartTime = 0;     // breakStartTime ของเบรคล่าสุดที่จบไปแล้ว (proof for offline devices)
+var _breakTargetMin          = 60;    // target minutes (from venue settings)
+var _breakTimerIval          = null;
+var _scheduledStartMin       = -1;  // minutes-from-midnight parsed from timeSlot
+var _breakWarnedAt55         = false;
+var _breakWarnedDone         = false;
 // ────────────────────────────────────────────────────────────────
 var _clockTimer = null;
 var _ctxIdx = -1; // context menu target song index
@@ -2070,12 +2071,13 @@ function _doSaveKeyBpm(songName, key, bpm) {
 // ─────────────────────────────────────────────────────────────────
 function startBreak() {
   if (_isGuest) return;
-  _endBreakDone      = false;
-  _breakStarted      = true;
-  _breakStartedByMe  = true;  // this device pressed the button
-  _breakStartTime    = Date.now();
-  _breakWarnedAt55   = false;
-  _breakWarnedDone   = false;
+  _endBreakDone            = false;
+  _breakStarted            = true;
+  _breakStartedByMe        = true;  // this device pressed the button
+  _breakStartTime          = Date.now();
+  _lastEndedBreakStartTime = 0;     // reset: new break started
+  _breakWarnedAt55         = false;
+  _breakWarnedDone         = false;
   try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
 
   var sbtn = document.getElementById('startBreakBtn');
@@ -2177,10 +2179,11 @@ function endBreakConfirmed() {
   var oldBreakStartTime = _breakStartTime;
   // Stop break timer completely
   if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
-  _breakStarted     = false;
-  _breakStartedByMe = false;
-  _breakStartTime   = 0;
-  _endBreakDone     = false;
+  _breakStarted            = false;
+  _breakStartedByMe        = false;
+  _lastEndedBreakStartTime = oldBreakStartTime; // บันทึกว่าเบรคไหนจบไปแล้ว
+  _breakStartTime          = 0;
+  _endBreakDone            = false;
   try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
   // Hide timer bar and reset start button so user can start next break when ready
   var _tbar = document.getElementById('breakTimerBar');
@@ -2738,10 +2741,28 @@ function initRealtime() {
       _modified = true;
       normalizePlaylistState();
       _resetHbdTracking();
-      // ── Restore break timer from synced state ──
-      if (d.breakStarted && d.breakStartTime && !_breakStarted) {
+      // ── Sync break timer from leader state ──────────────────────────────
+      // Step 1: ถ้า leader ยืนยันว่าเบรคนี้ (breakStartTime ตรงกัน) จบไปแล้ว → หยุด timer ทันที
+      //         ป้องกันเครื่องที่ไม่ได้รับ end_break_done (ปิดจอ/ออฟไลน์) นับต่อไม่สิ้นสุด
+      if (_breakStarted && d.lastEndedBreakStartTime > 0 && d.lastEndedBreakStartTime === _breakStartTime) {
+        _breakStarted            = false;
+        _breakStartedByMe        = false;
+        _lastEndedBreakStartTime = d.lastEndedBreakStartTime;
+        if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+        try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+        var _ssbl = document.getElementById('startBreakBtn');
+        var _sebl = document.getElementById('endBreakBtn');
+        var _stbl = document.getElementById('breakTimerBar');
+        if (_ssbl) _ssbl.style.display = ''; // คืนปุ่มเริ่มเบรค
+        if (_sebl) _sebl.style.display = 'none';
+        if (_stbl) _stbl.style.display = 'none';
+      }
+      // Step 2: ถ้าเบรคกำลังเดินอยู่ — sync timestamp ให้ตรงกันทุกเครื่อง
+      //         !_breakStarted = ยังไม่เริ่ม → เริ่ม
+      //         _breakStartTime !== d.breakStartTime = เริ่มมาแล้วแต่ timestamp ต่างกัน (เช่น sessionStorage ของเบรคเก่า) → อัพเดต
+      if (d.breakStarted && d.breakStartTime && (!_breakStarted || _breakStartTime !== d.breakStartTime)) {
         _breakStarted   = true;
-        _breakStartTime = d.breakStartTime;
+        _breakStartTime = d.breakStartTime; // always trust leader's timestamp
         try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
         var _ssb = document.getElementById('startBreakBtn');
         var _seb = document.getElementById('endBreakBtn');
@@ -2887,6 +2908,7 @@ function getState() {
     bpm: (_playlist[_current] || {}).bpm || 0,
     breakStarted: _breakStarted,
     breakStartTime: _breakStartTime,
+    lastEndedBreakStartTime: _lastEndedBreakStartTime, // proof เบรคล่าสุดที่จบแล้ว
     endBreakDone: _endBreakDone
   };
 }
