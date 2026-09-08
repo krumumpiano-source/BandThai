@@ -1591,6 +1591,13 @@ function _saveDWSettings() {
   if (!bandId) return;
   var enabled = document.getElementById('discountWageToggle') ? document.getElementById('discountWageToggle').checked : false;
 
+  try {
+    var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+    stored.discount_wage_enabled = enabled;
+    stored.discount_wage_rules = JSON.stringify(_dwRules || []);
+    localStorage.setItem('bandSettings', JSON.stringify(stored));
+  } catch(e) {}
+
   apiCall('getBandSettings', { bandId: bandId }, function(r) {
     var current = (r && r.success && r.data) ? r.data : {};
     current.bandId = bandId;

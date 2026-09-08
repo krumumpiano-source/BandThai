@@ -44,12 +44,12 @@ function nav(page) {
   function qciLoadSettings(cb) {
     // Use localStorage as immediate cache so UI renders fast
     var stored = localStorage.getItem('bandSettings');
-    if (stored) { try { var s = JSON.parse(stored); qciBandSettings = { venues: s.venues||[], scheduleData: s.scheduleData||s.schedule||{} }; } catch(e){} }
+    if (stored) { try { var s = JSON.parse(stored); qciBandSettings = s; } catch(e){} }
     // Always fetch fresh settings from API (schedule/members may have changed)
     if (qciBandId && typeof apiCall === 'function') {
       apiCall('getBandSettings', { bandId: qciBandId }, function(r) {
         if (r && r.success && r.data) {
-          qciBandSettings = { venues: r.data.venues||[], scheduleData: r.data.scheduleData||r.data.schedule||{} };
+          qciBandSettings = r.data;
           try { localStorage.setItem('bandSettings', JSON.stringify(r.data)); } catch(e) {}
         }
         cb();
@@ -771,8 +771,9 @@ function nav(page) {
         if (stored.payroll.weekStart !== undefined) weekStart = parseInt(stored.payroll.weekStart, 10);
         if (stored.payroll.weekEnd !== undefined) weekEnd = parseInt(stored.payroll.weekEnd, 10);
       }
-      dwEnabled = !!stored.discount_wage_enabled;
-      try { dwRules = stored.discount_wage_rules ? JSON.parse(stored.discount_wage_rules) : []; } catch(e2) { dwRules = []; }
+      dwEnabled = !!(stored.discount_wage_enabled !== undefined ? stored.discount_wage_enabled : settings.discount_wage_enabled);
+      var rawRules = stored.discount_wage_rules || settings.discount_wage_rules;
+      try { dwRules = rawRules ? (typeof rawRules === 'string' ? JSON.parse(rawRules) : rawRules) : []; } catch(e2) { dwRules = []; }
     } catch(e) {}
 
     // Calculate date range based on period
