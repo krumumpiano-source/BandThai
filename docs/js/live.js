@@ -44,7 +44,7 @@ var _fontLevel = parseInt(localStorage.getItem('liveFontLevel') || '1', 10); // 
 var _wakeLock  = null;
 var _lastLocalAddTime = 0; // timestamp ของครั้งล่าสุดที่เพิ่มเพลงในเครื่องนี้ (ป้องกัน state_sync stale)
 var _lastLocalCurrentChange = 0; // timestamp เมื่อกดเปลี่ยนเพลงในเครื่องนี้ (ป้องกัน state_sync เก่าดึงเด้งกลับ)
-var _currentUpdatedAt = Date.now(); // timestamp ของ _current ล่าสุด (versioning for current song)
+var _currentUpdatedAt = 0; // timestamp ของ _current ล่าสุด (0 = เริ่มต้น, ยอมรับ remote state ทันที)
 
 // ── Marquee / title display ───────────────────────────────────────
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
@@ -272,14 +272,19 @@ document.addEventListener('DOMContentLoaded', function() {
     showToast('🔄 กำลังซิงค์...');
   });
 
-  // ── Re-sync when app comes back from background ──
+  // ── Re-sync when app comes back from background / sleep ──
+  var _lastHiddenTime = 0;
   document.addEventListener('visibilitychange', function() {
-    if (document.visibilityState === 'visible') {
+    if (document.visibilityState === 'hidden') {
+      _lastHiddenTime = Date.now();
+    } else if (document.visibilityState === 'visible') {
+      var sleepDuration = _lastHiddenTime > 0 ? (Date.now() - _lastHiddenTime) : 0;
+      _lastHiddenTime = 0;
       // Re-acquire WakeLock if lost (merged from global handler)
       if ('wakeLock' in navigator && !_wakeLock) acquireWakeLock();
-      // Force reconnect if channel is stale or disconnected
-      if (_channelStatus !== 'SUBSCRIBED') {
-        console.log('[Live-RT] visibility: channel not SUBSCRIBED, reconnecting...');
+      // On mobile devices, WebSocket is silently dropped if asleep for > 2.5s or if status is not SUBSCRIBED
+      if (sleepDuration > 2500 || _channelStatus !== 'SUBSCRIBED') {
+        console.log('[Live-RT] visibility: resume after ' + Math.round(sleepDuration/1000) + 's — forcing fresh reconnect & state sync...');
         initRealtime();
       } else if (_channel && _playlist.length > 0) {
         _syncReceived = false;
@@ -2490,8 +2495,10 @@ function initRealtime() {
   // Debounce: ถ้ามี call ที่รออยู่ใน queue แล้ว ไม่ต้องเริ่มใหม่
   if (_initRealtimePending) { return; }
   _initRealtimePending = true;
-  setTimeout(function() { _initRealtimePending = false; }, 2000);
+  setTimeout(function() { _initRealtimePending = false; }, 800);
   _channelStatus = '';
+  var ind = document.getElementById('realtimeIndicator');
+  if (ind) ind.className = 'connecting';
   // Clean up existing channel before creating a new one (prevent duplicate listeners)
   if (_channel) { try { _channel.unsubscribe(); } catch(e) {} _channel = null; }
   // Stop heartbeat timer
@@ -2511,16 +2518,14 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var remoteUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
-      // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ event นี้เก่ากว่า → ignore ป้องกันเด้งกลับ
-      if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && remoteUpdatedAt < _currentUpdatedAt) {
+      // Guard: ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ) เท่านั้นถึงจะ ignore
+      if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500) {
         scheduleStateSync();
         return;
       }
       // sync _current ให้ตรงกับผู้กดก่อน จากนั้น advance ไป next เดียวกัน
       if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
-        if (remoteUpdatedAt >= _currentUpdatedAt || _current <= d.from) {
-          _current = d.from;
-        }
+        _current = d.from;
       }
       _currentUpdatedAt = Math.max(_currentUpdatedAt, remoteUpdatedAt);
       if (_isEnding) {
@@ -2537,8 +2542,8 @@ function initRealtime() {
       var d = payload.payload || {};
       var remoteUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
       if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
-        // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ event นี้เก่ากว่า → ignore ป้องกันเด้งกลับ
-        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && remoteUpdatedAt < _currentUpdatedAt) {
+        // Guard: ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ) เท่านั้นถึงจะ ignore
+        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500) {
           scheduleStateSync();
           return;
         }
@@ -2772,13 +2777,9 @@ function initRealtime() {
           scheduleStateSync();
           return;
         }
-        // Guard: ถ้าเพิ่งเปลี่ยนเพลงในเครื่องนี้ (< 2.5 วิ) และ incoming state เก่ากว่า → ไม่ให้เด้งกลับเพลงเดิม
-        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500 && incomingCurrentUpdatedAt < _currentUpdatedAt) {
+        // Guard: ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ)
+        if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500) {
           scheduleStateSync();
-          incomingCurrent = _current;
-          incomingCurrentUpdatedAt = _currentUpdatedAt;
-        } else if (incomingCurrentUpdatedAt < _currentUpdatedAt && incomingCurrent !== _current) {
-          // incoming state เก่ากว่าการเปลี่ยนเพลงล่าสุดของเรา → คง _current ของเราไว้
           incomingCurrent = _current;
           incomingCurrentUpdatedAt = _currentUpdatedAt;
         }
@@ -2944,7 +2945,7 @@ function initRealtime() {
       _channelStatus = status;
       console.log('[Live-RT] subscribe status:', status, 'channel:', _channelName);
       if (status === 'SUBSCRIBED') {
-        ind.className = 'connected';
+        if (ind) ind.className = 'connected';
         // Request state with retry (handles late joiners + reconnections)
         _isSyncLeader = false; // reset on (re)connect — will be re-elected via request_state flow
         _syncReceived = false;
@@ -2954,13 +2955,16 @@ function initRealtime() {
         startPeriodicSync();
         // Start heartbeat monitor
         _startHeartbeat();
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        ind.className = 'error';
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        if (ind) ind.className = 'error';
         _channelStatus = status;
-        // Auto-reconnect after 3 seconds
-        setTimeout(function() { console.log('[Live-RT] auto-reconnect...'); initRealtime(); }, 3000);
+        // Auto-reconnect quickly after 1.5 seconds
+        setTimeout(function() {
+          console.log('[Live-RT] auto-reconnect from status:', status);
+          initRealtime();
+        }, 1500);
       } else {
-        ind.className = '';
+        if (ind) ind.className = 'connecting';
       }
     });
 }
@@ -2990,14 +2994,15 @@ function broadcastEvent(event, data) {
   if (!_channel) {
     console.warn('[Live-RT] broadcastEvent: no channel for', event);
     _rtSendFail++;
+    initRealtime();
     return;
   }
   if (_channelStatus !== 'SUBSCRIBED') {
     console.warn('[Live-RT] broadcastEvent: channel not SUBSCRIBED (status:', _channelStatus, ') for', event);
     _rtSendFail++;
-    // Attempt reconnect if channel is in bad state
-    if (_channelStatus === 'CHANNEL_ERROR' || _channelStatus === 'TIMED_OUT' || _channelStatus === '') {
-      setTimeout(function() { initRealtime(); }, 100);
+    // Attempt immediate reconnect if channel is in bad state
+    if (_channelStatus === 'CHANNEL_ERROR' || _channelStatus === 'TIMED_OUT' || _channelStatus === 'CLOSED' || _channelStatus === '') {
+      setTimeout(function() { initRealtime(); }, 50);
     }
     return;
   }
@@ -3018,10 +3023,12 @@ function broadcastEvent(event, data) {
         } else {
           console.warn('[Live-RT] send resolved with:', res, 'event:', event);
           _rtSendFail++;
+          if (_rtSendFail % 3 === 0) initRealtime();
         }
       }).catch(function(err) {
         console.error('[Live-RT] send promise rejected:', err, 'event:', event);
         _rtSendFail++;
+        initRealtime();
       });
     } else {
       _rtSendOk++;
@@ -3031,6 +3038,7 @@ function broadcastEvent(event, data) {
   } catch(e) {
     console.error('[Live-RT] broadcastEvent exception:', e, 'event:', event);
     _rtSendFail++;
+    initRealtime();
   }
 }
 
@@ -3038,14 +3046,17 @@ function broadcastEvent(event, data) {
 function _startHeartbeat() {
   if (_rtHeartbeatTimer) clearInterval(_rtHeartbeatTimer);
   _rtHeartbeatTimer = setInterval(function() {
-    if (_channelStatus !== 'SUBSCRIBED') return;
+    if (_channelStatus !== 'SUBSCRIBED') {
+      initRealtime();
+      return;
+    }
     var elapsed = Date.now() - _rtLastActivity;
-    // If no activity for 90 seconds, channel may be silently dead → reconnect
-    if (elapsed > 90000) {
+    // If no activity for 30 seconds, channel may be silently dead → reconnect
+    if (elapsed > 30000) {
       console.log('[Live-RT] heartbeat: no activity for', Math.round(elapsed/1000), 's — reconnecting...');
       initRealtime();
     }
-  }, 30000); // check every 30s
+  }, 12000); // check every 12s
 }
 
 // ── Debug panel helpers ─────────────────────────────────────────────
@@ -3095,7 +3106,7 @@ function requestStateWithRetry() {
   _syncRetryCount++;
   _syncRetryTimer = setTimeout(function() {
     if (!_syncReceived) requestStateWithRetry();
-  }, 3000); // retry every 3 seconds (8 retries = 24s total)
+  }, 2000); // retry every 2 seconds for faster recovery
 }
 
 function startPeriodicSync() {

@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (card) card.style.display = '';
         loadNotifAdminPanel();
         loadAutoNotifState();
+        loadDWState();
       }
       // Show Gemini section for admin only
       if (_role === 'admin') {
@@ -407,3 +408,122 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       });
     }
+
+/* ── Discounted Wage (ค่าแรงลดราคา) ── */
+var _dwRules = [];
+
+function toggleDiscountWageUI(enabled) {
+  var cb    = document.getElementById('discountWageToggle');
+  var track = document.getElementById('discountWageTrack');
+  var thumb = document.getElementById('discountWageThumb');
+  var label = document.getElementById('discountWageLabel');
+  var cfg   = document.getElementById('discountWageConfig');
+  
+  if (cb) cb.checked = enabled;
+  if (track) track.style.background = enabled ? '#16a34a' : '#475569';
+  if (thumb) thumb.style.left = enabled ? '22px' : '2px';
+  if (label) { label.textContent = enabled ? 'เปิดใช้งาน' : 'ปิด'; label.style.color = enabled ? '#16a34a' : 'var(--premium-text-muted)'; }
+  if (cfg) cfg.style.display = enabled ? '' : 'none';
+  
+  _saveDWSettings();
+}
+
+function loadDWState() {
+  var bandId = localStorage.getItem('bandId') || '';
+  if (!bandId) return;
+  apiCall('getBandSettings', { bandId: bandId }, function(r) {
+    if (r && r.success && r.data) {
+      var enabled = !!r.data.discount_wage_enabled;
+      toggleDiscountWageUI(enabled);
+      try {
+        _dwRules = r.data.discount_wage_rules ? JSON.parse(r.data.discount_wage_rules) : [];
+      } catch(e) { _dwRules = []; }
+      renderDWRules();
+    }
+  });
+}
+
+function renderDWRules() {
+  var list = document.getElementById('dwRulesList');
+  if (!list) return;
+  if (_dwRules.length === 0) {
+    list.innerHTML = '<div style="font-size:11px;color:var(--premium-text-muted)">ยังไม่มีเงื่อนไข</div>';
+    return;
+  }
+  
+  var html = '';
+  var daysMap = { '*': 'ทุกวัน', '0':'อาทิตย์', '1':'จันทร์', '2':'อังคาร', '3':'พุธ', '4':'พฤหัสบดี', '5':'ศุกร์', '6':'เสาร์' };
+  
+  _dwRules.forEach(function(r, idx) {
+    var desc = r.venue + ' | ' + (daysMap[r.day] || r.day) + ' | เบรค ' + r.breakIdx;
+    desc += '<br>📅 ' + (r.startDate || '-') + ' ถึง ' + (r.endDate || '-');
+    var amt = (r.type === 'fixed') ? 'ราคาใหม่: ฿' + r.amount : 'หักออก: ฿' + r.amount;
+    
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2e8f0;padding:8px;border-radius:4px">';
+    html += '<div style="font-size:11px;line-height:1.4"><b>' + desc + '</b><br><span style="color:#e53e3e">' + amt + '</span></div>';
+    html += '<button type="button" class="btn btn-sm" style="background:#fef2f2;color:#e53e3e;border:1px solid #fecaca;padding:4px 8px" onclick="removeDWRule(' + idx + ')">ลบ</button>';
+    html += '</div>';
+  });
+  list.innerHTML = html;
+}
+
+function addDiscountRule() {
+  var venue = document.getElementById('dwVenue').value;
+  var day = document.getElementById('dwDay').value;
+  var breakIdx = document.getElementById('dwBreak').value;
+  var sd = document.getElementById('dwStartDate').value;
+  var ed = document.getElementById('dwEndDate').value;
+  var type = document.getElementById('dwType').value;
+  var amt = parseFloat(document.getElementById('dwAmount').value);
+  
+  if (!venue) { alert('กรุณาเลือกร้าน'); return; }
+  if (isNaN(amt) || amt < 0) { alert('กรุณากรอกจำนวนเงินให้ถูกต้อง'); return; }
+  
+  _dwRules.push({
+    venue: venue,
+    day: day,
+    breakIdx: breakIdx,
+    startDate: sd,
+    endDate: ed,
+    type: type,
+    amount: amt
+  });
+  
+  renderDWRules();
+  _saveDWSettings();
+}
+
+function removeDWRule(idx) {
+  if (confirm('ลบเงื่อนไขนี้?')) {
+    _dwRules.splice(idx, 1);
+    renderDWRules();
+    _saveDWSettings();
+  }
+}
+
+function _saveDWSettings() {
+  var bandId = localStorage.getItem('bandId') || '';
+  if (!bandId) return;
+  var enabled = document.getElementById('discountWageToggle') ? document.getElementById('discountWageToggle').checked : false;
+  
+  apiCall('getBandSettings', { bandId: bandId }, function(r) {
+    var current = (r && r.success && r.data) ? r.data : {};
+    current.bandId = bandId;
+    current.discount_wage_enabled = enabled;
+    current.discount_wage_rules = JSON.stringify(_dwRules);
+    
+    apiCall('saveBandSettings', current, function(r2) {});
+  });
+}
+
+// Sync venues to DW selector from SM venue selector
+function syncDWVenues() {
+  var smVenue = document.getElementById('smVenue');
+  var dwVenue = document.getElementById('dwVenue');
+  if (smVenue && dwVenue) {
+    if (smVenue.options.length > 1 && dwVenue.options.length <= 1) {
+      dwVenue.innerHTML = smVenue.innerHTML;
+    }
+  }
+}
+setInterval(syncDWVenues, 2000);

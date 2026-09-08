@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Attendance & Payroll v2
  * เบิกจ่าย (ผู้จัดการวง) — สอดคล้องกับระบบลงเวลาและตารางงาน
  * Profile-based members + schedule slot rates + check-in pre-fill
@@ -22,6 +22,8 @@ var apWeekStart   = 1;  // default Monday (0=Sun..6=Sat)
 var apWeekEnd     = 0;  // default Sunday
 var _apUserEditedDates = false; // true once user manually changes startDate
 var apIsAdmin     = (function(){ var r=localStorage.getItem('userRole')||'member'; return r==='admin'||r==='manager'; })();
+var apDWRules     = [];
+var apDWEnabled   = false;
 
 /* ── Helpers ────────────────────────────────────────── */
 function apEl(id) { return document.getElementById(id); }
@@ -73,7 +75,7 @@ function apMemberRate(slot, mid) {
   return mr ? { rate: mr.rate||0, type: mr.rateType||'shift', assigned: true } : { rate: 0, type: 'shift', assigned: false };
 }
 
-function apSlotPay(slot, mid) {
+function apSlotPay(slot, mid, ds) {
   var r = apMemberRate(slot, mid);
   // If member not assigned to this specific slot, fall back to their band-wide default rate
   // (covers leave+sub cases where the sub works a slot the original member isn't in)
@@ -82,8 +84,38 @@ function apSlotPay(slot, mid) {
     if (dr.rate <= 0) return 0;
     r = { rate: dr.rate, type: dr.type };
   }
-  if (r.type === 'hourly') return apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * r.rate;
-  return r.rate;
+  
+  var basePay = (r.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * r.rate : r.rate;
+
+  if (apDWEnabled && apDWRules && apDWRules.length > 0 && ds) {
+    var dow = String(new Date(ds).getDay());
+    var allSlots = (apScheduleMap[dow] || apScheduleMap[String(dow)]) || [];
+    var venueSlots = allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; });
+    var breakIdx = -1;
+    for (var i=0; i<venueSlots.length; i++) {
+      if (venueSlots[i].start === slot.start && venueSlots[i].end === slot.end) { breakIdx = i + 1; break; }
+    }
+    for (var j=0; j<apDWRules.length; j++) {
+      var rule = apDWRules[j];
+      if ((rule.venue === slot.venue || rule.venue === slot.venueId) && 
+          (rule.day === '*' || String(rule.day) === dow) && 
+          (String(rule.breakIdx) === String(breakIdx))) {
+        if (!rule.startDate || ds >= rule.startDate) {
+          if (!rule.endDate || ds <= rule.endDate) {
+            if (rule.type === 'fixed') {
+              basePay = rule.amount;
+            } else {
+              basePay -= rule.amount;
+            }
+            if (basePay < 0) basePay = 0;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  return basePay;
 }
 
 function apDefaultRate(mid) {
@@ -145,6 +177,10 @@ function apLoadData() {
       if (r && r.success && r.data) {
         if (r.data.venues) apVenues = r.data.venues;
         apScheduleMap = r.data.schedule || r.data.scheduleData || {};
+        
+        apDWEnabled = !!r.data.discount_wage_enabled;
+        try { apDWRules = r.data.discount_wage_rules ? JSON.parse(r.data.discount_wage_rules) : []; } catch(e) { apDWRules = []; }
+
         // Sync payroll config from server
         if (r.data.payroll) {
           if (r.data.payroll.period) apRecordType = r.data.payroll.period;
@@ -435,7 +471,7 @@ function apRenderAttendance() {
           if (apChecked[m.id][dateStr].indexOf(sk) === -1) apChecked[m.id][dateStr].push(sk);
           checked = true;
         }
-        if (checked) rowAmt += isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id);
+        if (checked) rowAmt += isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id, dateStr);
         var tdCls = 'text-align:center;position:relative';
         if (isExtra && checked) tdCls += ';background:rgba(49,130,206,0.08)';
         else if (subCovered) tdCls += ';background:rgba(128,90,213,0.08)';
@@ -521,7 +557,7 @@ function apCalcTotals() {
     var rowAmt = 0;
     cbs.forEach(function(cb) {
       if (cb.checked) {
-        var pay = isExtra ? apExtraSlotPay(slot, cb.dataset.m) : apSlotPay(slot, cb.dataset.m);
+        var pay = isExtra ? apExtraSlotPay(slot, cb.dataset.m) : apSlotPay(slot, cb.dataset.m, dateStr);
         mTotals[cb.dataset.m] = (mTotals[cb.dataset.m]||0) + pay;
         mHours[cb.dataset.m] = (mHours[cb.dataset.m]||0) + slotHours;
         rowAmt += pay;
@@ -567,7 +603,7 @@ function apRenderPayout() {
       var amt = 0;
       slots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id);
+        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id, dateStr);
       });
       // Include extra slots in payout
       extraSlots.forEach(function(slot) {
@@ -677,7 +713,7 @@ function apBuildSubSummary() {
         var sub = subsForDate[sk] || null;
         if (!sub || !sub.name) return;
         var ri = item.isExtra ? { rate: 0, assigned: false } : apMemberRate(slot, m.id);
-        var slotPay = ri.rate > 0 ? apSlotPay(slot, m.id) : (item.isExtra ? apExtraSlotPay(slot, m.id) : apDefaultRate(m.id).rate);
+        var slotPay = ri.rate > 0 ? apSlotPay(slot, m.id, ds) : (item.isExtra ? apExtraSlotPay(slot, m.id) : apDefaultRate(m.id).rate);
         if (slotPay <= 0) return;
         var key = sub.name;
         if (!subDates[key]) subDates[key] = { subName: sub.name, contact: sub.contact || '', dates: [], slots: 0, amount: 0 };
@@ -711,7 +747,7 @@ function apDoSave() {
     apDateRange.forEach(function(ds) {
       apSlotsForDay(new Date(ds).getDay()).forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk)!==-1) { totalAmt += apSlotPay(slot,m.id); totalSlots++; }
+        if (apChecked[m.id] && apChecked[m.id][ds] && apChecked[m.id][ds].indexOf(sk)!==-1) { totalAmt += apSlotPay(slot,m.id, ds); totalSlots++; }
       });
       // Include extra slots in save breakdown
       apGetExtraSlotsForDate(ds).forEach(function(slot) {
@@ -891,7 +927,7 @@ function apPrintVenueReceipt() {
         var subInfo = (apCheckInSub[m.id] && apCheckInSub[m.id][ds] && apCheckInSub[m.id][ds][sk]) || null;
         var hasSub = subInfo && subInfo.name;
         var slotCovered = checked || hasSub;
-        var amt = slotCovered ? (isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id)) : 0;
+        var amt = slotCovered ? (isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id, ds)) : 0;
         mGrand[m.id] += amt; dayTotal += amt;
         if (slotCovered) mBreaks[m.id]++;
         var cellContent = slotCovered ? '<span style="color:' + (isExtra ? '#2b6cb0' : '#27ae60') + ';font-size:16px">✓</span>' : '';
@@ -985,7 +1021,7 @@ function apPrintMemberReceipt() {
         var sk = slot.start+'-'+slot.end;
         // นับทุก slot ที่ checked รวมทั้ง leave+sub slots
         if (apChecked[m.id]&&apChecked[m.id][ds]&&apChecked[m.id][ds].indexOf(sk)!==-1) {
-          totalSlots++; totalAmt += apSlotPay(slot, m.id);
+          totalSlots++; totalAmt += apSlotPay(slot, m.id, ds);
         }
       });
       // นับรอบพิเศษ (extra slots)
@@ -1006,7 +1042,7 @@ function apPrintMemberReceipt() {
         if (!sub || !sub.name) return;
         if (!mSubMap[sub.name]) mSubMap[sub.name] = { name: sub.name, contact: sub.contact||'', shifts: 0, amount: 0 };
         mSubMap[sub.name].shifts++;
-        mSubMap[sub.name].amount += apSlotPay(slot, m.id);
+        mSubMap[sub.name].amount += apSlotPay(slot, m.id, ds);
       });
       // รวม substitute info จากรอบพิเศษ
       apGetExtraSlotsForDate(ds).forEach(function(slot) {
