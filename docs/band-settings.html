@@ -146,28 +146,56 @@
         </div>
 
         <div id="discountWageConfig" style="display:none;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:12px;margin-top:12px">
+          <!-- Row 1: Venue & Time Slot -->
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-            <div class="form-group" style="flex:1;min-width:150px;margin-bottom:0">
+            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0">
               <label style="font-size:11px">ร้าน</label>
-              <select id="dwVenue" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px" onchange="updateDWTimeSlots()">
-                <option value="">-- เลือกร้าน --</option>
+              <select id="dwVenue" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px" onchange="onDWVenueChange()">
+                <option value="*">⭐ ทุกร้าน (ทุกคิวงาน)</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1;min-width:100px;margin-bottom:0">
-              <label style="font-size:11px">วัน</label>
-              <select id="dwDay" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px" onchange="updateDWTimeSlots()">
-                <option value="*">ทุกวัน</option>
-                <option value="0">อาทิตย์</option><option value="1">จันทร์</option>
-                <option value="2">อังคาร</option><option value="3">พุธ</option>
-                <option value="4">พฤหัสบดี</option><option value="5">ศุกร์</option>
-                <option value="6">เสาร์</option>
-              </select>
-            </div>
-            <div class="form-group" style="flex:1;min-width:130px;margin-bottom:0">
+            <div class="form-group" style="flex:1;min-width:140px;margin-bottom:0">
               <label style="font-size:11px">ช่วงเวลา</label>
               <select id="dwTimeSlot" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px">
                 <option value="*">ทุกช่วงเวลา</option>
               </select>
+            </div>
+          </div>
+
+          <!-- Row 2: Days of week (Multi-select + Presets) -->
+          <div style="margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;flex-wrap:wrap;gap:4px">
+              <label style="font-size:11px;font-weight:600;margin-bottom:0">วันที่มีผล (เลือกได้หลายวันพร้อมกัน)</label>
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:10px;background:#fff;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer" onclick="setDWDayPreset('all')">ทุกวัน</button>
+                <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:10px;background:#fff;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer" onclick="setDWDayPreset('venue')" id="dwPresetVenueBtn">📅 วันที่มีคิว</button>
+                <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:10px;background:#fff;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer" onclick="setDWDayPreset('weekend')">ศุกร์-เสาร์</button>
+                <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:10px;background:#fff;border:1px solid #cbd5e1;border-radius:4px;cursor:pointer" onclick="setDWDayPreset('weekday')">จันทร์-พฤหัส</button>
+                <button type="button" class="btn btn-sm" style="padding:2px 8px;font-size:10px;background:#fef2f2;border:1px solid #fecaca;color:#ef4444;border-radius:4px;cursor:pointer" onclick="setDWDayPreset('none')">ล้าง</button>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="dwDayPills">
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="1" checked onchange="updateDWTimeSlots()"> จันทร์
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="2" checked onchange="updateDWTimeSlots()"> อังคาร
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="3" checked onchange="updateDWTimeSlots()"> พุธ
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="4" checked onchange="updateDWTimeSlots()"> พฤหัส
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="5" checked onchange="updateDWTimeSlots()"> ศุกร์
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="6" checked onchange="updateDWTimeSlots()"> เสาร์
+              </label>
+              <label style="display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">
+                <input type="checkbox" class="dw-day-chk" value="0" checked onchange="updateDWTimeSlots()"> อาทิตย์
+              </label>
             </div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">

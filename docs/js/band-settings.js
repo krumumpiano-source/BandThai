@@ -1364,11 +1364,15 @@ function toggleDiscountWageUI(enabled, save) {
   }
 }
 
+function onDWVenueChange() {
+  updateDWTimeSlots();
+}
+
 function updateDWVenueDropdown() {
   var sel = document.getElementById('dwVenue');
   if (!sel) return;
   var currentVal = sel.value;
-  sel.innerHTML = '<option value="">-- เลือกร้าน --</option>';
+  sel.innerHTML = '<option value="*">⭐ ทุกร้าน (ทุกคิวงาน)</option>';
   (venues || []).filter(function(v) { return v && v.name && v.name.trim(); }).forEach(function(v) {
     var opt = document.createElement('option');
     opt.value = v.name;
@@ -1379,28 +1383,67 @@ function updateDWVenueDropdown() {
   updateDWTimeSlots();
 }
 
+function setDWDayPreset(type) {
+  var vEl = document.getElementById('dwVenue');
+  var venueName = vEl ? vEl.value : '*';
+  var currentVenue = (venues || []).find(function(v) { return v && (v.name === venueName || v.id === venueName); });
+  var venueId = currentVenue ? currentVenue.id : '';
+
+  var chks = document.querySelectorAll('.dw-day-chk');
+  if (type === 'all') {
+    chks.forEach(function(c) { c.checked = true; });
+  } else if (type === 'none') {
+    chks.forEach(function(c) { c.checked = false; });
+  } else if (type === 'weekend') {
+    chks.forEach(function(c) { c.checked = (c.value === '5' || c.value === '6'); });
+  } else if (type === 'weekday') {
+    chks.forEach(function(c) { c.checked = ['1','2','3','4'].indexOf(c.value) >= 0; });
+  } else if (type === 'venue') {
+    var venueDays = [];
+    for (var d = 0; d < 7; d++) {
+      var dSlots = schedule[d] || schedule[String(d)] || [];
+      if (dSlots && dSlots.timeSlots) dSlots = dSlots.timeSlots;
+      if (Array.isArray(dSlots)) {
+        var hasV = dSlots.some(function(s) {
+          return venueName === '*' || (venueId && s.venueId === venueId) || (venueName && (s.venue === venueName || s.venueId === venueName));
+        });
+        if (hasV) venueDays.push(String(d));
+      }
+    }
+    if (venueDays.length > 0) {
+      chks.forEach(function(c) { c.checked = venueDays.indexOf(c.value) >= 0; });
+    } else {
+      chks.forEach(function(c) { c.checked = true; });
+    }
+  }
+  updateDWTimeSlots();
+}
+
 function updateDWTimeSlots() {
   var vEl = document.getElementById('dwVenue');
-  var dEl = document.getElementById('dwDay');
   var tsEl = document.getElementById('dwTimeSlot');
   if (!tsEl) return;
 
   var currentVal = tsEl.value;
-  var venueName = vEl ? vEl.value : '';
-  var dayVal = dEl ? dEl.value : '*';
+  var venueName = vEl ? vEl.value : '*';
 
   var currentVenue = (venues || []).find(function(v) { return v && (v.name === venueName || v.id === venueName); });
   var venueId = currentVenue ? currentVenue.id : '';
 
+  var checkedDays = [];
+  document.querySelectorAll('.dw-day-chk:checked').forEach(function(c) {
+    checkedDays.push(parseInt(c.value, 10));
+  });
+
   var timeSlots = [];
-  var daysToCheck = (dayVal === '*') ? [0, 1, 2, 3, 4, 5, 6] : [parseInt(dayVal, 10)];
+  var daysToCheck = (checkedDays.length > 0) ? checkedDays : [0, 1, 2, 3, 4, 5, 6];
 
   daysToCheck.forEach(function(d) {
     var daySlots = schedule[d] || schedule[String(d)] || [];
     if (daySlots && daySlots.timeSlots) daySlots = daySlots.timeSlots;
     if (Array.isArray(daySlots)) {
       daySlots.forEach(function(s) {
-        var matchesVenue = (venueId && s.venueId === venueId) || (venueName && (s.venue === venueName || s.venueId === venueName));
+        var matchesVenue = (venueName === '*') || (venueId && s.venueId === venueId) || (venueName && (s.venue === venueName || s.venueId === venueName));
         if (matchesVenue) {
           var start = s.startTime || s.start || '';
           var end = s.endTime || s.end || '';
@@ -1458,19 +1501,29 @@ function renderDWRules() {
   var daysMap = { '*': 'ทุกวัน', '0':'อาทิตย์', '1':'จันทร์', '2':'อังคาร', '3':'พุธ', '4':'พฤหัสบดี', '5':'ศุกร์', '6':'เสาร์' };
 
   _dwRules.forEach(function(r, idx) {
+    var vText = (!r.venue || r.venue === '*') ? '⭐ ทุกร้าน' : esc(r.venue);
+    var dayText = 'ทุกวัน';
+    if (r.day && r.day !== '*') {
+      var dList = (typeof r.day === 'string') ? r.day.split(',') : (Array.isArray(r.days) ? r.days : [r.day]);
+      dayText = dList.map(function(d){ return daysMap[String(d).trim()] || d; }).join(', ');
+    } else if (Array.isArray(r.days) && r.days.length > 0 && r.days.length < 7) {
+      dayText = r.days.map(function(d){ return daysMap[String(d).trim()] || d; }).join(', ');
+    }
+
     var timeLabel = (r.timeSlot && r.timeSlot !== '*')
       ? r.timeSlot.replace('-', ' - ')
       : (r.breakIdx ? ('เบรค ' + r.breakIdx) : 'ทุกช่วงเวลา');
-    var desc = esc(r.venue) + ' | ' + (daysMap[r.day] || r.day) + ' | ' + esc(timeLabel);
+
+    var desc = vText + ' | ' + dayText + ' | ' + esc(timeLabel);
     desc += '<br>📅 ' + esc(r.startDate || '-') + ' ถึง ' + esc(r.endDate || '-');
     var amt;
     if (r.type === 'fixed') amt = 'ราคาใหม่: ฿' + Number(r.amount).toLocaleString('th-TH') + '/เบรค';
     else if (r.type === 'percent') amt = 'ลด ' + Number(r.amount) + '% ต่อเบรค';
     else amt = 'หักออก: ฿' + Number(r.amount).toLocaleString('th-TH') + '/คน/เบรค';
 
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2e8f0;padding:8px;border-radius:4px;margin-bottom:6px">';
-    html += '<div style="font-size:11px;line-height:1.4"><b>' + desc + '</b><br><span style="color:#e53e3e;font-weight:600">' + amt + '</span></div>';
-    html += '<button type="button" class="btn btn-sm" style="background:#fef2f2;color:#e53e3e;border:1px solid #fecaca;padding:4px 8px" onclick="removeDWRule(' + idx + ')">ลบ</button>';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2e8f0;padding:8px 10px;border-radius:6px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,0.04)">';
+    html += '<div style="font-size:11px;line-height:1.5"><b>' + desc + '</b><br><span style="color:#e53e3e;font-weight:600">' + amt + '</span></div>';
+    html += '<button type="button" class="btn btn-sm" style="background:#fef2f2;color:#e53e3e;border:1px solid #fecaca;padding:4px 8px;border-radius:4px" onclick="removeDWRule(' + idx + ')">ลบ</button>';
     html += '</div>';
   });
   list.innerHTML = html;
@@ -1478,22 +1531,31 @@ function renderDWRules() {
 
 function addDiscountRule() {
   var vEl = document.getElementById('dwVenue');
-  var dEl = document.getElementById('dwDay');
   var tsEl = document.getElementById('dwTimeSlot') || document.getElementById('dwBreak');
   var sdEl = document.getElementById('dwStartDate');
   var edEl = document.getElementById('dwEndDate');
   var tEl = document.getElementById('dwType');
   var aEl = document.getElementById('dwAmount');
 
-  var venue = vEl ? vEl.value : '';
-  var day = dEl ? dEl.value : '*';
+  var venue = (vEl && vEl.value) ? vEl.value : '*';
   var timeSlot = tsEl ? tsEl.value : '*';
   var sd = sdEl ? sdEl.value : '';
   var ed = edEl ? edEl.value : '';
   var type = tEl ? tEl.value : 'discount';
   var amt = parseFloat(aEl ? aEl.value : '');
 
-  if (!venue) { alert('กรุณาเลือกร้าน'); return; }
+  var chks = [];
+  document.querySelectorAll('.dw-day-chk:checked').forEach(function(c) {
+    chks.push(c.value);
+  });
+
+  if (chks.length === 0) {
+    alert('กรุณาเลือกวันอย่างน้อย 1 วัน');
+    return;
+  }
+
+  var day = (chks.length === 7) ? '*' : chks.join(',');
+
   if (type === 'percent') {
     if (isNaN(amt) || amt <= 0 || amt > 100) { alert('กรุณากรอกเปอร์เซ็นต์ที่ถูกต้อง (1-100)'); return; }
   } else {
@@ -1503,6 +1565,7 @@ function addDiscountRule() {
   _dwRules.push({
     venue: venue,
     day: day,
+    days: chks,
     timeSlot: timeSlot,
     startDate: sd,
     endDate: ed,

@@ -194,9 +194,18 @@
           } else if (rule.breakIdx) {
             timeMatch = (String(rule.breakIdx) === String(breakIdx));
           }
-          if ((rule.venue === slot.venue || rule.venue === slot.venueId) &&
-              (rule.day === '*' || String(rule.day) === dow) &&
-              timeMatch) {
+          var venueMatches = (rule.venue === '*' || !rule.venue || rule.venue === slot.venue || rule.venue === slot.venueId);
+          var dayMatches = false;
+          if (rule.day === '*' || rule.days === '*' || (!rule.day && !rule.days)) {
+            dayMatches = true;
+          } else if (Array.isArray(rule.days)) {
+            dayMatches = (rule.days.indexOf(dow) >= 0 || rule.days.indexOf(parseInt(dow, 10)) >= 0);
+          } else if (typeof rule.day === 'string') {
+            dayMatches = (rule.day.split(',').map(function(s){return s.trim();}).indexOf(dow) >= 0);
+          } else if (rule.day !== undefined) {
+            dayMatches = (String(rule.day) === dow);
+          }
+          if (venueMatches && dayMatches && timeMatch) {
             if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
               if (rule.type === 'fixed') base = rule.amount;
               else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
