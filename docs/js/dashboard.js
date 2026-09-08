@@ -60,7 +60,8 @@ function nav(page) {
   /* Returns slots for selected date's day-of-week, filtered by selected venue */
   function qciGetSlotsForDate() {
     var dow = qciSelectedDate.getDay();
-    var dayData = qciBandSettings.scheduleData[dow] || qciBandSettings.scheduleData[String(dow)];
+    var scheduleData = qciBandSettings.scheduleData || qciBandSettings.schedule || {};
+    var dayData = scheduleData[dow] || scheduleData[String(dow)];
     var slots = [];
     if (Array.isArray(dayData)) {
       slots = dayData;
@@ -172,7 +173,8 @@ function nav(page) {
     var all = [];
     // Scan all 7 days of the week
     for (var d = 0; d < 7; d++) {
-      var dayData = qciBandSettings.scheduleData[d] || qciBandSettings.scheduleData[String(d)];
+      var scheduleData = qciBandSettings.scheduleData || qciBandSettings.schedule || {};
+      var dayData = scheduleData[d] || scheduleData[String(d)];
       var slots = [];
       if (Array.isArray(dayData)) { slots = dayData; }
       else if (dayData && dayData.timeSlots && dayData.timeSlots.length) { slots = dayData.timeSlots; }
