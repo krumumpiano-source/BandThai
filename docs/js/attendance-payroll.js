@@ -59,12 +59,12 @@ function apSlotsForDay(dow) {
     var arr = day;
     if (apVenueId) arr = arr.filter(function(s) { return s.venueId === apVenueId; });
     return arr.map(function(s) {
-      return { start: s.startTime||'', end: s.endTime||'', members: s.members||[], venueId: s.venueId||'' };
+      return { start: s.startTime||'', end: s.endTime||'', members: s.members||[], venueId: s.venueId||'', venue: s.venue||'' };
     });
   }
   if (day && day.timeSlots && day.timeSlots.length) {
     return day.timeSlots.map(function(s) {
-      return { start: s.startTime, end: s.endTime, members: s.members||[] };
+      return { start: s.startTime, end: s.endTime, members: s.members||[], venueId: s.venueId||'', venue: s.venue||'' };
     });
   }
   return [];
