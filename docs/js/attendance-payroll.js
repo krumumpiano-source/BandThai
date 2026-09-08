@@ -91,15 +91,24 @@ function apSlotPay(slot, mid, ds) {
     var dow = String(new Date(ds).getDay());
     var allSlots = (apScheduleMap[dow] || apScheduleMap[String(dow)]) || [];
     var venueSlots = allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; });
+    var sStart = slot.start || slot.startTime || '';
+    var sEnd = slot.end || slot.endTime || '';
+    var sTime = sStart + '-' + sEnd;
     var breakIdx = -1;
     for (var i=0; i<venueSlots.length; i++) {
-      if (venueSlots[i].start === slot.start && venueSlots[i].end === slot.end) { breakIdx = i + 1; break; }
+      if ((venueSlots[i].start || venueSlots[i].startTime) === sStart && (venueSlots[i].end || venueSlots[i].endTime) === sEnd) { breakIdx = i + 1; break; }
     }
     for (var j=0; j<apDWRules.length; j++) {
       var rule = apDWRules[j];
+      var timeMatch = true;
+      if (rule.timeSlot && rule.timeSlot !== '*') {
+        timeMatch = (rule.timeSlot === sTime || rule.timeSlot === (sStart + ' - ' + sEnd));
+      } else if (rule.breakIdx) {
+        timeMatch = (String(rule.breakIdx) === String(breakIdx));
+      }
       if ((rule.venue === slot.venue || rule.venue === slot.venueId) && 
           (rule.day === '*' || String(rule.day) === dow) && 
-          (String(rule.breakIdx) === String(breakIdx))) {
+          timeMatch) {
         if (!rule.startDate || ds >= rule.startDate) {
           if (!rule.endDate || ds <= rule.endDate) {
             if (rule.type === 'fixed') {

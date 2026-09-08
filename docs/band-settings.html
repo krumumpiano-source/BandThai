@@ -149,11 +149,13 @@
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
             <div class="form-group" style="flex:1;min-width:150px;margin-bottom:0">
               <label style="font-size:11px">ร้าน</label>
-              <select id="dwVenue" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px"><option value="">-- เลือกร้าน --</option></select>
+              <select id="dwVenue" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px" onchange="updateDWTimeSlots()">
+                <option value="">-- เลือกร้าน --</option>
+              </select>
             </div>
             <div class="form-group" style="flex:1;min-width:100px;margin-bottom:0">
               <label style="font-size:11px">วัน</label>
-              <select id="dwDay" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px">
+              <select id="dwDay" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px" onchange="updateDWTimeSlots()">
                 <option value="*">ทุกวัน</option>
                 <option value="0">อาทิตย์</option><option value="1">จันทร์</option>
                 <option value="2">อังคาร</option><option value="3">พุธ</option>
@@ -161,14 +163,10 @@
                 <option value="6">เสาร์</option>
               </select>
             </div>
-            <div class="form-group" style="flex:1;min-width:100px;margin-bottom:0">
-              <label style="font-size:11px">เบรค</label>
-              <select id="dwBreak" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px">
-                <option value="1">เบรค 1</option>
-                <option value="2">เบรค 2</option>
-                <option value="3">เบรค 3</option>
-                <option value="4">เบรค 4</option>
-                <option value="5">เบรค 5</option>
+            <div class="form-group" style="flex:1;min-width:130px;margin-bottom:0">
+              <label style="font-size:11px">ช่วงเวลา</label>
+              <select id="dwTimeSlot" class="form-control" style="font-size:12px;padding:6px;width:100%;border:1px solid #e2e8f0;border-radius:4px">
+                <option value="*">ทุกช่วงเวลา</option>
               </select>
             </div>
           </div>

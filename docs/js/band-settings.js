@@ -1376,6 +1376,58 @@ function updateDWVenueDropdown() {
     sel.appendChild(opt);
   });
   if (currentVal) sel.value = currentVal;
+  updateDWTimeSlots();
+}
+
+function updateDWTimeSlots() {
+  var vEl = document.getElementById('dwVenue');
+  var dEl = document.getElementById('dwDay');
+  var tsEl = document.getElementById('dwTimeSlot');
+  if (!tsEl) return;
+
+  var currentVal = tsEl.value;
+  var venueName = vEl ? vEl.value : '';
+  var dayVal = dEl ? dEl.value : '*';
+
+  var currentVenue = (venues || []).find(function(v) { return v && (v.name === venueName || v.id === venueName); });
+  var venueId = currentVenue ? currentVenue.id : '';
+
+  var timeSlots = [];
+  var daysToCheck = (dayVal === '*') ? [0, 1, 2, 3, 4, 5, 6] : [parseInt(dayVal, 10)];
+
+  daysToCheck.forEach(function(d) {
+    var daySlots = schedule[d] || schedule[String(d)] || [];
+    if (daySlots && daySlots.timeSlots) daySlots = daySlots.timeSlots;
+    if (Array.isArray(daySlots)) {
+      daySlots.forEach(function(s) {
+        var matchesVenue = (venueId && s.venueId === venueId) || (venueName && (s.venue === venueName || s.venueId === venueName));
+        if (matchesVenue) {
+          var start = s.startTime || s.start || '';
+          var end = s.endTime || s.end || '';
+          if (start && end) {
+            var key = start + '-' + end;
+            if (timeSlots.indexOf(key) < 0) {
+              timeSlots.push(key);
+            }
+          }
+        }
+      });
+    }
+  });
+
+  timeSlots.sort();
+
+  tsEl.innerHTML = '<option value="*">ทุกช่วงเวลา</option>';
+  timeSlots.forEach(function(ts) {
+    var opt = document.createElement('option');
+    opt.value = ts;
+    opt.textContent = ts.replace('-', ' - ');
+    tsEl.appendChild(opt);
+  });
+
+  if (currentVal && (currentVal === '*' || timeSlots.indexOf(currentVal) >= 0)) {
+    tsEl.value = currentVal;
+  }
 }
 
 function loadDWState() {
@@ -1389,6 +1441,7 @@ function loadDWState() {
         _dwRules = r.data.discount_wage_rules ? (typeof r.data.discount_wage_rules === 'string' ? JSON.parse(r.data.discount_wage_rules) : r.data.discount_wage_rules) : [];
       } catch(e) { _dwRules = []; }
       renderDWRules();
+      updateDWTimeSlots();
     }
   });
 }
@@ -1405,7 +1458,10 @@ function renderDWRules() {
   var daysMap = { '*': 'ทุกวัน', '0':'อาทิตย์', '1':'จันทร์', '2':'อังคาร', '3':'พุธ', '4':'พฤหัสบดี', '5':'ศุกร์', '6':'เสาร์' };
 
   _dwRules.forEach(function(r, idx) {
-    var desc = esc(r.venue) + ' | ' + (daysMap[r.day] || r.day) + ' | เบรค ' + esc(String(r.breakIdx));
+    var timeLabel = (r.timeSlot && r.timeSlot !== '*')
+      ? r.timeSlot.replace('-', ' - ')
+      : (r.breakIdx ? ('เบรค ' + r.breakIdx) : 'ทุกช่วงเวลา');
+    var desc = esc(r.venue) + ' | ' + (daysMap[r.day] || r.day) + ' | ' + esc(timeLabel);
     desc += '<br>📅 ' + esc(r.startDate || '-') + ' ถึง ' + esc(r.endDate || '-');
     var amt;
     if (r.type === 'fixed') amt = 'ราคาใหม่: ฿' + Number(r.amount).toLocaleString('th-TH') + '/เบรค';
@@ -1423,7 +1479,7 @@ function renderDWRules() {
 function addDiscountRule() {
   var vEl = document.getElementById('dwVenue');
   var dEl = document.getElementById('dwDay');
-  var bEl = document.getElementById('dwBreak');
+  var tsEl = document.getElementById('dwTimeSlot') || document.getElementById('dwBreak');
   var sdEl = document.getElementById('dwStartDate');
   var edEl = document.getElementById('dwEndDate');
   var tEl = document.getElementById('dwType');
@@ -1431,7 +1487,7 @@ function addDiscountRule() {
 
   var venue = vEl ? vEl.value : '';
   var day = dEl ? dEl.value : '*';
-  var breakIdx = bEl ? bEl.value : '1';
+  var timeSlot = tsEl ? tsEl.value : '*';
   var sd = sdEl ? sdEl.value : '';
   var ed = edEl ? edEl.value : '';
   var type = tEl ? tEl.value : 'discount';
@@ -1447,7 +1503,7 @@ function addDiscountRule() {
   _dwRules.push({
     venue: venue,
     day: day,
-    breakIdx: breakIdx,
+    timeSlot: timeSlot,
     startDate: sd,
     endDate: ed,
     type: type,

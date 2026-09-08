@@ -833,15 +833,24 @@ function nav(page) {
         var dow = String(new Date(ds).getDay());
         var allSlots = scheduleData[dow] || scheduleData[String(dow)] || [];
         var venueSlots = Array.isArray(allSlots) ? allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; }) : [];
+        var sStart = slot.startTime || slot.start || '';
+        var sEnd = slot.endTime || slot.end || '';
+        var sTime = sStart + '-' + sEnd;
         var breakIdx = -1;
         for (var i = 0; i < venueSlots.length; i++) {
-          if ((venueSlots[i].startTime || venueSlots[i].start) === (slot.startTime || slot.start) && (venueSlots[i].endTime || venueSlots[i].end) === (slot.endTime || slot.end)) { breakIdx = i + 1; break; }
+          if ((venueSlots[i].startTime || venueSlots[i].start) === sStart && (venueSlots[i].endTime || venueSlots[i].end) === sEnd) { breakIdx = i + 1; break; }
         }
         for (var j = 0; j < dwRules.length; j++) {
           var rule = dwRules[j];
+          var timeMatch = true;
+          if (rule.timeSlot && rule.timeSlot !== '*') {
+            timeMatch = (rule.timeSlot === sTime || rule.timeSlot === (sStart + ' - ' + sEnd));
+          } else if (rule.breakIdx) {
+            timeMatch = (String(rule.breakIdx) === String(breakIdx));
+          }
           if ((rule.venue === slot.venue || rule.venue === slot.venueId) &&
               (rule.day === '*' || String(rule.day) === dow) &&
-              (String(rule.breakIdx) === String(breakIdx))) {
+              timeMatch) {
             if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
               if (rule.type === 'fixed') base = rule.amount;
               else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
