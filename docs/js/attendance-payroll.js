@@ -1357,7 +1357,7 @@ function apApplyWeekRange() {
   var sd = apEl('startDate'), ed = apEl('endDate');
   if (!sd || !ed) return;
   var today = new Date();
-  sd.value = today.toISOString().split('T')[0];
+  sd.value = apLocalDate(today);
   ed.value = '';
 }
 
@@ -1372,7 +1372,7 @@ function apInitPage() {
     var container = document.querySelector('.container') || document.querySelector('.page-content');
     if (container) container.insertBefore(notice, container.firstChild);
   }
-  var today = new Date(), todayStr = today.toISOString().split('T')[0];
+  var today = new Date(), todayStr = apLocalDate(today);
   var wd = apEl('workDate'); if (wd) wd.value = todayStr;
   // Pre-select record type from manager's payroll settings
   var rt = apEl('recordType'); if (rt) rt.value = apRecordType;
