@@ -763,6 +763,7 @@ function nav(page) {
     var settings = qciBandSettings || {};
     var scheduleData = settings.scheduleData || {};
     var weekStart = 1, weekEnd = 0;
+    var dwRules = [], dwEnabled = false;
     try {
       var stored = JSON.parse(localStorage.getItem('bandSettings') || '{}');
       scheduleData = stored.scheduleData || stored.schedule || scheduleData;
@@ -770,6 +771,8 @@ function nav(page) {
         if (stored.payroll.weekStart !== undefined) weekStart = parseInt(stored.payroll.weekStart, 10);
         if (stored.payroll.weekEnd !== undefined) weekEnd = parseInt(stored.payroll.weekEnd, 10);
       }
+      dwEnabled = !!stored.discount_wage_enabled;
+      try { dwRules = stored.discount_wage_rules ? JSON.parse(stored.discount_wage_rules) : []; } catch(e2) { dwRules = []; }
     } catch(e) {}
 
     // Calculate date range based on period
@@ -822,11 +825,34 @@ function nav(page) {
       }
       return { rate: 0, type: 'shift', assigned: false };
     }
-    function slotPay(slot, mid) {
+    function slotPay(slot, mid, ds) {
       var r = getMemberRate(slot, mid);
       if (r.rate <= 0) return 0;
-      if (r.type === 'hourly') return calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate;
-      return r.rate;
+      var base = (r.type === 'hourly') ? calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate : r.rate;
+      if (dwEnabled && dwRules.length > 0 && ds) {
+        var dow = String(new Date(ds).getDay());
+        var allSlots = scheduleData[dow] || scheduleData[String(dow)] || [];
+        var venueSlots = Array.isArray(allSlots) ? allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; }) : [];
+        var breakIdx = -1;
+        for (var i = 0; i < venueSlots.length; i++) {
+          if ((venueSlots[i].startTime || venueSlots[i].start) === (slot.startTime || slot.start) && (venueSlots[i].endTime || venueSlots[i].end) === (slot.endTime || slot.end)) { breakIdx = i + 1; break; }
+        }
+        for (var j = 0; j < dwRules.length; j++) {
+          var rule = dwRules[j];
+          if ((rule.venue === slot.venue || rule.venue === slot.venueId) &&
+              (rule.day === '*' || String(rule.day) === dow) &&
+              (String(rule.breakIdx) === String(breakIdx))) {
+            if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
+              if (rule.type === 'fixed') base = rule.amount;
+              else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
+              else base -= rule.amount;
+              if (base < 0) base = 0;
+              break;
+            }
+          }
+        }
+      }
+      return base;
     }
 
     // Get current user's member ID (custom JWT auth — use localStorage directly)
@@ -885,7 +911,7 @@ function nav(page) {
           // If leave has specific slots, only count those; fallback to check-in slots; last resort count all
           var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
           if (mr.assigned && slotMatch) {
-            existing.shifts++; existing.amount += slotPay(slot, myId);
+            existing.shifts++; existing.amount += slotPay(slot, myId, lv.date);
           }
         });
       });
@@ -926,7 +952,7 @@ function nav(page) {
           var isLeaveSlotWithSub = isLeave && hasSub && leaveSlotKeys.indexOf(sk) !== -1;
           if (ciSlots.indexOf(sk) !== -1 || isLeaveSlotWithSub) {
             dayHours += calcH(parseMin(slot.startTime), parseMin(slot.endTime));
-            dayAmt += slotPay(slot, myId);
+            dayAmt += slotPay(slot, myId, dateStr);
             daySlotCount++;
           }
         });

@@ -2,6 +2,7 @@
     'use strict';
     var activeTab='work', workPeriod='month', workOffset=0, slPeriod='day', slOffset=0;
     var scheduleData={}, bandMembers=[], weekStart=1, weekEnd=0;
+    var dwRules=[], dwEnabled=false;
     var myId='', myRole='', bandId='', wSelectedMember='__self';
     var _allCheckIns=[], _allLeaves=[], _currentRange=null, _loadReqId=0;
     var _slHistory=[], _slHistoryLoaded=false, _slDateInput='';
@@ -137,6 +138,8 @@
       var stored=null; try{stored=JSON.parse(localStorage.getItem('bandSettings')||'null');}catch(e){}
       function apply(s){
         scheduleData=s.scheduleData||s.schedule||{}; bandMembers=s.members||[];
+        dwEnabled=!!s.discount_wage_enabled;
+        try{dwRules=s.discount_wage_rules?JSON.parse(s.discount_wage_rules):[];}catch(e2){dwRules=[];}
         if(s.payroll){
           if(s.payroll.weekStart!==undefined)weekStart=parseInt(s.payroll.weekStart,10);
           if(s.payroll.weekEnd!==undefined)weekEnd=parseInt(s.payroll.weekEnd,10);
@@ -194,7 +197,7 @@
     function calcH(s,e){var d=e-s;if(d<0)d+=1440;return d/60;}
     function getSlotsForDow(dow){var dd=scheduleData[dow]||scheduleData[String(dow)];if(Array.isArray(dd))return dd;if(dd&&dd.timeSlots)return dd.timeSlots;return[];}
     function getMemberRate(slot,mid){var ms=slot.members||[];for(var i=0;i<ms.length;i++){if(ms[i].memberId===mid)return{rate:ms[i].rate||0,type:ms[i].rateType||'shift',assigned:true};}return{rate:0,type:'shift',assigned:false};}
-    function slotPay(slot,mid){var r=getMemberRate(slot,mid);if(r.rate<=0)return 0;if(r.type==='hourly')return calcH(parseMin(slot.startTime),parseMin(slot.endTime))*r.rate;return r.rate;}
+    function slotPay(slot,mid,ds){var r=getMemberRate(slot,mid);if(r.rate<=0)return 0;var base=(r.type==='hourly')?calcH(parseMin(slot.startTime),parseMin(slot.endTime))*r.rate:r.rate;if(dwEnabled&&dwRules.length>0&&ds){var dow=String(new Date(ds).getDay());var allS=scheduleData[dow]||scheduleData[String(dow)]||[];var vSlots=Array.isArray(allS)?allS.filter(function(s){return s.venue===slot.venue||s.venueId===slot.venueId;}):[]; var bIdx=-1;for(var i=0;i<vSlots.length;i++){if((vSlots[i].startTime||vSlots[i].start)===(slot.startTime||slot.start)&&(vSlots[i].endTime||vSlots[i].end)===(slot.endTime||slot.end)){bIdx=i+1;break;}}for(var j=0;j<dwRules.length;j++){var rule=dwRules[j];if((rule.venue===slot.venue||rule.venue===slot.venueId)&&(rule.day==='*'||String(rule.day)===dow)&&(String(rule.breakIdx)===String(bIdx))){if((!rule.startDate||ds>=rule.startDate)&&(!rule.endDate||ds<=rule.endDate)){if(rule.type==='fixed')base=rule.amount;else if(rule.type==='percent')base=base*(1-rule.amount/100);else base-=rule.amount;if(base<0)base=0;break;}}}}return base;}
     function slotHours(slot){return calcH(parseMin(slot.startTime),parseMin(slot.endTime));}
     function fmt(n){return Number(n).toLocaleString('th-TH');}
     function fmtH(h){return Number(h).toFixed(1);}
@@ -238,13 +241,13 @@
         if(isLeave)myLV.forEach(function(lv){if(lv.date===ds&&lv.substituteName){hasSub=true;subName=lv.substituteName;}});
         var dayBreaks=0,dayHours=0,dayAmt=0,status='none';
         if(isLeave){
-          if(hasSub){leaveSub++;status='leave_sub';daySlots.forEach(function(slot){var mr=getMemberRate(slot,mid);if(!mr.assigned)return;dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid);});}
+          if(hasSub){leaveSub++;status='leave_sub';daySlots.forEach(function(slot){var mr=getMemberRate(slot,mid);if(!mr.assigned)return;dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid,ds);});}
           else{leaveNoSub++;status='leave_nosub';}
         } else {
           daySlots.forEach(function(slot){
             var sk=(slot.startTime||'')+'-'+(slot.endTime||'');
             var mr=getMemberRate(slot,mid);if(!mr.assigned)return;
-            if(ciSlots.indexOf(sk)>=0){status='ok';dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid);}
+            if(ciSlots.indexOf(sk)>=0){status='ok';dayBreaks++;dayHours+=slotHours(slot);dayAmt+=slotPay(slot,mid,ds);}
           });
           if(status==='ok')attendedDays++;
         }

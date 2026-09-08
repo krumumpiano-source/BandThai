@@ -12,6 +12,7 @@
     var weekStart = 1, weekEnd = 0;
     var myId = '', myRole = '', bandId = '';
     var selectedMemberId = '__self';
+    var dwRules = [], dwEnabled = false;
 
     // ── Chart instances ──
     var chartEarningsInst, chartHoursInst, chartLeaveInst, chartSubInst;
@@ -59,6 +60,8 @@
       function apply(s) {
         scheduleData = s.scheduleData || s.schedule || {};
         bandMembers  = s.members || [];
+        dwEnabled = !!s.discount_wage_enabled;
+        try { dwRules = s.discount_wage_rules ? JSON.parse(s.discount_wage_rules) : []; } catch(e) { dwRules = []; }
         if (s.payroll) {
           if (s.payroll.weekStart !== undefined) weekStart = parseInt(s.payroll.weekStart, 10);
           if (s.payroll.weekEnd   !== undefined) weekEnd   = parseInt(s.payroll.weekEnd, 10);
@@ -168,11 +171,34 @@
       }
       return { rate: 0, type: 'shift', assigned: false };
     }
-    function slotPay(slot, mid) {
+    function slotPay(slot, mid, ds) {
       var r = getMemberRate(slot, mid);
       if (r.rate <= 0) return 0;
-      if (r.type === 'hourly') return calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate;
-      return r.rate;
+      var base = (r.type === 'hourly') ? calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate : r.rate;
+      if (dwEnabled && dwRules.length > 0 && ds) {
+        var dow = String(new Date(ds).getDay());
+        var allSlots = scheduleData[dow] || scheduleData[String(dow)] || [];
+        var venueSlots = Array.isArray(allSlots) ? allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; }) : [];
+        var breakIdx = -1;
+        for (var i = 0; i < venueSlots.length; i++) {
+          if ((venueSlots[i].startTime || venueSlots[i].start) === (slot.startTime || slot.start) && (venueSlots[i].endTime || venueSlots[i].end) === (slot.endTime || slot.end)) { breakIdx = i + 1; break; }
+        }
+        for (var j = 0; j < dwRules.length; j++) {
+          var rule = dwRules[j];
+          if ((rule.venue === slot.venue || rule.venue === slot.venueId) &&
+              (rule.day === '*' || String(rule.day) === dow) &&
+              (String(rule.breakIdx) === String(breakIdx))) {
+            if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
+              if (rule.type === 'fixed') base = rule.amount;
+              else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
+              else base -= rule.amount;
+              if (base < 0) base = 0;
+              break;
+            }
+          }
+        }
+      }
+      return base;
     }
     function slotHours(slot) {
       return calcH(parseMin(slot.startTime), parseMin(slot.endTime));
@@ -265,7 +291,7 @@
           var mr = getMemberRate(slot, mid);
           var slotMatch = lvSlots.length > 0 ? lvSlots.indexOf(sk) !== -1 : (ciSlotsForDate.length > 0 ? ciSlotsForDate.indexOf(sk) !== -1 : true);
           if (mr.assigned && slotMatch) {
-            existing.shifts++; existing.amount += slotPay(slot, mid);
+            existing.shifts++; existing.amount += slotPay(slot, mid, lv.date);
           }
         });
       });
@@ -315,8 +341,8 @@
               if (_slotMatch) {
                 dayBreaks++;
                 dayHours += slotHours(slot);
-                dayAmt += slotPay(slot, mid);
-                subCostForDay += slotPay(slot, mid);
+                dayAmt += slotPay(slot, mid, dateStr);
+                subCostForDay += slotPay(slot, mid, dateStr);
               }
             });
           } else {
@@ -330,7 +356,7 @@
             if (ciSlots.indexOf(sk) !== -1) {
               dayBreaks++;
               dayHours += slotHours(slot);
-              dayAmt += slotPay(slot, mid);
+              dayAmt += slotPay(slot, mid, dateStr);
             }
           });
         }

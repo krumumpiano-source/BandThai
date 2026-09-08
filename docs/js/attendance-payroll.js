@@ -104,6 +104,8 @@ function apSlotPay(slot, mid, ds) {
           if (!rule.endDate || ds <= rule.endDate) {
             if (rule.type === 'fixed') {
               basePay = rule.amount;
+            } else if (rule.type === 'percent') {
+              basePay = basePay * (1 - (rule.amount / 100));
             } else {
               basePay -= rule.amount;
             }

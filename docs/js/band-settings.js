@@ -457,7 +457,10 @@ function renderDWRules() {
   _dwRules.forEach(function(r, idx) {
     var desc = r.venue + ' | ' + (daysMap[r.day] || r.day) + ' | เบรค ' + r.breakIdx;
     desc += '<br>📅 ' + (r.startDate || '-') + ' ถึง ' + (r.endDate || '-');
-    var amt = (r.type === 'fixed') ? 'ราคาใหม่: ฿' + r.amount : 'หักออก: ฿' + r.amount;
+    var amt;
+    if (r.type === 'fixed') amt = 'ราคาใหม่: ฿' + r.amount + '/เบรค';
+    else if (r.type === 'percent') amt = 'ลด ' + r.amount + '% ต่อเบรค';
+    else amt = 'หักออก: ฿' + r.amount + '/คน/เบรค';
     
     html += '<div style="display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #e2e8f0;padding:8px;border-radius:4px">';
     html += '<div style="font-size:11px;line-height:1.4"><b>' + desc + '</b><br><span style="color:#e53e3e">' + amt + '</span></div>';
@@ -477,7 +480,11 @@ function addDiscountRule() {
   var amt = parseFloat(document.getElementById('dwAmount').value);
   
   if (!venue) { alert('กรุณาเลือกร้าน'); return; }
-  if (isNaN(amt) || amt < 0) { alert('กรุณากรอกจำนวนเงินให้ถูกต้อง'); return; }
+  if (type === 'percent') {
+    if (isNaN(amt) || amt <= 0 || amt > 100) { alert('กรุณากรอกเปอร์เซ็นต์ที่ถูกต้อง (1-100)'); return; }
+  } else {
+    if (isNaN(amt) || amt < 0) { alert('กรุณากรอกจำนวนเงินให้ถูกต้อง'); return; }
+  }
   
   _dwRules.push({
     venue: venue,
