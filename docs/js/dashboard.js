@@ -868,24 +868,43 @@ function nav(page) {
           } else if (rule.breakIdx) {
             timeMatch = (String(rule.breakIdx) === String(breakIdx));
           }
-          var venueMatches = (rule.venue === '*' || !rule.venue || rule.venue === slot.venue || rule.venue === slot.venueId);
+          var rVenue = (rule.venue||'').trim();
+          var sVenue = (slot.venue||'').trim();
+          var sVenueId = (slot.venueId||'').trim();
+          var venueMatches = (rVenue === '*' || rVenue === '' || rVenue === sVenue || rVenue === sVenueId);
           var dayMatches = false;
-          if (rule.day === '*' || rule.days === '*' || (!rule.day && !rule.days)) {
+          if (rule.day === '*' || rule.days === '*' || (!rule.day && (!rule.days || rule.days.length===0))) {
             dayMatches = true;
           } else if (Array.isArray(rule.days)) {
-            dayMatches = (rule.days.indexOf(dow) >= 0 || rule.days.indexOf(parseInt(dow, 10)) >= 0);
+            dayMatches = (rule.days.indexOf(dow) >= 0 || rule.days.indexOf(parseInt(dow, 10)) >= 0 || rule.days.indexOf(String(dow)) >= 0);
           } else if (typeof rule.day === 'string') {
-            dayMatches = (rule.day.split(',').map(function(s){return s.trim();}).indexOf(dow) >= 0);
+            dayMatches = (rule.day.split(',').map(function(s){return s.trim();}).indexOf(String(dow)) >= 0);
           } else if (rule.day !== undefined) {
-            dayMatches = (String(rule.day) === dow);
+            dayMatches = (String(rule.day) === String(dow));
+          }
+          // Debug Logger
+          var _dbEl = document.getElementById('debug_dw_dash');
+          if (!_dbEl) {
+            _dbEl = document.createElement('div');
+            _dbEl.id = 'debug_dw_dash';
+            _dbEl.style.cssText = 'background:#fee2e2;color:#991b1b;padding:8px;font-size:11px;margin-bottom:10px;border-radius:4px;word-break:break-all;';
+            var c = document.querySelector('.dashboard-container');
+            if (c) c.prepend(_dbEl);
+          }
+          if (_dbEl) {
+            _dbEl.innerHTML += "DS:"+ds+" vM:"+venueMatches+"(r:"+rVenue+" s:"+sVenue+") dM:"+dayMatches+"(d:"+dow+" rD:"+JSON.stringify(rule.days)+") tM:"+timeMatch+"<br>";
           }
           if (venueMatches && dayMatches && timeMatch) {
-            if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
-              if (rule.type === 'fixed') base = rule.amount;
-              else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
-              else base -= rule.amount;
+            var sD = rule.startDate ? rule.startDate.trim() : '';
+            var eD = rule.endDate ? rule.endDate.trim() : '';
+            if ((!sD || ds >= sD) && (!eD || ds <= eD)) {
+              if (rule.type === 'fixed') base = parseFloat(rule.amount) || 0;
+              else if (rule.type === 'percent') base = base * (1 - (parseFloat(rule.amount)||0) / 100);
+              else base -= (parseFloat(rule.amount)||0);
               if (base < 0) base = 0;
               break;
+            } else {
+               if (_dbEl) _dbEl.innerHTML += "DATE FAILED: ds="+ds+" sd="+sD+" ed="+eD+"<br>";
             }
           }
         }
