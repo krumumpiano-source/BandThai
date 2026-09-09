@@ -780,6 +780,18 @@ function nav(page) {
         if (typeof dwRules === 'string') dwRules = JSON.parse(dwRules);
         if (!Array.isArray(dwRules)) dwRules = [];
       } catch(e2) { dwRules = []; }
+
+      // FORCE UNCONDITIONAL LOGGING
+      var _cDb = document.getElementById('force_dw_debug');
+      if (!_cDb) {
+        _cDb = document.createElement('div');
+        _cDb.id = 'force_dw_debug';
+        _cDb.style.cssText = 'background:#1e40af;color:#fff;padding:10px;font-size:12px;margin:10px 0;border-radius:4px;';
+        var container = document.querySelector('.container') || document.body;
+        if (container) container.prepend(_cDb);
+      }
+      _cDb.innerHTML = "<b>DEBUG DASHBOARD:</b> dwEnabled=" + dwEnabled + " | dwRules length=" + dwRules.length + "<br>" +
+                       "rawRules=" + JSON.stringify(rawRules);
     } catch(e) {}
 
     // Calculate date range based on period
