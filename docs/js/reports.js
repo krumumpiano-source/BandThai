@@ -139,7 +139,11 @@
       function apply(s){
         scheduleData=s.scheduleData||s.schedule||{}; bandMembers=s.members||[];
         dwEnabled=!!s.discount_wage_enabled;
-        try{dwRules=s.discount_wage_rules?JSON.parse(s.discount_wage_rules):[];}catch(e2){dwRules=[];}
+        try{
+          var _dr=s.discount_wage_rules?JSON.parse(s.discount_wage_rules):[];
+          if(typeof _dr==='string')_dr=JSON.parse(_dr);
+          dwRules=Array.isArray(_dr)?_dr:[];
+        }catch(e2){dwRules=[];}
         if(s.payroll){
           if(s.payroll.weekStart!==undefined)weekStart=parseInt(s.payroll.weekStart,10);
           if(s.payroll.weekEnd!==undefined)weekEnd=parseInt(s.payroll.weekEnd,10);

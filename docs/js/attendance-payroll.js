@@ -658,17 +658,35 @@ function apRenderPayout() {
     b += '<tr><td>' + DN[dow] + '</td><td>' + apFmtDate(dt) + '</td>';
     apMembers.forEach(function(m) {
       var amt = 0;
+      var defAmt = 0;
       slots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apSlotPay(slot, m.id, dateStr);
+        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) {
+          amt += apSlotPay(slot, m.id, dateStr);
+          var _rDef = apGetMemberRate(slot, m.id);
+          defAmt += (_rDef.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDef.rate : _rDef.rate;
+        }
       });
       // Include extra slots in payout
       extraSlots.forEach(function(slot) {
         var sk = slot.start+'-'+slot.end;
-        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) amt += apExtraSlotPay(slot, m.id);
+        if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) {
+          var pEx = apExtraSlotPay(slot, m.id);
+          amt += pEx;
+          var _rDefEx = apGetMemberRate(slot, m.id);
+          defAmt += (_rDefEx.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDefEx.rate : _rDefEx.rate;
+        }
       });
       mGrand[m.id] += amt; dayTotal += amt;
-      b += '<td style="text-align:right">' + (amt > 0 ? amt.toLocaleString('th-TH') : '-') + '</td>';
+      var amtHtml = '-';
+      if (amt > 0) {
+        if (amt < defAmt) {
+          amtHtml = '<div style="color:#e53e3e">' + amt.toLocaleString('th-TH') + '</div><div style="font-size:9px;text-decoration:line-through;color:#a0aec0">' + defAmt.toLocaleString('th-TH') + '</div>';
+        } else {
+          amtHtml = amt.toLocaleString('th-TH');
+        }
+      }
+      b += '<td style="text-align:right">' + amtHtml + '</td>';
     });
     grand += dayTotal;
     b += '<td style="text-align:right;font-weight:600">' + (dayTotal>0?dayTotal.toLocaleString('th-TH'):'-') + '</td></tr>';
