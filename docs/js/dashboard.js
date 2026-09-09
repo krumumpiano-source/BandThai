@@ -775,7 +775,11 @@ function nav(page) {
       }
       dwEnabled = !!(stored.discount_wage_enabled !== undefined ? stored.discount_wage_enabled : settings.discount_wage_enabled);
       var rawRules = stored.discount_wage_rules || settings.discount_wage_rules;
-      try { dwRules = rawRules ? (typeof rawRules === 'string' ? JSON.parse(rawRules) : rawRules) : []; } catch(e2) { dwRules = []; }
+      try {
+        dwRules = rawRules ? (typeof rawRules === 'string' ? JSON.parse(rawRules) : rawRules) : [];
+        if (typeof dwRules === 'string') dwRules = JSON.parse(dwRules);
+        if (!Array.isArray(dwRules)) dwRules = [];
+      } catch(e2) { dwRules = []; }
     } catch(e) {}
 
     // Calculate date range based on period

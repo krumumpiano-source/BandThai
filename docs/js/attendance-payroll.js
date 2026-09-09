@@ -223,7 +223,12 @@ function apLoadData() {
         apScheduleMap = r.data.schedule || r.data.scheduleData || {};
         
         apDWEnabled = !!r.data.discount_wage_enabled;
-        try { apDWRules = r.data.discount_wage_rules ? (typeof r.data.discount_wage_rules === 'string' ? JSON.parse(r.data.discount_wage_rules) : r.data.discount_wage_rules) : []; } catch(e) { apDWRules = []; }
+        try {
+          var rawR = r.data.discount_wage_rules;
+          apDWRules = rawR ? (typeof rawR === 'string' ? JSON.parse(rawR) : rawR) : [];
+          if (typeof apDWRules === 'string') apDWRules = JSON.parse(apDWRules);
+          if (!Array.isArray(apDWRules)) apDWRules = [];
+        } catch(e) { apDWRules = []; }
 
         // Sync payroll config from server
         if (r.data.payroll) {
@@ -523,6 +528,14 @@ function apRenderAttendance() {
         b += '<td style="' + tdCls + '">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '" data-extra="' + (isExtra?'1':'0') + '"' + (checked ? ' checked' : '') + (!apIsAdmin ? ' disabled' : '') + '>';
+        
+        var _sPay = isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id, dateStr);
+        var _rDef = apGetMemberRate(slot, m.id);
+        var _defPay = (_rDef.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDef.rate : _rDef.rate;
+        if (_sPay !== _defPay && _sPay > 0 && !isExtra) {
+          b += '<div style="font-size:10px;color:' + (_sPay < _defPay ? '#e53e3e' : '#38a169') + ';margin-top:2px;line-height:1">' + _sPay.toLocaleString('th-TH') + '฿</div>';
+        }
+
         if (isLeaveSlot) {
           b += '<span class="ap-ci-badge" style="color:#e53e3e;font-size:9px;display:block" title="ลางาน">🚫 ลา</span>';
           if (subInfo && subInfo.name) {
