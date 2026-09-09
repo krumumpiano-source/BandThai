@@ -888,7 +888,7 @@ function nav(page) {
             _dbEl = document.createElement('div');
             _dbEl.id = 'debug_dw_dash';
             _dbEl.style.cssText = 'background:#fee2e2;color:#991b1b;padding:8px;font-size:11px;margin-bottom:10px;border-radius:4px;word-break:break-all;';
-            var c = document.querySelector('.dashboard-container');
+            var c = document.querySelector('.container') || document.body;
             if (c) c.prepend(_dbEl);
           }
           if (_dbEl) {
