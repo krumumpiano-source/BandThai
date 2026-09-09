@@ -817,9 +817,11 @@ function nav(page) {
     function calcH(s, e) { var d = e - s; if (d < 0) d += 1440; return d / 60; }
     function getSlotsForDow(dow) {
       var dayData = scheduleData[dow] || scheduleData[String(dow)];
+      var vs = (settings.venues && settings.venues.length > 0) ? settings.venues : (typeof stored !== 'undefined' ? (stored.venues || []) : []);
       if (Array.isArray(dayData)) {
         return dayData.map(function(s) {
           s.venueId = s.venueId || '';
+          if (!s.venue && s.venueId) { var vO = vs.find(function(x){return x.id === s.venueId;}); if(vO) s.venue = vO.name; }
           s.venue = s.venue || '';
           return s;
         });
@@ -827,7 +829,8 @@ function nav(page) {
       if (dayData && dayData.timeSlots) {
         return dayData.timeSlots.map(function(s) {
           s.venueId = dayData.venueId || s.venueId || '';
-          s.venue = dayData.venue || s.venue || '';
+          if (!s.venue && s.venueId) { var vO = vs.find(function(x){return x.id === s.venueId;}); if(vO) s.venue = vO.name; }
+          s.venue = s.venue || dayData.venue || '';
           return s;
         });
       }
@@ -859,7 +862,9 @@ function nav(page) {
           var rule = dwRules[j];
           var timeMatch = true;
           if (rule.timeSlot && rule.timeSlot !== '*') {
-            timeMatch = (rule.timeSlot === sTime || rule.timeSlot === (sStart + ' - ' + sEnd));
+            var normRule = rule.timeSlot.replace(/\s+/g, '');
+            var normS = (sStart + '-' + sEnd).replace(/\s+/g, '');
+            timeMatch = (normRule === normS);
           } else if (rule.breakIdx) {
             timeMatch = (String(rule.breakIdx) === String(breakIdx));
           }

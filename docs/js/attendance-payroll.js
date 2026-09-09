@@ -59,12 +59,17 @@ function apSlotsForDay(dow) {
     var arr = day;
     if (apVenueId) arr = arr.filter(function(s) { return s.venueId === apVenueId; });
     return arr.map(function(s) {
-      return { start: s.startTime||'', end: s.endTime||'', members: s.members||[], venueId: s.venueId||'', venue: s.venue||'' };
+      var vName = s.venue||'';
+      if (!vName && s.venueId) { var vO = (apVenues||[]).find(function(x){return x.id===s.venueId;}); if(vO) vName=vO.name; }
+      return { start: s.startTime||'', end: s.endTime||'', members: s.members||[], venueId: s.venueId||'', venue: vName };
     });
   }
   if (day && day.timeSlots && day.timeSlots.length) {
     return day.timeSlots.map(function(s) {
-      return { start: s.startTime, end: s.endTime, members: s.members||[], venueId: s.venueId||'', venue: s.venue||'' };
+      var vId = day.venueId||s.venueId||'';
+      var vName = day.venue||s.venue||'';
+      if (!vName && vId) { var vO = (apVenues||[]).find(function(x){return x.id===vId;}); if(vO) vName=vO.name; }
+      return { start: s.startTime, end: s.endTime, members: s.members||[], venueId: vId, venue: vName };
     });
   }
   return [];
@@ -89,7 +94,7 @@ function apSlotPay(slot, mid, ds) {
 
   if (apDWEnabled && apDWRules && apDWRules.length > 0 && ds) {
     var dow = String(new Date(ds).getDay());
-    var allSlots = (apScheduleMap[dow] || apScheduleMap[String(dow)]) || [];
+    var allSlots = apSlotsForDay(dow);
     var venueSlots = allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; });
     var sStart = slot.start || slot.startTime || '';
     var sEnd = slot.end || slot.endTime || '';
@@ -102,7 +107,9 @@ function apSlotPay(slot, mid, ds) {
       var rule = apDWRules[j];
       var timeMatch = true;
       if (rule.timeSlot && rule.timeSlot !== '*') {
-        timeMatch = (rule.timeSlot === sTime || rule.timeSlot === (sStart + ' - ' + sEnd));
+        var normRule = rule.timeSlot.replace(/\s+/g, '');
+        var normS = (sStart + '-' + sEnd).replace(/\s+/g, '');
+        timeMatch = (normRule === normS);
       } else if (rule.breakIdx) {
         timeMatch = (String(rule.breakIdx) === String(breakIdx));
       }
@@ -199,7 +206,7 @@ function apLoadData() {
         apScheduleMap = r.data.schedule || r.data.scheduleData || {};
         
         apDWEnabled = !!r.data.discount_wage_enabled;
-        try { apDWRules = r.data.discount_wage_rules ? JSON.parse(r.data.discount_wage_rules) : []; } catch(e) { apDWRules = []; }
+        try { apDWRules = r.data.discount_wage_rules ? (typeof r.data.discount_wage_rules === 'string' ? JSON.parse(r.data.discount_wage_rules) : r.data.discount_wage_rules) : []; } catch(e) { apDWRules = []; }
 
         // Sync payroll config from server
         if (r.data.payroll) {
