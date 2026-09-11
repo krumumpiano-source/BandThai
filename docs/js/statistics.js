@@ -190,53 +190,18 @@
       return { rate: 0, type: 'shift', assigned: false };
     }
     function slotPay(slot, mid, ds) {
+      if (typeof getEffectiveWage === 'function') {
+        return getEffectiveWage(ds, slot, (slot ? (slot.venue || slot.venueId) : ''), mid, {
+          settings: {
+            discount_wage_enabled: dwEnabled,
+            discount_wage_rules: dwRules,
+            schedule: scheduleData
+          }
+        });
+      }
       var r = getMemberRate(slot, mid);
       if (r.rate <= 0) return 0;
-      var base = (r.type === 'hourly') ? calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate : r.rate;
-      if (dwEnabled && dwRules.length > 0 && ds) {
-        var dow = String(new Date(ds).getDay());
-        var allSlots = scheduleData[dow] || scheduleData[String(dow)] || [];
-        var venueSlots = Array.isArray(allSlots) ? allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; }) : [];
-        var sStart = slot.startTime || slot.start || '';
-        var sEnd = slot.endTime || slot.end || '';
-        var sTime = sStart + '-' + sEnd;
-        var breakIdx = -1;
-        for (var i = 0; i < venueSlots.length; i++) {
-          if ((venueSlots[i].startTime || venueSlots[i].start) === sStart && (venueSlots[i].endTime || venueSlots[i].end) === sEnd) { breakIdx = i + 1; break; }
-        }
-        for (var j = 0; j < dwRules.length; j++) {
-          var rule = dwRules[j];
-          var timeMatch = true;
-          if (rule.timeSlot && rule.timeSlot !== '*') {
-            var normRule = rule.timeSlot.replace(/\s+/g, '');
-            var normS = (sStart + '-' + sEnd).replace(/\s+/g, '');
-            timeMatch = (normRule === normS);
-          } else if (rule.breakIdx) {
-            timeMatch = (String(rule.breakIdx) === String(breakIdx));
-          }
-          var venueMatches = (rule.venue === '*' || !rule.venue || rule.venue === slot.venue || rule.venue === slot.venueId);
-          var dayMatches = false;
-          if (rule.day === '*' || rule.days === '*' || (!rule.day && !rule.days)) {
-            dayMatches = true;
-          } else if (Array.isArray(rule.days)) {
-            dayMatches = (rule.days.indexOf(dow) >= 0 || rule.days.indexOf(parseInt(dow, 10)) >= 0);
-          } else if (typeof rule.day === 'string') {
-            dayMatches = (rule.day.split(',').map(function(s){return s.trim();}).indexOf(dow) >= 0);
-          } else if (rule.day !== undefined) {
-            dayMatches = (String(rule.day) === dow);
-          }
-          if (venueMatches && dayMatches && timeMatch) {
-            if ((!rule.startDate || ds >= rule.startDate) && (!rule.endDate || ds <= rule.endDate)) {
-              if (rule.type === 'fixed') base = rule.amount;
-              else if (rule.type === 'percent') base = base * (1 - rule.amount / 100);
-              else base -= rule.amount;
-              if (base < 0) base = 0;
-              break;
-            }
-          }
-        }
-      }
-      return base;
+      return (r.type === 'hourly') ? calcH(parseMin(slot.startTime), parseMin(slot.endTime)) * r.rate : r.rate;
     }
     function slotHours(slot) {
       return calcH(parseMin(slot.startTime), parseMin(slot.endTime));

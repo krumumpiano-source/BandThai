@@ -201,7 +201,19 @@
     function calcH(s,e){var d=e-s;if(d<0)d+=1440;return d/60;}
     function getSlotsForDow(dow){var dd=scheduleData[dow]||scheduleData[String(dow)];if(Array.isArray(dd)){return dd.map(function(s){s.venueId=s.venueId||'';if(!s.venue&&s.venueId){var vO=(typeof venues!=='undefined'?venues:[]).find(function(x){return x.id===s.venueId;});if(vO)s.venue=vO.name;}s.venue=s.venue||'';return s;});}if(dd&&dd.timeSlots){return dd.timeSlots.map(function(s){s.venueId=dd.venueId||s.venueId||'';if(!s.venue&&s.venueId){var vO=(typeof venues!=='undefined'?venues:[]).find(function(x){return x.id===s.venueId;});if(vO)s.venue=vO.name;}s.venue=s.venue||dd.venue||'';return s;});}return[];}
     function getMemberRate(slot,mid){var ms=slot.members||[];for(var i=0;i<ms.length;i++){if(ms[i].memberId===mid)return{rate:ms[i].rate||0,type:ms[i].rateType||'shift',assigned:true};}return{rate:0,type:'shift',assigned:false};}
-    function slotPay(slot,mid,ds){var r=getMemberRate(slot,mid);if(r.rate<=0)return 0;var base=(r.type==='hourly')?calcH(parseMin(slot.startTime),parseMin(slot.endTime))*r.rate:r.rate;if(dwEnabled&&dwRules.length>0&&ds){var dow=String(new Date(ds).getDay());var allS=getSlotsForDow(dow);var vSlots=allS.filter(function(s){return s.venue===slot.venue||s.venueId===slot.venueId;}); var sStart=slot.startTime||slot.start||'';var sEnd=slot.endTime||slot.end||'';var sTime=sStart+'-'+sEnd;var bIdx=-1;for(var i=0;i<vSlots.length;i++){if((vSlots[i].startTime||vSlots[i].start)===sStart&&(vSlots[i].endTime||vSlots[i].end)===sEnd){bIdx=i+1;break;}}for(var j=0;j<dwRules.length;j++){var rule=dwRules[j];var tMatch=true;if(rule.timeSlot&&rule.timeSlot!=='*'){tMatch=(rule.timeSlot.replace(/\s+/g,'')===(sStart+'-'+sEnd).replace(/\s+/g,''));}else if(rule.breakIdx){tMatch=(String(rule.breakIdx)===String(bIdx));}var vMatch=(rule.venue==='*'||!rule.venue||rule.venue===slot.venue||rule.venue===slot.venueId);var dMatch=false;if(rule.day==='*'||rule.days==='*'||(!rule.day&&!rule.days)){dMatch=true;}else if(Array.isArray(rule.days)){dMatch=(rule.days.indexOf(dow)>=0||rule.days.indexOf(parseInt(dow,10))>=0);}else if(typeof rule.day==='string'){dMatch=(rule.day.split(',').map(function(s){return s.trim();}).indexOf(dow)>=0);}else if(rule.day!==undefined){dMatch=(String(rule.day)===dow);}if(vMatch&&dMatch&&tMatch){if((!rule.startDate||ds>=rule.startDate)&&(!rule.endDate||ds<=rule.endDate)){if(rule.type==='fixed')base=rule.amount;else if(rule.type==='percent')base=base*(1-rule.amount/100);else base-=rule.amount;if(base<0)base=0;break;}}}}return base;}
+    function slotPay(slot,mid,ds){
+      if(typeof getEffectiveWage==='function'){
+        return getEffectiveWage(ds,slot,(slot?(slot.venue||slot.venueId):''),mid,{
+          settings:{
+            discount_wage_enabled:dwEnabled,
+            discount_wage_rules:dwRules,
+            schedule:scheduleData
+          }
+        });
+      }
+      var r=getMemberRate(slot,mid);if(r.rate<=0)return 0;
+      return(r.type==='hourly')?calcH(parseMin(slot.startTime),parseMin(slot.endTime))*r.rate:r.rate;
+    }
     function slotHours(slot){return calcH(parseMin(slot.startTime),parseMin(slot.endTime));}
     function fmt(n){return Number(n).toLocaleString('th-TH');}
     function fmtH(h){return Number(h).toFixed(1);}

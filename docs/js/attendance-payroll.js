@@ -81,85 +81,23 @@ function apMemberRate(slot, mid) {
 }
 
 function apSlotPay(slot, mid, ds) {
+  if (typeof getEffectiveWage === 'function') {
+    return getEffectiveWage(ds, slot, (slot ? (slot.venue || slot.venueId) : ''), mid, {
+      settings: {
+        discount_wage_enabled: apDWEnabled,
+        discount_wage_rules: apDWRules,
+        schedule: apScheduleMap,
+        venues: apVenues
+      }
+    });
+  }
   var r = apMemberRate(slot, mid);
-  // If member not assigned to this specific slot, fall back to their band-wide default rate
-  // (covers leave+sub cases where the sub works a slot the original member isn't in)
   if (r.rate <= 0) {
     var dr = apDefaultRate(mid);
     if (dr.rate <= 0) return 0;
     r = { rate: dr.rate, type: dr.type };
   }
-  
-  var basePay = (r.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * r.rate : r.rate;
-
-  if (apDWEnabled && apDWRules && apDWRules.length > 0 && ds) {
-    var dow = String(new Date(ds).getDay());
-    var allSlots = apSlotsForDay(dow);
-    var venueSlots = allSlots.filter(function(s) { return s.venue === slot.venue || s.venueId === slot.venueId; });
-    var sStart = slot.start || slot.startTime || '';
-    var sEnd = slot.end || slot.endTime || '';
-    var sTime = sStart + '-' + sEnd;
-    var breakIdx = -1;
-    for (var i=0; i<venueSlots.length; i++) {
-      if ((venueSlots[i].start || venueSlots[i].startTime) === sStart && (venueSlots[i].end || venueSlots[i].endTime) === sEnd) { breakIdx = i + 1; break; }
-    }
-    for (var j=0; j<apDWRules.length; j++) {
-      var rule = apDWRules[j];
-      var timeMatch = true;
-      if (rule.timeSlot && rule.timeSlot !== '*') {
-        var normRule = rule.timeSlot.replace(/\s+/g, '');
-        var normS = (sStart + '-' + sEnd).replace(/\s+/g, '');
-        timeMatch = (normRule === normS);
-      } else if (rule.breakIdx) {
-        timeMatch = (String(rule.breakIdx) === String(breakIdx));
-      }
-      var rVenue = (rule.venue||'').trim();
-      var sVenue = (sVenueName||'').trim();
-      var sVenueId = (slot.venueId||'').trim();
-      var venueMatches = (rVenue === '*' || rVenue === '' || rVenue === sVenue || rVenue === sVenueId);
-      var dayMatches = false;
-      if (rule.day === '*' || rule.days === '*' || (!rule.day && (!rule.days || rule.days.length===0))) {
-        dayMatches = true;
-      } else if (Array.isArray(rule.days)) {
-        dayMatches = (rule.days.indexOf(dow) >= 0 || rule.days.indexOf(parseInt(dow, 10)) >= 0 || rule.days.indexOf(String(dow)) >= 0);
-      } else if (typeof rule.day === 'string') {
-        dayMatches = (rule.day.split(',').map(function(s){return s.trim();}).indexOf(String(dow)) >= 0);
-      } else if (rule.day !== undefined) {
-        dayMatches = (String(rule.day) === String(dow));
-      }
-      
-      var _dbEl = document.getElementById('debug_dw_ap');
-      if (!_dbEl) {
-        _dbEl = document.createElement('div');
-        _dbEl.id = 'debug_dw_ap';
-        _dbEl.style.cssText = 'background:#fee2e2;color:#991b1b;padding:8px;font-size:11px;margin-bottom:10px;border-radius:4px;word-break:break-all;';
-        var c = document.querySelector('.container') || document.body;
-        if (c) c.prepend(_dbEl);
-      }
-      if (_dbEl) {
-        _dbEl.innerHTML += "DS:"+ds+" vM:"+venueMatches+"(r:"+rVenue+" s:"+sVenue+") dM:"+dayMatches+"(d:"+dow+" rD:"+JSON.stringify(rule.days)+") tM:"+timeMatch+"<br>";
-      }
-      if (venueMatches && dayMatches && timeMatch) {
-        var sD = rule.startDate ? rule.startDate.trim() : '';
-        var eD = rule.endDate ? rule.endDate.trim() : '';
-        if ((!sD || ds >= sD) && (!eD || ds <= eD)) {
-          if (rule.type === 'fixed') {
-            basePay = parseFloat(rule.amount) || 0;
-          } else if (rule.type === 'percent') {
-            basePay = basePay * (1 - ((parseFloat(rule.amount)||0) / 100));
-          } else {
-            basePay -= (parseFloat(rule.amount)||0);
-          }
-          if (basePay < 0) basePay = 0;
-          break;
-        } else {
-          if (_dbEl) _dbEl.innerHTML += "DATE FAILED: ds="+ds+" sd="+sD+" ed="+eD+"<br>";
-        }
-      }
-    }
-  }
-
-  return basePay;
+  return (r.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * r.rate : r.rate;
 }
 
 function apDefaultRate(mid) {
@@ -190,6 +128,13 @@ function apLoadData() {
     if (s.members && s.members.length) apMembers = s.members;
     if (s.venues) apVenues = s.venues;
     apScheduleMap = s.schedule || s.scheduleData || {};
+    apDWEnabled = !!s.discount_wage_enabled;
+    if (s.discount_wage_rules) {
+      try {
+        var _r = typeof s.discount_wage_rules === 'string' ? JSON.parse(s.discount_wage_rules) : s.discount_wage_rules;
+        apDWRules = Array.isArray(_r) ? _r : [];
+      } catch(e) { apDWRules = []; }
+    }
     // Read payroll settings from manager's band-settings
     // NOTE: Do NOT read weekStart/weekEnd from localStorage — may be stale.
     //       These are loaded from server in apLoadData() async callback only.
@@ -230,17 +175,18 @@ function apLoadData() {
           if (!Array.isArray(apDWRules)) apDWRules = [];
         } catch(e) { apDWRules = []; }
 
+        // Sync full settings back to localStorage so cache is always up-to-date
+        try {
+          var _lsSync = JSON.parse(localStorage.getItem('bandSettings') || '{}');
+          Object.assign(_lsSync, r.data);
+          localStorage.setItem('bandSettings', JSON.stringify(_lsSync));
+        } catch(e) {}
+
         // Sync payroll config from server
         if (r.data.payroll) {
           if (r.data.payroll.period) apRecordType = r.data.payroll.period;
           if (r.data.payroll.weekStart !== undefined) apWeekStart = parseInt(r.data.payroll.weekStart, 10);
           if (r.data.payroll.weekEnd !== undefined) apWeekEnd = parseInt(r.data.payroll.weekEnd, 10);
-          // Sync correct values back to localStorage so stale cache is cleared
-          try {
-            var _lsSync = JSON.parse(localStorage.getItem('bandSettings') || '{}');
-            _lsSync.payroll = Object.assign(_lsSync.payroll || {}, r.data.payroll);
-            localStorage.setItem('bandSettings', JSON.stringify(_lsSync));
-          } catch(e) {}
           // Update UI to reflect manager's settings
           var _rt = apEl('recordType'); if (_rt) _rt.value = apRecordType;
           apShowDateGroups();
@@ -530,8 +476,13 @@ function apRenderAttendance() {
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '" data-extra="' + (isExtra?'1':'0') + '"' + (checked ? ' checked' : '') + (!apIsAdmin ? ' disabled' : '') + '>';
         
         var _sPay = isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id, dateStr);
-        var _rDef = apGetMemberRate(slot, m.id);
-        var _defPay = (_rDef.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDef.rate : _rDef.rate;
+        var _defPay = (typeof BandWage !== 'undefined')
+          ? BandWage.getBaseWage(slot, m.id, { settings: { schedule: apScheduleMap, venues: apVenues } }).basePay
+          : (function() {
+              var _rDef = apMemberRate(slot, m.id);
+              if (_rDef.rate <= 0) _rDef = apDefaultRate(m.id);
+              return (_rDef.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDef.rate : _rDef.rate;
+            })();
         if (_sPay !== _defPay && _sPay > 0 && !isExtra) {
           b += '<div style="font-size:10px;color:' + (_sPay < _defPay ? '#e53e3e' : '#38a169') + ';margin-top:2px;line-height:1">' + _sPay.toLocaleString('th-TH') + '฿</div>';
         }
@@ -663,8 +614,13 @@ function apRenderPayout() {
         var sk = slot.start+'-'+slot.end;
         if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) {
           amt += apSlotPay(slot, m.id, dateStr);
-          var _rDef = apGetMemberRate(slot, m.id);
-          defAmt += (_rDef.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDef.rate : _rDef.rate;
+          var _bW = (typeof BandWage !== 'undefined')
+            ? BandWage.getBaseWage(slot, m.id, { settings: { schedule: apScheduleMap, venues: apVenues } }).basePay
+            : (function() {
+                var _r = apMemberRate(slot, m.id); if (_r.rate <= 0) _r = apDefaultRate(m.id);
+                return (_r.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _r.rate : _r.rate;
+              })();
+          defAmt += _bW;
         }
       });
       // Include extra slots in payout
@@ -673,8 +629,13 @@ function apRenderPayout() {
         if (apChecked[m.id] && apChecked[m.id][dateStr] && apChecked[m.id][dateStr].indexOf(sk)!==-1) {
           var pEx = apExtraSlotPay(slot, m.id);
           amt += pEx;
-          var _rDefEx = apGetMemberRate(slot, m.id);
-          defAmt += (_rDefEx.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _rDefEx.rate : _rDefEx.rate;
+          var _bWEx = (typeof BandWage !== 'undefined')
+            ? BandWage.getBaseWage(slot, m.id, { settings: { schedule: apScheduleMap, venues: apVenues } }).basePay
+            : (function() {
+                var _r = apMemberRate(slot, m.id); if (_r.rate <= 0) _r = apDefaultRate(m.id);
+                return (_r.type === 'hourly') ? apCalcH(apParseMin(slot.start), apParseMin(slot.end)) * _r.rate : _r.rate;
+              })();
+          defAmt += _bWEx;
         }
       });
       mGrand[m.id] += amt; dayTotal += amt;

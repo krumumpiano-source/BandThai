@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BandThai — Core App (GitHub Pages + Supabase)
  *
  * Load order:
@@ -31,6 +31,11 @@
       }
     );
   });
+
+  // 4) Ensure wage-utils.js is loaded
+  if (!document.getElementById('_wage_utils') && (typeof window === 'undefined' || typeof window.getEffectiveWage !== 'function')) {
+    loadScript('js/wage-utils.js', '_wage_utils', null);
+  }
 })();
 
 (function(global){
