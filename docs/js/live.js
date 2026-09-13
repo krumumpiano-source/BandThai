@@ -33,6 +33,8 @@ function transposeKey(degree, step) {
 //  STATE
 // ─────────────────────────────────────────────────────────────────
 var _playlist  = [];   // array of {name, key, bpm, singer, artist, _key, _note, _skipped, _isRequest, _isEncore}
+var _lastLocalModificationTime = 0;
+var _lastScrolledCurrent = -1;
 var _current   = 0;    // index of now playing
 var _modified  = false;
 var _channel   = null; // Supabase Broadcast
@@ -920,7 +922,10 @@ function renderSongList() {
     });
   });
 
-  scrollToCurrent();
+  if (typeof _lastScrolledCurrent === 'undefined' || _current !== _lastScrolledCurrent) {
+    scrollToCurrent();
+    _lastScrolledCurrent = _current;
+  }
 }
 
 // ─── REMOVE SONG FROM PLAYLIST ────────────────────────────────────────────────
@@ -1494,17 +1499,25 @@ function chatBarSubmit() {
   var inp = document.getElementById('chatBarInput');
   var name = (inp.value || '').trim();
   if (!name) return;
-  // ถ้าชื่อเพลงตรงกับเพลงในคลังพอดี → ใช้ metadata (key/bpm/singer/artist) จากคลัง
-  var s = null;
-  if (_allSongs && _allSongs.length > 0) {
-    var nameLower = name.toLowerCase();
-    s = _allSongs.find ? _allSongs.find(function(x) { return (x.name || '').toLowerCase() === nameLower; })
-      : (function() { for (var i = 0; i < _allSongs.length; i++) { if ((_allSongs[i].name || '').toLowerCase() === nameLower) return _allSongs[i]; } return null; })();
-  }
-  if (s) {
-    addSongToPlaylist(name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+
+  var doSubmit = function() {
+    var s = null;
+    if (_allSongs && _allSongs.length > 0) {
+      var nameLower = name.toLowerCase();
+      s = _allSongs.find ? _allSongs.find(function(x) { return (x.name || '').toLowerCase() === nameLower; })
+        : (function() { for (var i = 0; i < _allSongs.length; i++) { if ((_allSongs[i].name || '').toLowerCase() === nameLower) return _allSongs[i]; } return null; })();
+    }
+    if (s) {
+      addSongToPlaylist(name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+    } else {
+      addSongToPlaylist(name, '', 0, '', '', true);
+    }
+  };
+
+  if (typeof _allSongsLoaded === 'undefined' || !_allSongsLoaded) {
+    preloadBandSongs(doSubmit);
   } else {
-    addSongToPlaylist(name, '', 0, '', '', true);
+    doSubmit();
   }
 }
 
@@ -1515,12 +1528,7 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
   // ป้องกันเพลงซ้ำในลิสต์
   var dup = _playlist.some(function(s) { return !s._skipped && s.name === name; });
   if (dup && !confirm('เพลง "' + name + '" มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
-  // ถ้าเพลงมีในคลังอยู่แล้ว → ไม่ mark เป็นเพลงขอ
-  if (isRequest && _allSongs.length > 0) {
-    var nameLower = name.toLowerCase();
-    var inLibrary = _allSongs.some(function(s) { return (s.name || '').toLowerCase() === nameLower; });
-    if (inLibrary) isRequest = false;
-  }
+
   _pendingSong = {
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key ? formatKey(key) : '', _note: '', _skipped: false,
@@ -2771,6 +2779,10 @@ function initRealtime() {
       var incomingCurrentUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
 
       if (!isFirstSync) {
+        // Guard: ถ้าเพิ่งมีการแก้ไขจากเครื่องนี้ (< 3 วิ) ถือว่า incoming state นี้อาจจะเก่า
+        if (_lastLocalModificationTime > 0 && Date.now() - _lastLocalModificationTime < 3000) {
+          return;
+        }
         // Guard: ถ้าเพิ่งเพิ่มเพลงในเครื่องนี้ (< 3 วิ) และ incoming state มีเพลงน้อยกว่า
         // → state นั้น stale (ส่งมาก่อนเราเพิ่ม) — ปฏิเสธ และ broadcast state ใหม่ของเราออกไป
         if (_lastLocalAddTime > 0 && Date.now() - _lastLocalAddTime < 3000 && d.playlist.length < _playlist.length) {
@@ -2991,6 +3003,7 @@ function _rtTrackRecv(eventName) {
 function _rtTimeStr() { return new Date().toLocaleTimeString(); }
 
 function broadcastEvent(event, data) {
+  _lastLocalModificationTime = Date.now();
   if (!_channel) {
     console.warn('[Live-RT] broadcastEvent: no channel for', event);
     _rtSendFail++;
