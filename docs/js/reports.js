@@ -414,7 +414,8 @@
       if(!history.length){
         document.getElementById('slContent').innerHTML='<div class="sl-empty">\u{1F4ED} \u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e25\u0e34\u0e2a\u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e0a\u0e48\u0e27\u0e07\u0e19\u0e35\u0e49<br><span style="font-size:var(--text-xs);color:var(--premium-text-muted)">\u0e25\u0e34\u0e2a\u0e40\u0e1e\u0e25\u0e07\u0e08\u0e30\u0e16\u0e39\u0e01\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34\u0e40\u0e21\u0e37\u0e48\u0e2d\u0e08\u0e1a\u0e40\u0e1a\u0e23\u0e04\u0e43\u0e19 Live Mode</span></div>';
         document.getElementById('slStatCards').style.display='none';
-        document.getElementById('slTopSongsCard').style.display='none';
+        var tCard = document.getElementById('slTopSongsCard');
+        if (tCard) tCard.style.display='none';
         return;
       }
       var byDate={};history.forEach(function(h){if(!byDate[h.date])byDate[h.date]=[];byDate[h.date].push(h);});
@@ -572,7 +573,8 @@
       });
       arr.sort(function(a,b){return b.count-a.count;});
       if(arr.length===0){
-        document.getElementById('slTopSongsCard').style.display='none';
+        var tCard = document.getElementById('slTopSongsCard');
+        if (tCard) tCard.style.display='none';
         return;
       }
       // Take top 10
@@ -591,6 +593,17 @@
       if (card) {
         card.innerHTML = html;
         card.style.display = '';
+      } else {
+        // Fallback if reports.html is cached
+        card = document.createElement('div');
+        card.id = 'slTopSongsCard';
+        card.className = 'dist-card';
+        card.style.marginTop = '16px';
+        card.innerHTML = html;
+        var distCard = document.getElementById('slDistCard');
+        if (distCard && distCard.parentNode) {
+          distCard.parentNode.insertBefore(card, distCard.nextSibling);
+        }
       }
     }
 
