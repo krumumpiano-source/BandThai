@@ -47,6 +47,8 @@ var _wakeLock  = null;
 var _lastLocalAddTime = 0; // timestamp ของครั้งล่าสุดที่เพิ่มเพลงในเครื่องนี้ (ป้องกัน state_sync stale)
 var _lastLocalCurrentChange = 0; // timestamp เมื่อกดเปลี่ยนเพลงในเครื่องนี้ (ป้องกัน state_sync เก่าดึงเด้งกลับ)
 var _currentUpdatedAt = 0; // timestamp ของ _current ล่าสุด (0 = เริ่มต้น, ยอมรับ remote state ทันที)
+var _lastLocalDeleteTime = 0; // timestamp เมื่อลบเพลงในเครื่องนี้ (ป้องกัน state_sync เก่าดึงเพลงกลับมา)
+var _playlistVersion = 0;     // เพิ่มทุกครั้งที่ playlist เปลี่ยน — ป้องกัน state_sync เก่าเขียนทับ
 
 // ── Marquee / title display ───────────────────────────────────────
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
@@ -935,6 +937,8 @@ function removeSong(e, idx) {
   if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
+  _lastLocalDeleteTime = Date.now(); // บันทึกเวลาที่ลบเพลงในเครื่องนี้
+  _playlistVersion++;               // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
@@ -1649,6 +1653,7 @@ function confirmInsertAt(pos) {
   _playlist.splice(pos, 0, song);
   _modified = true;
   _lastLocalAddTime = Date.now(); // บันทึกเวลาที่เพิ่มเพลงในเครื่องนี้
+  _playlistVersion++;             // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   broadcastEvent('request_song', { song: song, insertAt: pos });
   scheduleStateSync();
 
@@ -1735,6 +1740,7 @@ function setAsNext(idx) {
   if (idx < _current) { _current--; insertAt = _current + 1; }
   _playlist.splice(insertAt, 0, song);
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('set_next', { idx: idx });
   scheduleStateSync();
   renderNowPlaying();
@@ -1751,6 +1757,7 @@ function skipSong(idx) {
   haptic(50);
   _playlist[idx]._skipped = true;
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('skip_song', { idx: idx });
   scheduleStateSync();
   if (idx === _current) advanceSong();
@@ -1761,6 +1768,7 @@ function unskipSong(e, idx) {
   e.stopPropagation();
   _playlist[idx]._skipped = false;
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('unskip_song', { idx: idx });
   scheduleStateSync();
   renderSongList();
@@ -1818,6 +1826,7 @@ function onDragEnd(e) {
     else if (from < to && _current > from && _current <= to) _current--;
     else if (from > to && _current < from && _current >= to) _current++;
     _modified = true;
+    _playlistVersion++;
     renderNowPlaying();
     renderSongList();
     broadcastEvent('reorder', { from: from, to: to });
@@ -1876,6 +1885,8 @@ function addEncore(idx) {
   if (insertAt <= _current) _current++;
   _playlist.splice(insertAt, 0, clone);
   _modified = true;
+  _lastLocalAddTime = Date.now();
+  _playlistVersion++;
   broadcastEvent('request_song', { song: clone, insertAt: insertAt });
   scheduleStateSync();
   renderNowPlaying();
@@ -2610,6 +2621,7 @@ function initRealtime() {
         }
         _playlist.splice(insertPos, 0, d.song);
         _modified = true;
+        _playlistVersion++; // track version on receive
         normalizePlaylistState();
       }
       renderSongList();
@@ -2617,13 +2629,13 @@ function initRealtime() {
     .on('broadcast', { event: 'skip_song' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; _modified = true; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; _modified = true; _playlistVersion++; }
       renderSongList();
     })
     .on('broadcast', { event: 'unskip_song' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; _modified = true; }
+      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; _modified = true; _playlistVersion++; }
       renderSongList();
     })
     .on('broadcast', { event: 'remove' }, function(payload) {
@@ -2631,6 +2643,7 @@ function initRealtime() {
       var d = payload.payload || {};
       if (removeSongAtIndex(d.idx)) {
         _modified = true;
+        _playlistVersion++; // track version on receive
         renderNowPlaying();
         renderSongList();
       }
@@ -2647,6 +2660,7 @@ function initRealtime() {
         else if (from < to && _current > from && _current <= to) _current--;
         else if (from > to && _current < from && _current >= to) _current++;
         _modified = true;
+        _playlistVersion++; // track version on receive
         normalizePlaylistState();
         renderNowPlaying();
         renderSongList();
@@ -2676,6 +2690,7 @@ function initRealtime() {
       if (idx < _current) { _current--; insertAt = _current + 1; }
       _playlist.splice(insertAt, 0, song);
       _modified = true;
+      _playlistVersion++; // track version on receive
       normalizePlaylistState();
       renderNowPlaying();
       renderSongList();
@@ -2779,17 +2794,26 @@ function initRealtime() {
       var incomingCurrentUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
 
       if (!isFirstSync) {
-        // Guard: ถ้าเพิ่งมีการแก้ไขจากเครื่องนี้ (< 3 วิ) ถือว่า incoming state นี้อาจจะเก่า
-        if (_lastLocalModificationTime > 0 && Date.now() - _lastLocalModificationTime < 3000) {
+        // ── Guard Version ─────────────────────────────────────────────────────────
+        // ถ้า incoming version ต่ำกว่าของเรา → ข้อมูล playlist เก่าแน่ ปฏิเสธและ broadcast ของเราออกไป
+        if (typeof d.playlistVersion === 'number' && d.playlistVersion < _playlistVersion) {
+          scheduleStateSync();
           return;
         }
-        // Guard: ถ้าเพิ่งเพิ่มเพลงในเครื่องนี้ (< 3 วิ) และ incoming state มีเพลงน้อยกว่า
-        // → state นั้น stale (ส่งมาก่อนเราเพิ่ม) — ปฏิเสธ และ broadcast state ใหม่ของเราออกไป
+        // ── Guard Delete ──────────────────────────────────────────────────────────
+        // ถ้าเพิ่งลบเพลง (< 3 วิ) และ incoming มีเพลงมากกว่า (state เก่ากว่า) → ปฏิเสธ
+        if (_lastLocalDeleteTime > 0 && Date.now() - _lastLocalDeleteTime < 3000 && d.playlist.length > _playlist.length) {
+          scheduleStateSync();
+          return;
+        }
+        // ── Guard Add ─────────────────────────────────────────────────────────────
+        // ถ้าเพิ่งเพิ่มเพลง (< 3 วิ) และ incoming มีเพลงน้อยกว่า (state เก่ากว่า) → ปฏิเสธ
         if (_lastLocalAddTime > 0 && Date.now() - _lastLocalAddTime < 3000 && d.playlist.length < _playlist.length) {
           scheduleStateSync();
           return;
         }
-        // Guard: ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ)
+        // ── Guard Current ─────────────────────────────────────────────────────────
+        // ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ) → คงค่า _current ของตัวเอง
         if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500) {
           scheduleStateSync();
           incomingCurrent = _current;
@@ -2811,9 +2835,19 @@ function initRealtime() {
         }
       }
 
+      // ── Apply incoming state ──────────────────────────────────────────────────
+      // อัปเดต playlistVersion เป็นค่าที่มากกว่า (incoming อาจมีมากกว่าจาก remote mutations)
+      _playlistVersion = Math.max(_playlistVersion, typeof d.playlistVersion === 'number' ? d.playlistVersion : 0);
       _playlist = d.playlist;
-      _current  = incomingCurrent;
-      _currentUpdatedAt = Math.max(_currentUpdatedAt, incomingCurrentUpdatedAt);
+      // Timestamp guard สำหรับ _current: newer timestamp wins เสมอ (แก้ปัญหาเพลงเด้งกลับ)
+      if (incomingCurrentUpdatedAt > _currentUpdatedAt) {
+        _current = incomingCurrent;
+        _currentUpdatedAt = incomingCurrentUpdatedAt;
+      } else if (incomingCurrentUpdatedAt === 0) {
+        // ไม่มี timestamp (client เก่า / first sync) → ยอมรับค่าจาก incoming
+        _current = incomingCurrent;
+      }
+      // ถ้า incoming timestamp เก่ากว่า → คง _current ของตัวเองไว้ (เพลงไม่เด้งกลับ)
       _isSyncLeader = false; // someone else is senior — they own broadcast
       _modified = true;
       normalizePlaylistState();
@@ -2986,6 +3020,7 @@ function getState() {
     playlist: _playlist,
     current: _current,
     currentUpdatedAt: _currentUpdatedAt,
+    playlistVersion: _playlistVersion, // version counter สำหรับ conflict resolution
     bpm: (_playlist[_current] || {}).bpm || 0,
     breakStarted: _breakStarted,
     breakStartTime: _breakStartTime,
@@ -3862,6 +3897,7 @@ function _doMoveSong(from, to) {
   else if (from < to && _current > from && _current <= to) _current--;
   else if (from > to && _current < from && _current >= to) _current++;
   _modified = true;
+  _playlistVersion++;
   normalizePlaylistState();
   renderNowPlaying();
   renderSongList();
@@ -3874,6 +3910,8 @@ function removeSongDirect(idx) {
   if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
+  _lastLocalDeleteTime = Date.now(); // บันทึกเวลาที่ลบเพลงในเครื่องนี้
+  _playlistVersion++;               // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
