@@ -27,8 +27,8 @@
 <div id="mainNav"></div>
 
 <main>
-<div class="container">
-
+<div class="container layout-split">
+  <div class="split-left">
   <div id="songPageHeader" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-lg);position:relative;overflow:hidden">
     <!-- Decorative bg -->
     <div style="position:absolute;top:-20px;right:-20px;font-size:120px;opacity:.06;pointer-events:none;line-height:1">🎵</div>
@@ -66,57 +66,64 @@
   </div>
 
   <!-- ── Filter Panel ── -->
-  <div class="panel">
-  <div class="filters">
-    <select id="singer" onchange="onFilterChange()">
-      <option value="">นักร้อง</option>
-      <option value="ชาย">ชาย</option>
-      <option value="หญิง">หญิง</option>
-      <option value="คู่">คู่</option>
-    </select>
+  <div class="panel filter-panel" id="filterPanel">
+    <div class="filter-toggle" onclick="document.getElementById('filterPanel').classList.toggle('expanded')">
+      <span style="font-weight:700; color:var(--premium-text); display:flex; align-items:center; gap:8px;">🔍 ค้นหาและตัวกรอง</span>
+      <span class="ft-icon">▼</span>
+    </div>
+    
+    <div class="filter-content">
+      <!-- Search Box -->
+      <div class="song-search-wrap" style="margin-top:0; margin-bottom:12px;">
+        <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
+        <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
+      </div>
 
-    <select id="era" onchange="onFilterChange()">
-      <option value="">ยุคเพลง</option>
-      <option value="80s">2523-2532 (80s)</option>
-      <option value="90s">2533-2542 (90s)</option>
-      <option value="2000s">2543-2553 (00s)</option>
-      <option value="2010s">2554-2562 (10s)</option>
-      <option value="2020s">2563-ปัจจุบัน (20s)</option>
-    </select>
+      <div class="filters">
+        <select id="singer" onchange="onFilterChange()">
+          <option value="">นักร้อง</option>
+          <option value="ชาย">ชาย</option>
+          <option value="หญิง">หญิง</option>
+          <option value="คู่">คู่</option>
+        </select>
 
-    <select id="genre" onchange="onFilterChange()">
-      <option value="">แนวเพลง</option>
-      <option value="ป๊อป">ป๊อป</option>
-      <option value="ร็อค">ร็อค</option>
-      <option value="ดิสโก้">ดิสโก้</option>
-      <option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option>
-      <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
-      <option value="เพื่อชีวิต">เพื่อชีวิต</option>
-      <option value="อาร์แอนด์บี">อาร์แอนด์บี</option>
-      <option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option>
-      <option value="เรกเก้">เรกเก้</option>
-      <option value="อินดี้">อินดี้</option>
-    </select>
+        <select id="era" onchange="onFilterChange()">
+          <option value="">ยุคเพลง</option>
+          <option value="80s">2523-2532 (80s)</option>
+          <option value="90s">2533-2542 (90s)</option>
+          <option value="2000s">2543-2553 (00s)</option>
+          <option value="2010s">2554-2562 (10s)</option>
+          <option value="2020s">2563-ปัจจุบัน (20s)</option>
+        </select>
 
-    <select id="mood" onchange="onFilterChange()">
-      <option value="">อารมณ์</option>
-      <option value="มัน / สนุก">มัน / สนุก</option>
-      <option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option>
-      <option value="เศร้า / อกหัก">เศร้า / อกหัก</option>
-      <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
-      <option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option>
-    </select>
+        <select id="genre" onchange="onFilterChange()">
+          <option value="">แนวเพลง</option>
+          <option value="ป๊อป">ป๊อป</option>
+          <option value="ร็อค">ร็อค</option>
+          <option value="ดิสโก้">ดิสโก้</option>
+          <option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option>
+          <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
+          <option value="เพื่อชีวิต">เพื่อชีวิต</option>
+          <option value="อาร์แอนด์บี">อาร์แอนด์บี</option>
+          <option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option>
+          <option value="เรกเก้">เรกเก้</option>
+          <option value="อินดี้">อินดี้</option>
+        </select>
 
-    <select id="artist" onchange="onFilterChange()">
-      <option value="">ทุกศิลปิน</option>
-    </select>
-  </div>
+        <select id="mood" onchange="onFilterChange()">
+          <option value="">อารมณ์</option>
+          <option value="มัน / สนุก">มัน / สนุก</option>
+          <option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option>
+          <option value="เศร้า / อกหัก">เศร้า / อกหัก</option>
+          <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
+          <option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option>
+        </select>
 
-  <!-- Search Box -->
-  <div class="song-search-wrap">
-    <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
-    <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
-  </div>
+        <select id="artist" onchange="onFilterChange()">
+          <option value="">ทุกศิลปิน</option>
+        </select>
+      </div>
+    </div>
 
   <!-- Add song to band library -->
   <div id="addSongBandWrap" style="display:none;margin-top:12px">
@@ -147,9 +154,15 @@
     <button onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
   </div>
 </div>
+</div> <!-- /split-left -->
 
+<div class="backdrop" id="plBackdrop" onclick="toggleMobilePlaylist()"></div>
+<div class="split-right" id="playlistSection">
   <div class="panel">
-  <h3>📋 ลิสเพลงที่เลือก</h3>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
+    <h3 style="margin-bottom:0;">📋 ลิสเพลงที่เลือก</h3>
+    <button class="pl-close-btn" onclick="toggleMobilePlaylist()" style="display:none; background:none; border:none; font-size:20px; color:var(--premium-text-muted); padding:4px;">✕</button>
+  </div>
 
   <!-- Badge: existing playlists for selected date -->
   <div id="plExistingBadge" style="display:none;margin-bottom:12px;padding:12px 14px;border-radius:var(--radius-md);background:#f7fff9;border:1.5px solid #c6f6d5"></div>
@@ -225,10 +238,11 @@
     <div id="plDurNote" style="font-size:11px;color:#718096;margin-top:5px"></div>
   </div>
 </div>
-</div>
+</div> <!-- /split-right -->
+</div> <!-- /layout-split -->
 
 <!-- Floating Playlist Counter -->
-<div id="playlistFloating" onclick="document.getElementById('playlist').scrollIntoView({behavior:'smooth',block:'start'})">
+<div id="playlistFloating" onclick="toggleMobilePlaylist()">
   <span class="pf-count" id="pfCount">0</span>
   <span class="pf-label" id="pfLabel">&#xe40;&#xe1e;&#xe25;&#xe07;&#xe43;&#xe19;&#xe25;&#xe34;&#xe2a;</span>
 </div>
@@ -277,6 +291,14 @@
 
 
 <script>
+function toggleMobilePlaylist() {
+  if (window.innerWidth >= 1024) return;
+  var ps = document.getElementById('playlistSection');
+  var bd = document.getElementById('plBackdrop');
+  if (!ps || !bd) return;
+  ps.classList.toggle('open');
+  bd.classList.toggle('open');
+}
 
 function showSongsAlert(msg) {
   var t = document.getElementById('toast');
@@ -796,11 +818,12 @@ function renderPage() {
       } else if (_currentSource === 'band') {
         var libType = s.libType || 'owned';
         var isRowAdded = !!_addedSongIds[songId];
+        var rowBadge = isRowAdded ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">✅ เลือกแล้ว</span>' : '';
         if (libType === 'ref') {
           buf.push(
             '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + titleHtml + newTag + '</div>' +
+            '<div class="song-title">' + titleHtml + newTag + rowBadge + '</div>' +
             artistHtml + metaHtml +
             '</div>' +
             '<div class="song-actions" onclick="event.stopPropagation()">' +
@@ -812,7 +835,7 @@ function renderPage() {
           buf.push(
             '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
-            '<div class="song-title">' + titleHtml + newTag + '</div>' +
+            '<div class="song-title">' + titleHtml + newTag + rowBadge + '</div>' +
             artistHtml + metaHtml +
             '</div>' +
             '<div class="song-actions" onclick="event.stopPropagation()">' +
@@ -826,13 +849,14 @@ function renderPage() {
         var isInBand = _bandLibraryIds && !!_bandLibraryIds[songId];
         var inBandBadge = isInBand ? '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span>' : '';
         var isRowAddedG = !!_addedSongIds[songId];
+        var rowBadgeG = isRowAddedG ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">✅ เลือกแล้ว</span>' : inBandBadge;
         var editBtn = _isSongManager
           ? '<span class="edit-global-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openDirectEditModal(\'' + songId + '\',' + idx + ')">\u270F\uFE0F \u0e41\u0e01\u0e49\u0e44\u0e02</span>'
           : '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openSuggestModal(\'' + songId + '\',' + idx + ')">\u{1F4DD} \u0e41\u0e19\u0e30\u0e19\u0e33</span>';
         buf.push(
           '<div class="result-item tap-add' + (isRowAddedG ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
           '<div class="result-item-left">' +
-          '<div class="song-title">' + titleHtml + newTag + inBandBadge + '</div>' +
+          '<div class="song-title">' + titleHtml + newTag + rowBadgeG + '</div>' +
           artistHtml + metaHtml +
           '</div>' +
           '<div class="song-actions" onclick="event.stopPropagation()">' +
@@ -1725,16 +1749,24 @@ function tapAddSong(e, idx) {
     setTimeout(function(){ row.classList.remove('just-added'); }, 420);
   }
   var name = song.name || '';
+  var k = (name + '|' + (song.artist||'')).toLowerCase();
+  var freq = window._recentSongFreq ? (window._recentSongFreq[k] || 0) : 0;
+  var freqWarn = freq >= 2 ? ' (⚠️ เล่น ' + freq + ' ครั้งใน 14 วัน)' : '';
+
   clearTimeout(_undoToastTimer);
   var t2 = document.getElementById('undoToast');
   if (t2) {
     var msg = t2.querySelector('.undo-msg');
-    if (msg) msg.textContent = '➕ ' + name + ' เพิ่มในลิสแล้ว';
+    if (msg) msg.textContent = '➕ ' + name + ' เพิ่มในลิสแล้ว' + freqWarn;
     t2.style.display = 'flex';
     _undoToastTimer = setTimeout(function() {
       t2.style.display = 'none';
       _lastAddedIndex = -1;
-    }, 3000);
+    }, 4000);
+  }
+
+  if (freq >= 2) {
+    showSongsAlert('⚠️ เพลง "' + name + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งใน 14 วันที่ผ่านมา');
   }
 }
 
@@ -3108,6 +3140,26 @@ window.onload = function() {
 
   // Update floating counter
   updatePlaylistFloating();
+
+  // Fetch recent history for frequency warnings
+  window._recentSongFreq = {};
+  if (typeof apiCall === 'function') {
+    apiCall('getPlaylistHistory', {}, function(r) {
+      if (r && r.success && r.data) {
+        var cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 14);
+        var cutoffStr = cutoff.toISOString().split('T')[0];
+        r.data.forEach(function(h) {
+          if (h.date >= cutoffStr && h.songs) {
+            h.songs.forEach(function(s) {
+              var k = ((s.name||'') + '|' + (s.artist||'')).toLowerCase();
+              window._recentSongFreq[k] = (window._recentSongFreq[k] || 0) + 1;
+            });
+          }
+        });
+      }
+    });
+  }
 };
 </script>
 

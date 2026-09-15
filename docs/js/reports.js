@@ -463,6 +463,7 @@
         '<div class="sl-stat-card"><div class="sv" style="font-size:1rem">'+fmtDurLong(totalDurSec)+'</div><div class="sl">\u0e40\u0e27\u0e25\u0e32\u0e40\u0e25\u0e48\u0e19\u0e23\u0e27\u0e21 (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13)</div></div>';
       document.getElementById('slStatCards').style.display='';
       renderDistribution(history);
+      renderTopSongs(history);
       var toFetch=[];
       history.forEach(function(brk){
         var brkId=bt(brk.id||brk.date+(brk.timeSlot||''));
@@ -543,6 +544,52 @@
         if(actualSec) brkSec = actualSec;
         var te=document.getElementById('slbt_'+brkId);if(te)te.textContent=fmtDurLong(brkSec);
       });
+    }
+
+    function renderTopSongs(history) {
+      if(!history||!history.length){
+        document.getElementById('slTopSongsCard').style.display='none';
+        return;
+      }
+      var counts={};
+      var originalNames={};
+      history.forEach(function(brk){
+        (brk.songs||[]).forEach(function(s){
+          var k=mbKey(s.name,s.artist);
+          if(!counts[k]) {
+            counts[k]=0;
+            originalNames[k]={name:s.name||'',artist:s.artist||''};
+          }
+          counts[k]++;
+        });
+      });
+      var arr=Object.keys(counts).map(function(k){
+        return {k:k, count:counts[k], name:originalNames[k].name, artist:originalNames[k].artist};
+      }).filter(function(item) {
+        return item.count > 1; // Only show if played > 1 times
+      });
+      arr.sort(function(a,b){return b.count-a.count;});
+      if(arr.length===0){
+        document.getElementById('slTopSongsCard').style.display='none';
+        return;
+      }
+      // Take top 10
+      arr = arr.slice(0, 10);
+      var html = '<h3 style="margin-top:0;margin-bottom:12px;font-size:16px;">🔥 เพลงที่เล่นบ่อยในรอบนี้</h3>';
+      html += '<div style="display:flex; flex-direction:column; gap:8px;">';
+      arr.forEach(function(item) {
+        var artistStr = item.artist ? ('<span style="font-size:12px;color:var(--premium-text-muted);margin-left:6px;">' + esc(item.artist) + '</span>') : '';
+        html += '<div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">' +
+                  '<div><span style="font-weight:600;color:var(--premium-text);">' + esc(item.name) + '</span>' + artistStr + '</div>' +
+                  '<div style="background:#fff; border:1px solid #cbd5e0; padding:2px 8px; border-radius:12px; font-size:12px; font-weight:600; color:var(--premium-gold-dark);">' + item.count + ' ครั้ง</div>' +
+                '</div>';
+      });
+      html += '</div>';
+      var card = document.getElementById('slTopSongsCard');
+      if (card) {
+        card.innerHTML = html;
+        card.style.display = '';
+      }
     }
 
     window.printReport=function(){

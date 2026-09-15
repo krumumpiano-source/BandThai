@@ -683,3 +683,90 @@ html{scroll-behavior:smooth}
   #playlistFloating{bottom:12px;right:12px;padding:8px 14px;font-size:12px;border-radius:14px}
   #playlistFloating .pf-count{width:24px;height:24px;font-size:11px}
 }
+
+/* ── Split Layout & Mobile Bottom Sheet ── */
+.layout-split {
+  display: block;
+}
+.filter-toggle {
+  display: none;
+}
+@media(min-width: 1024px) {
+  .layout-split {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 20px;
+    align-items: start;
+  }
+  .split-right {
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    /* hide scrollbar for sleek look */
+    scrollbar-width: none;
+  }
+  .split-right::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-toggle { display: none; }
+}
+
+@media(max-width: 1023px) {
+  .filter-panel { padding: 0 !important; overflow: hidden; }
+  .filter-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+  }
+  .filter-content {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid var(--premium-light-gray);
+  }
+  .filter-panel.expanded .filter-content {
+    display: block;
+  }
+  .filter-panel.expanded .ft-icon {
+    transform: rotate(180deg);
+  }
+  .ft-icon { transition: transform 0.2s; }
+  
+  /* Mobile single column song list */
+  .result-columns { grid-template-columns: 1fr !important; }
+  .result-item {
+    border-right: none !important;
+    padding: 12px 10px;
+  }
+  
+  /* Mobile Bottom Sheet for Playlist */
+  .split-right {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #fff;
+    z-index: 4000;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.2);
+    border-radius: 20px 20px 0 0;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .split-right.open {
+    transform: translateY(0);
+  }
+  .split-right .panel { margin-bottom: 0; border: none; box-shadow: none; padding: 16px; }
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3999;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .backdrop.open { opacity: 1; pointer-events: auto; }
+  .pl-close-btn { display: block !important; cursor: pointer; }
+}
