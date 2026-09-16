@@ -192,10 +192,13 @@ document.addEventListener('DOMContentLoaded', function() {
   if (_bn) document.title = 'Live Mode — ' + _bn;
   // ── Restore theme ──────────────────────────────────────────────
   var savedTheme = localStorage.getItem('liveTheme');
+  var _tb = document.getElementById('themeToggleBtn');
   if (savedTheme === 'light') {
     document.body.classList.add('light-mode');
-    var _tb = document.getElementById('themeToggleBtn');
     if (_tb) _tb.textContent = '☀️';
+  } else if (savedTheme === 'oled') {
+    document.body.classList.add('oled-mode');
+    if (_tb) _tb.textContent = '⚫';
   }
   setFontLevel(_fontLevel);
   startClock();
@@ -532,6 +535,23 @@ function loadPlaylist() {
   // Preload band song library in parallel so songs have updated key/bpm/singer
   preloadBandSongs();
 
+  var bkKey = 'live_backup_' + _bandId + '_' + _date;
+  try {
+    var bkData = localStorage.getItem(bkKey);
+    if (bkData) {
+      var bk = JSON.parse(bkData);
+      if (bk.playlist && Array.isArray(bk.playlist) && bk.playlist.length > 0) {
+        console.log('[Live] loaded from local backup');
+        _playlist = bk.playlist;
+        _current = typeof bk.current === 'number' ? bk.current : 0;
+        normalizePlaylistState();
+        renderNowPlaying();
+        renderSongList();
+      }
+    }
+  } catch(e) {}
+
+
   // Timeout: ถ้า API ไม่ตอบใน 8 วิ → แสดง waiting + init realtime
   var _loadTimeout = setTimeout(function() {
     _loadTimeout = null;
@@ -686,44 +706,38 @@ function _stopMarquee() {
 
 function _updateMarquee(el) {
   if (!el) return;
-  _stopMarquee();
-
   var wrap = document.getElementById('nowTitleWrap');
   if (!wrap) return;
 
   var text = el.textContent.trim();
   var colors = document.body.classList.contains('light-mode')
     ? _marqueeColorsLight : _marqueeColorsDark;
+  
+  // pick a random starting color index for simplicity, or keep using _marqueeColorIdx
+  var colorA = colors[_marqueeColorIdx % colors.length];
 
-  // — safely re-parent el back to wrap —
   if (el.parentNode && el.parentNode !== wrap) el.parentNode.removeChild(el);
-  // clear all wrap children except el
   var c = wrap.firstChild;
   while (c) { var nx = c.nextSibling; if (c !== el) wrap.removeChild(c); c = nx; }
   if (!el.parentNode) wrap.appendChild(el);
 
-  // reset el
-  el.classList.remove('title-static');
+  el.classList.remove('title-static', 'css-marquee');
   el.style.display = 'inline-block';
   el.style.whiteSpace = 'nowrap';
   el.style.position = ''; el.style.transform = '';
-  el.offsetHeight; // reflow to measure
+  el.style.animation = 'none';
+  el.offsetHeight; 
 
   var wrapW = wrap.clientWidth || (window.innerWidth - 84);
   var textW = el.scrollWidth;
 
   if (textW <= wrapW * 0.92) {
-    // — fits — show centered, static
-    el.style.color = colors[_marqueeColorIdx % colors.length];
+    el.style.color = colorA;
     el.classList.add('title-static');
     return;
   }
 
-  // — marquee needed — build scroll container —
-  var GAP = Math.max(80, wrapW * 0.28); // gap between end of title and start of next
-  var cycleW = textW + GAP;
-
-  // Build: wrap > #nowTitleScroll > [el (spanA)] [gap] [spanB]
+  var GAP = Math.max(80, wrapW * 0.28);
   var scroll = document.createElement('div');
   scroll.id = 'nowTitleScroll';
   scroll.style.cssText = 'display: inline-block; white-space: nowrap;';
@@ -732,94 +746,82 @@ function _updateMarquee(el) {
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
 
   var spanB = document.createElement('span');
-  var _elFontPx = window.getComputedStyle(el).fontSize; // responsive — matches CSS breakpoint
+  var _elFontPx = window.getComputedStyle(el).fontSize;
   spanB.style.cssText = 'font-weight:700;font-size:' + _elFontPx + ';line-height:1.3;white-space:nowrap;flex-shrink:0;';
   spanB.textContent = text;
-  spanB.style.color = colors[(_marqueeColorIdx + 1) % colors.length];
-
-  el.style.color = colors[_marqueeColorIdx % colors.length];
+  
+  var colorB = colors[(_marqueeColorIdx + 1) % colors.length];
+  spanB.style.color = colorB;
+  el.style.color = colorA;
   el.style.display = 'inline'; el.style.flexShrink = '0';
 
   if (el.parentNode) el.parentNode.removeChild(el);
   scroll.appendChild(el);
   scroll.appendChild(gapSpan);
   scroll.appendChild(spanB);
+  
+  var cycleW = textW + GAP;
+  var speedPxPerSec = 115;
+  var dur = cycleW / speedPxPerSec;
+  
+  scroll.style.setProperty('--scroll-dist', '-' + cycleW + 'px');
+  scroll.style.setProperty('--scroll-dur', dur + 's');
+  scroll.classList.add('css-marquee');
+  
   wrap.appendChild(scroll);
-
-  // Start position: just off the right edge
-  var pos = wrapW;
-  var lastTs = null;
-  var SPEED = 115; // px per second (long title)
-
-  function _tick(ts) {
-    if (!lastTs) lastTs = ts;
-    var dt = Math.min((ts - lastTs) / 1000, 0.1); // cap for tab-switch
-    lastTs = ts;
-    pos -= SPEED * dt;
-    // when spanA has fully cycled, reset and advance colors
-    if (pos <= -cycleW) {
-      pos += cycleW;
-      _marqueeColorIdx = (_marqueeColorIdx + 1) % colors.length;
-      el.style.color    = colors[_marqueeColorIdx % colors.length];
-      spanB.style.color = colors[(_marqueeColorIdx + 1) % colors.length];
-    }
-    scroll.style.transform = 'translateX(' + pos + 'px)';
-    _marqueeRAF = requestAnimationFrame(_tick);
-  }
-  _marqueeRAF = requestAnimationFrame(_tick);
 }
 
 function _autoFitTitle(el) { _updateMarquee(el); } // backward compat
 
 function _updateNoteMarquee(text) {
-  if (_noteMarqueeRAF) { cancelAnimationFrame(_noteMarqueeRAF); _noteMarqueeRAF = null; }
   var wrap = document.getElementById('nowNoteWrap');
   var el   = document.getElementById('nowNote');
   if (!wrap || !el) return;
-  // clear any scroll container
+  
   while (wrap.firstChild) wrap.removeChild(wrap.firstChild);
+  
   if (!text) { wrap.appendChild(el); el.textContent = ''; el.classList.add('note-static'); return; }
+  
   el.textContent = text;
   el.className = '';
   el.style.transform = '';
+  el.style.animation = 'none';
   wrap.appendChild(el);
-  el.offsetHeight; // reflow
+  el.offsetHeight; 
+  
   var wrapW = wrap.clientWidth || window.innerWidth;
   var textW = el.scrollWidth;
+  
   if (textW <= wrapW * 0.95) {
     el.classList.add('note-static');
     return;
   }
-  // needs marquee
+  
   var GAP = Math.max(60, wrapW * 0.25);
-  var cycleW = textW + GAP;
   var scroll = document.createElement('div');
   scroll.id = 'nowNoteScroll';
   scroll.style.cssText = 'display: inline-block; white-space: nowrap;';
+  
   var gapSpan = document.createElement('span');
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
+  
   var spanB = document.createElement('span');
   spanB.style.cssText = 'font-size:1rem;font-style:italic;color:var(--gold);white-space:nowrap;flex-shrink:0;';
   spanB.textContent = text;
+  
   el.style.flexShrink = '0';
   wrap.removeChild(el);
   scroll.appendChild(el);
   scroll.appendChild(gapSpan);
   scroll.appendChild(spanB);
+  
+  var cycleW = textW + GAP;
+  var dur = cycleW / 80; // 80px per sec
+  scroll.style.setProperty('--scroll-dist', '-' + cycleW + 'px');
+  scroll.style.setProperty('--scroll-dur', dur + 's');
+  scroll.classList.add('css-marquee');
+  
   wrap.appendChild(scroll);
-  var pos = wrapW;
-  var lastTs = null;
-  var SPEED = 80;
-  function _tick(ts) {
-    if (!lastTs) lastTs = ts;
-    var dt = Math.min((ts - lastTs) / 1000, 0.1);
-    lastTs = ts;
-    pos -= SPEED * dt;
-    if (pos <= -cycleW) pos += cycleW;
-    scroll.style.transform = 'translateX(' + pos + 'px)';
-    _noteMarqueeRAF = requestAnimationFrame(_tick);
-  }
-  _noteMarqueeRAF = requestAnimationFrame(_tick);
 }
 
 function renderNextPreview() {
@@ -845,6 +847,15 @@ function renderNextPreview() {
 }
 
 function renderSongList() {
+  if (_bandId && _date) {
+    try {
+      localStorage.setItem('live_backup_' + _bandId + '_' + _date, JSON.stringify({
+        playlist: _playlist,
+        current: _current,
+        ts: Date.now()
+      }));
+    } catch(e) {}
+  }
   var el = document.getElementById('songList');
   if (_playlist.length === 0) { showEmpty(); return; }
   var buf = [];
@@ -1032,11 +1043,24 @@ function toggleKeyMode() {
 //  THEME TOGGLE (dark / light)
 // ─────────────────────────────────────────────────────────────────
 function toggleTheme() {
-  var isLight = document.body.classList.toggle('light-mode');
-  localStorage.setItem('liveTheme', isLight ? 'light' : 'dark');
+  var b = document.body;
+  var theme = localStorage.getItem('liveTheme') || 'dark';
+  b.classList.remove('light-mode', 'oled-mode');
+  
+  if (theme === 'dark') {
+    theme = 'oled';
+    b.classList.add('oled-mode');
+  } else if (theme === 'oled') {
+    theme = 'light';
+    b.classList.add('light-mode');
+  } else {
+    theme = 'dark'; // default
+  }
+  
+  localStorage.setItem('liveTheme', theme);
   var btn = document.getElementById('themeToggleBtn');
-  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
-  // Re-apply marquee color for new theme
+  if (btn) btn.textContent = theme === 'light' ? '☀️' : (theme === 'oled' ? '⚫' : '🌙');
+  
   var titleEl = document.getElementById('nowTitle');
   if (titleEl) titleEl.style.color = _getMarqueeColor();
 }
