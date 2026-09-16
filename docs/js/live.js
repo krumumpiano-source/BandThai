@@ -726,6 +726,7 @@ function _updateMarquee(el) {
   // Build: wrap > #nowTitleScroll > [el (spanA)] [gap] [spanB]
   var scroll = document.createElement('div');
   scroll.id = 'nowTitleScroll';
+  scroll.style.cssText = 'display: inline-block; white-space: nowrap;';
 
   var gapSpan = document.createElement('span');
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
@@ -794,6 +795,7 @@ function _updateNoteMarquee(text) {
   var cycleW = textW + GAP;
   var scroll = document.createElement('div');
   scroll.id = 'nowNoteScroll';
+  scroll.style.cssText = 'display: inline-block; white-space: nowrap;';
   var gapSpan = document.createElement('span');
   gapSpan.style.cssText = 'display:inline-block;width:' + GAP + 'px;flex-shrink:0;';
   var spanB = document.createElement('span');
