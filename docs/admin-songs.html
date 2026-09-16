@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -43,7 +43,7 @@
     <div class="card" style="padding:16px;background:#faf5ff;border-color:#c4b5fd">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <h3 style="margin:0;font-size:1rem">💡 คำแนะนำการแก้ไขเพลง</h3>
-        <button onclick="toggleSugPanel()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;min-height:unset;padding:0">✕</button>
+        <button type="button" onclick="toggleSugPanel()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:32px;height:32px;font-size:16px;cursor:pointer;min-height:unset;padding:0">✕</button>
       </div>
       <div class="sug-list" id="sugList"><p style="text-align:center;color:#94a3b8;padding:16px">กำลังโหลด...</p></div>
     </div>
@@ -133,13 +133,13 @@
       <option value="verified">✅ ยืนยันแล้ว</option>
       <option value="unverified">⬜ ยังไม่ยืนยัน</option>
     </select>
-    <button id="keyModeToggle" class="btn-add" onclick="toggleKeyMode()" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
-    <button class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
-    <button class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
-    <button class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
-    <button class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
-    <button id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
-    <button id="smToggleBtn" class="btn-sm-toggle" onclick="toggleSongManagerPanel()" style="display:none">👥 จัดการผู้ดูแลเพลง</button>
+    <button type="button" id="keyModeToggle" class="btn-add" onclick="toggleKeyMode()" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
+    <button type="button" class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
+    <button type="button" class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
+    <button type="button" class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
+    <button type="button" class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
+    <button type="button" id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
+    <button type="button" id="smToggleBtn" class="btn-sm-toggle" onclick="toggleSongManagerPanel()" style="display:none">👥 จัดการผู้ดูแลเพลง</button>
   </div>
 
   <!-- Song Manager Panel (admin only) -->
@@ -148,8 +148,8 @@
     <p style="font-size:13px;color:var(--premium-text-muted);margin:0 0 12px">เลือกสมาชิกที่ต้องการให้เข้าถึงหน้าจัดการคลังเพลงนี้ได้ (โดยไม่ต้องเป็น Admin)</p>
     <div id="smMemberList" class="sm-member-list"></div>
     <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
-      <button class="btn-secondary" onclick="toggleSongManagerPanel()">ปิด</button>
-      <button class="btn-primary" onclick="saveSongManagers()">💾 บันทึก</button>
+      <button type="button" class="btn-secondary" onclick="toggleSongManagerPanel()">ปิด</button>
+      <button type="button" class="btn-primary" onclick="saveSongManagers()">💾 บันทึก</button>
     </div>
   </div>
 
@@ -180,8 +180,8 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--premium-light-gray);flex-wrap:wrap;gap:8px">
       <div style="font-size:13px;color:var(--premium-text-muted)" id="pageInfo">—</div>
       <div style="display:flex;gap:8px">
-        <button class="btn-sm btn-cancel" id="prevBtn" onclick="changePage(-1)">← ก่อนหน้า</button>
-        <button class="btn-sm btn-cancel" id="nextBtn" onclick="changePage(1)">ถัดไป →</button>
+        <button type="button" class="btn-sm btn-cancel" id="prevBtn" onclick="changePage(-1)">← ก่อนหน้า</button>
+        <button type="button" class="btn-sm btn-cancel" id="nextBtn" onclick="changePage(1)">ถัดไป →</button>
       </div>
     </div>
   </div>
@@ -207,8 +207,8 @@
     <div id="importPreview" class="import-preview" style="display:none"></div>
 
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeImportModal()">ยกเลิก</button>
-      <button id="importSaveBtn" class="btn-primary" onclick="submitImport()" style="display:none">💾 บันทึกเพลงใหม่</button>
+      <button type="button" class="btn-secondary" onclick="closeImportModal()">ยกเลิก</button>
+      <button type="button" id="importSaveBtn" class="btn-primary" onclick="submitImport()" style="display:none">💾 บันทึกเพลงใหม่</button>
     </div>
   </div>
 </div>
@@ -249,8 +249,8 @@
       <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
     </div>
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
-      <button class="btn-primary" id="addSaveBtn" onclick="submitAddSong()">💾 บันทึก</button>
+      <button type="button" class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>
+      <button type="button" class="btn-primary" id="addSaveBtn" onclick="submitAddSong()">💾 บันทึก</button>
     </div>
   </div>
 </div>
@@ -260,7 +260,7 @@
   <div class="itunes-popover-box">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <h4>🎵 iTunes Lookup</h4>
-      <button onclick="closeItunesPopover()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
+      <button type="button" onclick="closeItunesPopover()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
     </div>
     <div id="itunesPopoverContent" style="min-height:60px"></div>
     <div class="itunes-actions" id="itunesPopoverActions" style="display:none"></div>
