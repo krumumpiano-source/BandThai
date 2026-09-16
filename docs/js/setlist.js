@@ -488,6 +488,7 @@
     var timeSlot = (ts && ts.time_slot) || '';
     var currentSongs = (setsData[si] || []).map(function(s) {
       return {
+        id:     s.id || s.songId || '',
         name:   s.name || '',
         key:    s.key || '',
         bpm:    s.bpm || 0,

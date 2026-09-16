@@ -121,6 +121,7 @@
     <div id="nextPreview" class="hidden">
       <span class="np-label">NEXT ▸</span>
       <span class="np-name" id="nextName">—</span>
+      <span class="np-singer" id="nextSinger" style="display:none"></span>
       <span class="np-key" id="nextKey"></span>
       <span class="np-bpm" id="nextBpm" style="font-size:.78rem;color:var(--text2);white-space:nowrap"></span>
     </div>
@@ -218,6 +219,8 @@
 <div class="modal-backdrop" id="transposeModal">
   <div class="modal-sheet">
     <h3>🎵 ปรับคีย์</h3>
+    <div id="trSongName" style="font-size:0.92rem;color:var(--gold);margin-bottom:4px;font-weight:600"></div>
+    <div id="trSinger" style="margin-bottom:10px;display:none"></div>
     <div class="transpose-display" id="trDisplay">—</div>
     <div class="transpose-label" id="trLabel"></div>
     <div class="transpose-btns">
@@ -235,6 +238,8 @@
 <div class="modal-backdrop" id="bpmModal">
   <div class="modal-sheet">
     <h3>🎵 ปรับความเร็ว (BPM)</h3>
+    <div id="bpmSongName" style="font-size:0.92rem;color:var(--gold);margin-bottom:4px;font-weight:600"></div>
+    <div id="bpmSinger" style="margin-bottom:10px;display:none"></div>
     <div class="bpm-display"><input id="bpmDisplay" type="number" min="0" max="999" value="0"></div>
     <div class="bpm-label" id="bpmLabel"></div>
     <div class="transpose-btns">
@@ -296,7 +301,8 @@
 <div class="modal-backdrop" id="editSongModal">
   <div class="modal-sheet">
     <h3 id="editSongTitle">🎹 แก้คีย์ / BPM</h3>
-    <div id="editSongName" style="font-size:0.85rem;color:var(--gold);margin-bottom:10px"></div>
+    <div id="editSongName" style="font-size:0.88rem;color:var(--gold);margin-bottom:4px;font-weight:600"></div>
+    <div id="editSongSinger" style="margin-bottom:10px;display:none"></div>
     <div class="edit-row">
       <div style="flex:1" id="editKeyWrap"><label>คีย์</label><input id="editKeyInput" placeholder="เช่น C, 2#, 3b" autocomplete="off"></div>
       <div style="flex:1"><label>BPM</label><input id="editBpmInput" type="number" min="0" max="300" placeholder="เช่น 120"></div>

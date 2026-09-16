@@ -444,19 +444,52 @@ function preloadBandSongs(onDone) {
   });
 }
 
+function findBestSongMatch(target, library) {
+  if (!target || !library || !library.length) return null;
+  // 1. By ID
+  var targetId = target.id || target.songId;
+  if (targetId) {
+    var match = library.find(function(l) { return l.id === targetId; });
+    if (match) return match;
+  }
+  // 2. By Name
+  if (!target.name) return null;
+  var nameLower = target.name.trim().toLowerCase();
+  var nameMatches = library.filter(function(l) { 
+    return (l.name || '').trim().toLowerCase() === nameLower; 
+  });
+  if (nameMatches.length === 0) return null;
+  if (nameMatches.length === 1) return nameMatches[0];
+
+  // Multiple name matches, filter by singer
+  var targetSinger = singerClass(target.singer);
+  var singerMatches = nameMatches.filter(function(l) {
+    return singerClass(l.singer) === targetSinger;
+  });
+  if (singerMatches.length === 1) return singerMatches[0];
+
+  // If still ambiguous, try to match by key (if provided)
+  if (target.key) {
+    var pool = singerMatches.length > 0 ? singerMatches : nameMatches;
+    var keyMatches = pool.filter(function(l) {
+      return l.key === target.key;
+    });
+    if (keyMatches.length === 1) return keyMatches[0];
+    if (keyMatches.length > 1) return keyMatches[0];
+  }
+  
+  if (singerMatches.length > 0) return singerMatches[0];
+
+  // Do not guess and overwrite with another gender version
+  return null;
+}
+
 function syncPlaylistWithLibrary() {
   if (!_allSongsLoaded || !_allSongs.length || !_playlist || !_playlist.length) return;
   var changed = false;
   _playlist.forEach(function(s) {
     if (!s || !s.name) return;
-    var nameLower = (s.name || '').trim().toLowerCase();
-    var match = null;
-    for (var i = 0; i < _allSongs.length; i++) {
-      if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
-        match = _allSongs[i];
-        break;
-      }
-    }
+    var match = findBestSongMatch(s, _allSongs);
     if (match) {
       if (match.bpm && s.bpm !== match.bpm) {
         s.bpm = match.bpm;
@@ -468,12 +501,18 @@ function syncPlaylistWithLibrary() {
         s._key = match.key;
         changed = true;
       }
-      if (match.singer && s.singer !== match.singer) {
+      // ห้ามเขียนทับ s.singer หากในลิสต์มีค่า s.singer อยู่แล้ว
+      if (match.singer && !s.singer) {
         s.singer = match.singer;
         changed = true;
       }
       if (match.artist && s.artist !== match.artist) {
         s.artist = match.artist;
+        changed = true;
+      }
+      // เติม id หากยังไม่มี
+      if (match.id && !s.id && !s.songId) {
+        s.id = match.id;
         changed = true;
       }
     }
@@ -552,23 +591,21 @@ function loadPlaylist() {
       var bpm = s.bpm || 0;
       var singer = s.singer || '';
       var artist = s.artist || '';
+      var id = s.id || s.songId || '';
 
       // Cross-check with band library if already loaded
       if (_allSongsLoaded && _allSongs.length > 0) {
-        var nameLower = name.trim().toLowerCase();
-        for (var i = 0; i < _allSongs.length; i++) {
-          if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
-            var match = _allSongs[i];
-            if (match.bpm) bpm = match.bpm;
-            if (match.key && (!s._key || s._key === s.key)) key = match.key;
-            if (match.singer) singer = match.singer;
-            if (match.artist) artist = match.artist;
-            break;
-          }
+        var match = findBestSongMatch({id: id, name: name, singer: singer, key: key}, _allSongs);
+        if (match) {
+          if (match.bpm) bpm = match.bpm;
+          if (match.key && (!s._key || s._key === s.key)) key = match.key;
+          if (match.singer && !singer) singer = match.singer;
+          if (match.artist) artist = match.artist;
+          if (match.id) id = match.id;
         }
       }
 
-      return { name: name, key: key, bpm: bpm,
+      return { id: id, name: name, key: key, bpm: bpm,
                singer: singer, artist: artist,
                _key: s._key || key, _note: s._note || '', _skipped: !!s._skipped,
                _isRequest: !!s._isRequest, _isRequestTime: s._isRequestTime || '',
@@ -618,7 +655,19 @@ function renderNowPlaying() {
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
   var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
-  document.getElementById('nowSinger').textContent = sc ? '🎤 ' + (singerNames[sc] || s.singer) : '';
+  var nowSingerEl = document.getElementById('nowSinger');
+  if (nowSingerEl) {
+    if (sc) {
+      nowSingerEl.innerHTML = '<span class="now-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>';
+      nowSingerEl.style.display = '';
+    } else if (s.singer) {
+      nowSingerEl.innerHTML = '<span class="now-singer-badge">🎤 ' + escHtml(s.singer) + '</span>';
+      nowSingerEl.style.display = '';
+    } else {
+      nowSingerEl.innerHTML = '';
+      nowSingerEl.style.display = 'none';
+    }
+  }
   _updateNoteMarquee(s._note || '');
   var strip = document.getElementById('singerStrip');
   strip.className = 'singer-strip' + (sc ? ' ' + sc : '');
@@ -796,6 +845,22 @@ function renderNextPreview() {
   nk.style.display = (ns._key || ns.key) ? '' : 'none';
   var nb = document.getElementById('nextBpm');
   if (nb) { nb.textContent = ns.bpm ? ns.bpm + ' BPM' : ''; nb.style.display = ns.bpm ? '' : 'none'; }
+  var nSinger = document.getElementById('nextSinger');
+  if (nSinger) {
+    var sc = singerClass(ns.singer);
+    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+    if (sc) {
+      nSinger.className = 'np-singer ' + sc;
+      nSinger.textContent = '🎤 ' + (singerNames[sc] || ns.singer);
+      nSinger.style.display = '';
+    } else if (ns.singer) {
+      nSinger.className = 'np-singer';
+      nSinger.textContent = '🎤 ' + ns.singer;
+      nSinger.style.display = '';
+    } else {
+      nSinger.style.display = 'none';
+    }
+  }
   preview.classList.remove('hidden');
 }
 
@@ -822,6 +887,12 @@ function renderSongList() {
     var meta = [];
     if (s._key || s.key) meta.push('🎵 ' + formatKey(s._key || s.key));
     if (s.bpm)  meta.push(s.bpm + ' BPM');
+    if (sc) {
+      var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+      meta.push('<span class="si-singer-tag ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>');
+    } else if (s.singer) {
+      meta.push('<span class="si-singer-tag">🎤 ' + escHtml(s.singer) + '</span>');
+    }
     buf.push(
       '<div class="song-item' +
         (i === _current ? ' is-current' : '') +
@@ -1444,9 +1515,17 @@ function showChatSuggest(val) {
   hits.forEach(function(s, i) {
     var nameParts = highlightMatch(s.name || '', lower);
     var meta = [s.artist || '', s.key ? formatKey(s.key) : '', s.bpm ? s.bpm + ' BPM' : ''].filter(Boolean).join(' · ');
+    
+    var singerBadge = '';
+    var sc = singerClass(s.singer);
+    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+    if (sc) {
+      singerBadge = '<span class="cb-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span> ';
+    }
+
     html += '<div class="cb-item" data-i="' + i + '">' +
       '<div class="cb-item-info">' +
-        '<div class="cb-item-name">' + nameParts + '</div>' +
+        '<div class="cb-item-name">' + singerBadge + nameParts + '</div>' +
         (meta ? '<div class="cb-item-meta">' + escHtml(meta) + '</div>' : '') +
       '</div>' +
       '<div class="cb-item-icon">＋</div>' +
@@ -1473,7 +1552,7 @@ function showChatSuggest(val) {
       var idx = parseInt(el.dataset.i, 10);
       var s = hits[idx];
       if (!s) return;
-      addSongToPlaylist(s.name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+      addSongToPlaylist(s.name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true, s.id || '');
     });
   });
 
@@ -1508,11 +1587,16 @@ function chatBarSubmit() {
     var s = null;
     if (_allSongs && _allSongs.length > 0) {
       var nameLower = name.toLowerCase();
-      s = _allSongs.find ? _allSongs.find(function(x) { return (x.name || '').toLowerCase() === nameLower; })
-        : (function() { for (var i = 0; i < _allSongs.length; i++) { if ((_allSongs[i].name || '').toLowerCase() === nameLower) return _allSongs[i]; } return null; })();
+      var matches = _allSongs.filter(function(x) { return (x.name || '').toLowerCase() === nameLower; });
+      if (matches.length > 1) {
+        showChatSuggest(name);
+        return;
+      } else if (matches.length === 1) {
+        s = matches[0];
+      }
     }
     if (s) {
-      addSongToPlaylist(name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true);
+      addSongToPlaylist(name, s.key || '', s.bpm || 0, s.singer || '', s.artist || '', true, s.id || '');
     } else {
       addSongToPlaylist(name, '', 0, '', '', true);
     }
@@ -1528,12 +1612,15 @@ function chatBarSubmit() {
 /* ── pending song to add (waiting for position pick) ── */
 var _pendingSong = null;
 
-function addSongToPlaylist(name, key, bpm, singer, artist, isRequest) {
+function addSongToPlaylist(name, key, bpm, singer, artist, isRequest, id) {
   // ป้องกันเพลงซ้ำในลิสต์
-  var dup = _playlist.some(function(s) { return !s._skipped && s.name === name; });
-  if (dup && !confirm('เพลง "' + name + '" มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
+  var dup = _playlist.some(function(s) { 
+    return !s._skipped && s.name === name && singerClass(s.singer) === singerClass(singer); 
+  });
+  if (dup && !confirm('เพลง "' + name + '"' + (singer ? ' (' + singer + ')' : '') + ' มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
 
   _pendingSong = {
+    id: id || '',
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key ? formatKey(key) : '', _note: '', _skipped: false,
     _isRequest: !!isRequest, _isEncore: false
@@ -1903,6 +1990,23 @@ function openTranspose() {
   var s = _playlist[_current];
   if (!s) return;
   _trStep = 0;
+  var nameEl = document.getElementById('trSongName');
+  if (nameEl) nameEl.textContent = '🎵 ' + s.name;
+  var singerEl = document.getElementById('trSinger');
+  if (singerEl) {
+    var sc = singerClass(s.singer);
+    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+    if (sc) {
+      singerEl.innerHTML = '<span class="cb-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else if (s.singer) {
+      singerEl.innerHTML = '<span class="cb-singer-badge">🎤 ' + escHtml(s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else {
+      singerEl.innerHTML = '';
+      singerEl.style.display = 'none';
+    }
+  }
   document.getElementById('trDisplay').textContent = s._key || '—';
   document.getElementById('trLabel').textContent = 'คีย์เดิม: ' + (s.key ? formatKey(s.key) : '—');
   document.getElementById('transposeModal').classList.add('show');
@@ -1967,6 +2071,23 @@ function openBpm() {
   if (!s) return;
   _bpmIdx = idx;
   _bpmOriginal = parseInt(s.bpm, 10) || 0;
+  var nameEl = document.getElementById('bpmSongName');
+  if (nameEl) nameEl.textContent = '🎵 ' + s.name;
+  var singerEl = document.getElementById('bpmSinger');
+  if (singerEl) {
+    var sc = singerClass(s.singer);
+    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+    if (sc) {
+      singerEl.innerHTML = '<span class="cb-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else if (s.singer) {
+      singerEl.innerHTML = '<span class="cb-singer-badge">🎤 ' + escHtml(s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else {
+      singerEl.innerHTML = '';
+      singerEl.style.display = 'none';
+    }
+  }
   var el = document.getElementById('bpmDisplay');
   el.value = _bpmOriginal || '';
   document.getElementById('bpmLabel').textContent = 'BPM เดิม: ' + (_bpmOriginal || '—');
@@ -2007,7 +2128,7 @@ function submitBpm() {
   renderSongList();
   var role = localStorage.getItem('userRole') || 'member';
   if (role === 'admin' || role === 'manager') {
-    _saveKeyBpmToLibrary(s.name, curKey, newBpm);
+    _saveKeyBpmToLibrary(s, curKey, newBpm);
   }
   closeBpm();
   showToast('🎵 BPM → ' + newBpm);
@@ -2023,6 +2144,21 @@ function openEditSong(idx, bpmOnly) {
   var s = _playlist[idx];
   if (!s) return;
   document.getElementById('editSongName').textContent = '🎵 ' + s.name;
+  var singerEl = document.getElementById('editSongSinger');
+  if (singerEl) {
+    var sc = singerClass(s.singer);
+    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
+    if (sc) {
+      singerEl.innerHTML = '<span class="cb-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else if (s.singer) {
+      singerEl.innerHTML = '<span class="cb-singer-badge">🎤 ' + escHtml(s.singer) + '</span>';
+      singerEl.style.display = '';
+    } else {
+      singerEl.innerHTML = '';
+      singerEl.style.display = 'none';
+    }
+  }
   document.getElementById('editKeyInput').value = s._key || s.key || '';
   document.getElementById('editBpmInput').value = s.bpm || '';
   // Show/hide key field
@@ -2068,32 +2204,32 @@ function submitEditSong() {
   var role = localStorage.getItem('userRole') || 'member';
   var isAdmin = (role === 'admin' || role === 'manager');
   if (isAdmin) {
-    _saveKeyBpmToLibrary(s.name, newKey, newBpm);
+    _saveKeyBpmToLibrary(s, newKey, newBpm);
   }
 
   closeEditSong();
   showToast('🎹 อัปเดต: ' + s.name);
 }
 
-function _saveKeyBpmToLibrary(songName, key, bpm) {
-  // Find song in _allSongs by name to get its ID
+function _saveKeyBpmToLibrary(song, key, bpm) {
+  // Find song in _allSongs to get its ID
   if (!_allSongsLoaded || _allSongs.length === 0) {
     preloadBandSongs(function() {
-      _doSaveKeyBpm(songName, key, bpm);
+      _doSaveKeyBpm(song, key, bpm);
     });
   } else {
-    _doSaveKeyBpm(songName, key, bpm);
+    _doSaveKeyBpm(song, key, bpm);
   }
 }
 
-function _doSaveKeyBpm(songName, key, bpm) {
-  var nameLower = songName.trim().toLowerCase();
+function _doSaveKeyBpm(song, key, bpm) {
   var match = null;
-  for (var i = 0; i < _allSongs.length; i++) {
-    if ((_allSongs[i].name || '').trim().toLowerCase() === nameLower) {
-      match = _allSongs[i];
-      break;
-    }
+  var sid = song.id || song.songId;
+  if (sid) {
+    match = _allSongs.find(function(l) { return l.id === sid; });
+  }
+  if (!match) {
+    match = findBestSongMatch(song, _allSongs);
   }
   if (!match || !match.id) return; // song not in library, skip
   var updateData = {};

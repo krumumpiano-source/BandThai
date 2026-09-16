@@ -472,16 +472,42 @@ function updateSelectBar() {
 
 var _bandLibraryMap = {};
 var _bandLibraryMapById = {};
+var _bandLibraryByNameAndSinger = {};
+
+function _normSinger(s) {
+  if (!s) return '';
+  var v = s.toString().trim().toLowerCase();
+  if (v === 'ชาย' || v === 'male') return 'male';
+  if (v === 'หญิง' || v === 'female') return 'female';
+  if (v === 'คู่' || v === 'duet' || v === 'ชาย/หญิง') return 'duet';
+  return v;
+}
 
 function enrichSongFromBandLibrary(s) {
   if (!s || !s.name) return s;
   var nameKey = (s.name || '').trim().toLowerCase();
-  var lib = (s.id && _bandLibraryMapById[s.id]) || (s.songId && _bandLibraryMapById[s.songId]) || _bandLibraryMap[nameKey];
+  var lib = null;
+  if (s.id && _bandLibraryMapById[s.id]) lib = _bandLibraryMapById[s.id];
+  else if (s.songId && _bandLibraryMapById[s.songId]) lib = _bandLibraryMapById[s.songId];
+  else if (s.singer) {
+    lib = _bandLibraryByNameAndSinger[nameKey + '::' + _normSinger(s.singer)] ||
+          _bandLibraryByNameAndSinger[nameKey + '::' + s.singer.trim().toLowerCase()];
+  }
+  if (!lib) {
+    var hasMultiple = _bandLibraryByNameAndSinger[nameKey + '::male'] && _bandLibraryByNameAndSinger[nameKey + '::female'];
+    if (!hasMultiple) {
+      lib = _bandLibraryMap[nameKey];
+    }
+  }
   if (lib) {
     if (lib.bpm && !s.bpm) s.bpm = lib.bpm;
     else if (lib.bpm && s.bpm !== lib.bpm) s.bpm = lib.bpm;
     if (lib.key && (!s.key || s.key === '-')) s.key = lib.key;
-    else if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) s.key = lib.key;
+    else if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) {
+      if (!s.singer || _normSinger(s.singer) === _normSinger(lib.singer)) {
+        s.key = lib.key;
+      }
+    }
     if (lib.singer && !s.singer) s.singer = lib.singer;
     if (lib.artist && !s.artist) s.artist = lib.artist;
     if (lib.tags && !s.tags) s.tags = lib.tags;
@@ -498,13 +524,30 @@ function refreshPlaylistFromLibrary() {
   playlistData.forEach(function(s) {
     if (s.break) return;
     var nameKey = (s.name || '').trim().toLowerCase();
-    var lib = (s.id && _bandLibraryMapById[s.id]) || (s.songId && _bandLibraryMapById[s.songId]) || _bandLibraryMap[nameKey];
+    var lib = null;
+    if (s.id && _bandLibraryMapById[s.id]) lib = _bandLibraryMapById[s.id];
+    else if (s.songId && _bandLibraryMapById[s.songId]) lib = _bandLibraryMapById[s.songId];
+    else if (s.singer) {
+      lib = _bandLibraryByNameAndSinger[nameKey + '::' + _normSinger(s.singer)] ||
+            _bandLibraryByNameAndSinger[nameKey + '::' + s.singer.trim().toLowerCase()];
+    }
+    if (!lib) {
+      var hasMultiple = _bandLibraryByNameAndSinger[nameKey + '::male'] && _bandLibraryByNameAndSinger[nameKey + '::female'];
+      if (!hasMultiple) {
+        lib = _bandLibraryMap[nameKey];
+      }
+    }
     if (lib) {
       if (lib.bpm && s.bpm !== lib.bpm) { s.bpm = lib.bpm; changed = true; }
-      if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) { s.key = lib.key; changed = true; }
-      if (lib.singer && s.singer !== lib.singer) { s.singer = lib.singer; changed = true; }
+      if (lib.key && (s.transpose === 0 || s.transpose === undefined) && s.key !== lib.key) {
+        if (!s.singer || _normSinger(s.singer) === _normSinger(lib.singer)) {
+          s.key = lib.key; changed = true;
+        }
+      }
+      if (lib.singer && !s.singer) { s.singer = lib.singer; changed = true; }
       if (lib.artist && s.artist !== lib.artist) { s.artist = lib.artist; changed = true; }
       if (lib.tags && s.tags !== lib.tags) { s.tags = lib.tags; changed = true; }
+      if (lib.id && !s.songId) { s.songId = lib.id; changed = true; }
     }
   });
   if (changed) renderPlaylist();
@@ -519,6 +562,7 @@ function loadBandLibrary() {
     _bandLibraryIds = {};
     _bandLibraryMap = {};
     _bandLibraryMapById = {};
+    _bandLibraryByNameAndSinger = {};
     if (r && r.success && r.data) {
       r.data.forEach(function(s) {
         var sid = s.id || s.songId || '';
@@ -527,7 +571,12 @@ function loadBandLibrary() {
           _bandLibraryMapById[sid] = s;
         }
         if (s.name) {
-          _bandLibraryMap[s.name.trim().toLowerCase()] = s;
+          var nKey = s.name.trim().toLowerCase();
+          _bandLibraryMap[nKey] = s;
+          if (s.singer) {
+            _bandLibraryByNameAndSinger[nKey + '::' + _normSinger(s.singer)] = s;
+            _bandLibraryByNameAndSinger[nKey + '::' + s.singer.trim().toLowerCase()] = s;
+          }
         }
       });
       refreshPlaylistFromLibrary();
@@ -2229,6 +2278,7 @@ function saveHistory(onDone) {
       actualKey = formatKey(transposeKey(s.key, s.transpose, s.mode));
     }
     return {
+      id:     s.id || s.songId || '',
       name:   s.name || '',
       key:    actualKey,
       bpm:    s.bpm || 0,
