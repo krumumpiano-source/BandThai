@@ -887,12 +887,7 @@ function renderSongList() {
     var meta = [];
     if (s._key || s.key) meta.push('🎵 ' + formatKey(s._key || s.key));
     if (s.bpm)  meta.push(s.bpm + ' BPM');
-    if (sc) {
-      var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
-      meta.push('<span class="si-singer-tag ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>');
-    } else if (s.singer) {
-      meta.push('<span class="si-singer-tag">🎤 ' + escHtml(s.singer) + '</span>');
-    }
+
     buf.push(
       '<div class="song-item' +
         (i === _current ? ' is-current' : '') +
