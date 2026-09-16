@@ -654,19 +654,9 @@ function renderNowPlaying() {
   document.getElementById('nowKey').textContent = formatKey(s._key || s.key) || '—';
   document.getElementById('nowBpm').textContent = s.bpm ? s.bpm + ' BPM' : '';
   var sc = singerClass(s.singer);
-  var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
   var nowSingerEl = document.getElementById('nowSinger');
   if (nowSingerEl) {
-    if (sc) {
-      nowSingerEl.innerHTML = '<span class="now-singer-badge ' + sc + '">🎤 ' + (singerNames[sc] || s.singer) + '</span>';
-      nowSingerEl.style.display = '';
-    } else if (s.singer) {
-      nowSingerEl.innerHTML = '<span class="now-singer-badge">🎤 ' + escHtml(s.singer) + '</span>';
-      nowSingerEl.style.display = '';
-    } else {
-      nowSingerEl.innerHTML = '';
-      nowSingerEl.style.display = 'none';
-    }
+    nowSingerEl.style.display = 'none';
   }
   _updateNoteMarquee(s._note || '');
   var strip = document.getElementById('singerStrip');
@@ -847,19 +837,7 @@ function renderNextPreview() {
   if (nb) { nb.textContent = ns.bpm ? ns.bpm + ' BPM' : ''; nb.style.display = ns.bpm ? '' : 'none'; }
   var nSinger = document.getElementById('nextSinger');
   if (nSinger) {
-    var sc = singerClass(ns.singer);
-    var singerNames = {male:'ชาย',female:'หญิง',duet:'คู่'};
-    if (sc) {
-      nSinger.className = 'np-singer ' + sc;
-      nSinger.textContent = '🎤 ' + (singerNames[sc] || ns.singer);
-      nSinger.style.display = '';
-    } else if (ns.singer) {
-      nSinger.className = 'np-singer';
-      nSinger.textContent = '🎤 ' + ns.singer;
-      nSinger.style.display = '';
-    } else {
-      nSinger.style.display = 'none';
-    }
+    nSinger.style.display = 'none';
   }
   preview.classList.remove('hidden');
 }
