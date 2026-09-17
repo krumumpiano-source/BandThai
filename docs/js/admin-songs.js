@@ -1798,7 +1798,6 @@ function geminiLookup(songId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
         generationConfig: { temperature: 0.1 }
       })
     })
