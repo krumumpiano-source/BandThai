@@ -162,40 +162,48 @@
   // ── Search iTunes — return top N results (for multi-pick) ─────────────
   window.itunesSearchMulti = function(name, artist, callback, limit) {
     limit = limit || 5;
-    var term = ((artist || '') + ' ' + name).trim();
-    if (!term) { callback(null, 'กรุณาระบุชื่อเพลง'); return; }
-    var url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(term)
-            + '&country=TH&media=music&limit=15' + (hasThai(term) ? '&lang=th_th' : '');
-
-    fetch(url)
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (!data.results || !data.results.length) {
-          if (artist && name) {
-            var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(name)
-                     + '&country=TH&media=music&limit=15' + (hasThai(name) ? '&lang=th_th' : '');
-            return fetch(url2).then(function(r2) { return r2.json(); });
-          }
+    var nameTerm = (name || '').trim();
+    if (!nameTerm) { callback(null, 'กรุณาระบุชื่อเพลง'); return; }
+    
+    // Strip (...) and [...] from the search term for iTunes API to improve hit rate
+    var cleanNameTerm = nameTerm.replace(/\[.*?\]|\(.*?\)/g, '').trim();
+    if (!cleanNameTerm) cleanNameTerm = nameTerm; // fallback if name is entirely parentheses
+    
+    var p1 = Promise.resolve({results: []});
+    var p2 = Promise.resolve({results: []});
+    
+    if (artist && artist.trim()) {
+      var cleanArtist = (artist || '').replace(/\[.*?\]|\(.*?\)/g, '').trim();
+      var termCombined = (cleanArtist + ' ' + cleanNameTerm).trim();
+      var url1 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(termCombined)
+               + '&country=TH&media=music&limit=15' + (hasThai(termCombined) ? '&lang=th_th' : '');
+      p1 = fetch(url1).then(function(r) { return r.json(); }).catch(function(){ return {results:[]}; });
+    }
+    
+    var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(cleanNameTerm)
+             + '&country=TH&media=music&limit=30' + (hasThai(cleanNameTerm) ? '&lang=th_th' : '');
+    p2 = fetch(url2).then(function(r) { return r.json(); }).catch(function(){ return {results:[]}; });
+    
+    Promise.all([p1, p2])
+      .then(function(resArray) {
+        var results1 = (resArray[0] && resArray[0].results) || [];
+        var results2 = (resArray[1] && resArray[1].results) || [];
+        var allResults = results1.concat(results2);
+        
+        if (!allResults.length) {
           callback(null, 'ไม่พบเพลงนี้ใน iTunes');
           return;
         }
-        return data;
-      })
-      .then(function(data) {
-        if (!data || !data.results || !data.results.length) {
-          if (data !== undefined) callback(null, 'ไม่พบเพลงนี้ใน iTunes');
-          return;
-        }
-        // Deduplicate by trackName+artistName, sort by combined score
+        
         var seen = {};
-        var unique = data.results.filter(function(t) {
+        var unique = allResults.filter(function(t) {
           var key = normalizeStr(t.trackName) + '||' + normalizeStr(t.artistName);
           if (seen[key]) return false;
           seen[key] = true;
           return true;
         });
         unique.sort(function(a, b) {
-          return combinedScore(b, name, artist) - combinedScore(a, name, artist);
+          return combinedScore(b, nameTerm, artist) - combinedScore(a, nameTerm, artist);
         });
         var mapped = unique.slice(0, limit).map(function(t) {
           var result = mapResult(t);

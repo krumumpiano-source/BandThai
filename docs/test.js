@@ -1,0 +1,1 @@
+fetch('https://itunes.apple.com/search?term=' + encodeURIComponent('Jetset\'er ???(Kiss)') + '&media=music').then(r=>r.json()).then(d=>console.log('With parens:', d.results.map(r=>r.artistName + ' - ' + r.trackName).slice(0,5)))
