@@ -1764,7 +1764,7 @@ function aiLookup(songId) {
   if (s.singer) q += ' ' + s.singer;
   
   var pop = document.getElementById('itunesPopoverWrap');
-  var bdy = document.getElementById('itunesPopoverBody');
+  var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
   var title = document.getElementById('itunesPopoverTitle');
   if(title) title.innerHTML = '🤖 Local AI Lookup';
@@ -1822,7 +1822,7 @@ function aiLookup(songId) {
 function asShowAIResult(songId, parsedData) {
   _aiPendingSongId = songId;
   _aiPendingData = parsedData;
-  var bdy = document.getElementById('itunesPopoverBody');
+  var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
 
   var html = '<div style="padding:16px;">'
