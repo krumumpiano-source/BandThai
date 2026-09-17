@@ -1669,10 +1669,10 @@ document.addEventListener('DOMContentLoaded', function() {
         { value: 'error',   label: '🟥 ด่วน (แดง)' }
       ]
     },
-    gemini_api_key: {
-      icon: '✨', label: 'Google Gemini API Key',
-      desc: 'API Key สำหรับใช้งาน Google Gemini (รับฟรีได้ที่ Google AI Studio)',
-      color: '#3b82f6', type: 'text', placeholder: 'เช่น AIzaSy...'
+    groq_api_key: {
+      icon: '⚡', label: 'Groq API Key (AI ฟรีโควต้าเยอะ)',
+      desc: 'API Key สำหรับใช้งาน AI ผ่าน Groq (รับฟรีได้ที่ console.groq.com)',
+      color: '#f97316', type: 'text', placeholder: 'เช่น gsk_...'
     }
   };
 

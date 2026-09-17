@@ -1778,13 +1778,13 @@ function geminiLookup(songId) {
     if (res && res.data) {
       var map = {};
       res.data.forEach(function(row) { map[row.key] = row.value; });
-      if (map.gemini_api_key) apiKey = map.gemini_api_key;
+      if (map.groq_api_key) apiKey = map.groq_api_key;
     }
 
     if (!apiKey) {
       bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
         + '<div style="margin-bottom:8px">⚠️ <strong>ยังไม่ได้ตั้งค่า API Key</strong></div>'
-        + '<div style="font-size:.85rem;">กรุณาไปที่ "ตั้งค่าระบบ" เพื่อใส่ Google Gemini API Key ก่อนครับ</div>'
+        + '<div style="font-size:.85rem;">กรุณาไปที่ "ตั้งค่าระบบ" เพื่อใส่ Groq API Key ก่อนครับ</div>'
         + '</div>';
       act.style.display = 'flex';
       act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
@@ -1793,12 +1793,20 @@ function geminiLookup(songId) {
 
     var prompt = "ค้นหาข้อมูล BPM (ความเร็วเพลง) และ Key (คีย์เพลง) ของเพลง '" + q + "' (เพลงไทย)\nให้ตอบกลับเป็น JSON ล้วนๆ ห้ามมีคำอธิบายอื่น โดยใช้รูปแบบนี้:\n{\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, หวาน, เศร้า, นิ่ง, ฮึกเหิม)\"}\nหากไม่เจอ ให้ลองประมาณการจากเพลงได้ แต่ถ้าเจอข้อมูลจากเน็ตให้เอาข้อมูลนั้น";
     
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + apiKey.trim(), {
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + apiKey.trim()
+      },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1 }
+        model: 'llama-3.1-8b-instant',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.1,
+        response_format: { type: 'json_object' }
       })
     })
     .then(function(r) {
@@ -1806,10 +1814,10 @@ function geminiLookup(songId) {
       return r.json();
     })
     .then(function(data) {
-      if (!data.candidates || !data.candidates.length) {
+      if (!data.choices || !data.choices.length) {
         throw new Error('No answer from AI');
       }
-      var text = data.candidates[0].content.parts[0].text;
+      var text = data.choices[0].message.content;
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       var parsed = null;
       try { parsed = JSON.parse(text); } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ: ' + text); }
