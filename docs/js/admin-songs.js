@@ -616,6 +616,7 @@ function renderTable() {
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
         ' <button class="btn-sm" style="background:#1DB954;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="spotifyLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก Spotify (มี BPM/Key)">🟢</button>' +
+        ' <button class="btn-sm" style="background:#3b82f6;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="aiLookup(\'' + jsId + '\')" title="ใช้ Local AI ค้นหา BPM/Key">🤖</button>' +
         ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
       '</div></td>' +
     '</tr>';
@@ -1752,6 +1753,128 @@ function applyItunesData() {
   closeItunesPopover();
 }
 
+// --- AI Lookup ---
+var _aiPendingSongId = null;
+var _aiPendingData = null;
+
+function aiLookup(songId) {
+  var s = _allSongs.find(function(x) { return x.id === songId; });
+  if (!s) return;
+  var q = s.name;
+  if (s.singer) q += ' ' + s.singer;
+  
+  var pop = document.getElementById('itunesPopoverWrap');
+  var bdy = document.getElementById('itunesPopoverBody');
+  var act = document.getElementById('itunesPopoverActions');
+  var title = document.getElementById('itunesPopoverTitle');
+  if(title) title.innerHTML = '🤖 Local AI Lookup';
+  if (!pop || !bdy) return;
+
+  pop.style.display = 'flex';
+  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังถาม AI...</div>';
+  act.style.display = 'none';
+
+  apiCall('getAppConfig', {}, function(res) {
+    var endpoint = 'http://localhost:1234/v1/chat/completions';
+    if (res && res.data) {
+      var map = {};
+      res.data.forEach(function(row) { map[row.key] = row.value; });
+      if (map.local_ai_endpoint) endpoint = map.local_ai_endpoint;
+    }
+
+    var prompt = "จงวิเคราะห์เพลง '" + q + "' แล้วตอบกลับเป็น JSON ล้วนๆ ห้ามมีข้อความอื่น โดยใช้รูปแบบนี้: {\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, เศร้า, ชิล)\"}";
+    
+    fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.1,
+        max_tokens: 150
+      })
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Local AI Error: ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data.choices || !data.choices.length) {
+        throw new Error('No choices from AI');
+      }
+      var text = data.choices[0].message.content;
+      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+      var parsed = null;
+      try { parsed = JSON.parse(text); } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ: ' + text); }
+      
+      asShowAIResult(songId, parsed);
+    })
+    .catch(function(err) {
+      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+        + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Local AI ไม่สำเร็จ</strong></div>'
+        + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
+        + '<div style="font-size:.8rem;color:var(--premium-text-muted);margin-bottom:12px">ตรวจสอบว่าคุณได้เปิดโปรแกรม AI (เช่น LM Studio) และเปิดใช้งาน Local Server ที่ ' + esc(endpoint) + ' แล้ว</div>'
+        + '<button onclick="aiLookup(\'' + esc(songId) + '\')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer">🔄 ลองใหม่</button>'
+        + '</div>';
+    });
+  });
+}
+
+function asShowAIResult(songId, parsedData) {
+  _aiPendingSongId = songId;
+  _aiPendingData = parsedData;
+  var bdy = document.getElementById('itunesPopoverBody');
+  var act = document.getElementById('itunesPopoverActions');
+
+  var html = '<div style="padding:16px;">'
+    + '<div style="font-weight:600;margin-bottom:12px;color:var(--premium-text)">ข้อมูลที่ AI คาดเดา:</div>'
+    + '<div style="font-size:.9rem;display:flex;flex-direction:column;gap:8px;">';
+  
+  _AS_ITUNES_FIELDS.forEach(function(fd) {
+    if(fd.f !== 'bpm' && fd.f !== 'key' && fd.f !== 'era' && fd.f !== 'mood') return;
+    var val = parsedData[fd.f] || '';
+    if (val) {
+      html += '<label style="display:flex;align-items:center;gap:8px;background:var(--premium-bg);padding:8px;border-radius:6px;border:1px solid var(--premium-border)">'
+        + '<input type="checkbox" id="as-aichk-' + fd.f + '" checked>'
+        + '<span style="font-weight:600;min-width:60px">' + fd.l + '</span>'
+        + '<input type="text" id="as-ai-' + fd.f + '" value="' + esc(val) + '" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary)">'
+        + '</label>';
+    }
+  });
+
+  html += '</div></div>';
+  bdy.innerHTML = html;
+  
+  act.style.display = '';
+  act.innerHTML = '<button class="btn-sm" style="background:#3b82f6;color:#fff;border:none;flex:1" onclick="applyAIData()">✅ นำไปใช้ที่เลือก</button>'
+    + '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db" onclick="closeItunesPopover()">ยกเลิก</button>';
+}
+
+function applyAIData() {
+  var songId = _aiPendingSongId;
+  var data   = _aiPendingData;
+  if (!songId || !data) return;
+  var row = document.querySelector('tr[data-id="' + songId + '"]');
+  if (!row) { closeItunesPopover(); return; }
+  var changed = false;
+  
+  _AS_ITUNES_FIELDS.forEach(function(fd) {
+    if(fd.f !== 'bpm' && fd.f !== 'key' && fd.f !== 'era' && fd.f !== 'mood') return;
+    var chk = document.getElementById('as-aichk-' + fd.f);
+    if (!chk || !chk.checked) return;
+    var inp = document.getElementById('as-ai-' + fd.f);
+    var val = inp ? inp.value.trim() : (data[fd.f] || '');
+    if (!val) return;
+    var el = row.querySelector('[data-field="' + fd.f + '"]');
+    if (el) { el.value = val; changed = true; }
+  });
+
+  if (changed) {
+    var anyEl = row.querySelector('input,select');
+    if (anyEl) markDirty(anyEl);
+    showToast('✅ นำข้อมูลจาก AI มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
+  }
+  closeItunesPopover();
+}
 function closeItunesPopover() {
   document.getElementById('itunesPopoverWrap').style.display = 'none';
   _itunesPendingSongId = null;

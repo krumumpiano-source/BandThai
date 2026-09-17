@@ -1678,6 +1678,11 @@ document.addEventListener('DOMContentLoaded', function() {
       icon: '🔑', label: 'Spotify Client Secret',
       desc: 'Client Secret จาก Spotify Developer Dashboard',
       color: '#1DB954', type: 'text', placeholder: 'เช่น xyz789...'
+    },
+    local_ai_endpoint: {
+      icon: '🤖', label: 'Local AI Endpoint',
+      desc: 'URL ของ Local AI (เช่น LM Studio, Ollama) เช่น http://localhost:1234/v1/chat/completions',
+      color: '#3b82f6', type: 'text', placeholder: 'http://localhost:1234/v1/chat/completions'
     }
   };
 
