@@ -1841,7 +1841,7 @@ function asShowAIResult(songId, parsedData) {
   var act = document.getElementById('itunesPopoverActions');
 
   var html = '<div style="padding:16px;">'
-    + '<div style="font-weight:600;margin-bottom:12px;color:var(--premium-text)">ข้อมูลที่ AI คาดเดา:</div>'
+    + '<div style="font-weight:600;margin-bottom:12px;color:var(--premium-text)">ผลลัพธ์จากการวิเคราะห์ของ AI:</div>'
     + '<div style="font-size:.9rem;display:flex;flex-direction:column;gap:8px;">';
   
   _AS_ITUNES_FIELDS.forEach(function(fd) {
@@ -1850,7 +1850,7 @@ function asShowAIResult(songId, parsedData) {
     if (val) {
       html += '<label style="display:flex;align-items:center;gap:8px;background:var(--premium-bg);padding:8px;border-radius:6px;border:1px solid var(--premium-border)">'
         + '<input type="checkbox" id="as-aichk-' + fd.f + '" checked>'
-        + '<span style="font-weight:600;min-width:60px">' + fd.l + '</span>'
+        + '<span style="font-weight:600;min-width:60px">' + fd.label + '</span>'
         + '<input type="text" id="as-ai-' + fd.f + '" value="' + esc(val) + '" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary)">'
         + '</label>';
     }
