@@ -50,14 +50,14 @@
         if(r&&r.success&&r.data){
           (r.data||[]).forEach(function(s){
             var k=(s.name||'').trim().toLowerCase();
-            if(k)_songMeta[k]={genre:s.tags||'',era:s.era||'',mood:s.mood||''};
+            if(k)_songMeta[k]={genre:s.tags||'',era:s.era||'',mood:s.mood||'',bpm:s.bpm||0,key:s.key||''};
           });
         }
         _songMetaLoaded=true;if(cb)cb();
       });
     }
     function getSongMeta(name){
-      return _songMeta[(name||'').trim().toLowerCase()]||{genre:'',era:'',mood:''};
+      return _songMeta[(name||'').trim().toLowerCase()]||{genre:'',era:'',mood:'',bpm:0,key:''};
     }
     function calcDist(songs){
       var genreMap={},eraMap={},reqSongs=0,totalG=0,totalE=0;
@@ -123,6 +123,101 @@
       }
       dc.innerHTML=html;
       dc.style.display='';
+    }
+
+    function renderEnergyFlow(history){
+      var ec=document.getElementById('slEnergyCard');
+      var canvas=document.getElementById('energyChart');
+      if(!ec || !canvas) return;
+      var allSongs=[];
+      history.forEach(function(brk, bIdx){
+        (brk.songs||[]).forEach(function(s, sIdx){
+          allSongs.push({
+             name: s.name, artist: s.artist, brkIdx: bIdx, sIdx: sIdx
+          });
+        });
+      });
+      if(!allSongs.length){ec.style.display='none';return;}
+      
+      var bpms = [];
+      var labels = [];
+      var hasBpm = false;
+      var warnings = [];
+      
+      var pitchMap = {
+        'C / Am': 0, '1#': 7, '2#': 2, '3#': 9, '4#': 4, '5#': 11, '6#': 6, '7#': 1,
+        '1b': 5, '2b': 10, '3b': 3, '4b': 8, '5b': 1, '6b': 6, '7b': 11
+      };
+
+      var lastKey = null;
+
+      allSongs.forEach(function(slSong, idx) {
+        var meta = getSongMeta(slSong.name);
+        var bpm = meta.bpm || 0;
+        var key = meta.key || '';
+        
+        bpms.push(bpm);
+        labels.push(slSong.name.substring(0,15));
+        if (bpm > 0) hasBpm = true;
+
+        if (key && lastKey && pitchMap[key] !== undefined && pitchMap[lastKey] !== undefined) {
+           var p1 = pitchMap[lastKey];
+           var p2 = pitchMap[key];
+           var diff = Math.abs(p1 - p2);
+           if (diff > 6) diff = 12 - diff; 
+           if (diff === 6) {
+              warnings.push('⚠️ ' + allSongs[idx-1].name + ' (' + lastKey + ') ต่อกับ ' + slSong.name + ' (' + key + ') เปลี่ยน Key ขัดกัน (Tritone)');
+           }
+        }
+        if (key) lastKey = key;
+      });
+
+      if (!hasBpm) {
+        ec.style.display='none';
+        return;
+      }
+      ec.style.display='';
+      
+      if (window.energyChartInst) {
+        window.energyChartInst.destroy();
+      }
+      
+      if (typeof Chart === 'undefined') return;
+      var ctx = canvas.getContext('2d');
+      window.energyChartInst = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'BPM / Energy',
+            data: bpms,
+            borderColor: '#1DB954',
+            backgroundColor: 'rgba(29,185,84,0.2)',
+            tension: 0.4,
+            fill: true,
+            pointRadius: 4,
+            pointBackgroundColor: '#1DB954'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { beginAtZero: false, min: 60, max: 200 }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+      
+      var wDiv = document.getElementById('energyWarnings');
+      if (warnings.length > 0) {
+        wDiv.innerHTML = warnings.join('<br>');
+        wDiv.style.display = 'block';
+      } else {
+        wDiv.style.display = 'none';
+      }
     }
 
     window.switchMainTab=function(tab){
@@ -466,6 +561,7 @@
         '<div class="sl-stat-card"><div class="sv" style="font-size:1rem">'+fmtDurLong(totalDurSec)+'</div><div class="sl">\u0e40\u0e27\u0e25\u0e32\u0e40\u0e25\u0e48\u0e19\u0e23\u0e27\u0e21 (\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13)</div></div>';
       document.getElementById('slStatCards').style.display='';
       renderDistribution(history);
+      renderEnergyFlow(history);
       renderTopSongs(history);
       var toFetch=[];
       history.forEach(function(brk){

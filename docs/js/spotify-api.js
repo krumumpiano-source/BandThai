@@ -16,13 +16,24 @@
   var _spClientSecret = '';
   var _spReady = false;
 
-  // ── Pitch class → key name ──────────────────────────
-  var _PITCH = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   function pitchToKey(pitch, mode) {
-    if (pitch == null || pitch < 0) return '';
-    var note = _PITCH[pitch] || '';
-    if (mode === 0) note += 'm';       // minor
-    return note;
+    if (pitch == null || pitch < 0 || pitch > 11) return '';
+    var relativePitch = mode === 1 ? pitch : (pitch + 3) % 12;
+    var map = {
+      0: 'C / Am',
+      1: '5b',  // Db Maj / Bb Min
+      2: '2#',  // D Maj / B Min
+      3: '3b',  // Eb Maj / C Min
+      4: '4#',  // E Maj / C# Min
+      5: '1b',  // F Maj / D Min
+      6: '6#',  // F# Maj / D# Min
+      7: '1#',  // G Maj / E Min
+      8: '4b',  // Ab Maj / F Min
+      9: '3#',  // A Maj / F# Min
+      10: '2b', // Bb Maj / G Min
+      11: '5#'  // B Maj / G# Min
+    };
+    return map[relativePitch] || '';
   }
 
   // ── Valence → mood ──────────────────────────────────

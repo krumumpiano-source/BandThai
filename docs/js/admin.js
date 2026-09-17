@@ -1695,12 +1695,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
       var qaHtml = '';
       var otherHtml = '';
+      
+      var configMap = {};
+      list.forEach(function(row) { configMap[row.key] = row; });
+      
+      Object.keys(_knownConfigs).forEach(function(k) {
+        var row = configMap[k] || { key: k, value: '' };
+        var known = _knownConfigs[k];
+        qaHtml += buildKnownConfigCard(row, known);
+      });
 
       list.forEach(function(row) {
-        var known = _knownConfigs[row.key];
-        if (known) {
-          qaHtml += buildKnownConfigCard(row, known);
-        } else {
+        if (!_knownConfigs[row.key]) {
           otherHtml += buildGenericConfigRow(row);
         }
       });
