@@ -1641,6 +1641,8 @@ function itunesLookup(songId) {
   var wrap = document.getElementById('itunesPopoverWrap');
   var cnt  = document.getElementById('itunesPopoverContent');
   var act  = document.getElementById('itunesPopoverActions');
+  var title = document.getElementById('itunesPopoverTitle');
+  if (title) title.innerHTML = '🎵 iTunes Lookup';
   cnt.innerHTML = '<div style="text-align:center;color:#0ea5e9;padding:16px 0">🎵 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo; ใน iTunes...</div>';
   act.style.display = 'none';
   wrap.style.display = '';
@@ -1768,6 +1770,8 @@ function spotifyLookup(songId) {
   var wrap = document.getElementById('itunesPopoverWrap');
   var cnt  = document.getElementById('itunesPopoverContent');
   var act  = document.getElementById('itunesPopoverActions');
+  var title = document.getElementById('itunesPopoverTitle');
+  if (title) title.innerHTML = '🟢 Spotify Lookup';
   cnt.innerHTML = '<div style="text-align:center;color:#1DB954;padding:16px 0">🟢 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo; ใน Spotify...</div>';
   act.style.display = 'none';
   wrap.style.display = '';
