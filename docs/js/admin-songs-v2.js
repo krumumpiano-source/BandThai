@@ -830,7 +830,10 @@ function updateSaveAllBtn() {
   var count = Object.keys(_dirty).length;
   btn.disabled = count === 0;
   btn.textContent = count > 0 ? '💾 บันทึกทั้งหมด (' + count + ')' : '💾 บันทึกทั้งหมด';
-  if (ubtn) ubtn.style.display = count > 0 ? 'inline-flex' : 'none';
+  if (ubtn) {
+    ubtn.disabled = count === 0;
+    ubtn.textContent = count > 0 ? '🔄 ยกเลิกทั้งหมด (' + count + ')' : '🔄 ยกเลิกการแก้ไขทั้งหมด';
+  }
 }
 
 function saveRow(songId) {
