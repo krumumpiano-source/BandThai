@@ -1883,3 +1883,9 @@ function applyGeminiData() {
   }
   closeItunesPopover();
 }
+
+function closeItunesPopover() {
+  document.getElementById('itunesPopoverWrap').style.display = 'none';
+  _itunesPendingSongId = null;
+  _itunesPendingData   = null;
+}
