@@ -1800,7 +1800,7 @@ function geminiLookup(songId) {
         'Authorization': 'Bearer ' + apiKey.trim()
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3.8-27b',
+        model: 'llama3-70b-8192',
         messages: [
           { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
           { role: 'user', content: prompt }
