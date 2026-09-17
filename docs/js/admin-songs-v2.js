@@ -613,6 +613,7 @@ function renderTable() {
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td class="hide-sm status-cell">' + statusHtml + editInfo + '</td>' +
       '<td><div class="td-actions">' +
+        '<button class="btn-sm btn-undo" id="ubtn-' + id + '" onclick="undoRow(\'' + id + '\')" style="display:' + (isDirty ? 'inline-block' : 'none') + '" title="ยกเลิกการแก้ไข">🔄</button>' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
         ' <button class="btn-sm" style="background:#8b5cf6;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="geminiLookup(\'' + jsId + '\')" title="ใช้ Google Gemini ค้นหา BPM/Key จากอินเทอร์เน็ต">🤖</button>' +
@@ -799,6 +800,8 @@ function markDirty(el) {
   row.classList.add('row-dirty');
   var btn = document.getElementById('sbtn-' + songId);
   if (btn) btn.disabled = false;
+  var ubtn = document.getElementById('ubtn-' + songId);
+  if (ubtn) ubtn.style.display = 'inline-block';
   updateSaveAllBtn();
   // Track activity: editing which song
   var nameEl = row.querySelector('[data-field="name"]');
@@ -822,10 +825,12 @@ function readRowFromDOM(row) {
 
 function updateSaveAllBtn() {
   var btn = document.getElementById('saveAllBtn');
+  var ubtn = document.getElementById('undoAllBtn');
   if (!btn) return;
   var count = Object.keys(_dirty).length;
   btn.disabled = count === 0;
   btn.textContent = count > 0 ? '💾 บันทึกทั้งหมด (' + count + ')' : '💾 บันทึกทั้งหมด';
+  if (ubtn) ubtn.style.display = count > 0 ? 'inline-flex' : 'none';
 }
 
 function saveRow(songId) {
@@ -861,6 +866,25 @@ function saveRow(songId) {
       showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
     }
   });
+}
+
+function undoRow(songId) {
+  if (_dirty[songId]) {
+    delete _dirty[songId];
+    renderTable();
+    updateSaveAllBtn();
+    showToast('ยกเลิกการแก้ไขแล้ว', 'info');
+  }
+}
+
+function undoAllDirty() {
+  var ids = Object.keys(_dirty);
+  if (!ids.length) return;
+  if (!confirm('ยืนยันที่จะยกเลิกการแก้ไขทั้งหมด ' + ids.length + ' รายการ?')) return;
+  _dirty = {};
+  renderTable();
+  updateSaveAllBtn();
+  showToast('ยกเลิกการแก้ไขทั้งหมดแล้ว', 'info');
 }
 
 function saveAllDirty() {

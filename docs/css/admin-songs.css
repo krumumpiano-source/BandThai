@@ -76,6 +76,11 @@
     .btn-save-all{background:var(--premium-gold);color:#fff;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:background .15s}
     .btn-save-all:hover{background:var(--premium-gold-dark)}
     .btn-save-all:disabled{opacity:.5;cursor:not-allowed}
+    .btn-undo-all{background:#f3f4f6;color:#4b5563;border:1px solid #d1d5db;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s}
+    .btn-undo-all:hover{background:#e5e7eb;color:#1f2937}
+    .btn-undo-all:disabled{opacity:.5;cursor:not-allowed}
+    .btn-undo{background:#f3f4f6;border:1px solid #d1d5db;border-radius:4px;color:#4b5563;transition:all .15s;}
+    .btn-undo:hover{background:#e5e7eb;color:#1f2937}
 
     /* ── Modal: Add Song ── */
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -242,7 +247,7 @@
       .as-toolbar{gap:8px}
       .as-search{min-width:150px;font-size:14px}
       .as-filter{font-size:13px;padding:8px 10px}
-      .btn-add,.btn-import-main,.btn-export,.btn-save-all{font-size:13px;padding:8px 14px}
+      .btn-add,.btn-import-main,.btn-export,.btn-save-all,.btn-undo-all{font-size:13px;padding:8px 14px}
       .stats-bar{gap:10px}
       .stat-box{min-width:70px;padding:8px 12px}
       .stat-num{font-size:1.2rem}
@@ -258,7 +263,7 @@
     @media(max-width:600px){
       .sug-diff{grid-template-columns:1fr}
       .as-toolbar{flex-direction:column;align-items:stretch}
-      .as-search,.as-filter,.btn-add,.btn-import-main,.btn-export,.btn-save-all{width:100%}
+      .as-search,.as-filter,.btn-add,.btn-import-main,.btn-export,.btn-save-all,.btn-undo-all{width:100%}
       .stats-bar{justify-content:space-around}
       .stat-box{flex:1;min-width:60px}
       .td-actions{flex-direction:column;gap:4px}
