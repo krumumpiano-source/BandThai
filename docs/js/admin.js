@@ -1669,20 +1669,10 @@ document.addEventListener('DOMContentLoaded', function() {
         { value: 'error',   label: '🟥 ด่วน (แดง)' }
       ]
     },
-    spotify_client_id: {
-      icon: '🎵', label: 'Spotify Client ID',
-      desc: 'Client ID จาก Spotify Developer Dashboard (ใช้ค้นหาข้อมูลเพลง)',
-      color: '#1DB954', type: 'text', placeholder: 'เช่น abc123def456...'
-    },
-    spotify_client_secret: {
-      icon: '🔑', label: 'Spotify Client Secret',
-      desc: 'Client Secret จาก Spotify Developer Dashboard',
-      color: '#1DB954', type: 'text', placeholder: 'เช่น xyz789...'
-    },
-    local_ai_endpoint: {
-      icon: '🤖', label: 'Local AI Endpoint',
-      desc: 'URL ของ Local AI (เช่น LM Studio, Ollama) เช่น http://localhost:1234/v1/chat/completions',
-      color: '#3b82f6', type: 'text', placeholder: 'http://localhost:1234/v1/chat/completions'
+    gemini_api_key: {
+      icon: '✨', label: 'Google Gemini API Key',
+      desc: 'API Key สำหรับใช้งาน Google Gemini (รับฟรีได้ที่ Google AI Studio)',
+      color: '#3b82f6', type: 'text', placeholder: 'เช่น AIzaSy...'
     }
   };
 

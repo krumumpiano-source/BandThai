@@ -615,8 +615,7 @@ function renderTable() {
       '<td><div class="td-actions">' +
         '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
-        ' <button class="btn-sm" style="background:#1DB954;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="spotifyLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก Spotify (มี BPM/Key)">🟢</button>' +
-        ' <button class="btn-sm" style="background:#3b82f6;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="aiLookup(\'' + jsId + '\')" title="ใช้ Local AI ค้นหา BPM/Key">🤖</button>' +
+        ' <button class="btn-sm" style="background:#8b5cf6;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="geminiLookup(\'' + jsId + '\')" title="ใช้ Google Gemini ค้นหา BPM/Key จากอินเทอร์เน็ต">🤖</button>' +
         ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
       '</div></td>' +
     '</tr>';
@@ -1753,11 +1752,11 @@ function applyItunesData() {
   closeItunesPopover();
 }
 
-// --- AI Lookup ---
-var _aiPendingSongId = null;
-var _aiPendingData = null;
+// --- Google Gemini AI Lookup ---
+var _geminiPendingSongId = null;
+var _geminiPendingData = null;
 
-function aiLookup(songId) {
+function geminiLookup(songId) {
   var s = _allSongs.find(function(x) { return x.id === songId; });
   if (!s) return;
   var q = s.name;
@@ -1767,76 +1766,70 @@ function aiLookup(songId) {
   var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
   var title = document.getElementById('itunesPopoverTitle');
-  if(title) title.innerHTML = '🤖 Local AI Lookup';
+  if(title) title.innerHTML = '🤖 Google Gemini AI';
   if (!pop || !bdy) return;
 
   pop.style.display = 'flex';
-  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังถาม AI...</div>';
+  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังค้นหาข้อมูลจากอินเทอร์เน็ต...</div>';
   act.style.display = 'none';
 
   apiCall('getAppConfig', {}, function(res) {
-    // Default to Ollama's port if not set
-    var endpoint = 'http://localhost:11434/v1/chat/completions';
+    var apiKey = '';
     if (res && res.data) {
       var map = {};
       res.data.forEach(function(row) { map[row.key] = row.value; });
-      if (map.local_ai_endpoint) endpoint = map.local_ai_endpoint;
+      if (map.gemini_api_key) apiKey = map.gemini_api_key;
     }
 
-    var prompt = "จงวิเคราะห์เพลง '" + q + "' แล้วตอบกลับเป็น JSON ล้วนๆ ห้ามมีข้อความอื่น โดยใช้รูปแบบนี้: {\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, เศร้า, ชิล)\"}";
-    
-    var baseUrl = endpoint.replace('/chat/completions', '');
-    
-    // Fetch available models first (Required for Ollama)
-    fetch(baseUrl + '/models')
-      .then(function(r) { return r.ok ? r.json() : null; })
-      .catch(function() { return null; }) // Ignore errors, fallback
-      .then(function(modelData) {
-        var modelName = 'local-model'; // Fallback name
-        if (modelData && modelData.data && modelData.data.length > 0) {
-          modelName = modelData.data[0].id;
-        }
+    if (!apiKey) {
+      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+        + '<div style="margin-bottom:8px">⚠️ <strong>ยังไม่ได้ตั้งค่า API Key</strong></div>'
+        + '<div style="font-size:.85rem;">กรุณาไปที่ "ตั้งค่าระบบ" เพื่อใส่ Google Gemini API Key ก่อนครับ</div>'
+        + '</div>';
+      act.style.display = 'flex';
+      act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
+      return;
+    }
 
-        return fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: modelName,
-            messages: [{ role: 'user', content: prompt }],
-            temperature: 0.1,
-            max_tokens: 150
-          })
-        });
+    var prompt = "ค้นหาข้อมูล BPM (ความเร็วเพลง) และ Key (คีย์เพลง) ของเพลง '" + q + "' (เพลงไทย)\nให้ตอบกลับเป็น JSON ล้วนๆ ห้ามมีคำอธิบายอื่น โดยใช้รูปแบบนี้:\n{\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, หวาน, เศร้า, นิ่ง, ฮึกเหิม)\"}\nหากไม่เจอ ให้ลองประมาณการจากเพลงได้ แต่ถ้าเจอข้อมูลจากเน็ตให้เอาข้อมูลนั้น";
+    
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ googleSearch: {} }],
+        generationConfig: { temperature: 0.1 }
       })
-      .then(function(r) {
-        if (!r.ok) throw new Error('Local AI Error: ' + r.status);
-        return r.json();
-      })
-      .then(function(data) {
-        if (!data.choices || !data.choices.length) {
-          throw new Error('No choices from AI');
-        }
-      var text = data.choices[0].message.content;
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('API Error: ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data.candidates || !data.candidates.length) {
+        throw new Error('No answer from AI');
+      }
+      var text = data.candidates[0].content.parts[0].text;
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       var parsed = null;
       try { parsed = JSON.parse(text); } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ: ' + text); }
       
-      asShowAIResult(songId, parsed);
+      asShowGeminiResult(songId, parsed);
     })
     .catch(function(err) {
       bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
-        + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Local AI ไม่สำเร็จ</strong></div>'
+        + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Gemini AI ไม่สำเร็จ</strong></div>'
         + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
-        + '<div style="font-size:.8rem;color:var(--premium-text-muted);margin-bottom:12px">ตรวจสอบว่าคุณได้เปิดโปรแกรม AI (เช่น LM Studio) และเปิดใช้งาน Local Server ที่ ' + esc(endpoint) + ' แล้ว</div>'
-        + '<button onclick="aiLookup(\'' + esc(songId) + '\')" style="background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer">🔄 ลองใหม่</button>'
+        + '<button onclick="geminiLookup(\'' + esc(songId) + '\')" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer">🔄 ลองใหม่</button>'
         + '</div>';
     });
   });
 }
 
-function asShowAIResult(songId, parsedData) {
-  _aiPendingSongId = songId;
-  _aiPendingData = parsedData;
+function asShowGeminiResult(songId, parsedData) {
+  _geminiPendingSongId = songId;
+  _geminiPendingData = parsedData;
   var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
 
@@ -1860,13 +1853,13 @@ function asShowAIResult(songId, parsedData) {
   bdy.innerHTML = html;
   
   act.style.display = '';
-  act.innerHTML = '<button class="btn-sm" style="background:#3b82f6;color:#fff;border:none;flex:1" onclick="applyAIData()">✅ นำไปใช้ที่เลือก</button>'
+  act.innerHTML = '<button class="btn-sm" style="background:#8b5cf6;color:#fff;border:none;flex:1" onclick="applyGeminiData()">✅ นำไปใช้ที่เลือก</button>'
     + '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db" onclick="closeItunesPopover()">ยกเลิก</button>';
 }
 
-function applyAIData() {
-  var songId = _aiPendingSongId;
-  var data   = _aiPendingData;
+function applyGeminiData() {
+  var songId = _geminiPendingSongId;
+  var data   = _geminiPendingData;
   if (!songId || !data) return;
   var row = document.querySelector('tr[data-id="' + songId + '"]');
   if (!row) { closeItunesPopover(); return; }
@@ -1887,140 +1880,6 @@ function applyAIData() {
     var anyEl = row.querySelector('input,select');
     if (anyEl) markDirty(anyEl);
     showToast('✅ นำข้อมูลจาก AI มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
-  }
-  closeItunesPopover();
-}
-function closeItunesPopover() {
-  document.getElementById('itunesPopoverWrap').style.display = 'none';
-  _itunesPendingSongId = null;
-  _itunesPendingData   = null;
-}
-
-// ─── Spotify Lookup for Admin Songs ──────────────────────────────
-var _spotifyPendingSongId = null;
-var _spotifyPendingData   = null;
-
-function spotifyLookup(songId) {
-  var song = _allSongs.find(function(s) { return s.id === songId; });
-  if (!song) return;
-  _spotifyPendingSongId = songId;
-  _spotifyPendingData   = null;
-  var wrap = document.getElementById('itunesPopoverWrap');
-  var cnt  = document.getElementById('itunesPopoverContent');
-  var act  = document.getElementById('itunesPopoverActions');
-  var title = document.getElementById('itunesPopoverTitle');
-  if (title) title.innerHTML = '🟢 Spotify Lookup';
-  cnt.innerHTML = '<div style="text-align:center;color:#1DB954;padding:16px 0">🟢 กำลังค้นหา &ldquo;<strong>' + esc(song.name) + '</strong>&rdquo; ใน Spotify...</div>';
-  act.style.display = 'none';
-  wrap.style.display = '';
-  
-  if (typeof spotifySearch !== 'function') {
-    cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ไม่พบไฟล์ spotify-api.js</div>';
-    return;
-  }
-  
-  spotifySearch(song.name, song.artist || '', function(result, errText) {
-    if (!result) {
-      cnt.innerHTML = '<div style="color:#DC2626;font-size:.85rem;padding:10px 0">⚠️ ' + esc(errText || 'ไม่พบข้อมูลใน Spotify') + '</div>'
-        + '<button onclick="spotifyLookup(\'' + esc(songId) + '\')" style="margin-top:8px;background:#1DB954;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:.8rem;cursor:pointer">🔄 ลองใหม่</button>';
-      act.style.display = 'none';
-      return;
-    }
-    _spotifyPendingData = result;
-    var row = document.querySelector('tr[data-id="' + songId + '"]');
-
-    // Build field-by-field table with checkbox + editable input
-    var tableRows = '';
-    _AS_ITUNES_FIELDS.forEach(function(fd) {
-      var sug = result[fd.f] || '';
-      if (!sug && fd.f !== 'bpm') return;
-      if (fd.f === 'bpm' && !result.bpm) return;
-      var curEl = row ? row.querySelector('[data-field="' + fd.f + '"]') : null;
-      var cur = curEl ? (curEl.value || '') : (song[fd.f] || '');
-      var isDiff = String(cur).toLowerCase().trim() !== String(sug).toLowerCase().trim();
-      var inputId = 'as-sp-' + fd.f;
-      var chkId   = 'as-spchk-' + fd.f;
-      var inputHtml;
-      if (fd.type === 'era') {
-        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
-          + _AS_ERA_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-      } else if (fd.type === 'tags') {
-        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
-          + _AS_TAGS_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-      } else if (fd.type === 'mood') {
-        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
-          + _AS_MOOD_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-      } else if (fd.type === 'key') {
-        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
-          + _AS_KEY_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-      } else if (fd.type === 'singer') {
-        inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
-          + '<option value="">—</option>' + _AS_SINGER_OPTS.map(function(o){ return '<option' + (o===cur?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
-        isDiff = false;
-      } else if (fd.type === 'number') {
-        inputHtml = '<input id="' + inputId + '" type="number" value="' + esc(String(sug)) + '" min="0" max="300" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
-      } else {
-        inputHtml = '<input id="' + inputId + '" value="' + esc(sug) + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
-      }
-      tableRows += '<tr style="border-bottom:1px solid #f3f4f6">'
-        + '<td style="padding:5px 4px;white-space:nowrap;width:1%"><input type="checkbox" id="' + chkId + '" ' + (isDiff ? 'checked' : '') + ' style="accent-color:#1DB954;cursor:pointer;width:15px;height:15px"></td>'
-        + '<td style="padding:5px 4px;white-space:nowrap"><label for="' + chkId + '" style="font-size:.8rem;font-weight:700;color:#374151;cursor:pointer">' + fd.icon + ' ' + esc(fd.label) + '</label></td>'
-        + '<td style="padding:5px 4px;font-size:.75rem;color:#9ca3af;text-decoration:line-through;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(cur || '—') + '</td>'
-        + '<td style="padding:5px 4px;font-size:.75rem;color:#9ca3af">→</td>'
-        + '<td style="padding:5px 4px;min-width:120px">' + inputHtml + '</td>'
-        + '</tr>';
-    });
-
-    var infoHtml = '<div style="background:#dcfce7;border-radius:6px;padding:6px 10px;margin-bottom:10px;font-size:.78rem;color:#374151">'
-      + '🟢 <strong>' + esc(result.trackName || result.name) + '</strong>'
-      + (result.year ? ' · ' + esc(result.year) : '')
-      + (result.genre ? ' · ' + esc(result.genre) : '')
-      + (result.spotifyUrl ? ' · <a href="' + esc(result.spotifyUrl) + '" target="_blank" style="color:#1DB954">เปิดใน Spotify</a>' : '')
-      + '</div>';
-
-    cnt.innerHTML = infoHtml
-      + '<div style="font-size:.72rem;color:#6b7280;margin-bottom:6px">☑️ เลือก field แก้ค่าได้ แล้วกด <strong>นำไปใช้</strong></div>'
-      + '<table style="width:100%;border-collapse:collapse">' + tableRows + '</table>'
-      + '<div style="margin-top:8px;display:flex;gap:6px">'
-      + '<button onclick="asSpotifyCheckAll(true)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:3px 8px;font-size:.72rem;cursor:pointer">☑️ ทั้งหมด</button>'
-      + '<button onclick="asSpotifyCheckAll(false)" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:5px;padding:3px 8px;font-size:.72rem;cursor:pointer">☐ ยกเลิก</button>'
-      + '</div>';
-
-    act.style.display = '';
-    act.innerHTML = '<button class="btn-sm" style="background:#1DB954;color:#fff;border:none;flex:1" onclick="applySpotifyData()">✅ นำไปใช้ที่เลือก</button>'
-      + '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db" onclick="closeItunesPopover()">ยกเลิก</button>';
-  });
-}
-
-function asSpotifyCheckAll(check) {
-  _AS_ITUNES_FIELDS.forEach(function(fd) {
-    var el = document.getElementById('as-spchk-' + fd.f);
-    if (el) el.checked = check;
-  });
-}
-
-function applySpotifyData() {
-  var songId = _spotifyPendingSongId;
-  var data   = _spotifyPendingData;
-  if (!songId || !data) return;
-  var row = document.querySelector('tr[data-id="' + songId + '"]');
-  if (!row) { closeItunesPopover(); showToast('เพลงอยู่คนละหน้า — เปิดหน้าที่มีเพลงนั้นก่อน แล้วกด 🟢 ใหม่', 'warning'); return; }
-  var changed = false;
-  _AS_ITUNES_FIELDS.forEach(function(fd) {
-    var chk = document.getElementById('as-spchk-' + fd.f);
-    if (!chk || !chk.checked) return;
-    var inp = document.getElementById('as-sp-' + fd.f);
-    var val = inp ? inp.value.trim() : (data[fd.f] || '');
-    if (!val) return;
-    var el = row.querySelector('[data-field="' + fd.f + '"]');
-    if (el) { el.value = val; changed = true; }
-  });
-  if (changed) {
-    var anyEl = row.querySelector('input,select');
-    if (anyEl) markDirty(anyEl);
-    showToast('✅ นำข้อมูล Spotify มาใส่แล้ว กด 💾 เพื่อบันทึก', 'success');
-  } else {
-    showToast('ℹ️ ไม่ได้เลือก field ใด', 'info');
   }
   closeItunesPopover();
 }
