@@ -134,9 +134,11 @@
       <option value="unverified">⬜ ยังไม่ยืนยัน</option>
     </select>
     <button type="button" id="keyModeToggle" class="btn-add" onclick="toggleKeyMode()" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
+    <button type="button" class="btn-add" style="background:#3B82F6" onclick="openGuideModal()">📘 คู่มือ</button>
     <button type="button" class="btn-add" onclick="openAddModal()">➕ เพิ่มเพลง</button>
     <button type="button" class="btn-import-main" onclick="openImportModal()">📥 นำเข้า</button>
-    <button type="button" class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น Excel/CSV">📤 CSV</button>
+    <button type="button" class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น CSV">📤 CSV</button>
+    <button type="button" class="btn-export" onclick="exportSongsExcel()" title="ส่งออกเป็น Excel (มี Dropdown)">📤 Excel</button>
     <button type="button" class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
     <button type="button" id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
     <button type="button" id="smToggleBtn" class="btn-sm-toggle" onclick="toggleSongManagerPanel()" style="display:none">👥 จัดการผู้ดูแลเพลง</button>
@@ -161,12 +163,12 @@
           <tr>
             <th id="th-name" class="sortable" onclick="sortBy('name',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ชื่อเพลง<i class="sort-icon">↕</i></th>
             <th id="th-artist" class="sortable" onclick="sortBy('artist',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ศิลปิน<i class="sort-icon">↕</i></th>
-            <th class="hide-md">คีย์</th>
-            <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">BPM<i class="sort-icon">↕</i></th>
-            <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">นักร้อง<i class="sort-icon">↕</i></th>
-            <th id="th-era" class="sortable hide-sm" onclick="sortBy('era',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ยุค<i class="sort-icon">↕</i></th>
-            <th id="th-tags" class="sortable hide-lg" onclick="sortBy('tags',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">แนวเพลง<i class="sort-icon">↕</i></th>
-            <th id="th-mood" class="sortable hide-lg" onclick="sortBy('mood',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">อารมณ์<i class="sort-icon">↕</i></th>
+            <th class="hide-md">คีย์ <span class="help-tooltip" title="รูปแบบ: นับตามจำนวนชาร์ป(#) / แฟลต(b)&#10;เช่น 1# = G/Em, 2b = Bb/Gm&#10;สามารถคลิกปุ่ม '🔤 อักษร' ด้านบนเพื่อสลับการแสดงผลได้">❓</span></th>
+            <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">BPM <span class="help-tooltip" title="ตัวเลขความเร็วของเพลง&#10;(สามารถค้นหาได้จากเว็บ SongBPM หรือใช้ปุ่ม AI)">❓</span><i class="sort-icon">↕</i></th>
+            <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">นักร้อง <span class="help-tooltip" title="นักร้องต้นฉบับ: ชาย, หญิง, หรือ ชาย/หญิง (คู่)">❓</span><i class="sort-icon">↕</i></th>
+            <th id="th-era" class="sortable hide-sm" onclick="sortBy('era',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ยุค <span class="help-tooltip" title="อิงตามปีที่เพลงออก:&#10;80s (2523-2532)&#10;90s (2533-2542)&#10;2000s (2543-2553)&#10;2010s (2554-2562)&#10;2020s (2563-ปัจจุบัน)">❓</span><i class="sort-icon">↕</i></th>
+            <th id="th-tags" class="sortable hide-lg" onclick="sortBy('tags',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">แนวเพลง <span class="help-tooltip" title="แนวเพลงหลัก เช่น ป๊อป, ร็อค, ลูกทุ่ง ฯลฯ">❓</span><i class="sort-icon">↕</i></th>
+            <th id="th-mood" class="sortable hide-lg" onclick="sortBy('mood',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">อารมณ์ <span class="help-tooltip" title="โทนอารมณ์รวมๆ ของเพลง เช่น มันส์, หวาน, เศร้า">❓</span><i class="sort-icon">↕</i></th>
             <th class="hide-sm" style="text-align:center;min-width:56px">สถานะ</th>
             <th style="text-align:center">จัดการ</th>
           </tr>
@@ -194,13 +196,16 @@
   <div class="modal-box" style="max-width:700px">
     <h3>📥 นำเข้าเพลง</h3>
 
-    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">รองรับไฟล์ <strong>CSV</strong> และ <strong>JSON</strong> — คอลัมน์ที่รู้จัก: <code>name, artist, key, bpm, singer, era, mood, tags</code></p>
+    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">รองรับไฟล์ <strong>Excel (.xlsx)</strong>, <strong>CSV</strong> และ <strong>JSON</strong> — คอลัมน์ที่รู้จัก: <code>name, artist, key, bpm, singer, era, mood, tags</code></p>
+    <div style="background:#FFFBEB;color:#92400E;padding:8px 12px;border-radius:6px;font-size:12px;margin-bottom:14px;border:1px solid #FEF3C7">
+      ⚠️ <strong>ข้อควรระวัง:</strong> หากชื่อเพลงตรงกัน ระบบจะทำการอัปเดตข้อมูลเดิมทับทันที แนะนำให้กด <strong>ส่งออก (Export)</strong> เก็บไว้ก่อนเสมอ
+    </div>
 
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFile').click()">
-      <input type="file" id="importFile" accept=".csv,.json" onchange="handleImportFile(this.files[0])">
+      <input type="file" id="importFile" accept=".xlsx,.csv,.json" onchange="handleImportFile(this.files[0])">
       <div style="font-size:2rem">📂</div>
       <div style="margin-top:8px;font-weight:700">คลิกเพื่อเลือกไฟล์ หรือ ลากวางที่นี่</div>
-      <div style="font-size:12px;color:#9CA3AF;margin-top:4px">CSV / JSON (ไม่เกิน 5 MB)</div>
+      <div style="font-size:12px;color:#9CA3AF;margin-top:4px">Excel / CSV / JSON (ไม่เกิน 5 MB)</div>
     </div>
 
     <div id="importSummary" class="import-summary" style="display:none"></div>
@@ -217,7 +222,15 @@
 <div class="modal-bg" id="addModal" style="display:none" onclick="if(event.target===this)closeAddModal()">
   <div class="modal-box">
     <h3>➕ เพิ่มเพลงใหม่</h3>
-    <div class="m-group"><label>ชื่อเพลง *</label><input id="mName" class="m-input" placeholder="ชื่อเพลง" required oninput="checkDuplicate()"><div id="dupWarn"></div></div>
+    <div class="m-group">
+      <label>ชื่อเพลง *</label>
+      <div style="display:flex;gap:6px;">
+        <input id="mName" class="m-input" placeholder="ชื่อเพลง" required oninput="checkDuplicate()" style="flex:1">
+        <button type="button" class="btn-sm btn-itunes" onclick="itunesLookupForAdd()" title="ค้นหาข้อมูลจาก iTunes" style="border-radius:6px;height:38px;padding:0 12px;font-size:16px;">🎵</button>
+        <button type="button" class="btn-sm" style="background:#8b5cf6;color:#fff;border-radius:6px;border:none;height:38px;padding:0 12px;font-size:16px;" onclick="geminiLookupForAdd()" title="เติมข้อมูลอัตโนมัติด้วย AI">🤖</button>
+      </div>
+      <div id="dupWarn"></div>
+    </div>
     <div class="m-group"><label>ศิลปิน / วงต้นฉบับ</label><input type="text" id="mArtist" class="m-input" list="artistDatalist" placeholder="พิมพ์ชื่อศิลปิน"></div>
     <div class="m-row">
       <div class="m-group">
@@ -267,11 +280,70 @@
   </div>
 </div>
 
+<!-- ── Guide Modal ── -->
+<div class="modal-bg" id="guideModal" style="display:none" onclick="if(event.target===this)closeGuideModal()">
+  <div class="modal-box" style="max-width:550px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h3 style="margin:0">📘 คู่มือการเพิ่มข้อมูลเพลง</h3>
+      <button type="button" onclick="closeGuideModal()" style="background:none;border:none;font-size:24px;cursor:pointer;color:#9CA3AF;line-height:1;padding:0">✕</button>
+    </div>
+    
+    <div style="max-height:60vh;overflow-y:auto;padding-right:8px;">
+      <h4 style="margin-top:0;color:#4F46E5;border-bottom:1px solid #E5E7EB;padding-bottom:4px;">1. วิธีการหา BPM และ คีย์</h4>
+      <ul style="margin:8px 0;padding-left:24px;font-size:0.95rem;color:#374151">
+        <li><strong>ปุ่ม 🤖 AI:</strong> กดที่ปุ่มหุ่นยนต์ในหน้าต่าง "เพิ่มเพลง" ระบบจะช่วยค้นหา BPM และคีย์ให้โดยอัตโนมัติ</li>
+        <li><strong>เช็คจากเว็บไซต์:</strong> สามารถนำชื่อเพลงไปค้นหาได้ที่ 
+          <a href="https://songbpm.com" target="_blank" style="color:#2563EB;text-decoration:underline">SongBPM.com</a> หรือ 
+          <a href="https://tunebat.com" target="_blank" style="color:#2563EB;text-decoration:underline">Tunebat.com</a>
+        </li>
+      </ul>
+
+      <h4 style="margin-top:20px;color:#4F46E5;border-bottom:1px solid #E5E7EB;padding-bottom:4px;">2. ตารางเทียบเคียงคีย์ (Key Mapping)</h4>
+      <p style="font-size:0.9rem;color:#6B7280;margin:6px 0;">ระบบจัดเก็บคีย์ในรูปแบบจำนวนชาร์ป(#)/แฟลต(b) สามารถเทียบเป็นคีย์ตัวอักษรได้ดังนี้:</p>
+      <div style="display:flex;gap:20px;font-size:0.9rem;margin-top:8px">
+        <table style="width:50%;border-collapse:collapse;border:1px solid #E5E7EB">
+          <tr style="background:#F3F4F6"><th style="padding:6px;border:1px solid #E5E7EB">ระบบ</th><th style="padding:6px;border:1px solid #E5E7EB">คีย์สากล (Major/Minor)</th></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">C / Am</td><td style="padding:4px 8px;border:1px solid #E5E7EB">C / Am</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">1#</td><td style="padding:4px 8px;border:1px solid #E5E7EB">G / Em</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">2#</td><td style="padding:4px 8px;border:1px solid #E5E7EB">D / Bm</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">3#</td><td style="padding:4px 8px;border:1px solid #E5E7EB">A / F#m</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">4#</td><td style="padding:4px 8px;border:1px solid #E5E7EB">E / C#m</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">5#</td><td style="padding:4px 8px;border:1px solid #E5E7EB">B / G#m</td></tr>
+        </table>
+        <table style="width:50%;border-collapse:collapse;border:1px solid #E5E7EB">
+          <tr style="background:#F3F4F6"><th style="padding:6px;border:1px solid #E5E7EB">ระบบ</th><th style="padding:6px;border:1px solid #E5E7EB">คีย์สากล (Major/Minor)</th></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">1b</td><td style="padding:4px 8px;border:1px solid #E5E7EB">F / Dm</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">2b</td><td style="padding:4px 8px;border:1px solid #E5E7EB">Bb / Gm</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">3b</td><td style="padding:4px 8px;border:1px solid #E5E7EB">Eb / Cm</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">4b</td><td style="padding:4px 8px;border:1px solid #E5E7EB">Ab / Fm</td></tr>
+          <tr><td style="padding:4px 8px;border:1px solid #E5E7EB;text-align:center">5b</td><td style="padding:4px 8px;border:1px solid #E5E7EB">Db / Bbm</td></tr>
+        </table>
+      </div>
+      <div style="font-size:0.85rem;color:#059669;margin-top:6px">💡 ทริค: กดปุ่ม "🔤 อักษร" บนแถบเครื่องมือเพื่อสลับการแสดงผลคีย์ในตารางได้ตลอดเวลา</div>
+
+      <h4 style="margin-top:20px;color:#4F46E5;border-bottom:1px solid #E5E7EB;padding-bottom:4px;">3. เกณฑ์การแบ่งยุค (Era)</h4>
+      <ul style="margin:8px 0;padding-left:24px;font-size:0.95rem;color:#374151">
+        <li><strong>80s:</strong> ปี พ.ศ. 2523 - 2532</li>
+        <li><strong>90s:</strong> ปี พ.ศ. 2533 - 2542 (ยุคอัลเทอร์เนทีฟรุ่งเรือง)</li>
+        <li><strong>2000s (00s):</strong> ปี พ.ศ. 2543 - 2553</li>
+        <li><strong>2010s (10s):</strong> ปี พ.ศ. 2554 - 2562</li>
+        <li><strong>2020s (20s):</strong> ปี พ.ศ. 2563 - ปัจจุบัน</li>
+      </ul>
+    </div>
+    
+    <div class="modal-actions" style="margin-top:16px;">
+      <button type="button" class="btn-primary" onclick="closeGuideModal()" style="width:100%">ปิดหน้าต่างนี้</button>
+    </div>
+  </div>
+</div>
+
 <datalist id="artistDatalist"></datalist>
+<!-- ExcelJS for Export/Import -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 <script src="js/itunes-api.js?v=20260317g"></script>
 <script src="js/nav.js?v=20260319b"></script>
-<script src="js/admin-songs-v2.js?v=3"></script>
+<script src="js/admin-songs-v2.js?v=4"></script>
 </body>
 </html>
