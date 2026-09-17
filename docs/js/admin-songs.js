@@ -1793,12 +1793,12 @@ function geminiLookup(songId) {
 
     var prompt = "ค้นหาข้อมูล BPM (ความเร็วเพลง) และ Key (คีย์เพลง) ของเพลง '" + q + "' (เพลงไทย)\nให้ตอบกลับเป็น JSON ล้วนๆ ห้ามมีคำอธิบายอื่น โดยใช้รูปแบบนี้:\n{\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, หวาน, เศร้า, นิ่ง, ฮึกเหิม)\"}\nหากไม่เจอ ให้ลองประมาณการจากเพลงได้ แต่ถ้าเจอข้อมูลจากเน็ตให้เอาข้อมูลนั้น";
     
-    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+    fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=' + apiKey.trim(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ googleSearch: {} }],
+        tools: [{ google_search: {} }],
         generationConfig: { temperature: 0.1 }
       })
     })
