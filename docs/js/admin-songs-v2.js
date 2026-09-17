@@ -1854,10 +1854,38 @@ function asShowGeminiResult(songId, parsedData) {
     if(fd.f !== 'bpm' && fd.f !== 'key' && fd.f !== 'era' && fd.f !== 'mood') return;
     var val = parsedData[fd.f] || '';
     if (val) {
-      html += '<label style="display:flex;align-items:center;gap:8px;background:var(--premium-bg);padding:8px;border-radius:6px;border:1px solid var(--premium-border)">'
+      var inputHtml = '';
+      if (fd.f === 'era') {
+        inputHtml = '<select id="as-ai-era" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary);appearance:auto;cursor:pointer">';
+        _ERA_OPTS.forEach(function(o) {
+          if (!o) return;
+          var lbl = _ERA_LABELS[o] || o;
+          inputHtml += '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(lbl) + '</option>';
+        });
+        inputHtml += '</select>';
+      } else if (fd.f === 'mood') {
+        inputHtml = '<select id="as-ai-mood" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary);appearance:auto;cursor:pointer">';
+        _MOOD_OPTS.forEach(function(o) {
+          if (!o) return;
+          inputHtml += '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>';
+        });
+        inputHtml += '</select>';
+      } else if (fd.f === 'key') {
+        inputHtml = '<select id="as-ai-key" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary);appearance:auto;cursor:pointer">';
+        _KEY_OPTS.forEach(function(o) {
+          if (!o) return;
+          var lbl = (_keyDisplayMode === 'letter' && _KEY_MAP[o]) ? _KEY_MAP[o] : o;
+          inputHtml += '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(lbl) + '</option>';
+        });
+        inputHtml += '</select>';
+      } else {
+        inputHtml = '<input type="' + (fd.f === 'bpm' ? 'number' : 'text') + '" id="as-ai-' + fd.f + '" value="' + esc(val) + '" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary)">';
+      }
+
+      html += '<label style="display:flex;align-items:center;gap:8px;background:var(--premium-bg);padding:8px;border-radius:6px;border:1px solid var(--premium-border);cursor:pointer">'
         + '<input type="checkbox" id="as-aichk-' + fd.f + '" checked>'
         + '<span style="font-weight:600;min-width:60px">' + fd.label + '</span>'
-        + '<input type="text" id="as-ai-' + fd.f + '" value="' + esc(val) + '" style="flex:1;background:transparent;border:none;outline:none;font-size:.9rem;color:var(--premium-primary)">'
+        + inputHtml
         + '</label>';
     }
   });
