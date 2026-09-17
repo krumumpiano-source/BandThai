@@ -1775,7 +1775,8 @@ function aiLookup(songId) {
   act.style.display = 'none';
 
   apiCall('getAppConfig', {}, function(res) {
-    var endpoint = 'http://localhost:1234/v1/chat/completions';
+    // Default to Ollama's port if not set
+    var endpoint = 'http://localhost:11434/v1/chat/completions';
     if (res && res.data) {
       var map = {};
       res.data.forEach(function(row) { map[row.key] = row.value; });
@@ -1784,23 +1785,37 @@ function aiLookup(songId) {
 
     var prompt = "จงวิเคราะห์เพลง '" + q + "' แล้วตอบกลับเป็น JSON ล้วนๆ ห้ามมีข้อความอื่น โดยใช้รูปแบบนี้: {\"bpm\": ตัวเลข, \"key\": \"คีย์เพลง\", \"era\": \"ยุค (เช่น 2010s, 90s, 80s)\", \"mood\": \"อารมณ์เพลง (เช่น สนุก, เศร้า, ชิล)\"}";
     
-    fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.1,
-        max_tokens: 150
+    var baseUrl = endpoint.replace('/chat/completions', '');
+    
+    // Fetch available models first (Required for Ollama)
+    fetch(baseUrl + '/models')
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .catch(function() { return null; }) // Ignore errors, fallback
+      .then(function(modelData) {
+        var modelName = 'local-model'; // Fallback name
+        if (modelData && modelData.data && modelData.data.length > 0) {
+          modelName = modelData.data[0].id;
+        }
+
+        return fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: modelName,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.1,
+            max_tokens: 150
+          })
+        });
       })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('Local AI Error: ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      if (!data.choices || !data.choices.length) {
-        throw new Error('No choices from AI');
-      }
+      .then(function(r) {
+        if (!r.ok) throw new Error('Local AI Error: ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data.choices || !data.choices.length) {
+          throw new Error('No choices from AI');
+        }
       var text = data.choices[0].message.content;
       text = text.replace(/```json/g, '').replace(/```/g, '').trim();
       var parsed = null;
