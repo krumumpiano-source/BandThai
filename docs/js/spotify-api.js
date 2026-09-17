@@ -132,7 +132,16 @@
       fetch('https://api.spotify.com/v1/search?q=' + q + '&type=track&limit=5&market=TH', {
         headers: { 'Authorization': 'Bearer ' + token }
       })
-      .then(function(r) { return r.json(); })
+      .then(function(r) {
+        if (!r.ok) {
+          return r.text().then(function(txt) {
+            var msg = txt;
+            try { msg = JSON.parse(txt).error.message; } catch(e) {}
+            throw new Error('403 API Restricted: ' + msg.substring(0, 50));
+          });
+        }
+        return r.json();
+      })
       .then(function(data) {
         if (!data.tracks || !data.tracks.items || !data.tracks.items.length) {
           callback(null, 'ไม่พบเพลงนี้ใน Spotify');
