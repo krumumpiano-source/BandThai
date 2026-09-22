@@ -85,6 +85,7 @@ var _syncRetryTimer   = null;
 var _periodicSyncTimer = null;
 var _isSyncLeader     = false; // true = this device is earliest joiner & broadcast authority
 var _isExplicitMaster = (localStorage.getItem('liveMaster') === 'true'); // Explicit Master role
+var _currentMasterName = _isExplicitMaster ? (localStorage.getItem('userName') || 'Admin') : '';
 var _channelStatus    = '';    // 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | ''
 var _channelName      = '';    // current channel name for debug
 var _rtSendOk         = 0;    // broadcast send success count
@@ -205,6 +206,7 @@ document.addEventListener('DOMContentLoaded', function() {
   startClock();
   _startHbdTimer();
   acquireWakeLock();
+  _updateMasterOuterBtn();
   document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
 
   // ── Break Timer Init ────────────────────────────────────────────
@@ -1082,13 +1084,40 @@ function toggleMasterRole(forceState) {
     _isExplicitMaster = !_isExplicitMaster;
   }
   localStorage.setItem('liveMaster', String(_isExplicitMaster));
+  
+  if (_isExplicitMaster) {
+    _currentMasterName = localStorage.getItem('userName') || 'Admin';
+  } else {
+    _currentMasterName = '';
+  }
+
   openSettings(); // refresh UI
+  _updateMasterOuterBtn();
+
   if (_isExplicitMaster) {
     showToast('👑 เครื่องนี้เป็นเครื่องหลัก (Master) แล้ว');
-    broadcastEvent('takeover_master', { by: localStorage.getItem('userName') || 'Admin' });
+    broadcastEvent('takeover_master', { by: _currentMasterName });
     setTimeout(function() { broadcastEvent('state_sync', getState()); }, 100);
   } else {
     showToast('เครื่องนี้กลับเป็นเครื่องรอง');
+  }
+}
+
+function _updateMasterOuterBtn() {
+  var btn = document.getElementById('masterOuterBtn');
+  if (!btn) return;
+  if (_isExplicitMaster) {
+    btn.innerHTML = '👑 คุณคือ Master';
+    btn.style.color = 'var(--gold)';
+    btn.style.borderColor = 'var(--gold)';
+  } else if (_currentMasterName) {
+    btn.innerHTML = '👑 คุมโดย: ' + esc(_currentMasterName);
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'rgba(255,255,255,0.2)';
+  } else {
+    btn.innerHTML = '👑 รอซิงค์...';
+    btn.style.color = '#ff6b6b';
+    btn.style.borderColor = '#ff6b6b';
   }
 }
 
@@ -2905,10 +2934,12 @@ function initRealtime() {
     .on('broadcast', { event: 'takeover_master' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
+      _currentMasterName = d.by || 'Unknown';
+      _updateMasterOuterBtn();
       if (_isExplicitMaster) {
         _isExplicitMaster = false;
         localStorage.setItem('liveMaster', 'false');
-        showToast('⚠️ สิทธิ์เครื่องหลักถูกโอนไปยัง ' + (d.by || 'เครื่องอื่น'));
+        showToast('⚠️ สิทธิ์เครื่องหลักถูกโอนไปยัง ' + _currentMasterName);
         if (document.getElementById('liveSettings') && document.getElementById('liveSettings').classList.contains('open')) {
           openSettings();
         }
@@ -3014,6 +3045,12 @@ function initRealtime() {
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
+      
+      if (d.masterBy && !_isExplicitMaster) {
+         _currentMasterName = d.masterBy;
+         _updateMasterOuterBtn();
+      }
+      
       if (!d.playlist || d.playlist.length === 0) return;
 
       // Cancel retry timer on first sync
@@ -3259,7 +3296,8 @@ function getState() {
     breakStarted: _breakStarted,
     breakStartTime: _breakStartTime,
     lastEndedBreakStartTime: _lastEndedBreakStartTime, // proof เบรคล่าสุดที่จบแล้ว
-    endBreakDone: _endBreakDone
+    endBreakDone: _endBreakDone,
+    masterBy: _isExplicitMaster ? (localStorage.getItem('userName') || 'Admin') : _currentMasterName
   };
 }
 
