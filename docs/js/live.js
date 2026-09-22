@@ -904,7 +904,10 @@ function renderSongList() {
           '<button class="si-arrow" onclick="moveSongDown(event,' + i + ')"' + (i === _playlist.length - 1 ? ' disabled' : '') + ' title="\u0e40\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e25\u0e07">▼</button>' +
         '</div>' +
         '<div class="si-content">' +
-          '<div class="si-name">' + escHtml(s.name) + '</div>' +
+          '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">' +
+            '<div class="si-name" style="flex:1; min-width:0;">' + escHtml(s.name) + '</div>' +
+            (s.artist ? '<div style="font-size:0.85rem; color:var(--text2); white-space:nowrap; flex-shrink:0; font-weight:400;">' + escHtml(s.artist) + '</div>' : '') +
+          '</div>' +
           (meta.length ? '<div class="si-meta">' + meta.join(' · ') + '</div>' : '') +
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
