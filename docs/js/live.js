@@ -523,6 +523,9 @@ function syncPlaylistWithLibrary() {
   if (changed) {
     renderSongList();
     renderNowPlaying();
+    if (_isExplicitMaster) {
+      scheduleStateSync();
+    }
   }
 }
 
