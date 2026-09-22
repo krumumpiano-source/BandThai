@@ -668,6 +668,18 @@ function renderNowPlaying() {
   if (!s) return;
   var titleEl = document.getElementById('nowTitle');
   titleEl.textContent = s.name;
+  
+  var artistEl = document.getElementById('nowArtist');
+  if (artistEl) {
+    if (s.artist) {
+      artistEl.textContent = s.artist;
+      artistEl.style.display = 'block';
+    } else {
+      artistEl.style.display = 'none';
+      artistEl.textContent = '';
+    }
+  }
+
   // Advance color on each song change, then start marquee
   _marqueeColorIdx = (_marqueeColorIdx + 1) % (_marqueeColorsDark.length);
   _updateMarquee(titleEl);
