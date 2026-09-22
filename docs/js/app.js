@@ -27,7 +27,7 @@
       '_sb_sdk',
       function () {
         // 3) Load supabase-api.js
-        loadScript('js/supabase-api.js', '_sb_api', null);
+        loadScript('js/supabase-api.js?v=20260922a', '_sb_api', null);
       }
     );
   });
