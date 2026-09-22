@@ -492,6 +492,9 @@
       var row = toSnakeObj(Object.assign({ band_id: getBandId() }, payload));
       delete row.action; delete row._token;
       delete row.band_name; delete row.bandName;
+      if (table === 'band_songs' && row.band_id) {
+        row.source = 'band';
+      }
       var { data, error } = await sb.from(table).insert(row).select().single();
       if (error) throw error;
       return { success: true, data: toCamel(data) };
@@ -802,6 +805,16 @@
         if (data.length < PAGE) break;
         from += PAGE;
       }
+
+      // Also fetch band-owned songs for Admin Mode (so they appear in คลังวง tab)
+      var bandId = d.bandId || getBandId();
+      if (bandId) {
+        var { data: owned, error: ownErr } = await sb.from('band_songs').select('*').eq('band_id', bandId);
+        if (!ownErr && owned && owned.length > 0) {
+          all = all.concat(owned);
+        }
+      }
+
       return { success: true, data: toCamelList(all) };
     }
 
