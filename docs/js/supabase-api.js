@@ -771,7 +771,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
@@ -832,7 +832,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
