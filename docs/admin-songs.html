@@ -104,6 +104,11 @@
       <option value="2010s">2554-2562 (10s)</option>
       <option value="2020s">2563-ปัจจุบัน (20s)</option>
     </select>
+    <select id="asNationality" class="as-filter" onchange="filterTable()">
+      <option value="">ทุกสัญชาติ</option>
+      <option value="ไทย">ไทย</option>
+      <option value="สากล">สากล</option>
+    </select>
     <select id="asGenre" class="as-filter" onchange="filterTable()">
       <option value="">ทุกแนว</option>
       <option value="ป๊อป">ป๊อป</option>
@@ -168,6 +173,7 @@
             <th id="th-bpm" class="sortable hide-md" onclick="sortBy('bpm',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">BPM <span class="help-tooltip" title="ตัวเลขความเร็วของเพลง&#10;(สามารถค้นหาได้จากเว็บ SongBPM หรือใช้ปุ่ม AI)">❓</span><i class="sort-icon">↕</i></th>
             <th id="th-singer" class="sortable hide-md" onclick="sortBy('singer',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">นักร้อง <span class="help-tooltip" title="นักร้องต้นฉบับ: ชาย, หญิง, หรือ ชาย/หญิง (คู่)">❓</span><i class="sort-icon">↕</i></th>
             <th id="th-era" class="sortable hide-sm" onclick="sortBy('era',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ยุค <span class="help-tooltip" title="อิงตามปีที่เพลงออก:&#10;80s (2523-2532)&#10;90s (2533-2542)&#10;2000s (2543-2553)&#10;2010s (2554-2562)&#10;2020s (2563-ปัจจุบัน)">❓</span><i class="sort-icon">↕</i></th>
+            <th id="th-nationality" class="sortable hide-lg" onclick="sortBy('nationality',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">สัญชาติ<i class="sort-icon">↕</i></th>
             <th id="th-tags" class="sortable hide-lg" onclick="sortBy('tags',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">แนวเพลง <span class="help-tooltip" title="แนวเพลงหลัก เช่น ป๊อป, ร็อค, ลูกทุ่ง ฯลฯ">❓</span><i class="sort-icon">↕</i></th>
             <th id="th-mood" class="sortable hide-lg" onclick="sortBy('mood',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">อารมณ์ <span class="help-tooltip" title="โทนอารมณ์รวมๆ ของเพลง เช่น มันส์, หวาน, เศร้า">❓</span><i class="sort-icon">↕</i></th>
             <th class="hide-sm" style="text-align:center;min-width:56px">สถานะ</th>
@@ -238,7 +244,7 @@
         <label>คีย์</label>
         <select id="mKey" class="m-select" onchange="checkDuplicate()"><option value="">—</option><option>C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
       </div>
-      <div class="m-group"><label>BPM</label><input id="mBpm" class="m-input" type="number" min="0" max="300" placeholder="0"></div>
+      <div class="m-group"><label>BPM</label><input id="mBpm" class="m-input" type="text" placeholder="เช่น 120, 77+118"></div>
     </div>
     <div class="m-group">
       <label>นักร้อง</label>
@@ -258,9 +264,18 @@
         <select id="mMood" class="m-select"><option value="">—</option><option>มัน / สนุก</option><option>หวาน / โรแมนติก</option><option>เศร้า / อกหัก</option><option>นิ่ง / ผ่อนคลาย</option><option>ฮึกเหิม / ยิ่งใหญ่</option></select>
       </div>
     </div>
-    <div class="m-group">
-      <label>แนวเพลง (ประเภท)</label>
-      <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
+    <div class="m-row">
+      <div class="m-group">
+        <label>สัญชาติเพลง</label>
+        <select id="mNationality" class="m-select">
+          <option value="ไทย">ไทย</option>
+          <option value="สากล">สากล</option>
+        </select>
+      </div>
+      <div class="m-group">
+        <label>แนวเพลง (ประเภท)</label>
+        <select id="mGenre" class="m-select"><option value="">—</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
+      </div>
     </div>
     <div class="modal-actions">
       <button type="button" class="btn-secondary" onclick="closeAddModal()">ยกเลิก</button>

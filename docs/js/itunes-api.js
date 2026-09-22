@@ -9,6 +9,21 @@
 (function() {
   'use strict';
 
+  // ── Helper to bypass CORS/429 for iTunes API ──────────
+  function fetchItunes(url) {
+    return fetch(url).then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).catch(function(e) {
+      console.warn('iTunes fetch failed (CORS/429), trying proxy...', e);
+      var proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+      return fetch(proxyUrl).then(function(r) {
+        if (!r.ok) throw new Error('Proxy HTTP ' + r.status);
+        return r.json();
+      });
+    });
+  }
+
   // ── Genre → tag (ต้องตรงกับ _GENRE_OPTS ของระบบ) ────
   function genreToTag(genre) {
     var g = (genre || '').toLowerCase();
@@ -19,8 +34,8 @@
     if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1 || g.indexOf('แจ๊ส') !== -1 || g.indexOf('บลูส์') !== -1) return 'แจ๊ส / บลูส์';
     if (g.indexOf('reggae') !== -1 || g.indexOf('ska') !== -1 || g.indexOf('เรกเก') !== -1 || g.indexOf('สกา') !== -1) return 'เรกเก้';
     if (g.indexOf('indie') !== -1 || g.indexOf('alternative') !== -1 || g.indexOf('อินดี') !== -1 || g.indexOf('ออลเทอร์') !== -1) return 'อินดี้';
-    if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('คันทรี') !== -1 || g.indexOf('โฟล์ก') !== -1 || g.indexOf('ลูกทุ่ง') !== -1 || g.indexOf('อีสาน') !== -1 || g.indexOf('หมอลำ') !== -1) return 'ลูกทุ่ง / อีสาน';
-    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('เพื่อชีวิต') !== -1) return 'เพื่อชีวิต';
+    if (g.indexOf('country') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('คันทรี') !== -1 || g.indexOf('ลูกทุ่ง') !== -1 || g.indexOf('อีสาน') !== -1 || g.indexOf('หมอลำ') !== -1) return 'ลูกทุ่ง / อีสาน';
+    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('เพื่อชีวิต') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('โฟล์ก') !== -1) return 'เพื่อชีวิต';
     if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1 || g.indexOf('คลาสสิก') !== -1) return 'ป๊อป';
     if (g.indexOf('thai') !== -1 || g.indexOf('t-pop') !== -1 || g.indexOf('ไทย') !== -1 || g.indexOf('ที-ป็อป') !== -1) return 'ป๊อป';
     if (g.indexOf('pop') !== -1 || g.indexOf('ป็อป') !== -1 || g.indexOf('ป๊อป') !== -1) return 'ป๊อป';
@@ -95,6 +110,7 @@
       name:      t.trackName || '',
       artist:    t.artistName || '',
       singer:    '',
+      nationality: (hasThai(t.trackName) || hasThai(t.artistName)) ? 'ไทย' : 'สากล',
       key:       '',
       bpm:       null,
       mood:      '',
@@ -118,15 +134,14 @@
     var url = 'https://itunes.apple.com/search?term=' + encodeURIComponent(term)
             + '&country=TH&media=music&limit=10' + (hasThai(term) ? '&lang=th_th' : '');
 
-    fetch(url)
-      .then(function(r) { return r.json(); })
+    fetchItunes(url)
       .then(function(data) {
         if (!data.results || !data.results.length) {
           // Retry with song name only if combined search fails
           if (artist && name) {
             var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(name)
                      + '&country=TH&media=music&limit=10' + (hasThai(name) ? '&lang=th_th' : '');
-            return fetch(url2).then(function(r2) { return r2.json(); });
+            return fetchItunes(url2);
           }
           callback(null, 'ไม่พบเพลงนี้ใน iTunes');
           return;
@@ -177,12 +192,12 @@
       var termCombined = (cleanArtist + ' ' + cleanNameTerm).trim();
       var url1 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(termCombined)
                + '&country=TH&media=music&limit=15' + (hasThai(termCombined) ? '&lang=th_th' : '');
-      p1 = fetch(url1).then(function(r) { return r.json(); }).catch(function(){ return {results:[]}; });
+      p1 = fetchItunes(url1).catch(function(){ return {results:[]}; });
     }
     
     var url2 = 'https://itunes.apple.com/search?term=' + encodeURIComponent(cleanNameTerm)
              + '&country=TH&media=music&limit=30' + (hasThai(cleanNameTerm) ? '&lang=th_th' : '');
-    p2 = fetch(url2).then(function(r) { return r.json(); }).catch(function(){ return {results:[]}; });
+    p2 = fetchItunes(url2).catch(function(){ return {results:[]}; });
     
     Promise.all([p1, p2])
       .then(function(resArray) {

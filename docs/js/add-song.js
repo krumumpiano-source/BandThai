@@ -44,6 +44,7 @@ var MOOD_HINTS = {
         bpm:      parseInt(document.getElementById('bpm').value) || 0,
         era:      document.getElementById('era').value.trim(),
         tags:     document.getElementById('genre').value.trim(),
+        nationality: document.getElementById('nationality') ? document.getElementById('nationality').value.trim() : 'ไทย',
         singer:   singerRadio ? singerRadio.value : '',
         mood:     document.getElementById('mood').value.trim(),
         bandId:   bandId,
@@ -137,6 +138,10 @@ var MOOD_HINTS = {
           var genreEl = document.getElementById('genre');
           for (var g = 0; g < genreEl.options.length; g++) {
             if (genreEl.options[g].value === info.tags) { genreEl.selectedIndex = g; break; }
+          }
+          if (info.nationality) {
+            var natEl = document.getElementById('nationality');
+            if (natEl) natEl.value = info.nationality;
           }
         }
         if (info.singer) {

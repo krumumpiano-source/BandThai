@@ -96,6 +96,12 @@
           <option value="2020s">2563-ปัจจุบัน (20s)</option>
         </select>
 
+        <select id="nationality" onchange="onFilterChange()">
+          <option value="">สัญชาติเพลง</option>
+          <option value="ไทย">ไทย</option>
+          <option value="สากล">สากล</option>
+        </select>
+
         <select id="genre" onchange="onFilterChange()">
           <option value="">แนวเพลง</option>
           <option value="ป๊อป">ป๊อป</option>
@@ -121,6 +127,11 @@
 
         <select id="artist" onchange="onFilterChange()">
           <option value="">ทุกศิลปิน</option>
+        </select>
+
+        <select id="sortOption" onchange="onFilterChange()" style="display:none;font-weight:600;color:var(--primary)">
+          <option value="name">เรียงตามชื่อ (ก-ฮ)</option>
+          <option value="least_played">เพลงเล่นน้อย (7 วันที่ผ่านมา)</option>
         </select>
       </div>
     </div>
@@ -371,15 +382,19 @@ function setLoading(loading) {
 function getFilterValues() {
   var singerEl = getEl("singer");
   var eraEl = getEl("era");
+  var nationalityEl = getEl("nationality");
   var genreEl = getEl("genre");
   var moodEl = getEl("mood");
   var artistEl = getEl("artist");
+  var sortOptionEl = getEl("sortOption");
   return {
     singer: singerEl ? singerEl.value : "",
     era: eraEl ? eraEl.value : "",
+    nationality: nationalityEl ? nationalityEl.value : "",
     genre: genreEl ? genreEl.value : "",
     mood: moodEl ? moodEl.value : "",
-    artist: artistEl ? artistEl.value : ""
+    artist: artistEl ? artistEl.value : "",
+    sortKey: sortOptionEl ? sortOptionEl.value : "name"
   };
 }
 
@@ -641,9 +656,12 @@ function loadPage(page) {
     search: search,
     singer: filters.singer,
     era: filters.era,
+    nationality: filters.nationality,
     genre: filters.genre,
     mood: filters.mood,
-    artist: filters.artist
+    artist: filters.artist,
+    sortKey: filters.sortKey,
+    recentPlayCounts: window._recentPlayCounts || {}
   }, function(result) {
     clearTimeout(_loadSpinTimer);
     // Ignore stale responses from previous requests
@@ -728,6 +746,17 @@ function switchLibrary(source) {
   // hide add-song-band link in band view
   var addWrap = document.getElementById('addSongBandWrap');
   if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
+  // hide/show sort option for band view
+  var sortOpt = document.getElementById('sortOption');
+  if (sortOpt) {
+    sortOpt.style.display = (source === 'band') ? 'inline-block' : 'none';
+    if (source === 'global') {
+      sortOpt.value = 'name';
+    } else if (source === 'band') {
+      // Default to least_played when switching to band library
+      sortOpt.value = 'least_played';
+    }
+  }
   // exit select mode if active
   if (_selectMode) exitSelectMode();
   _savedPageBeforeSearch = null;
@@ -1787,6 +1816,15 @@ function tapAddSong(e, idx) {
     return;
   }
 
+  var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
+  
+  if (freq >= 4) {
+    var confirmMsg = '⚠️ เพลง "' + name + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งในช่วง 7 วันที่ผ่านมา\n\nเพลงนี้คุณเล่นบ่อยเกินไปแล้ว เปลี่ยนบ้างนะ!\n\nต้องการเพิ่มเพลงนี้จริงๆ หรือไม่?';
+    if (!confirm(confirmMsg)) {
+      return; // abort
+    }
+  }
+
   // เพิ่มใหม่
   addSong(song);
   _lastAddedIndex = playlistData.length - 1;
@@ -1797,25 +1835,17 @@ function tapAddSong(e, idx) {
     row.classList.add('just-added', 'row-added');
     setTimeout(function(){ row.classList.remove('just-added'); }, 420);
   }
-  var name = song.name || '';
-  var k = (name + '|' + (song.artist||'')).toLowerCase();
-  var freq = window._recentSongFreq ? (window._recentSongFreq[k] || 0) : 0;
-  var freqWarn = freq >= 2 ? ' (⚠️ เล่น ' + freq + ' ครั้งใน 14 วัน)' : '';
 
   clearTimeout(_undoToastTimer);
   var t2 = document.getElementById('undoToast');
   if (t2) {
     var msg = t2.querySelector('.undo-msg');
-    if (msg) msg.textContent = '➕ ' + name + ' เพิ่มในลิสแล้ว' + freqWarn;
+    if (msg) msg.textContent = '➕ ' + name + ' เพิ่มในลิสแล้ว';
     t2.style.display = 'flex';
     _undoToastTimer = setTimeout(function() {
       t2.style.display = 'none';
       _lastAddedIndex = -1;
     }, 4000);
-  }
-
-  if (freq >= 2) {
-    showSongsAlert('⚠️ เพลง "' + name + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งใน 14 วันที่ผ่านมา');
   }
 }
 
@@ -2365,14 +2395,17 @@ function loadHistoryEntry(idx) {
   if (playlistData.length > 0 && !confirm('ล้างลิสปัจจุบันแล้วโหลดลิสนี้?')) return;
   playlistData = h.songs.map(function(s){
     return enrichSongFromBandLibrary({
-      name:      s.name || '',
-      key:       s.key || '',
-      bpm:       s.bpm || 0,
-      singer:    s.singer || '',
-      artist:    s.artist || '',
-      tags:      s.tags || '',
-      transpose: 0,
-      mode:      ''
+      name:        s.name || '',
+      key:         s.key || '',
+      bpm:         s.bpm || 0,
+      singer:      s.singer || '',
+      artist:      s.artist || '',
+      tags:        s.tags || '',
+      nationality: s.nationality || '',
+      era:         s.era || '',
+      mood:        s.mood || '',
+      transpose:   0,
+      mode:        ''
     });
   });
   renderPlaylist();
@@ -2428,10 +2461,21 @@ function closeHistory() {
   </div>
   <div class="sug-row">
     <div class="sug-field">
+      <label>สัญชาติเพลง</label>
+      <select id="sugNationality">
+        <option value="">— ไม่เปลี่ยน —</option>
+        <option value="ไทย">ไทย</option>
+        <option value="สากล">สากล</option>
+      </select>
+      <div class="sug-current" id="sugNationalityCur"></div>
+    </div>
+    <div class="sug-field">
       <label>แนวเพลง</label>
       <select id="sugGenre"><option value="">— ไม่เปลี่ยน —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
       <div class="sug-current" id="sugGenreCur"></div>
     </div>
+  </div>
+  <div class="sug-row">
     <div class="sug-field">
       <label>นักร้อง</label>
       <select id="sugSinger"><option value="">— ไม่เปลี่ยน —</option><option value="ชาย">🎤 ชาย</option><option value="หญิง">🎤 หญิง</option><option value="ชาย/หญิง">🎤🎤 คู่</option></select>
@@ -2476,6 +2520,7 @@ function _fillSuggestModal(song, songId) {
   document.getElementById('sugSinger').value = song.singer || '';
   document.getElementById('sugEra').value = song.era || '';
   document.getElementById('sugMood').value = song.mood || '';
+  document.getElementById('sugNationality').value = song.nationality || '';
   document.getElementById('sugNote').value = '';
 
   document.getElementById('sugNameCur').textContent = 'ปัจจุบัน: ' + (song.name || '—');
@@ -2486,6 +2531,7 @@ function _fillSuggestModal(song, songId) {
   document.getElementById('sugSingerCur').textContent = 'ปัจจุบัน: ' + (song.singer || '—');
   document.getElementById('sugEraCur').textContent = 'ปัจจุบัน: ' + (song.era || '—');
   document.getElementById('sugMoodCur').textContent = 'ปัจจุบัน: ' + (song.mood || '—');
+  document.getElementById('sugNationalityCur').textContent = 'ปัจจุบัน: ' + (song.nationality || '—');
 }
 
 function openSuggestModal(songId, idx) {
@@ -2565,6 +2611,7 @@ function submitSuggestion() {
   var newSinger = document.getElementById('sugSinger').value;
   var newEra = document.getElementById('sugEra').value;
   var newMood = document.getElementById('sugMood').value;
+  var newNationality = document.getElementById('sugNationality').value;
 
   if (newName && newName !== (_sugOriginal.name || '')) changes.name = newName;
   if (newArtist !== (_sugOriginal.artist || '')) changes.artist = newArtist;
@@ -2574,6 +2621,7 @@ function submitSuggestion() {
   if (newSinger && newSinger !== (_sugOriginal.singer || '')) changes.singer = newSinger;
   if (newEra && newEra !== (_sugOriginal.era || '')) changes.era = newEra;
   if (newMood && newMood !== (_sugOriginal.mood || '')) changes.mood = newMood;
+  if (newNationality && newNationality !== (_sugOriginal.nationality || '')) changes.nationality = newNationality;
 
   if (Object.keys(changes).length === 0) {
     showToast('ไม่มีข้อมูลที่เปลี่ยนแปลง', 'error');
@@ -2625,6 +2673,9 @@ function submitSuggestion() {
             if (changes.singer !== undefined) ps.singer = changes.singer;
             if (changes.artist !== undefined) ps.artist = changes.artist;
             if (changes.tags !== undefined) ps.tags = changes.tags;
+            if (changes.nationality !== undefined) ps.nationality = changes.nationality;
+            if (changes.era !== undefined) ps.era = changes.era;
+            if (changes.mood !== undefined) ps.mood = changes.mood;
             plChanged = true;
           }
         });
@@ -2763,9 +2814,9 @@ function closeAdGate() {
 </div>
 
 <script>
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
    UPGRADE: 6 improvements for faster setlist building
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
 
 // â”€â”€ A. Floating Playlist Counter â”€â”€
 function updatePlaylistFloating() {
@@ -2842,7 +2893,7 @@ function exitPlAddMode() {
   _plAddMode = false;
   _plSelectedForAdd = {};
   var btn = document.getElementById('plAddModeBtn');
-  if (btn) { btn.style.background = ''; btn.textContent = '\u2611\uFE0F \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2b\u0e25\u0e32\u0e22\u0e40\u0e1e\u0e25\u0e07'; }
+  if (btn) { btn.style.background = ''; btn.textContent = '\u2611\uFE0F \u0e42\u0e2b\u0e21\u0e14\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2b\u0e25\u0e32\u0e22\u0e40\u0e1e\u0e25\u0e07'; }
   var resultEl = document.getElementById('result');
   if (resultEl) resultEl.classList.remove('pl-add-mode');
   var bar = document.getElementById('plAddBar');
@@ -2887,6 +2938,27 @@ function updatePlAddBar() {
 function batchAddToPlaylist() {
   var ids = Object.keys(_plSelectedForAdd);
   if (!ids.length) return;
+  
+  // Check for overplayed songs
+  var overplayed = [];
+  ids.forEach(function(id) {
+    var song = _plSelectedForAdd[id];
+    if (song) {
+      var songId = song.id || song.songId || '';
+      var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
+      if (freq >= 4) {
+        overplayed.push(song.name + ' (' + freq + ' ครั้ง)');
+      }
+    }
+  });
+
+  if (overplayed.length > 0) {
+    var confirmMsg = '⚠️ มีเพลงที่ถูกเล่นบ่อยมากในช่วง 7 วันที่ผ่านมา:\n- ' + overplayed.join('\n- ') + '\n\nต้องการเพิ่มเพลงเหล่านี้ในลิสจริงๆ หรือไม่?';
+    if (!confirm(confirmMsg)) {
+      return; // abort
+    }
+  }
+
   var addedNames = [];
   ids.forEach(function(id) {
     var song = _plSelectedForAdd[id];
@@ -2907,7 +2979,7 @@ function batchAddToPlaylist() {
   });
   renderPlaylist();
   exitPlAddMode();
-  showSongsAlert('\u2705 \u0e40\u0e1e\u0e34\u0e48\u0e21 ' + addedNames.length + ' \u0e40\u0e1e\u0e25\u0e07\u0e43\u0e19\u0e25\u0e34\u0e2a\u0e41\u0e25\u0e49\u0e27');
+  showSongsAlert('✅ เพิ่ม ' + addedNames.length + ' เพลงในลิสแล้ว');
 }
 
 // â”€â”€ E. Recently Used Songs â”€â”€
@@ -2988,7 +3060,8 @@ function saveFilterState() {
     genre: (document.getElementById('genre') || {}).value || '',
     mood: (document.getElementById('mood') || {}).value || '',
     artist: (document.getElementById('artist') || {}).value || '',
-    search: (document.getElementById('searchText') || {}).value || ''
+    search: (document.getElementById('searchText') || {}).value || '',
+    sortOption: (document.getElementById('sortOption') || {}).value || ''
   };
   try { sessionStorage.setItem(FILTER_KEY, JSON.stringify(state)); } catch(e) {}
 }
@@ -3001,6 +3074,7 @@ function restoreFilterState() {
     if (state.era)    { var el2 = document.getElementById('era'); if (el2) el2.value = state.era; }
     if (state.genre)  { var el3 = document.getElementById('genre'); if (el3) el3.value = state.genre; }
     if (state.mood)   { var el4 = document.getElementById('mood'); if (el4) el4.value = state.mood; }
+    if (state.sortOption) { var elS = document.getElementById('sortOption'); if (elS) elS.value = state.sortOption; }
     if (state.search) {
       var el5 = document.getElementById('searchText');
       if (el5) {
@@ -3011,7 +3085,7 @@ function restoreFilterState() {
     }
     // artist needs to wait for populateArtistFilter, so we store it and apply after
     if (state.artist) window._pendingArtistFilter = state.artist;
-    return !!(state.singer || state.era || state.genre || state.mood || state.search);
+    return !!(state.singer || state.era || state.genre || state.mood || state.search || state.sortOption);
   } catch(e) { return false; }
 }
 
@@ -3191,22 +3265,12 @@ window.onload = function() {
   // Update floating counter
   updatePlaylistFloating();
 
-  // Fetch recent history for frequency warnings
-  window._recentSongFreq = {};
+  // Fetch recent history for frequency warnings and sorting
+  window._recentPlayCounts = {};
   if (typeof apiCall === 'function') {
-    apiCall('getPlaylistHistory', {}, function(r) {
+    apiCall('getRecentPlayCounts', { days: 7 }, function(r) {
       if (r && r.success && r.data) {
-        var cutoff = new Date();
-        cutoff.setDate(cutoff.getDate() - 14);
-        var cutoffStr = cutoff.toISOString().split('T')[0];
-        r.data.forEach(function(h) {
-          if (h.date >= cutoffStr && h.songs) {
-            h.songs.forEach(function(s) {
-              var k = ((s.name||'') + '|' + (s.artist||'')).toLowerCase();
-              window._recentSongFreq[k] = (window._recentSongFreq[k] || 0) + 1;
-            });
-          }
-        });
+        window._recentPlayCounts = r.data;
       }
     });
   }

@@ -50,16 +50,22 @@
 
   // ── Genre → tag ─────────────────────────────────────
   function genreToTag(genres) {
-    var g = (genres || '').toLowerCase();
-    if (g.indexOf('pop') !== -1) return 'ป๊อป';
-    if (g.indexOf('rock') !== -1) return 'ร็อค';
-    if (g.indexOf('hip') !== -1 || g.indexOf('rap') !== -1) return 'ฮิปฮอป';
-    if (g.indexOf('dance') !== -1 || g.indexOf('disco') !== -1 || g.indexOf('edm') !== -1 || g.indexOf('electronic') !== -1) return 'ดิสโก้';
+    if (!genres) return '';
+    var g = genres.toLowerCase();
+    if (g.indexOf('pop') !== -1 || g.indexOf('thai pop') !== -1) return 'ป๊อป';
+    if (g.indexOf('rock') !== -1 || g.indexOf('thai rock') !== -1 || g.indexOf('metal') !== -1) return 'ร็อค';
+    if (g.indexOf('hip hop') !== -1 || g.indexOf('rap') !== -1) return 'แร๊ฟ/ฮิปฮอป';
+    if (g.indexOf('r&b') !== -1 || g.indexOf('soul') !== -1) return 'อาร์แอนด์บี';
+    if (g.indexOf('jazz') !== -1 || g.indexOf('blues') !== -1) return 'แจ๊ส / บลูส์';
+    if (g.indexOf('reggae') !== -1) return 'เรกเก้';
+    if (g.indexOf('indie') !== -1) return 'อินดี้';
+    if (g.indexOf('disco') !== -1) return 'ดิสโก้';
     if (g.indexOf('country') !== -1 || g.indexOf('folk') !== -1 || g.indexOf('luk thung') !== -1 || g.indexOf('isan') !== -1 || g.indexOf('thai country') !== -1) return 'ลูกทุ่ง / อีสาน';
-    if (g.indexOf('singer') !== -1 || g.indexOf('songwriter') !== -1 || g.indexOf('phleng phuea chiwit') !== -1) return 'เพื่อชีวิต';
-    if (g.indexOf('oldies') !== -1 || g.indexOf('classic') !== -1) return 'ป๊อป';
-    return 'ป๊อป';
+    if (g.indexOf('phleng phuea chiwit') !== -1 || g.indexOf('เพื่อชีวิต') !== -1) return 'เพื่อชีวิต';
+    return '';
   }
+
+  function hasThai(s) { return /[\u0E00-\u0E7F]/.test(s || ''); }
 
   // ── Year → era ──────────────────────────────────────
   function yearToEra(dateStr) {
@@ -153,6 +159,7 @@
           name: t.name || '',
           artist: (t.artists && t.artists[0]) ? t.artists[0].name : '',
           singer: (t.artists && t.artists[0]) ? t.artists[0].name : '',
+          nationality: (hasThai(t.name) || hasThai((t.artists && t.artists[0]) ? t.artists[0].name : '')) ? 'ไทย' : 'สากล',
           era: yearToEra(t.album && t.album.release_date || ''),
           tags: '',
           key: '',

@@ -84,6 +84,7 @@ var _syncRetryCount   = 0;
 var _syncRetryTimer   = null;
 var _periodicSyncTimer = null;
 var _isSyncLeader     = false; // true = this device is earliest joiner & broadcast authority
+var _isExplicitMaster = (localStorage.getItem('liveMaster') === 'true'); // Explicit Master role
 var _channelStatus    = '';    // 'SUBSCRIBED' | 'CHANNEL_ERROR' | 'TIMED_OUT' | ''
 var _channelName      = '';    // current channel name for debug
 var _rtSendOk         = 0;    // broadcast send success count
@@ -356,21 +357,18 @@ document.addEventListener('DOMContentLoaded', function() {
           if (rv.data.venue)    _venue    = rv.data.venue;
           if (rv.data.timeSlot) _timeSlot = rv.data.timeSlot;
           document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+          loadPlaylist();
+          setupBreakWarning();
+          showHintsIfFirstTime();
+        } else {
+          // token หมดอายุหรือไม่ถูกต้อง → บล็อกการเข้าถึงทันที (ป้องกัน Guest Security Hole)
+          console.warn('[Live] guest token invalid/expired — access denied');
+          showInvalidToken();
         }
-        // token หมดอายุ/ผิด แต่ถ้ายังมี band+date ใน URL → ยังเข้าได้
-        if (!rv || !rv.success) {
-          console.warn('[Live] guest token invalid/expired, proceeding with URL params');
-          if (!_bandId || !_date) { showInvalidToken(); return; }
-        }
-        loadPlaylist();
-        setupBreakWarning();
-        showHintsIfFirstTime();
       });
     } else {
-      // ไม่มี token — เข้าได้เลยถ้ามี band+date
-      loadPlaylist();
-      setupBreakWarning();
-      showHintsIfFirstTime();
+      // ไม่มี token → ปฏิเสธทันที (ต้องสแกน QR Code เพื่อเข้า)
+      showInvalidToken();
     }
   } else {
     // member mode — require login
@@ -994,8 +992,10 @@ function removeSong(e, idx) {
   if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
-  _lastLocalDeleteTime = Date.now(); // บันทึกเวลาที่ลบเพลงในเครื่องนี้
-  _playlistVersion++;               // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
+  _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _currentUpdatedAt = Date.now();        // [FIX] อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
+  _lastLocalCurrentChange = Date.now(); // [FIX] guard สำหรับ song_ending / current_changed
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
@@ -1074,12 +1074,37 @@ function toggleSettings() {
   if (panel.classList.contains('open')) { closeSettings(); } else { openSettings(); }
 }
 
+function toggleMasterRole(forceState) {
+  if (typeof forceState === 'boolean') {
+    if (_isExplicitMaster === forceState) return;
+    _isExplicitMaster = forceState;
+  } else {
+    _isExplicitMaster = !_isExplicitMaster;
+  }
+  localStorage.setItem('liveMaster', String(_isExplicitMaster));
+  openSettings(); // refresh UI
+  if (_isExplicitMaster) {
+    showToast('👑 เครื่องนี้เป็นเครื่องหลัก (Master) แล้ว');
+    broadcastEvent('takeover_master', { by: localStorage.getItem('userName') || 'Admin' });
+    setTimeout(function() { broadcastEvent('state_sync', getState()); }, 100);
+  } else {
+    showToast('เครื่องนี้กลับเป็นเครื่องรอง');
+  }
+}
+
 function openSettings() {
   var panel = document.getElementById('liveSettings');
   if (panel) panel.classList.add('open');
   // Sync button states
   var km = document.getElementById('keyModeBtn');
   if (km) km.textContent = getKeyDisplayMode() === 'number' ? '🔤' : '🔢';
+  
+  var mb = document.getElementById('masterToggleBtn');
+  if (mb) {
+    mb.textContent = _isExplicitMaster ? 'เปิด' : 'ปิด';
+    mb.style.background = _isExplicitMaster ? 'var(--gold)' : 'transparent';
+    mb.style.color = _isExplicitMaster ? '#000' : 'var(--text)';
+  }
 }
 
 function closeSettings() {
@@ -1284,7 +1309,11 @@ function scheduleDotFlash(delaySeconds) {
   }, delayMs);
 }
 
+var _lastFlashTime = 0;
 function flashBeatDot() {
+  var now = Date.now();
+  if (_metInterval > 0 && now - _lastFlashTime < (_metInterval * 1000 * 0.4)) return;
+  _lastFlashTime = now;
   var bd = document.getElementById('beatDot');
   if (!bd || bd.style.display === 'none') return;
   if (_beatOffTimer) { clearTimeout(_beatOffTimer); _beatOffTimer = null; }
@@ -1585,8 +1614,8 @@ function chatBarSubmit() {
   var doSubmit = function() {
     var s = null;
     if (_allSongs && _allSongs.length > 0) {
-      var nameLower = name.toLowerCase();
-      var matches = _allSongs.filter(function(x) { return (x.name || '').toLowerCase() === nameLower; });
+      var nameLower = name.trim().toLowerCase();
+      var matches = _allSongs.filter(function(x) { return (x.name || '').trim().toLowerCase() === nameLower; });
       if (matches.length > 1) {
         showChatSuggest(name);
         return;
@@ -1621,7 +1650,7 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest, id) {
   _pendingSong = {
     id: id || '',
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
-    _key: key ? formatKey(key) : '', _note: '', _skipped: false,
+    _key: key || '', _note: '', _skipped: false,  // เก็บค่า raw key (formatKey เรียกตอน render เท่านั้น)
     _isRequest: !!isRequest, _isEncore: false
   };
   openInsertPos();
@@ -1750,6 +1779,7 @@ function confirmInsertAt(pos) {
   closeChatSuggest();
   inp.blur();
 
+  renderNowPlaying(); // [FIX] อัปเดตตัวนับ "X/ทั้งหมด" ใน Now Playing
   renderSongList();
   showToast('➕ ' + song.name + ' (ลำดับที่ ' + (pos + 1) + ')');
   haptic(40);
@@ -1779,6 +1809,7 @@ function initNowPlayingSwipe() {
   np.addEventListener('touchend', function(e) {
     if (!swiping) return;
     swiping = false;
+    if (_isEnding) return; // [FIX] ป้องกันสลับเพลงซ้อนขณะ animation กำลังเล่น
     var dx = e.changedTouches[0].clientX - sx;
     if (Math.abs(dx) < 60) return; // too short
     if (dx < 0) nextSongDirect(); // swipe left → next
@@ -2022,7 +2053,9 @@ function applyTranspose(dir) {
   document.getElementById('trDisplay').textContent = newKey;
   document.getElementById('nowKey').textContent = newKey;
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('transpose', { idx: _current, key: newKey });
+  scheduleStateSync();
 }
 function resetTranspose() {
   var s = _playlist[_current];
@@ -2031,7 +2064,10 @@ function resetTranspose() {
   s._key = s.key;
   document.getElementById('trDisplay').textContent = s.key || '—';
   document.getElementById('nowKey').textContent = s.key || '—';
+  _modified = true;
+  _playlistVersion++;
   broadcastEvent('transpose', { idx: _current, key: s.key });
+  scheduleStateSync();
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -2052,7 +2088,9 @@ function submitNote() {
   var note = document.getElementById('noteInput').value.trim();
   _playlist[_noteIdx]._note = note;
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('note_update', { idx: _noteIdx, note: note });
+  scheduleStateSync();
   if (_noteIdx === _current) _updateNoteMarquee(note);
   closeNote();
   renderSongList();
@@ -2122,7 +2160,9 @@ function submitBpm() {
   var curKey = s._key || s.key || '';
   s.bpm = newBpm;
   _modified = true;
+  _playlistVersion++;
   broadcastEvent('edit_keybpm', { idx: _bpmIdx, key: curKey, bpm: newBpm });
+  scheduleStateSync();
   if (_bpmIdx === _current) renderNowPlaying();
   renderSongList();
   var role = localStorage.getItem('userRole') || 'member';
@@ -2165,6 +2205,16 @@ function openEditSong(idx, bpmOnly) {
   document.getElementById('editSongTitle').textContent = _editBpmOnly ? '🎵 แก้ความเร็ว (BPM)' : '🎹 แก้คีย์ / BPM';
   var role = localStorage.getItem('userRole') || 'member';
   var isAdmin = (role === 'admin' || role === 'manager');
+
+  var match = findBestSongMatch(s, _allSongs);
+  if (!match && isAdmin) {
+    document.getElementById('editGenderWrap').style.display = '';
+    document.getElementById('editGenderInput').value = s.singer || 'male';
+  } else {
+    var egw = document.getElementById('editGenderWrap');
+    if (egw) egw.style.display = 'none';
+  }
+
   document.getElementById('editSongHint').textContent = isAdmin
     ? '✅ แอดมิน/ผู้จัดการ — บันทึกลงคลังเพลงอัตโนมัติ'
     : 'ℹ️ แก้ไขเฉพาะ Live Mode นี้เท่านั้น';
@@ -2184,6 +2234,13 @@ function submitEditSong() {
   var newKey = _editBpmOnly ? (s._key || s.key || '') : document.getElementById('editKeyInput').value.trim();
   var newBpm = parseInt(document.getElementById('editBpmInput').value, 10) || 0;
 
+  var newGender = '';
+  var egw = document.getElementById('editGenderWrap');
+  if (egw && egw.style.display !== 'none') {
+    newGender = document.getElementById('editGenderInput').value;
+    s.singer = newGender;
+  }
+
   // Update playlist in memory
   if (!_editBpmOnly) {
     s._key = newKey;
@@ -2191,9 +2248,11 @@ function submitEditSong() {
   }
   s.bpm = newBpm;
   _modified = true;
+  _playlistVersion++;
 
   // Broadcast to all devices
   broadcastEvent('edit_keybpm', { idx: _editSongIdx, key: newKey, bpm: newBpm });
+  scheduleStateSync();
 
   // Re-render
   if (_editSongIdx === _current) renderNowPlaying();
@@ -2203,25 +2262,25 @@ function submitEditSong() {
   var role = localStorage.getItem('userRole') || 'member';
   var isAdmin = (role === 'admin' || role === 'manager');
   if (isAdmin) {
-    _saveKeyBpmToLibrary(s, newKey, newBpm);
+    _saveKeyBpmToLibrary(s, newKey, newBpm, newGender);
   }
 
   closeEditSong();
   showToast('🎹 อัปเดต: ' + s.name);
 }
 
-function _saveKeyBpmToLibrary(song, key, bpm) {
+function _saveKeyBpmToLibrary(song, key, bpm, newGender) {
   // Find song in _allSongs to get its ID
   if (!_allSongsLoaded || _allSongs.length === 0) {
     preloadBandSongs(function() {
-      _doSaveKeyBpm(song, key, bpm);
+      _doSaveKeyBpm(song, key, bpm, newGender);
     });
   } else {
-    _doSaveKeyBpm(song, key, bpm);
+    _doSaveKeyBpm(song, key, bpm, newGender);
   }
 }
 
-function _doSaveKeyBpm(song, key, bpm) {
+function _doSaveKeyBpm(song, key, bpm, newGender) {
   var match = null;
   var sid = song.id || song.songId;
   if (sid) {
@@ -2230,7 +2289,31 @@ function _doSaveKeyBpm(song, key, bpm) {
   if (!match) {
     match = findBestSongMatch(song, _allSongs);
   }
-  if (!match || !match.id) return; // song not in library, skip
+  if (!match || !match.id) {
+    // If song is not in library and admin specified newGender, we create a new song!
+    if (newGender) {
+      var newSongData = {
+        name: song.name,
+        singer: newGender,
+        key: key || '',
+        bpm: bpm || 0,
+        artist: song.artist || ''
+      };
+      apiCall('addSong', newSongData, function(r) {
+        if (r && r.success && r.data) {
+          var newId = Array.isArray(r.data) ? r.data[0].id : r.data.id;
+          if (newId) {
+            newSongData.id = newId;
+            _allSongs.push(newSongData);
+            song.id = newId;
+            song.songId = newId;
+          }
+          showToast('บันทึกเพลงใหม่ลงคลังแล้ว');
+        }
+      });
+    }
+    return;
+  }
   var updateData = {};
   if (key) updateData.key = key;
   if (bpm) updateData.bpm = bpm;
@@ -2806,13 +2889,29 @@ function initRealtime() {
       // someone is asking for state — respond if we have a non-empty playlist
       var d = payload.payload || {};
       if (_playlist.length > 0) {
-        // Stagger response: earlier joiner responds faster (50ms), later joiner slower (300ms)
-        var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
-        var delay = isSenior ? (50 + Math.random() * 100) : (200 + Math.random() * 200);
-        setTimeout(function() {
-          if (isSenior) _isSyncLeader = true;
-          broadcastEvent('state_sync', getState());
-        }, delay);
+        if (_isExplicitMaster) {
+          setTimeout(function() { broadcastEvent('state_sync', getState()); }, 50);
+        } else {
+          // Stagger fallback response: earlier joiner responds faster (500ms)
+          var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
+          if (isSenior) {
+            setTimeout(function() {
+              broadcastEvent('state_sync', getState());
+            }, 400 + Math.random() * 200);
+          }
+        }
+      }
+    })
+    .on('broadcast', { event: 'takeover_master' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
+      var d = payload.payload || {};
+      if (_isExplicitMaster) {
+        _isExplicitMaster = false;
+        localStorage.setItem('liveMaster', 'false');
+        showToast('⚠️ สิทธิ์เครื่องหลักถูกโอนไปยัง ' + (d.by || 'เครื่องอื่น'));
+        if (document.getElementById('liveSettings') && document.getElementById('liveSettings').classList.contains('open')) {
+          openSettings();
+        }
       }
     })
     .on('broadcast', { event: 'set_next' }, function(payload) {
@@ -3278,10 +3377,17 @@ function rtDebugReconnect() {
 
 // ─── SYNC: Retry + Periodic ──────────────────────────────────────
 function requestStateWithRetry() {
-  if (_syncReceived || _syncRetryCount >= 8) {
-    // After 8 retries with no response + empty playlist → warn
-    if (!_syncReceived && _syncRetryCount >= 8 && _playlist.length === 0) {
-      showToast('⚠️ ไม่พบสมาชิกออนไลน์ รอรับข้อมูล...');
+  if (_syncReceived || _syncRetryCount >= 3) {
+    // After 3 retries (6 seconds) with no response → room is empty
+    if (!_syncReceived && _syncRetryCount >= 3) {
+      if (!_isExplicitMaster) {
+        var role = localStorage.getItem('userRole') || 'member';
+        if (role === 'admin' || role === 'manager') {
+          toggleMasterRole(true); // Auto-Master for first joiner
+        } else {
+          showToast('⚠️ ไม่พบสมาชิกออนไลน์ รอรับข้อมูล...');
+        }
+      }
     }
     return;
   }
@@ -3296,14 +3402,9 @@ function startPeriodicSync() {
   if (_periodicSyncTimer) clearInterval(_periodicSyncTimer);
   _periodicSyncTimer = setInterval(function() {
     if (_playlist.length > 0 && _channel) {
-      if (_isSyncLeader) {
-        // Leader: broadcast every 30s
+      if (_isExplicitMaster) {
+        // Explicit Master ONLY broadcasts periodic sync
         broadcastEvent('state_sync', getState());
-      } else if (!_isSyncLeader && _playlist.length > 0) {
-        // Fallback: if no leader responded after 60s, broadcast once as fallback
-        if (Date.now() - _joinedAt > 60000) {
-          broadcastEvent('state_sync', getState());
-        }
       }
     }
   }, 30000);
@@ -3342,11 +3443,7 @@ function undoSong() {
   showToast('↩ ย้อนกลับ: ' + state.songName);
 }
 
-function _escHtml(s) {
-  var d = document.createElement('div');
-  d.textContent = s || '';
-  return d.innerHTML;
-}
+// [FIX] Removed duplicate _escHtml — ใช้ escHtml() ที่ด้านบนแทน (DRY principle)
 
 // ─── CHAT ─────────────────────────────────────────────────────────
 function openChat() {
@@ -3413,8 +3510,8 @@ function _renderChatMessages() {
   _chatMessages.forEach(function(m) {
     var bubble = document.createElement('div');
     bubble.className = 'chat-bubble ' + (m.isMine ? 'mine' : 'other');
-    bubble.innerHTML = (m.isMine ? '' : '<div class="chat-sender">' + _escHtml(m.from) + '</div>') +
-      '<div class="chat-text">' + _escHtml(m.text) + '</div>' +
+    bubble.innerHTML = (m.isMine ? '' : '<div class="chat-sender">' + escHtml(m.from) + '</div>') +
+      '<div class="chat-text">' + escHtml(m.text) + '</div>' +
       '<div class="chat-ts">' + (m.time || '') + '</div>';
     container.appendChild(bubble);
   });
@@ -3445,7 +3542,7 @@ function _chatNotify(from, text) {
   // D) Toast popup showing sender + message
   var toast = document.getElementById('chatToast');
   if (toast) {
-    toast.innerHTML = '<span class="ct-from">' + _escHtml(from) + ':</span><span class="ct-text">' + _escHtml(text.length > 40 ? text.substring(0, 40) + '...' : text) + '</span>';
+    toast.innerHTML = '<span class="ct-from">' + escHtml(from) + ':</span><span class="ct-text">' + escHtml(text.length > 40 ? text.substring(0, 40) + '...' : text) + '</span>';
     toast.classList.add('show');
     if (_chatToastTimer) clearTimeout(_chatToastTimer);
     _chatToastTimer = setTimeout(function() { toast.classList.remove('show'); }, 3000);
@@ -3456,10 +3553,9 @@ function _chatNotify(from, text) {
 
 function _playChatSound() {
   try {
-    if (!_nudgeAudioCtx) {
-      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    var ctx = _nudgeAudioCtx;
+    // [FIX] ใช้ AudioContext เดียวกันกับ Metronome (ป้องกัน Memory Leak)
+    var ctx = ensureAudioCtx();
+    if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
     var t = ctx.currentTime;
     var osc = ctx.createOscillator();
@@ -3540,7 +3636,7 @@ function _checkHbdSongs() {
   if (banner) {
     if (activeWarning) {
       var minLeft = activeWarning.diff;
-      banner.innerHTML = '🎂 ' + _escHtml(activeWarning.name) + ' — อีก ' + minLeft + ' นาที!';
+      banner.innerHTML = '🎂 ' + escHtml(activeWarning.name) + ' — อีก ' + minLeft + ' นาที!';
       banner.classList.add('show');
       banner.classList.toggle('urgent', minLeft <= 1);
     } else {
@@ -3551,10 +3647,9 @@ function _checkHbdSongs() {
 
 function _playHbdSound() {
   try {
-    if (!_nudgeAudioCtx) {
-      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    var ctx = _nudgeAudioCtx;
+    // [FIX] ใช้ AudioContext เดียวกันกับ Metronome (ป้องกัน Memory Leak)
+    var ctx = ensureAudioCtx();
+    if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
     var t = ctx.currentTime;
     // Three ascending tones: C5 → E5 → G5
@@ -3579,7 +3674,7 @@ function _resetHbdTracking() {
 }
 
 // ─── NUDGE (สะกิด) ────────────────────────────────────────────────
-var _nudgeAudioCtx = null;
+// [FIX] Removed _nudgeAudioCtx — ใช้ _audioCtx จาก Metronome ผ่าน ensureAudioCtx() แทน
 var _lastNudgeTime = 0;
 
 // Default presets — emoji and message text stored separately
@@ -3857,10 +3952,9 @@ function receiveNudge(from, msg) {
 
 function playNudgeSound() {
   try {
-    if (!_nudgeAudioCtx) {
-      _nudgeAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    var ctx = _nudgeAudioCtx;
+    // [FIX] ใช้ AudioContext เดียวกันกับ Metronome (ป้องกัน Memory Leak)
+    var ctx = ensureAudioCtx();
+    if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
     var t = ctx.currentTime;
     // Two-tone ping: C6 then E6
@@ -3934,6 +4028,7 @@ function closeQR() {
 //  CONTEXT MENU (long-press / single-tap on song)
 // ─────────────────────────────────────────────────────────────────
 function openCtx(idx) {
+  if (_isEnding) return; // [FIX] ป้องกันเปิด context menu ขณะ song-ending animation ทำงาน
   _ctxIdx = idx;
   var s = _playlist[idx];
   if (!s) return;
@@ -4045,8 +4140,10 @@ function removeSongDirect(idx) {
   if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
-  _lastLocalDeleteTime = Date.now(); // บันทึกเวลาที่ลบเพลงในเครื่องนี้
-  _playlistVersion++;               // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
+  _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _currentUpdatedAt = Date.now();        // [FIX] อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
+  _lastLocalCurrentChange = Date.now(); // [FIX] guard สำหรับ current_changed event
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });

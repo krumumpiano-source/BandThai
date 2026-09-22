@@ -101,6 +101,10 @@
       </div>
       <div class="ls-body">
         <div class="ls-row">
+          <span class="ls-label">👑 เครื่องควบคุมหลัก (Master)</span>
+          <button id="masterToggleBtn" class="s-btn" onclick="toggleMasterRole()" style="width:auto;padding:2px 14px;border-radius:12px;font-size:0.9rem;border:1px solid #555" title="ตั้งเป็นเครื่องหลักที่ใช้ควบคุม State">ปิด</button>
+        </div>
+        <div class="ls-row">
           <span class="ls-label">🌙 โทนสี</span>
           <button id="themeToggleBtn" class="s-btn" onclick="toggleTheme()" title="สลับโทนมืด/สว่าง">🌙</button>
         </div>
@@ -154,7 +158,10 @@
     <button id="chatBarSend" disabled title="เพิ่มเพลง">➕</button>
   </div>
   <div id="actionBar">
+    <button id="prevSongBtn" onclick="prevSong()" title="เพลงก่อนหน้า" disabled>◀</button>
     <button id="endSongBtn" onclick="endSong()">⏭ ไปเพลงถัดไป</button>
+    <button id="nextSongBtn" onclick="nextSongDirect()" title="เพลงถัดไป" disabled>▶</button>
+    <button id="undoBtn" onclick="undoSong()" title="ย้อนกลับ" disabled>↩</button>
     <button id="nudgeBtn" onclick="openNudge()" style="display:none" title="สะกิดสมาชิก">👋</button>
     <span id="chatBtnWrap"><button id="chatMsgBtn" onclick="openChat()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd" title="แชท">💬</button><span id="chatBtnBadge">0</span></span>
   </div>
@@ -303,6 +310,16 @@
     <h3 id="editSongTitle">🎹 แก้คีย์ / BPM</h3>
     <div id="editSongName" style="font-size:0.88rem;color:var(--gold);margin-bottom:4px;font-weight:600"></div>
     <div id="editSongSinger" style="margin-bottom:10px;display:none"></div>
+    <div class="edit-row" id="editGenderWrap" style="display:none;margin-bottom:10px">
+      <div style="flex:1">
+        <label>นักร้อง (เฉพาะเพลงใหม่)</label>
+        <select id="editGenderInput" style="width:100%;background:var(--bg3);border:1px solid #444;color:var(--text);border-radius:8px;padding:8px;font-size:0.9rem">
+          <option value="male">ชาย</option>
+          <option value="female">หญิง</option>
+          <option value="duet">คู่</option>
+        </select>
+      </div>
+    </div>
     <div class="edit-row">
       <div style="flex:1" id="editKeyWrap"><label>คีย์</label><input id="editKeyInput" placeholder="เช่น C, 2#, 3b" autocomplete="off"></div>
       <div style="flex:1"><label>BPM</label><input id="editBpmInput" type="number" min="0" max="300" placeholder="เช่น 120"></div>

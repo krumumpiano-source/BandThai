@@ -184,6 +184,7 @@
         case 'savePlaylistHistory':return doSavePlaylistHistory(d);
         case 'getPlaylistHistory': return doGetPlaylistHistory(d);
         case 'getPlaylistHistoryByDate': return doGetPlaylistHistoryByDate(d);
+        case 'getRecentPlayCounts': return doGetRecentPlayCounts(d);
         case 'deletePlaylistHistory': return doDeletePlaylistHistory(d);
         case 'removeSongFromAllHistory': return doRemoveSongFromAllHistory(d);
         case 'getSongInsights':    return doGetSongInsights(d);
@@ -770,7 +771,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
@@ -811,13 +812,14 @@
       var source  = d.source || 'global';
       var singer  = d.singer || '';
       var era     = d.era    || '';
+      var nationality = d.nationality || '';
       var genre   = d.genre  || '';
       var mood    = d.mood   || '';
       var artist = d.artist || '';
       var sortKey = d.sortKey || 'name';
       var sortAsc = d.sortAsc !== false;
 
-      var SORT_OK = ['name','artist','bpm','singer','era','tags','mood','key','created_at','updated_at'];
+      var SORT_OK = ['name','artist','bpm','singer','era','tags','mood','key','created_at','updated_at','least_played'];
       if (SORT_OK.indexOf(sortKey) < 0) sortKey = 'name';
 
       var from = (page - 1) * perPage;
@@ -830,7 +832,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
@@ -859,13 +861,27 @@
           all = all.filter(function(s) { return vals.indexOf(s.singer) >= 0; });
         }
         if (era)   all = all.filter(function(s) { return s.era === era; });
+        if (nationality) all = all.filter(function(s) { return (s.nationality || 'ไทย') === nationality; });
         if (genre) all = all.filter(function(s) { return s.tags === genre; });
         if (mood)  all = all.filter(function(s) { return (s.mood || '').indexOf(mood) >= 0; });
         if (artist) all = all.filter(function(s) { return s.artist === artist; });
 
         // Sort
-        all.sort(function(a, b) { return (a[sortKey] || '').toString().localeCompare((b[sortKey] || '').toString()); });
-        if (!sortAsc) all.reverse();
+        if (sortKey === 'least_played') {
+          var recentCounts = d.recentPlayCounts || {};
+          all.sort(function(a, b) {
+            var countA = recentCounts[a.id || a.song_id] || 0;
+            var countB = recentCounts[b.id || b.song_id] || 0;
+            if (countA !== countB) return countA - countB;
+            var tA = new Date(a.created_at || 0).getTime();
+            var tB = new Date(b.created_at || 0).getTime();
+            if (tA !== tB) return tB - tA;
+            return (a.name || '').localeCompare(b.name || '');
+          });
+        } else {
+          all.sort(function(a, b) { return (a[sortKey] || '').toString().localeCompare((b[sortKey] || '').toString()); });
+          if (!sortAsc) all.reverse();
+        }
 
         var total = all.length;
         var sliced = all.slice(from, from + perPage);
@@ -892,6 +908,10 @@
       }
 
       if (era)   q = q.eq('era', era);
+      if (nationality) {
+        if (nationality === 'ไทย') q = q.or('nationality.eq.ไทย,nationality.is.null');
+        else q = q.eq('nationality', nationality);
+      }
       if (genre) q = q.eq('tags', genre);
       if (mood)  q = q.ilike('mood', '%' + mood + '%');
       if (artist) q = q.eq('artist', artist);
@@ -1872,6 +1892,34 @@
         };
       });
       return { success: true, data: rows };
+    }
+
+    async function doGetRecentPlayCounts(d) {
+      var bandId = d.bandId || getBandId();
+      var days = d.days || 7;
+      var dateObj = new Date();
+      dateObj.setDate(dateObj.getDate() - days);
+      var dateStr = dateObj.toISOString().split('T')[0];
+
+      var { data, error } = await sb.from('playlist_history')
+        .select('playlist')
+        .eq('band_id', bandId)
+        .gte('date', dateStr);
+      
+      if (error) throw error;
+      
+      var counts = {};
+      (data || []).forEach(function(row) {
+        var playlist = row.playlist || [];
+        playlist.forEach(function(song) {
+          if (song.break) return;
+          var sid = song.id || song.songId;
+          if (sid) {
+            counts[sid] = (counts[sid] || 0) + 1;
+          }
+        });
+      });
+      return { success: true, data: counts };
     }
 
     async function doDeletePlaylistHistory(d) {

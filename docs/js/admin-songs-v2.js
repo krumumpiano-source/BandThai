@@ -238,6 +238,7 @@ function filterTable() {
   var singer  = document.getElementById('asSinger').value;
   var artist  = _selectedArtistFilter;
   var era     = document.getElementById('asEra').value;
+  var nationality = document.getElementById('asNationality').value;
   var genre   = document.getElementById('asGenre').value;
   var mood    = document.getElementById('asMood').value;
   var status  = (document.getElementById('asStatus') || {}).value || '';
@@ -257,6 +258,7 @@ function filterTable() {
     }
     if (artist && (s.artist || '').trim() !== artist) return false;
     if (era && s.era !== era) return false;
+    if (nationality && (s.nationality || 'ไทย') !== nationality) return false;
     if (genre && (s.tags || '') !== genre) return false;
     if (mood && (s.mood || '').indexOf(mood) < 0) return false;
     // Status filter
@@ -551,7 +553,7 @@ function renderTable() {
   document.getElementById('nextBtn').disabled = _page >= maxPage;
 
   if (pageRows.length === 0) {
-    tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
+    tb.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:32px;color:#aaa">ไม่พบเพลงที่ตรงกัน</td></tr>';
     return;
   }
 
@@ -573,6 +575,7 @@ function renderTable() {
     else if (dSinger === 'female') dSinger = 'หญิง';
     else if (dSinger === 'duet')   dSinger = 'ชาย/หญิง';
     var dEra  = draft ? draft.era  : (s.era  || '');
+    var dNationality = draft ? draft.nationality : (s.nationality || '');
     var dTags = draft ? draft.tags : (s.tags || '');
     var dMood = draft ? draft.mood : (s.mood || '');
 
@@ -606,9 +609,10 @@ function renderTable() {
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
-      '<td class="hide-md"><input class="il-input il-bpm" type="number" data-field="bpm" value="' + esc(dBpm) + '" min="0" max="300" oninput="markDirty(this)"></td>' +
+      '<td class="hide-md"><input class="il-input il-bpm" type="text" data-field="bpm" value="' + esc(dBpm) + '" oninput="markDirty(this)" placeholder="BPM"></td>' +
       '<td class="hide-md">' + singerSel + '</td>' +
       '<td class="hide-sm">' + _buildSel('era',  _ERA_OPTS,   dEra,  'il-era',   _ERA_LABELS, true)  + '</td>' +
+      '<td class="hide-lg">' + _buildSel('nationality', _AS_NATIONALITY_OPTS, dNationality, 'il-nationality', null, true) + '</td>' +
       '<td class="hide-lg">' + _buildSel('tags', _GENRE_OPTS, dTags, 'il-genre', null,        true)  + '</td>' +
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td class="hide-sm status-cell">' + statusHtml + editInfo + '</td>' +
@@ -666,6 +670,7 @@ function openAddModal() {
   document.getElementById('mKey').value    = '';
   document.getElementById('mBpm').value    = '';
   document.getElementById('mEra').value    = '';
+  document.getElementById('mNationality').value = 'ไทย';
   document.getElementById('mMood').value   = '';
   document.getElementById('mGenre').value  = '';
   document.querySelectorAll('input[name="ms"]').forEach(function(r){ r.checked = false; });
@@ -738,8 +743,9 @@ function _doSubmitAdd() {
     name:    name,
     artist:  document.getElementById('mArtist').value.trim(),
     key:     document.getElementById('mKey').value,
-    bpm:     String(parseInt(document.getElementById('mBpm').value) || ''),
+    bpm:     document.getElementById('mBpm').value.trim(),
     era:     document.getElementById('mEra').value,
+    nationality: document.getElementById('mNationality').value,
     mood:    document.getElementById('mMood').value,
     tags:    document.getElementById('mGenre').value,
     singer:  singerRadio ? singerRadio.value : '',
@@ -812,7 +818,7 @@ function readRowFromDOM(row) {
     name:   fv('name').trim(),
     artist: fv('artist').trim(),
     key:    fv('key'),
-    bpm:    parseInt(fv('bpm')) || 0,
+    bpm:    fv('bpm').trim(),
     singer: fv('singer'),
     era:    fv('era'),
     tags:   fv('tags'),
@@ -938,8 +944,9 @@ function addToLibrary(songId) {
   document.getElementById('mKey').value    = song.key || '';
   document.getElementById('mBpm').value    = song.bpm || '';
   document.getElementById('mEra').value    = song.era || '';
+  document.getElementById('mNationality').value = song.nationality || 'ไทย';
   document.getElementById('mMood').value   = song.mood || '';
-  document.getElementById('mGenre').value  = '';
+  document.getElementById('mGenre').value  = song.tags || '';
   // Set singer radio
   var singerVal = song.singer || '';
   document.querySelectorAll('input[name="ms"]').forEach(function(r){
@@ -1260,7 +1267,7 @@ function _normalizeRow(raw) {
     name:   g(['name','ชื่อเพลง','song','title']),
     artist: g(['artist','ศิลปิน','band','วง']),
     key:    g(['key','คีย์','tonality']),
-    bpm:    parseInt(g(['bpm','tempo'])) || 0,
+    bpm:    g(['bpm','tempo']).trim(),
     singer: g(['singer','นักร้อง','vocal']),
     era:    g(['era','ยุค','period']),
     mood:   g(['mood','อารมณ์']),
@@ -1779,10 +1786,12 @@ var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','แร�
 var _AS_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
 var _AS_KEY_OPTS  = ['C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
 var _AS_SINGER_OPTS = ['ชาย','หญิง','ชาย/หญิง'];
+var _AS_NATIONALITY_OPTS = ['ไทย','สากล'];
 var _AS_ITUNES_FIELDS = [
   { f:'name',   label:'ชื่อเพลง', icon:'🎶', type:'text' },
   { f:'artist', label:'ศิลปิน',   icon:'👤', type:'text' },
   { f:'singer', label:'นักร้อง',  icon:'🎤', type:'singer' },
+  { f:'nationality', label:'สัญชาติ', icon:'🌍', type:'nationality' },
   { f:'key',    label:'คีย์',     icon:'🎵', type:'key'  },
   { f:'bpm',    label:'BPM',      icon:'♩',  type:'number' },
   { f:'mood',   label:'อารมณ์',   icon:'💫', type:'mood' },
@@ -2135,6 +2144,7 @@ function renderItunesMulti(index) {
     if (fd.type === 'era') {
       inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
         + _AS_ERA_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      if (cur && cur !== '—') isDiff = false;
     } else if (fd.type === 'tags') {
       inputHtml = '<select id="' + inputId + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%">'
         + _AS_TAGS_OPTS.map(function(o){ return '<option' + (o===sug?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
@@ -2149,7 +2159,7 @@ function renderItunesMulti(index) {
         + '<option value="">—</option>' + _AS_SINGER_OPTS.map(function(o){ return '<option' + (o===cur?' selected':'') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
       isDiff = false;
     } else if (fd.type === 'number') {
-      inputHtml = '<input id="' + inputId + '" type="number" value="' + esc(String(sug)) + '" min="0" max="300" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
+      inputHtml = '<input id="' + inputId + '" type="text" value="' + esc(String(sug)) + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
     } else {
       inputHtml = '<input id="' + inputId + '" value="' + esc(sug) + '" style="border:1px solid #d1d5db;border-radius:5px;padding:3px 6px;font-size:.82rem;background:#fff;font-family:inherit;width:100%;box-sizing:border-box">';
     }
@@ -2260,6 +2270,7 @@ function geminiLookupForAdd() {
       if (parsed.key) document.getElementById('mKey').value = parsed.key;
       if (parsed.bpm) document.getElementById('mBpm').value = parsed.bpm;
       if (parsed.era) document.getElementById('mEra').value = parsed.era;
+      if (parsed.nationality) document.getElementById('mNationality').value = parsed.nationality;
       if (parsed.mood) document.getElementById('mMood').value = parsed.mood;
       if (parsed.tags) document.getElementById('mGenre').value = parsed.tags;
       if (parsed.singer) {
