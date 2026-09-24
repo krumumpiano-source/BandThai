@@ -1037,7 +1037,7 @@ function escHtml(s) {
 // ─────────────────────────────────────────────────────────────────
 //  FONT SIZE
 // ─────────────────────────────────────────────────────────────────
-var FONT_SIZES = ['1.6rem','1.9rem','2.3rem','2.8rem','3.4rem','4rem','5rem'];
+var FONT_SIZES = ['2.4rem','3.2rem','3.8rem','4.6rem','5.4rem','6.2rem','7.2rem'];
 function setFontLevel(lvl) {
   _fontLevel = Math.max(0, Math.min(FONT_SIZES.length - 1, lvl));
   document.documentElement.style.setProperty('--font-size-now', FONT_SIZES[_fontLevel]);
@@ -1133,9 +1133,15 @@ function _updateMasterOuterBtn() {
     btn.style.color = 'var(--text2)';
     btn.style.borderColor = 'rgba(255,255,255,0.2)';
   } else {
-    btn.innerHTML = '👑 รอซิงค์...';
-    btn.style.color = '#ff6b6b';
-    btn.style.borderColor = '#ff6b6b';
+    if (!_syncReceived && _syncRetryCount >= 3) {
+      btn.innerHTML = '👑 โหมดอิสระ';
+      btn.style.color = 'var(--text2)';
+      btn.style.borderColor = 'rgba(255,255,255,0.2)';
+    } else {
+      btn.innerHTML = '👑 รอซิงค์...';
+      btn.style.color = '#ff6b6b';
+      btn.style.borderColor = '#ff6b6b';
+    }
   }
 }
 
@@ -3389,8 +3395,8 @@ function _startHeartbeat() {
       return;
     }
     var elapsed = Date.now() - _rtLastActivity;
-    // If no activity for 30 seconds, channel may be silently dead → reconnect
-    if (elapsed > 30000) {
+    // If no activity for 45 seconds (30s periodic + 15s buffer), channel may be silently dead → reconnect
+    if (elapsed > 45000) {
       console.log('[Live-RT] heartbeat: no activity for', Math.round(elapsed/1000), 's — reconnecting...');
       initRealtime();
     }
@@ -3441,7 +3447,8 @@ function requestStateWithRetry() {
         if (role === 'admin' || role === 'manager') {
           toggleMasterRole(true); // Auto-Master for first joiner
         } else {
-          showToast('⚠️ ไม่พบสมาชิกออนไลน์ รอรับข้อมูล...');
+          showToast('⚠️ ไม่พบสมาชิกออนไลน์ เข้าสู่โหมดอิสระ');
+          _updateMasterOuterBtn();
         }
       }
     }
