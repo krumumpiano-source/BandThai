@@ -527,6 +527,17 @@ function syncPlaylistWithLibrary() {
         s.id = match.id;
         changed = true;
       }
+    } else {
+      // Fallback: If no strict match found (e.g. key/singer mismatch),
+      // but we need the artist, find ANY song with the same name and borrow it.
+      if (!s.artist) {
+        var nameLower = s.name.trim().toLowerCase();
+        var anyMatch = _allSongs.find(function(l) { return (l.name || '').trim().toLowerCase() === nameLower; });
+        if (anyMatch && anyMatch.artist) {
+          s.artist = anyMatch.artist;
+          changed = true;
+        }
+      }
     }
   });
   if (changed) {
