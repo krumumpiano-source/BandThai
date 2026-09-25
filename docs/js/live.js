@@ -215,6 +215,16 @@ document.addEventListener('DOMContentLoaded', function() {
     var _vMatch2 = (_bsData.venues || []).find(function(v){ return v.name === _venue; });
     _breakTargetMin = (_vMatch2 && _vMatch2.breakMinutes > 0) ? parseInt(_vMatch2.breakMinutes, 10) : 60;
   } catch(e) { _breakTargetMin = 60; }
+  
+  // Fetch fresh band settings from API (BUG-8)
+  if (_bandId) {
+    apiCall('getBandSettings', { bandId: _bandId }, function(res) {
+      if (res && res.success && res.data) {
+        var _vMatchLive = (res.data.venues || []).find(function(v){ return v.name === _venue; });
+        _breakTargetMin = (_vMatchLive && _vMatchLive.breakMinutes > 0) ? parseInt(_vMatchLive.breakMinutes, 10) : 60;
+      }
+    });
+  }
   // Parse scheduled start (minutes-from-midnight) from timeSlot e.g. "20:00-01:00"
   if (_timeSlot) {
     var _tsM = _timeSlot.match(/(\d{1,2}):(\d{2})/);
@@ -248,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var _gsb = document.getElementById('startBreakBtn');
     var _geb = document.getElementById('endBreakBtn');
     if (_gsb) _gsb.style.display = 'none';
-    if (_geb) _geb.style.display = '';
+    if (_geb) _geb.style.display = 'none'; // Fixed BUG-4
   }
   // ────────────────────────────────────────────────────────────────
 
@@ -330,7 +340,6 @@ document.addEventListener('DOMContentLoaded', function() {
   if (_isGuest) {
     // guest mode — สแกน QR เข้าใช้งาน
     document.getElementById('guestBadge').style.display = 'inline-block';
-    document.getElementById('endBreakBtn').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
     if (!_bandId || !_date) { showInvalidToken(); return; }
     document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
@@ -498,8 +507,8 @@ function syncPlaylistWithLibrary() {
         s.bpm = match.bpm;
         changed = true;
       }
-      // อัปเดตคีย์หากไม่ได้ transpose เองใน Live Mode
-      if (match.key && s.key !== match.key && (!s._key || s._key === s.key)) {
+      // อัปเดตคีย์หากยังไม่มีคีย์ในลิส (ไม่เขียนทับถ้ามีแล้ว เพื่อป้องกัน key วิ่งขณะ live - BUG-6)
+      if (match.key && !s.key) {
         s.key = match.key;
         s._key = match.key;
         changed = true;
@@ -1009,18 +1018,18 @@ function renderSongList() {
 function removeSong(e, idx) {
   e.stopPropagation();
   var name = _playlist[idx] ? _playlist[idx].name : '';
-  if (!confirm('\u0e25บ \u201c' + name + '\u201d \u0e2dอกจากลิส?')) return;
+  if (!confirm('ลบ "' + name + '" ออกจากลิสต์?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
   _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
-  _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
-  _currentUpdatedAt = Date.now();        // [FIX] อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
-  _lastLocalCurrentChange = Date.now(); // [FIX] guard สำหรับ song_ending / current_changed
+  _playlistVersion++;                    // [FIX] เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _currentUpdatedAt = Date.now();        // อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
+  _lastLocalCurrentChange = Date.now(); // guard สำหรับ song_ending / current_changed
   renderNowPlaying();
   renderSongList();
   broadcastEvent('remove', { idx: idx });
   scheduleStateSync();
-  showToast('\u0e25\u0e1a \u201c' + name + '\u201d \u0e41\u0e25\u0e49\u0e27');
+  showToast('ลบ "' + name + '" แล้ว');
 }
 
 function scrollToCurrent() {
@@ -2262,7 +2271,12 @@ function openEditSong(idx, bpmOnly) {
   var match = findBestSongMatch(s, _allSongs);
   if (!match && isAdmin) {
     document.getElementById('editGenderWrap').style.display = '';
-    document.getElementById('editGenderInput').value = s.singer || 'male';
+    // [FIX] map Thai gender values to dropdown option values
+    var gVal = s.singer || '';
+    if (gVal === 'ชาย') gVal = 'male';
+    else if (gVal === 'หญิง') gVal = 'female';
+    else if (gVal === 'ชาย/หญิง' || gVal === 'คู่' || gVal === 'duet') gVal = 'duet';
+    document.getElementById('editGenderInput').value = gVal || 'male';
   } else {
     var egw = document.getElementById('editGenderWrap');
     if (egw) egw.style.display = 'none';
@@ -3096,14 +3110,14 @@ function initRealtime() {
           return;
         }
         // ── Guard Delete ──────────────────────────────────────────────────────────
-        // ถ้าเพิ่งลบเพลง (< 3 วิ) และ incoming มีเพลงมากกว่า (state เก่ากว่า) → ปฏิเสธ
-        if (_lastLocalDeleteTime > 0 && Date.now() - _lastLocalDeleteTime < 3000 && d.playlist.length > _playlist.length) {
+        // ถ้าเพิ่งลบเพลง (< 8 วิ) และ incoming มีเพลงมากกว่า (state เก่ากว่า) → ปฏิเสธ
+        if (_lastLocalDeleteTime > 0 && Date.now() - _lastLocalDeleteTime < 8000 && d.playlist.length > _playlist.length) {
           scheduleStateSync();
           return;
         }
         // ── Guard Add ─────────────────────────────────────────────────────────────
-        // ถ้าเพิ่งเพิ่มเพลง (< 3 วิ) และ incoming มีเพลงน้อยกว่า (state เก่ากว่า) → ปฏิเสธ
-        if (_lastLocalAddTime > 0 && Date.now() - _lastLocalAddTime < 3000 && d.playlist.length < _playlist.length) {
+        // ถ้าเพิ่งเพิ่มเพลง (< 8 วิ) และ incoming มีเพลงน้อยกว่า (state เก่ากว่า) → ปฏิเสธ
+        if (_lastLocalAddTime > 0 && Date.now() - _lastLocalAddTime < 8000 && d.playlist.length < _playlist.length) {
           scheduleStateSync();
           return;
         }
@@ -3450,6 +3464,9 @@ function requestStateWithRetry() {
           showToast('⚠️ ไม่พบสมาชิกออนไลน์ เข้าสู่โหมดอิสระ');
           _updateMasterOuterBtn();
         }
+      }
+      if (_playlist.length === 0) {
+        showEmpty(); // BUG-2, BUG-10 fallback
       }
     }
     return;
@@ -4174,12 +4191,12 @@ function ctxAction(action) {
 }
 
 function moveSongUp(e, idx) {
-  e.stopPropagation();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   if (idx <= 0) return;
   _doMoveSong(idx, idx - 1);
 }
 function moveSongDown(e, idx) {
-  e.stopPropagation();
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
   if (idx >= _playlist.length - 1) return;
   _doMoveSong(idx, idx + 1);
 }
@@ -4198,20 +4215,19 @@ function _doMoveSong(from, to) {
   scheduleStateSync();
 }
 
+// ── Called when REMOTE 'remove' broadcast received — no confirm needed ──────────
 function removeSongDirect(idx) {
   var name = _playlist[idx] ? _playlist[idx].name : '';
-  if (!confirm('ลบ "' + name + '" ออกจากลิส?')) return;
   if (!removeSongAtIndex(idx)) return;
   _modified = true;
   _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
   _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
-  _currentUpdatedAt = Date.now();        // [FIX] อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
-  _lastLocalCurrentChange = Date.now(); // [FIX] guard สำหรับ current_changed event
+  _currentUpdatedAt = Date.now();        // อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
+  _lastLocalCurrentChange = Date.now(); // guard สำหรับ current_changed event
   renderNowPlaying();
   renderSongList();
-  broadcastEvent('remove', { idx: idx });
   scheduleStateSync();
-  showToast('ลบ "' + name + '" แล้ว');
+  showToast('ลบ "' + name + '" แล้ว (เครื่องอื่น)');
 }
 
 // ─────────────────────────────────────────────────────────────────

@@ -680,7 +680,7 @@ function openAddModal() {
 function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
 
 function _normSong(s) { return (s||'').toLowerCase().replace(/\s+/g,'').replace(/[^\u0e00-\u0e7fa-z0-9]/g,''); }
-function _normSinger(s) { var v=(s||'').toLowerCase().trim(); if(v==='male'||v==='ชาย') return 'ชาย'; if(v==='female'||v==='หญิง') return 'หญิง'; if(v==='duet'||v==='คู่'||v==='ชาย/หญิง') return 'คู่'; return v; }
+function _normSinger(s) { var v=(s||'').toLowerCase().trim(); if(v==='male'||v==='ชาย') return 'ชาย'; if(v==='female'||v==='หญิง') return 'หญิง'; if(v==='duet'||v==='คู่'||v==='ชาย/หญิง') return 'ชาย/หญิง'; return v; }
 
 function checkDuplicate() {
   var raw = document.getElementById('mName').value.trim();
@@ -815,14 +815,15 @@ function markDirty(el) {
 function readRowFromDOM(row) {
   function fv(field) { var el = row.querySelector('[data-field="' + field + '"]'); return el ? el.value : ''; }
   return {
-    name:   fv('name').trim(),
-    artist: fv('artist').trim(),
-    key:    fv('key'),
-    bpm:    fv('bpm').trim(),
-    singer: fv('singer'),
-    era:    fv('era'),
-    tags:   fv('tags'),
-    mood:   fv('mood')
+    name:        fv('name').trim(),
+    artist:      fv('artist').trim(),
+    key:         fv('key'),
+    bpm:         fv('bpm').trim(),
+    singer:      fv('singer'),
+    era:         fv('era'),
+    tags:        fv('tags'),
+    mood:        fv('mood'),
+    nationality: fv('nationality')
   };
 }
 
@@ -1264,32 +1265,58 @@ function _normalizeRow(raw) {
     return '';
   }
   return {
-    name:   g(['name','ชื่อเพลง','song','title']),
-    artist: g(['artist','ศิลปิน','band','วง']),
-    key:    g(['key','คีย์','tonality']),
-    bpm:    g(['bpm','tempo']).trim(),
-    singer: g(['singer','นักร้อง','vocal']),
-    era:    g(['era','ยุค','period']),
-    mood:   g(['mood','อารมณ์']),
-    tags:   g(['tags','genre','แนวเพลง','ประเภท']),
+    name:        g(['name','ชื่อเพลง','song','title']),
+    artist:      g(['artist','ศิลปิน','band','วง']),
+    key:         g(['key','คีย์','tonality']),
+    bpm:         g(['bpm','tempo']).trim(),
+    singer:      g(['singer','นักร้อง','vocal']),
+    era:         g(['era','ยุค','period']),
+    mood:        g(['mood','อารมณ์']),
+    tags:        g(['tags','genre','แนวเพลง','ประเภท']),
+    nationality: g(['nationality','สัญชาติ'])
   };
 }
 
-function _showImportPreview(rawRows) {
-  var existing = {};
-  _allSongs.forEach(function(s){ existing[(s.name||'').toLowerCase().trim()] = s; });
+function _findBestSongMatch(target, library) {
+  if (!target || !library || !library.length) return null;
+  if (!target.name) return null;
+  var nameLower = target.name.trim().toLowerCase();
+  var nameMatches = library.filter(function(l) { 
+    return (l.name || '').trim().toLowerCase() === nameLower; 
+  });
+  if (nameMatches.length === 0) return null;
+  if (nameMatches.length === 1) return nameMatches[0];
 
+  var targetSinger = _normSinger(target.singer);
+  var singerMatches = nameMatches.filter(function(l) {
+    return _normSinger(l.singer) === targetSinger;
+  });
+  if (singerMatches.length === 1) return singerMatches[0];
+
+  if (target.key) {
+    var pool = singerMatches.length > 0 ? singerMatches : nameMatches;
+    var keyMatches = pool.filter(function(l) { return l.key === target.key; });
+    if (keyMatches.length === 1) return keyMatches[0];
+    if (keyMatches.length > 1) return keyMatches[0];
+  }
+  if (singerMatches.length > 0) return singerMatches[0];
+  return null;
+}
+
+function _showImportPreview(rawRows) {
   var normalized = rawRows.map(_normalizeRow).filter(function(r){ return r.name; });
   var newRows = [], updateRows = [];
-  normalized.forEach(function(r){
-    var key = r.name.toLowerCase().trim();
-    if (existing[key]) {
-      r.songId = existing[key].id;
+  
+  normalized.forEach(function(r) {
+    var match = _findBestSongMatch(r, _allSongs);
+    if (match) {
+      r.songId = match.id || match.songId;
       updateRows.push(r);
     } else {
       newRows.push(r);
     }
   });
+  
   _importRows = newRows.concat(updateRows);
 
   // Summary badges

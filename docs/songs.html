@@ -9,8 +9,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
   <title>คลังเพลง — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
@@ -57,7 +55,7 @@
       <button id="plAddModeBtn" onclick="togglePlAddMode()" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(56,161,105,.3)">&#x2611;&#xFE0F; &#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe2b;&#xe25;&#xe32;&#xe22;&#xe40;&#xe1e;&#xe25;&#xe07;</button>
       <button id="selectModeBtn" onclick="toggleSelectMode()" data-tip-below="เลือกหลายเพลงได้พร้อมกัน แล้วกด ➕ เพิ่มในคลังวง" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
       <!-- Live Button -->
-      <button id="liveModeBtn" onclick="goLiveMode()" style="display:none;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
+      <button id="liveModeBtn" onclick="goLiveMode()" hidden style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
         <span style="font-size:18px;line-height:1">🎤</span>
         <span style="font-size:13px;font-weight:700;line-height:1.2">Live</span>
         <span style="font-size:9px;opacity:.8;line-height:1;white-space:nowrap">เปิดโหมด Live</span>
@@ -125,13 +123,18 @@
           <option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option>
         </select>
 
-        <select id="artist" onchange="onFilterChange()">
-          <option value="">ทุกศิลปิน</option>
-        </select>
+        <!-- FIELD-BUG-4: เปลี่ยนจาก select เป็น text + autocomplete เหมือน admin-songs -->
+        <div class="ac-wrap-songs" style="position:relative;display:inline-block">
+          <input type="text" id="artist" placeholder="ทุกศิลปิน" autocomplete="off"
+            style="height:32px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-sm);padding:0 8px;font-size:var(--text-sm);background:var(--premium-card);color:var(--premium-text);min-width:110px"
+            oninput="_onArtistFilterInput()" onfocus="_openArtistFilterAC()" onblur="setTimeout(function(){_closeArtistFilterAC()},200)">
+          <div id="artistACList" style="display:none;position:absolute;top:100%;left:0;min-width:160px;max-height:220px;overflow-y:auto;background:var(--premium-card);border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999"></div>
+        </div>
 
-        <select id="sortOption" onchange="onFilterChange()" style="display:none;font-weight:600;color:var(--primary)">
-          <option value="name">เรียงตามชื่อ (ก-ฮ)</option>
-          <option value="least_played">เพลงเล่นน้อย (7 วันที่ผ่านมา)</option>
+        <!-- FIELD-BUG-5: sortOption แสดงตลอดเวลา (ไม่ซ่อน) -->
+        <select id="sortOption" onchange="onFilterChange()" style="font-weight:600;color:var(--primary)">
+          <option value="name">เรียง: ก-ฮ</option>
+          <option value="least_played">เรียง: เล่นน้อย</option>
         </select>
       </div>
     </div>
@@ -383,17 +386,16 @@ function getFilterValues() {
   var singerEl = getEl("singer");
   var eraEl = getEl("era");
   var nationalityEl = getEl("nationality");
-  var genreEl = getEl("genre");
+  var genreEl = getEl("genre"); // FIELD-BUG-1: id=genre แต่ DB column = tags, API layer แปลงให้ถูกต้อง
   var moodEl = getEl("mood");
-  var artistEl = getEl("artist");
   var sortOptionEl = getEl("sortOption");
   return {
     singer: singerEl ? singerEl.value : "",
     era: eraEl ? eraEl.value : "",
     nationality: nationalityEl ? nationalityEl.value : "",
-    genre: genreEl ? genreEl.value : "",
+    genre: genreEl ? genreEl.value : "", // ส่งไป API ด้วย key 'genre' → API แปลงเป็น 'tags'
     mood: moodEl ? moodEl.value : "",
-    artist: artistEl ? artistEl.value : "",
+    artist: _selectedArtistFilter || '',  // FIELD-BUG-4: ใช้ตัวแปร state แทน select.value
     sortKey: sortOptionEl ? sortOptionEl.value : "name"
   };
 }
@@ -711,22 +713,56 @@ function loadInitial(forceRefresh) {
   loadPage(returnPage);
 }
 
+// FIELD-BUG-4: artist filter autocomplete data
+var _artistACData = [];
+var _selectedArtistFilter = '';
+
 function populateArtistFilter() {
   apiCall('getSongArtists', { source: _currentSource }, function(r) {
-    var sel = document.getElementById('artist');
-    if (!sel) return;
-    var prev = sel.value;
-    sel.innerHTML = '<option value="">ทุกศิลปิน</option>';
-    if (r && r.success && r.data) {
-      r.data.forEach(function(name) {
-        var opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-      });
+    _artistACData = (r && r.success && r.data) ? r.data : [];
+    // restore previously selected artist
+    if (window._pendingArtistFilter) {
+      var inp = document.getElementById('artist');
+      if (inp) inp.value = window._pendingArtistFilter;
+      _selectedArtistFilter = window._pendingArtistFilter;
+      window._pendingArtistFilter = null;
     }
-    sel.value = prev;
   });
+}
+
+function _openArtistFilterAC() {
+  _buildArtistFilterAC((document.getElementById('artist') || {}).value || '');
+}
+function _closeArtistFilterAC() {
+  var list = document.getElementById('artistACList');
+  if (list) list.style.display = 'none';
+}
+function _onArtistFilterInput() {
+  var val = (document.getElementById('artist') || {}).value || '';
+  if (!val) {
+    _selectedArtistFilter = '';
+    onFilterChange();
+  }
+  _buildArtistFilterAC(val);
+}
+function _buildArtistFilterAC(q) {
+  var list = document.getElementById('artistACList');
+  if (!list) return;
+  var lower = q.toLowerCase();
+  var hits = q ? _artistACData.filter(function(a) { return a.toLowerCase().indexOf(lower) >= 0; }) : _artistACData;
+  if (!hits.length) { list.style.display = 'none'; return; }
+  list.innerHTML = hits.slice(0, 30).map(function(a) {
+    return '<div style="padding:7px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--premium-light-gray)" ' +
+      'onmousedown="_selectArtistFilter(' + JSON.stringify(a) + ')">' + escapeHtml(a) + '</div>';
+  }).join('');
+  list.style.display = 'block';
+}
+function _selectArtistFilter(name) {
+  var inp = document.getElementById('artist');
+  if (inp) inp.value = name;
+  _selectedArtistFilter = name;
+  _closeArtistFilterAC();
+  onFilterChange();
 }
 
 function switchLibrary(source) {
@@ -746,15 +782,14 @@ function switchLibrary(source) {
   // hide add-song-band link in band view
   var addWrap = document.getElementById('addSongBandWrap');
   if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
-  // hide/show sort option for band view
+  // FIELD-BUG-5: sortOption แสดงเสมอ แต่ default value ต่างกันตาม source
   var sortOpt = document.getElementById('sortOption');
   if (sortOpt) {
-    sortOpt.style.display = (source === 'band') ? 'inline-block' : 'none';
+    sortOpt.style.display = 'inline-block'; // แสดงเสมอ
     if (source === 'global') {
       sortOpt.value = 'name';
     } else if (source === 'band') {
-      // Default to least_played when switching to band library
-      sortOpt.value = 'least_played';
+      sortOpt.value = 'least_played'; // Default เล่นน้อยสำหรับคลังวง
     }
   }
   // exit select mode if active
@@ -823,6 +858,11 @@ function _buildMeta(s) {
     if (s.singer === 'duet') lbl = '\u0e04\u0e39\u0e48';
     tags.push('<span class="' + cls + '">' + lbl + '</span>');
   }
+  // FIELD-BUG-3: แสดง era / mood / genre(tags) / nationality ในการ์ดเพลงด้วย
+  if (s.era) tags.push('<span class="sm-tag" style="background:rgba(99,102,241,.15);color:#6366f1">' + escapeHtml(s.era) + '</span>');
+  if (s.tags) tags.push('<span class="sm-tag" style="background:rgba(16,185,129,.12);color:#059669">' + escapeHtml(s.tags) + '</span>'); // tags = genre column in DB (FIELD-BUG-1)
+  if (s.mood) tags.push('<span class="sm-tag" style="background:rgba(245,158,11,.12);color:#d97706">' + escapeHtml(s.mood) + '</span>');
+  if (s.nationality && s.nationality !== '\u0e44\u0e17\u0e22') tags.push('<span class="sm-tag" style="background:rgba(59,130,246,.12);color:#2563eb">' + escapeHtml(s.nationality) + '</span>');
   return tags.length ? '<div class="song-meta">' + tags.join('') + '</div>' : '';
 }
 
@@ -1944,9 +1984,15 @@ function renderPlaylist(){
     });
 
     ul.appendChild(fragment);
-    // show/hide Live button
+    // show/hide Live button (BUG-9 fix)
     var liveBtn = document.getElementById('liveModeBtn');
-    if (liveBtn) liveBtn.style.display = playlistData.filter(function(s){ return !s.break; }).length > 0 ? 'flex' : 'none';
+    if (liveBtn) {
+      if (playlistData.filter(function(s){ return !s.break; }).length > 0) {
+        liveBtn.removeAttribute('hidden');
+      } else {
+        liveBtn.setAttribute('hidden', '');
+      }
+    }
   });
 }
 
@@ -2264,6 +2310,26 @@ function goLiveMode() {
   var slot = getActiveTimeSlotValue();
   var liveUrl = 'live.html?from=songs.html&date=' + encodeURIComponent(date) +
     '&venue=' + encodeURIComponent(venue) + '&timeSlot=' + encodeURIComponent(slot);
+
+  // BUG-5: Save local backup to prevent race condition when DB hasn't caught up
+  var bandId = localStorage.getItem('bandId') || '';
+  if (bandId && date) {
+    var backupSongs = playlistData.filter(function(s){ return !s.break; }).map(function(s){
+      var actualKey = s.key || '';
+      if (s.transpose && s.transpose !== 0 && typeof transposeKey === 'function') {
+        actualKey = formatKey(transposeKey(s.key, s.transpose, s.mode));
+      }
+      return {
+        id:     s.id || s.songId || '',
+        name:   s.name || '',
+        key:    actualKey,
+        bpm:    s.bpm || 0,
+        singer: s.singer || '',
+        artist: s.artist || ''
+      };
+    });
+    localStorage.setItem('live_backup_' + bandId + '_' + date, JSON.stringify({ current: 0, playlist: backupSongs }));
+  }
 
   // บันทึกลิสปัจจุบันลง DB อัตโนมัติก่อนเข้า Live Mode เพื่อให้ Live Mode ได้ข้อมูลเพลงล่าสุดตรงกันทันที
   if (playlistData.filter(function(s){ return !s.break; }).length > 0) {
@@ -3083,8 +3149,13 @@ function restoreFilterState() {
         if (btn) btn.style.display = 'flex';
       }
     }
-    // artist needs to wait for populateArtistFilter, so we store it and apply after
-    if (state.artist) window._pendingArtistFilter = state.artist;
+    // artist: restore ทั้ง input text และ state variable
+    if (state.artist) {
+      var aInp = document.getElementById('artist');
+      if (aInp) aInp.value = state.artist;
+      _selectedArtistFilter = state.artist;
+      window._pendingArtistFilter = state.artist; // รอ populateArtistFilter ด้วย
+    }
     return !!(state.singer || state.era || state.genre || state.mood || state.search || state.sortOption);
   } catch(e) { return false; }
 }
