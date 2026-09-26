@@ -605,7 +605,14 @@ function renderTable() {
     var rowClass = isDirty ? 'row-dirty' : '';
     if (!isDirty && s.updatedAt && (Date.now() - new Date(s.updatedAt).getTime()) < 86400000) rowClass = 'row-recent';
 
-    html += '<tr data-id="' + id + '"' + (rowClass ? ' class="' + rowClass + '"' : '') + '>' +
+    var singerClass = '';
+    if (dSinger === 'ชาย') singerClass = ' row-singer-male';
+    else if (dSinger === 'หญิง') singerClass = ' row-singer-female';
+    else if (dSinger === 'ชาย/หญิง' || dSinger === 'คู่') singerClass = ' row-singer-duet';
+    
+    var finalRowClass = (rowClass + singerClass).trim();
+
+    html += '<tr data-id="' + id + '"' + (finalRowClass ? ' class="' + finalRowClass + '"' : '') + '>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +

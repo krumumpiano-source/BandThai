@@ -69,6 +69,9 @@
     .il-key{max-width:80px}
     .il-era{max-width:160px}
     .row-dirty td{background:#fffbeb !important}
+    .row-singer-male td{background:rgba(219, 234, 254, 0.4)}
+    .row-singer-female td{background:rgba(252, 231, 243, 0.4)}
+    .row-singer-duet td{background:rgba(209, 250, 229, 0.4)}
     .row-dirty td:first-child{box-shadow:inset 3px 0 0 var(--premium-gold)}
     .btn-save{background:#D1FAE5;color:#065F46;border:1px solid #6EE7B7}
     .btn-save:hover{background:#A7F3D0}
