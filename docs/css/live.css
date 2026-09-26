@@ -324,7 +324,7 @@
     @keyframes bwAnim{0%{opacity:0;transform:translate(-50%,-56%) scale(.9)}12%{opacity:1;transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 
     /* ─── CLIPBOARD MODAL ─── */
-    #clipModal .modal-sheet{padding-bottom:40px}
+    #clipModal .modal-sheet{padding-bottom:80px}
     #clipContent{background:var(--bg3);border:1px solid #444;border-radius:var(--radius-sm);padding:12px;font-size:.8rem;color:var(--text2);font-family:monospace;white-space:pre-wrap;max-height:38vh;overflow-y:auto;margin-top:8px;line-height:1.8}
 
     /* ─── REQUEST SONGS → LIBRARY ─── */

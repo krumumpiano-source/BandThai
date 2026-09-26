@@ -2627,17 +2627,17 @@ function _showClipModal(overrideList, isReview) {
     reqSongs.forEach(function(s, i) {
       var nameKey = (s.name || '').trim().toLowerCase();
       var alreadyInLib = libNames[nameKey];
+      if (alreadyInLib) return; // ไม่ต้องแสดงถ้ามีในคลังอยู่แล้ว
       var item = document.createElement('label');
-      item.className = 'req-lib-item' + (alreadyInLib ? '' : ' checked');
+      item.className = 'req-lib-item checked';
       item.innerHTML =
-        '<input type="checkbox" data-req-idx="' + i + '"' + (alreadyInLib ? '' : ' checked') + (alreadyInLib ? ' disabled' : '') + '>' +
+        '<input type="checkbox" data-req-idx="' + i + '" checked>' +
         '<div class="rli-info">' +
           '<div class="rli-name">' + escHtml(s.name) + '</div>' +
           '<div class="rli-meta">' +
             (s._key || s.key ? 'คีย์ ' + (s._key || s.key) : '') +
             (s.bpm ? ' · ' + s.bpm + ' BPM' : '') +
             (s.artist ? ' · ' + s.artist : '') +
-            (alreadyInLib ? ' · <span style="color:var(--green)">มีในคลังแล้ว ✓</span>' : '') +
           '</div>' +
         '</div>';
       var cb = item.querySelector('input');
@@ -2645,7 +2645,7 @@ function _showClipModal(overrideList, isReview) {
         item.classList.toggle('checked', this.checked);
       });
       listEl.appendChild(item);
-      if (!alreadyInLib) hasNew = true;
+      hasNew = true;
     });
     section.style.display = 'block';
     document.getElementById('saveToLibBtn').style.display = hasNew ? 'block' : 'none';
@@ -2966,17 +2966,15 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       // someone is asking for state — respond if we have a non-empty playlist
       var d = payload.payload || {};
-      if (_playlist.length > 0) {
-        if (_isExplicitMaster) {
-          setTimeout(function() { broadcastEvent('state_sync', getState()); }, 50);
-        } else {
-          // Stagger fallback response: earlier joiner responds faster (500ms)
-          var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
-          if (isSenior) {
-            setTimeout(function() {
-              broadcastEvent('state_sync', getState());
-            }, 400 + Math.random() * 200);
-          }
+      if (_isExplicitMaster) {
+        setTimeout(function() { broadcastEvent('state_sync', getState()); }, 50);
+      } else if (_playlist.length > 0) {
+        // Stagger fallback response: earlier joiner responds faster (500ms)
+        var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
+        if (isSenior) {
+          setTimeout(function() {
+            broadcastEvent('state_sync', getState());
+          }, 400 + Math.random() * 200);
         }
       }
     })
@@ -3192,18 +3190,22 @@ function initRealtime() {
       //         !_breakStarted = ยังไม่เริ่ม → เริ่ม
       //         _breakStartTime !== d.breakStartTime = เริ่มมาแล้วแต่ timestamp ต่างกัน (เช่น sessionStorage ของเบรคเก่า) → อัพเดต
       if (d.breakStarted && d.breakStartTime && (!_breakStarted || _breakStartTime !== d.breakStartTime)) {
-        _breakStarted   = true;
-        _breakStartTime = d.breakStartTime; // always trust leader's timestamp
-        try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
-        var _ssb = document.getElementById('startBreakBtn');
-        var _seb = document.getElementById('endBreakBtn');
-        var _stb = document.getElementById('breakTimerBar');
-        if (_ssb) _ssb.style.display = 'none';
-        if (_seb) _seb.style.display = '';
-        if (_stb) _stb.style.display = 'flex';
-        if (_breakTimerIval) clearInterval(_breakTimerIval);
-        updateBreakTimer();
-        _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
+        if (_lastEndedBreakStartTime > 0 && d.breakStartTime === _lastEndedBreakStartTime) {
+          // Ignore state_sync for a break we already definitively ended
+        } else {
+          _breakStarted   = true;
+          _breakStartTime = d.breakStartTime; // always trust leader's timestamp
+          try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
+          var _ssb = document.getElementById('startBreakBtn');
+          var _seb = document.getElementById('endBreakBtn');
+          var _stb = document.getElementById('breakTimerBar');
+          if (_ssb) _ssb.style.display = 'none';
+          if (_seb) _seb.style.display = '';
+          if (_stb) _stb.style.display = 'flex';
+          if (_breakTimerIval) clearInterval(_breakTimerIval);
+          updateBreakTimer();
+          _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
+        }
       } else if (d.endBreakDone && _breakStarted) {
         // leader says break was definitively ended — stop our local timer
         _endBreakDone     = true;
