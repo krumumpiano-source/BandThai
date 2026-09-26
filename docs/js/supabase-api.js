@@ -155,6 +155,7 @@
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong': {
           var _sdata = Object.assign({}, d.data || d);
+          delete _sdata.nationality;
           var _uid = localStorage.getItem('userId') || '';
           var _uname = localStorage.getItem('userName') || '';
           if (_uid) { _sdata.created_by = _uid; _sdata.createdBy = _uid; _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
@@ -164,6 +165,7 @@
         }
         case 'updateSong': {
           var _sdata = Object.assign({}, d.data || d);
+          delete _sdata.nationality;
           var _uid = localStorage.getItem('userId') || '';
           if (_uid) { _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
           var _sr = await doUpdate('band_songs', d.songId, _sdata);
