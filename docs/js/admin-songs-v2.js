@@ -243,6 +243,14 @@ function filterTable() {
   var mood    = document.getElementById('asMood').value;
   var status  = (document.getElementById('asStatus') || {}).value || '';
 
+  var nameCounts = {};
+  if (status === 'duplicates') {
+    _allSongs.forEach(function(s) {
+      var n = (s.name || '').trim().toLowerCase();
+      nameCounts[n] = (nameCounts[n] || 0) + 1;
+    });
+  }
+
   _filtered = _allSongs.filter(function(s) {
     // Source filter
     if (source === 'global'  && s.source === 'band') return false;
@@ -270,6 +278,10 @@ function filterTable() {
       if (status === 'missing'  && lvl !== 'missing')  return false;
       if (status === 'verified'   && !isV) return false;
       if (status === 'unverified' && isV)  return false;
+      if (status === 'duplicates') {
+        var n = (s.name || '').trim().toLowerCase();
+        if (nameCounts[n] < 2) return false;
+      }
     }
     return true;
   });
