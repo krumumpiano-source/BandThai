@@ -65,9 +65,9 @@ document.addEventListener('DOMContentLoaded', function() {
   initPresence();
   } // end initAdminSongs
 
-  // Auto-refresh when user comes back from another page
+  // Auto-refresh when user comes back from another page (keep pagination state)
   document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) { loadSongs(); loadSuggestions(); }
+    if (!document.hidden) { loadSongs(true); loadSuggestions(); }
   });
 });
 
@@ -194,7 +194,7 @@ function updateSugBadge() {
 }
 
 // ─── Load ─────────────────────────────────────────────────────────
-function loadSongs() {
+function loadSongs(keepPage) {
   setBodyLoading(true);
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
@@ -211,6 +211,7 @@ function loadSongs() {
       return (a.name || '').localeCompare(b.name || '', 'th');
     });
     populateArtistFilter();
+    if (keepPage) filterTable.__keepPage = true;
     filterTable();
     // Clean up orphan artists from DB (silently, on every load)
     apiCall('cleanupOrphanArtists', {}, function(r) {
@@ -242,6 +243,7 @@ function filterTable() {
   var genre   = document.getElementById('asGenre').value;
   var mood    = document.getElementById('asMood').value;
   var status  = (document.getElementById('asStatus') || {}).value || '';
+  var alphabet = (document.getElementById('asAlphabet') || {}).value || '';
 
   var nameCounts = {};
   if (status === 'duplicates') {
@@ -255,6 +257,26 @@ function filterTable() {
     // Source filter
     if (source === 'global'  && s.source === 'band') return false;
     if (source === 'band'    && s.source !== 'band') return false;
+    
+    // Alphabet filter
+    if (alphabet) {
+      var nameVal = (s.name || '').trim();
+      var firstChar = '';
+      for (var k = 0; k < nameVal.length; k++) {
+        var c = nameVal.charAt(k).toUpperCase();
+        if (/[A-Zก-ฮ]/.test(c)) { firstChar = c; break; }
+      }
+      if (!firstChar) firstChar = nameVal.charAt(0).toUpperCase();
+      
+      if (alphabet === 'EN') {
+        if (!/^[A-Z]$/.test(firstChar)) return false;
+      } else if (alphabet === 'NUM') {
+        if (/^[A-Zก-ฮ]$/.test(firstChar)) return false;
+      } else {
+        if (firstChar !== alphabet) return false;
+      }
+    }
+
     if (q) {
       var haystack = (s.name + ' ' + (s.artist||'') + ' ' + (s.key||'')).toLowerCase();
       if (haystack.indexOf(q) < 0) return false;
@@ -572,7 +594,8 @@ function renderTable() {
   var html = '';
   pageRows.forEach(function(s) {
     var id    = esc(s.id);
-    var jsId  = String(s.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    var jsId  = String(s.id || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+    var jsName = String(s.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
     var draft = _dirty[s.id]; // draft values preserved across page turns
     var isDirty = !!draft;
 
@@ -625,6 +648,7 @@ function renderTable() {
     var finalRowClass = (rowClass + singerClass).trim();
 
     html += '<tr data-id="' + id + '"' + (finalRowClass ? ' class="' + finalRowClass + '"' : '') + '>' +
+      '<td style="text-align:center"><input type="checkbox" class="song-cb" value="' + id + '" onchange="updateBulkToolbar()"></td>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
@@ -636,14 +660,94 @@ function renderTable() {
       '<td class="hide-lg">' + _buildSel('mood', _MOOD_OPTS,  dMood, 'il-mood',  null,        true)  + '</td>' +
       '<td class="hide-sm status-cell">' + statusHtml + editInfo + '</td>' +
       '<td><div class="td-actions">' +
-        '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + id + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
+        '<button class="btn-sm btn-save" id="sbtn-' + id + '" onclick="saveRow(\'' + jsId + '\')"' + (isDirty ? '' : ' disabled') + '>💾</button>' +
         ' <button class="btn-sm btn-itunes" onclick="itunesLookup(\'' + jsId + '\')" title="ค้นหาข้อมูลจาก iTunes">🎵</button>' +
         ' <button class="btn-sm" style="background:#8b5cf6;color:#fff;border-radius:4px;border:none;padding:2px 5px;" onclick="geminiLookup(\'' + jsId + '\')" title="ใช้ Google Gemini ค้นหา BPM/Key จากอินเทอร์เน็ต">🤖</button>' +
-        ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + id + '\',\'' + esc(s.name) + '\')">🗑️</button>' +
+        ' <button class="btn-sm btn-del" onclick="deleteSong(\'' + jsId + '\',\'' + esc(jsName) + '\')">🗑️</button>' +
       '</div></td>' +
     '</tr>';
   });
   tb.innerHTML = html;
+}
+
+function toggleSelectAll() {
+  var checked = document.getElementById('selectAllCb').checked;
+  var cbs = document.querySelectorAll('.song-cb');
+  cbs.forEach(function(cb) { cb.checked = checked; });
+  updateBulkToolbar();
+}
+
+function updateBulkToolbar() {
+  var selected = document.querySelectorAll('.song-cb:checked').length;
+  var bulkEl = document.getElementById('bulkActions');
+  document.getElementById('selCount').textContent = selected;
+  if (selected > 0) {
+    bulkEl.style.display = 'flex';
+  } else {
+    bulkEl.style.display = 'none';
+  }
+}
+
+function bulkAction(action) {
+  var cbs = document.querySelectorAll('.song-cb:checked');
+  if (cbs.length === 0) return;
+  var count = cbs.length;
+
+  if (action === 'delete') {
+    if (!confirm('ยืนยันลบ ' + count + ' เพลงที่เลือก?\n\nการลบจะไม่กระทบลิสที่บันทึกแล้ว')) return;
+    var ids = [];
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+    
+    var i = 0;
+    function nextDelete() {
+      if (i >= ids.length) {
+        showToast('🗑️ ลบเสร็จสิ้น ' + ids.length + ' เพลง', 'success');
+        clearSongsCache();
+        _allSongs = _allSongs.filter(function(s){ return ids.indexOf(s.id) === -1; });
+        refilterKeepPage();
+        apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
+        document.getElementById('selectAllCb').checked = false;
+        updateBulkToolbar();
+        return;
+      }
+      apiCall('deleteSong', { songId: ids[i] }, function() {
+        i++;
+        nextDelete();
+      });
+    }
+    nextDelete();
+  } else if (action === 'verify') {
+    if (!confirm('ยืนยันข้อมูล ' + count + ' เพลงที่เลือก?')) return;
+    var userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'unknown';
+    cbs.forEach(function(cb) {
+      _verifiedSongs[cb.value] = { by: userName, at: new Date().toISOString() };
+    });
+    saveVerifiedSongs();
+    showToast('✅ ยืนยันข้อมูล ' + count + ' เพลงแล้ว', 'success');
+    refilterKeepPage();
+    document.getElementById('selectAllCb').checked = false;
+    updateBulkToolbar();
+  } else if (action === 'ai') {
+    if (!confirm('ใช้ AI เติมข้อมูลให้ ' + count + ' เพลงที่เลือก?\n\n(อาจใช้เวลาสักครู่ และระบบจะประมวลผลทีละเพลงเพื่อป้องกัน API ลิมิต)')) return;
+    var ids = [];
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+    
+    var i = 0;
+    function nextAI() {
+      if (i >= ids.length) {
+        showToast('🤖 เติมข้อมูล AI เสร็จสิ้น ' + ids.length + ' เพลง', 'success');
+        document.getElementById('selectAllCb').checked = false;
+        updateBulkToolbar();
+        return;
+      }
+      geminiLookup(ids[i]);
+      setTimeout(function() {
+        i++;
+        nextAI();
+      }, 3000); // 3 seconds delay
+    }
+    nextAI();
+  }
 }
 
 function updateStats() {
@@ -703,6 +807,7 @@ function _normSinger(s) { var v=(s||'').toLowerCase().trim(); if(v==='male'||v==
 
 function checkDuplicate() {
   var raw = document.getElementById('mName').value.trim();
+  var artistRaw = document.getElementById('mArtist').value.trim().toLowerCase();
   var warn = document.getElementById('dupWarn');
   if (!raw) { warn.style.display='none'; return; }
   var norm   = _normSong(raw);
@@ -710,21 +815,29 @@ function checkDuplicate() {
   var key    = document.getElementById('mKey').value;
   var libSongs = _allSongs.filter(function(s){ return !s._fromHistory; });
   var sameName = libSongs.filter(function(s){ return _normSong(s.name) === norm; });
-  // Full exact: same name AND same singer (if both filled) AND same key (if both filled)
-  var fullExact = sameName.filter(function(s){
+  
+  var sameNameAndArtist = sameName.filter(function(s){ 
+    return (s.artist || '').trim().toLowerCase() === artistRaw;
+  });
+  
+  // Full exact: same name AND same artist AND same singer (if filled) AND same key (if filled)
+  var fullExact = sameNameAndArtist.filter(function(s){
     var ss = _normSinger(s.singer);
     var sk = (s.key||'').trim();
     var sameS = !singer || !ss || singer === ss;
     var sameK = !key    || !sk || key    === sk;
     return sameS && sameK;
   });
-  // Diff-version: same name but singer or key clearly differs
-  var diffVer = sameName.filter(function(s){
+  // Diff-version: same name and artist but singer or key clearly differs
+  var diffVer = sameNameAndArtist.filter(function(s){
     var ss = _normSinger(s.singer);
     var sk = (s.key||'').trim();
     var singerDiff = singer && ss && singer !== ss;
     var keyDiff    = key    && sk && key    !== sk;
     return singerDiff || keyDiff;
+  });
+  var diffArtist = sameName.filter(function(s) {
+    return (s.artist || '').trim().toLowerCase() !== artistRaw;
   });
   var similar = sameName.length ? [] : libSongs.filter(function(s){
     var sn = _normSong(s.name);
@@ -741,6 +854,12 @@ function checkDuplicate() {
     warn.innerHTML='<strong>⚠️ พบเพลงชื่อเดียวกันในคลัง (ต่างนักร้องหรือต่างคีย์)</strong>' + diffVer.map(function(s){
       return '<div class="dup-item">• ' + esc(s.name) + (s.singer ? ' 🎤 ' + esc(s.singer) : '') + (s.key ? ' [' + esc(s.key) + ']' : '') + (s.artist ? ' — ' + esc(s.artist) : '') + '</div>';
     }).join('') + '<div style="margin-top:4px;font-size:11px;color:#92400e">✔️ ต่างเวอร์ชันสามารถเพิ่มได้เลย</div>';
+    warn.style.display='block';
+  } else if (diffArtist.length && artistRaw) {
+    warn.className='similar';
+    warn.innerHTML='<strong>ℹ️ มีเพลงชื่อเดียวกันแต่คนละศิลปินในคลัง</strong>' + diffArtist.slice(0,3).map(function(s){
+      return '<div class="dup-item">• ' + esc(s.name) + (s.artist ? ' — ' + esc(s.artist) : '') + '</div>';
+    }).join('') + '<div style="margin-top:4px;font-size:11px;color:#065f46">✔️ คนละศิลปินสามารถเพิ่มได้เลย ข้อมูลจะไม่ทับกัน</div>';
     warn.style.display='block';
   } else if (similar.length) {
     warn.className='similar';
@@ -1299,26 +1418,35 @@ function _normalizeRow(raw) {
 function _findBestSongMatch(target, library) {
   if (!target || !library || !library.length) return null;
   if (!target.name) return null;
+  
   var nameLower = target.name.trim().toLowerCase();
+  var targetArtistLower = (target.artist || '').trim().toLowerCase();
+  
   var nameMatches = library.filter(function(l) { 
     return (l.name || '').trim().toLowerCase() === nameLower; 
   });
   if (nameMatches.length === 0) return null;
-  if (nameMatches.length === 1) return nameMatches[0];
-
-  var targetSinger = _normSinger(target.singer);
-  var singerMatches = nameMatches.filter(function(l) {
-    return _normSinger(l.singer) === targetSinger;
+  
+  // Try to find exact match by Name + Artist
+  var exactArtistMatches = nameMatches.filter(function(l) {
+    return (l.artist || '').trim().toLowerCase() === targetArtistLower;
   });
-  if (singerMatches.length === 1) return singerMatches[0];
-
-  if (target.key) {
-    var pool = singerMatches.length > 0 ? singerMatches : nameMatches;
-    var keyMatches = pool.filter(function(l) { return l.key === target.key; });
-    if (keyMatches.length === 1) return keyMatches[0];
-    if (keyMatches.length > 1) return keyMatches[0];
+  
+  if (exactArtistMatches.length > 0) {
+    if (exactArtistMatches.length === 1) return exactArtistMatches[0];
+    
+    // Multiple matches, narrow by singer/key
+    var targetSinger = _normSinger(target.singer);
+    var singerMatches = exactArtistMatches.filter(function(l) {
+      return _normSinger(l.singer) === targetSinger;
+    });
+    
+    if (singerMatches.length > 0) return singerMatches[0];
+    return exactArtistMatches[0];
   }
-  if (singerMatches.length > 0) return singerMatches[0];
+  
+  // No artist match, don't overwrite if they have distinctly different artists.
+  // We prefer to return null so it creates a new entry for different artist.
   return null;
 }
 
@@ -1928,91 +2056,129 @@ function geminiLookup(songId) {
   var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
   var title = document.getElementById('itunesPopoverTitle');
-  if(title) title.innerHTML = '🤖 Google Gemini AI';
+  if(title) title.innerHTML = '🤖 AI Analyzer (Local + Cloud)';
   if (!pop || !bdy) return;
 
   pop.style.display = 'flex';
-  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังค้นหาข้อมูลจากอินเทอร์เน็ต...</div>';
+  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังวิเคราะห์ข้อมูล (พยายามใช้ Local AI ก่อน)...</div>';
   act.style.display = 'none';
 
-  apiCall('getAppConfig', {}, function(res) {
-    var apiKey = '';
-    if (res && res.data) {
-      var map = {};
-      res.data.forEach(function(row) { map[row.key] = row.value; });
-      if (map.groq_api_key) apiKey = map.groq_api_key;
-    }
+  var prompt = "ค้นหาข้อมูลเพลง '" + q + "' (เพลงไทย)\n"
+    + "ตอบเป็น JSON ล้วนๆ โดยค่าที่ใช้ต้องตรงตามตัวเลือกที่กำหนดเป๊ะๆ เท่านั้น:\n"
+    + "- artist: ชื่อศิลปินต้นฉบับ\n"
+    + "- bpm: ตัวเลขจำนวนเต็ม\n"
+    + "- key: เลือกจาก [C / Am, 1#, 2#, 3#, 4#, 5#, 6#, 7#, 1b, 2b, 3b, 4b, 5b, 6b, 7b] (เช่น C=C / Am, G=1#, F=1b, D=2#, Bb=2b)\n"
+    + "- era: เลือกจาก [80s, 90s, 2000s, 2010s, 2020s]\n"
+    + "- mood: เลือกจาก [มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่]\n"
+    + "- tags: เลือกจาก [ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้]\n"
+    + "- singer: เลือกจาก [ชาย, หญิง, คู่]\n"
+    + "รูปแบบตัวอย่าง: {\"artist\":\"Bodyslam\",\"bpm\":120,\"key\":\"1#\",\"era\":\"2010s\",\"mood\":\"มัน / สนุก\",\"tags\":\"ร็อค\",\"singer\":\"ชาย\"}";
 
-    if (!apiKey) {
-      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
-        + '<div style="margin-bottom:8px">⚠️ <strong>ยังไม่ได้ตั้งค่า API Key</strong></div>'
-        + '<div style="font-size:.85rem;">กรุณาไปที่ "ตั้งค่าระบบ" เพื่อใส่ Groq API Key ก่อนครับ</div>'
-        + '</div>';
-      act.style.display = 'flex';
-      act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
-      return;
-    }
-
-    var prompt = "ค้นหาข้อมูลเพลง '" + q + "' (เพลงไทย)\n"
-      + "ตอบเป็น JSON ล้วนๆ โดยค่าที่ใช้ต้องตรงตามตัวเลือกที่กำหนดเป๊ะๆ เท่านั้น:\n"
-      + "- artist: ชื่อศิลปินต้นฉบับ\n"
-      + "- bpm: ตัวเลขจำนวนเต็ม\n"
-      + "- key: เลือกจาก [C / Am, 1#, 2#, 3#, 4#, 5#, 6#, 7#, 1b, 2b, 3b, 4b, 5b, 6b, 7b] (เช่น C=C / Am, G=1#, F=1b, D=2#, Bb=2b)\n"
-      + "- era: เลือกจาก [80s, 90s, 2000s, 2010s, 2020s]\n"
-      + "- mood: เลือกจาก [มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่]\n"
-      + "- tags: เลือกจาก [ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้]\n"
-      + "- singer: เลือกจาก [ชาย, หญิง, คู่]\n"
-      + "รูปแบบตัวอย่าง: {\"artist\":\"Bodyslam\",\"bpm\":120,\"key\":\"1#\",\"era\":\"2010s\",\"mood\":\"มัน / สนุก\",\"tags\":\"ร็อค\",\"singer\":\"ชาย\"}";
-    
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey.trim()
-      },
-      body: JSON.stringify({
-        model: 'llama3-70b-8192',
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1,
-        response_format: { type: 'json_object' }
-      })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('API Error: ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      if (!data.choices || !data.choices.length) {
-        throw new Error('No answer from AI');
-      }
-      var text = data.choices[0].message.content;
-      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  function processAiResponse(text, sourceStr) {
       var parsed = null;
-      try { parsed = JSON.parse(text); } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ: ' + text); }
+      try { 
+        text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(text); 
+      } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ: ' + text); }
       
-      asShowGeminiResult(songId, parsed);
-    })
-    .catch(function(err) {
-      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
-        + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Gemini AI ไม่สำเร็จ</strong></div>'
-        + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
-        + '<button onclick="geminiLookup(\'' + esc(songId) + '\')" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer">🔄 ลองใหม่</button>'
-        + '</div>';
+      asShowGeminiResult(songId, parsed, sourceStr);
+  }
+
+  function runCloudFallback(errMsg) {
+    bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>สลับไปใช้ Cloud AI...<br><small style="color:#f59e0b">Local AI ข้ามไปเนื่องจาก (' + errMsg + ')</small></div>';
+    
+    apiCall('getAppConfig', {}, function(res) {
+      var apiKey = '';
+      if (res && res.data) {
+        var map = {};
+        res.data.forEach(function(row) { map[row.key] = row.value; });
+        if (map.groq_api_key) apiKey = map.groq_api_key;
+      }
+
+      if (!apiKey) {
+        bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+          + '<div style="margin-bottom:8px">⚠️ <strong>ไม่ได้ตั้งค่า API Key และ Local AI ไม่ทำงาน</strong></div>'
+          + '<div style="font-size:.85rem;">กรุณาเปิด Ollama ในเครื่อง หรือไปที่ "ตั้งค่าระบบ" เพื่อใส่ Groq API Key ครับ</div>'
+          + '</div>';
+        act.style.display = 'flex';
+        act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
+        return;
+      }
+
+      fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey.trim()
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.1,
+          response_format: { type: 'json_object' }
+        })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('API Error: ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data.choices || !data.choices.length) throw new Error('No answer from AI');
+        processAiResponse(data.choices[0].message.content, "Cloud AI (Groq)");
+      })
+      .catch(function(err) {
+        bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+          + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Cloud AI ไม่สำเร็จ</strong></div>'
+          + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
+          + '<button onclick="geminiLookup(\'' + esc(songId) + '\')" style="background:#8b5cf6;color:#fff;border:none;border-radius:6px;padding:5px 12px;cursor:pointer">🔄 ลองใหม่</button>'
+          + '</div>';
+      });
     });
+  }
+
+  var controller = new AbortController();
+  var timeoutId = setTimeout(function() { controller.abort(); }, 3000);
+
+  fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'scb10x/llama3.1-typhoon2-8b-instruct:latest',
+      prompt: prompt,
+      stream: false,
+      format: 'json'
+    }),
+    signal: controller.signal
+  })
+  .then(function(r) {
+    clearTimeout(timeoutId);
+    if (!r.ok) throw new Error('Local API Error: ' + r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    if (!data.response) throw new Error('No valid response from Local AI');
+    processAiResponse(data.response, "Local AI (Ollama: Typhoon2)");
+  })
+  .catch(function(err) {
+    clearTimeout(timeoutId);
+    runCloudFallback(err.name === 'AbortError' ? 'Timeout' : 'Offline/Not Installed');
   });
 }
 
-function asShowGeminiResult(songId, parsedData) {
+function asShowGeminiResult(songId, parsedData, sourceStr) {
   _geminiPendingSongId = songId;
   _geminiPendingData = parsedData;
   var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
 
+  var sourceHtml = sourceStr ? '<div style="font-size:.8rem;color:#10b981;margin-top:-6px;margin-bottom:10px;">⚡ ประมวลผลด้วย ' + esc(sourceStr) + '</div>' : '';
+
   var html = '<div style="padding:16px;">'
     + '<div style="font-weight:600;margin-bottom:12px;color:var(--premium-text)">ผลลัพธ์จากการวิเคราะห์ของ AI:</div>'
+    + sourceHtml
     + '<div style="font-size:.9rem;display:flex;flex-direction:column;gap:8px;">';
   
   _AS_ITUNES_FIELDS.forEach(function(fd) {
@@ -2250,68 +2416,30 @@ function geminiLookupForAdd() {
   var bdy = document.getElementById('itunesPopoverContent');
   var act = document.getElementById('itunesPopoverActions');
   var title = document.getElementById('itunesPopoverTitle');
-  if (title) title.innerHTML = '🤖 Google Gemini AI';
+  if (title) title.innerHTML = '🤖 AI Analyzer (Local + Cloud)';
   pop.style.display = 'flex';
-  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังวิเคราะห์ข้อมูล...</div>';
+  bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>กำลังวิเคราะห์ข้อมูล (พยายามใช้ Local AI ก่อน)...</div>';
   act.style.display = 'none';
 
-  apiCall('getAppConfig', {}, function(res) {
-    var apiKey = '';
-    if (res && res.data) {
-      var map = {};
-      res.data.forEach(function(row) { map[row.key] = row.value; });
-      if (map.groq_api_key) apiKey = map.groq_api_key;
-    }
+  var prompt = "ค้นหาข้อมูลเพลง '" + name + "' (เพลงไทย)\n"
+    + "ตอบเป็น JSON ล้วนๆ โดยค่าที่ใช้ต้องตรงตามตัวเลือกที่กำหนดเป๊ะๆ เท่านั้น:\n"
+    + "- artist: ชื่อศิลปินต้นฉบับ\n"
+    + "- bpm: ตัวเลขจำนวนเต็ม\n"
+    + "- key: เลือกจาก [C / Am, 1#, 2#, 3#, 4#, 5#, 6#, 7#, 1b, 2b, 3b, 4b, 5b, 6b, 7b] (เช่น C=C / Am, G=1#, F=1b, D=2#, Bb=2b)\n"
+    + "- era: เลือกจาก [80s, 90s, 2000s, 2010s, 2020s]\n"
+    + "- mood: เลือกจาก [มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่]\n"
+    + "- tags: เลือกจาก [ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้]\n"
+    + "- singer: เลือกจาก [ชาย, หญิง, คู่]\n"
+    + "รูปแบบตัวอย่าง: {\"artist\":\"Bodyslam\",\"bpm\":120,\"key\":\"1#\",\"era\":\"2010s\",\"mood\":\"มัน / สนุก\",\"tags\":\"ร็อค\",\"singer\":\"ชาย\"}";
 
-    if (!apiKey) {
-      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
-        + '<div style="margin-bottom:8px">⚠️ <strong>ยังไม่ได้ตั้งค่า API Key</strong></div>'
-        + '<div style="font-size:.85rem;">กรุณาไปที่ "ตั้งค่าระบบ" เพื่อใส่ Groq API Key ก่อนครับ</div>'
-        + '</div>';
-      act.style.display = 'flex';
-      act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
-      return;
-    }
-
-    var prompt = "ค้นหาข้อมูลเพลง '" + name + "' (เพลงไทย)\n"
-      + "ตอบเป็น JSON ล้วนๆ โดยค่าที่ใช้ต้องตรงตามตัวเลือกที่กำหนดเป๊ะๆ เท่านั้น:\n"
-      + "- artist: ชื่อศิลปินต้นฉบับ\n"
-      + "- bpm: ตัวเลขจำนวนเต็ม\n"
-      + "- key: เลือกจาก [C / Am, 1#, 2#, 3#, 4#, 5#, 6#, 7#, 1b, 2b, 3b, 4b, 5b, 6b, 7b] (เช่น C=C / Am, G=1#, F=1b, D=2#, Bb=2b)\n"
-      + "- era: เลือกจาก [80s, 90s, 2000s, 2010s, 2020s]\n"
-      + "- mood: เลือกจาก [มัน / สนุก, หวาน / โรแมนติก, เศร้า / อกหัก, นิ่ง / ผ่อนคลาย, ฮึกเหิม / ยิ่งใหญ่]\n"
-      + "- tags: เลือกจาก [ป๊อป, ร็อค, ดิสโก้, แร๊ฟ/ฮิปฮอป, ลูกทุ่ง / อีสาน, เพื่อชีวิต, อาร์แอนด์บี, แจ๊ส / บลูส์, เรกเก้, อินดี้]\n"
-      + "- singer: เลือกจาก [ชาย, หญิง, คู่]\n"
-      + "รูปแบบตัวอย่าง: {\"artist\":\"Bodyslam\",\"bpm\":120,\"key\":\"1#\",\"era\":\"2010s\",\"mood\":\"มัน / สนุก\",\"tags\":\"ร็อค\",\"singer\":\"ชาย\"}";
-    
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + apiKey.trim()
-      },
-      body: JSON.stringify({
-        model: 'llama3-70b-8192',
-        messages: [
-          { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.1,
-        response_format: { type: 'json_object' }
-      })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('API Error: ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      if (!data.choices || !data.choices.length) throw new Error('No answer from AI');
-      var text = data.choices[0].message.content;
-      text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  // ฟังก์ชันช่วยเหลือสำหรับประมวลผล JSON ที่ได้มา
+  function processAiResponse(text, sourceStr) {
       var parsed = null;
-      try { parsed = JSON.parse(text); } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ'); }
+      try { 
+        text = text.replace(/```json/gi, '').replace(/```/g, '').trim();
+        parsed = JSON.parse(text); 
+      } catch(e) { throw new Error('AI ส่งผลลัพธ์ผิดรูปแบบ'); }
       
-      // Auto-fill the add modal form
       if (parsed.artist) document.getElementById('mArtist').value = parsed.artist;
       if (parsed.key) document.getElementById('mKey').value = parsed.key;
       if (parsed.bpm) document.getElementById('mBpm').value = parsed.bpm;
@@ -2329,19 +2457,97 @@ function geminiLookupForAdd() {
         }
       }
 
-      bdy.innerHTML = '<div style="padding:16px;text-align:center;color:var(--premium-text)"><div style="font-size:24px;margin-bottom:8px">✅</div>AI ได้วิเคราะห์และเติมข้อมูลลงในฟอร์มเรียบร้อยแล้ว<br><small style="color:#6B7280;margin-top:6px;display:block">โปรดตรวจสอบความถูกต้องก่อนกดบันทึก</small></div>';
+      bdy.innerHTML = '<div style="padding:16px;text-align:center;color:var(--premium-text)"><div style="font-size:24px;margin-bottom:8px">✅</div>AI ได้วิเคราะห์และเติมข้อมูลลงในฟอร์มเรียบร้อยแล้ว<br><small style="color:#10b981;font-weight:bold;margin-top:4px;display:block">⚡ ประมวลผลด้วย ' + sourceStr + '</small><small style="color:#6B7280;margin-top:6px;display:block">โปรดตรวจสอบความถูกต้องก่อนกดบันทึก</small></div>';
       act.style.display = 'flex';
       act.innerHTML = '<button class="btn-sm" style="background:#8b5cf6;color:#fff;border:none;flex:1" onclick="closeItunesPopover()">ตกลง</button>';
-      checkDuplicate(); // Trigger validation
-    })
-    .catch(function(err) {
-      bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
-        + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Gemini AI ไม่สำเร็จ</strong></div>'
-        + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
-        + '</div>';
-      act.style.display = 'flex';
-      act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
+      checkDuplicate();
+  }
+
+  // ฟังก์ชัน Fallback ไปใช้ Cloud API (Groq)
+  function runCloudFallback(errMsg) {
+    bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-text-muted)"><div class="spinner"></div><br>สลับไปใช้ Cloud AI...<br><small style="color:#f59e0b">Local AI ข้ามไปเนื่องจาก (' + errMsg + ')</small></div>';
+    
+    apiCall('getAppConfig', {}, function(res) {
+      var apiKey = '';
+      if (res && res.data) {
+        var map = {};
+        res.data.forEach(function(row) { map[row.key] = row.value; });
+        if (map.groq_api_key) apiKey = map.groq_api_key;
+      }
+
+      if (!apiKey) {
+        bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+          + '<div style="margin-bottom:8px">⚠️ <strong>ไม่ได้ตั้งค่า API Key และ Local AI ไม่ทำงาน</strong></div>'
+          + '<div style="font-size:.85rem;">กรุณาเปิด Ollama ในเครื่อง หรือไปที่ "ตั้งค่าระบบ" เพื่อใส่ Groq API Key ครับ</div>'
+          + '</div>';
+        act.style.display = 'flex';
+        act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
+        return;
+      }
+
+      fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey.trim()
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: 'You are a helpful assistant that outputs only valid JSON without markdown wrapping.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.1,
+          response_format: { type: 'json_object' }
+        })
+      })
+      .then(function(r) {
+        if (!r.ok) throw new Error('API Error: ' + r.status);
+        return r.json();
+      })
+      .then(function(data) {
+        if (!data.choices || !data.choices.length) throw new Error('No answer from AI');
+        processAiResponse(data.choices[0].message.content, "Cloud AI (Groq)");
+      })
+      .catch(function(err) {
+        bdy.innerHTML = '<div style="padding:20px;text-align:center;color:var(--premium-error)">'
+          + '<div style="margin-bottom:8px">⚠️ <strong>เชื่อมต่อ Cloud AI ไม่สำเร็จ</strong></div>'
+          + '<div style="font-size:.85rem;margin-bottom:12px">' + esc(err.message) + '</div>'
+          + '</div>';
+        act.style.display = 'flex';
+        act.innerHTML = '<button class="btn-sm" style="background:#f1f5f9;color:#374151;border:1px solid #d1d5db;flex:1" onclick="closeItunesPopover()">ปิด</button>';
+      });
     });
+  }
+
+  // 1. ลองใช้ Local AI ก่อน (Ollama)
+  var controller = new AbortController();
+  var timeoutId = setTimeout(function() { controller.abort(); }, 3000); // 3 วิถ้าไม่ตอบสนอง ให้ไปใช้ Cloud ทันที
+
+  fetch('http://localhost:11434/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'scb10x/llama3.1-typhoon2-8b-instruct:latest', // ใช้โมเดลภาษาไทยจาก Ollama
+      prompt: prompt,
+      stream: false,
+      format: 'json'
+    }),
+    signal: controller.signal
+  })
+  .then(function(r) {
+    clearTimeout(timeoutId);
+    if (!r.ok) throw new Error('Local API Error: ' + r.status);
+    return r.json();
+  })
+  .then(function(data) {
+    if (!data.response) throw new Error('No valid response from Local AI');
+    processAiResponse(data.response, "Local AI (Ollama: Typhoon2)");
+  })
+  .catch(function(err) {
+    clearTimeout(timeoutId);
+    // ถ้า fetch ล้มเหลว (คนอื่นใช้) หรือ Timeout (Ollama ปิดอยู่) จะเข้าเคสนี้
+    runCloudFallback(err.name === 'AbortError' ? 'Timeout' : 'Offline/Not Installed');
   });
 }
 

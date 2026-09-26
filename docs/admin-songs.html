@@ -85,7 +85,19 @@
       <option value="">ทุกแหล่ง</option>
       <option value="global">คลังกลาง</option>
       <option value="band">คลังวง</option>
-
+    </select>
+    <select id="asAlphabet" class="as-filter" onchange="filterTable()">
+      <option value="">หมวดอักษร</option>
+      <option value="ก">ก</option><option value="ข">ข</option><option value="ค">ค</option><option value="ฆ">ฆ</option><option value="ง">ง</option>
+      <option value="จ">จ</option><option value="ฉ">ฉ</option><option value="ช">ช</option><option value="ซ">ซ</option><option value="ญ">ญ</option>
+      <option value="ฎ">ฎ</option><option value="ฏ">ฏ</option><option value="ฐ">ฐ</option><option value="ฑ">ฑ</option><option value="ฒ">ฒ</option>
+      <option value="ณ">ณ</option><option value="ด">ด</option><option value="ต">ต</option><option value="ถ">ถ</option><option value="ท">ท</option>
+      <option value="ธ">ธ</option><option value="น">น</option><option value="บ">บ</option><option value="ป">ป</option><option value="ผ">ผ</option>
+      <option value="ฝ">ฝ</option><option value="พ">พ</option><option value="ฟ">ฟ</option><option value="ภ">ภ</option><option value="ม">ม</option>
+      <option value="ย">ย</option><option value="ร">ร</option><option value="ล">ล</option><option value="ว">ว</option><option value="ศ">ศ</option>
+      <option value="ษ">ษ</option><option value="ส">ส</option><option value="ห">ห</option><option value="ฬ">ฬ</option><option value="อ">อ</option><option value="ฮ">ฮ</option>
+      <option value="EN">A-Z (สากล)</option>
+      <option value="NUM">0-9 / สัญลักษณ์</option>
     </select>
     <select id="asSinger" class="as-filter" onchange="filterTable()">
       <option value="">นักร้องทั้งหมด</option>
@@ -166,9 +178,17 @@
   <!-- Table -->
   <div class="card" style="padding:0">
     <div class="table-wrap">
+      <!-- Bulk Actions Toolbar -->
+      <div id="bulkActions" style="display:none; padding:8px 16px; background:#EFF6FF; border-bottom:1px solid #BFDBFE; align-items:center; gap:10px;">
+        <span style="font-size:13px; color:#1E3A8A; font-weight:600;"><span id="selCount">0</span> รายการที่เลือก:</span>
+        <button type="button" class="btn-sm" style="background:#10B981;color:#fff;border:none" onclick="bulkAction('verify')">✅ ยืนยันข้อมูล</button>
+        <button type="button" class="btn-sm" style="background:#8b5cf6;color:#fff;border:none" onclick="bulkAction('ai')">🤖 เติมข้อมูลด้วย AI</button>
+        <button type="button" class="btn-sm" style="background:#EF4444;color:#fff;border:none" onclick="bulkAction('delete')">🗑️ ลบ</button>
+      </div>
       <table class="song-table">
         <thead>
           <tr>
+            <th style="width:40px;text-align:center"><input type="checkbox" id="selectAllCb" onclick="toggleSelectAll()" title="เลือกทั้งหมดในหน้านี้"></th>
             <th id="th-name" class="sortable" onclick="sortBy('name',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ชื่อเพลง<i class="sort-icon">↕</i></th>
             <th id="th-artist" class="sortable" onclick="sortBy('artist',event)" title="คลิก = เรียง | Shift+คลิก = เพิ่มการเรียงรอง">ศิลปิน<i class="sort-icon">↕</i></th>
             <th class="hide-md">คีย์ <span class="help-tooltip" title="รูปแบบ: นับตามจำนวนชาร์ป(#) / แฟลต(b)&#10;เช่น 1# = G/Em, 2b = Bb/Gm&#10;สามารถคลิกปุ่ม '🔤 อักษร' ด้านบนเพื่อสลับการแสดงผลได้">❓</span></th>
@@ -183,7 +203,7 @@
           </tr>
         </thead>
         <tbody id="songTbody">
-          <tr><td colspan="10"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
+          <tr><td colspan="11"><div class="as-loading"><div class="as-spinner"></div>กำลังโหลด...</div></td></tr>
         </tbody>
       </table>
     </div>
@@ -362,6 +382,6 @@
 <script src="js/app.js?v=20260926a"></script>
 <script src="js/itunes-api.js?v=20260317h"></script>
 <script src="js/nav.js?v=20260319b"></script>
-<script src="js/admin-songs-v2.js?v=11"></script>
+<script src="js/admin-songs-v2.js?v=13"></script>
 </body>
 </html>
