@@ -2706,3 +2706,99 @@ function openGuideModal() {
 function closeGuideModal() {
   document.getElementById('guideModal').style.display = 'none';
 }
+
+// ─── Migration ───────────────────────────────────────────────────
+window.migrateBandToGlobal = async function() {
+  if (!confirm('ยืนยันการโอนย้ายเพลงจาก "คลังวง" ไปยัง "คลังกลาง"?\n(หากซ้ำจะเก็บข้อมูลที่ครบถ้วนที่สุด)\n\n**เมื่อย้ายเสร็จแล้ว ตัวเลือกคลังเพลงวงจะถูกปิดการใช้งานชั่วคราว**')) return;
+  setBodyLoading(true);
+  try {
+    var bandId = localStorage.getItem('bandId');
+    if (!bandId) throw new Error('No bandId');
+
+    // 1. get all band songs
+    var { data: owned, error: e1 } = await window._sb.from('band_songs').select('*').eq('band_id', bandId);
+    if (e1) throw e1;
+    if (!owned || owned.length === 0) {
+      alert('ไม่มีเพลงในคลังวงที่จะต้องโอนย้ายแล้ว');
+      setBodyLoading(false);
+      return;
+    }
+
+    // 2. get all global songs
+    var globalSongs = [];
+    var from = 0;
+    while (true) {
+      var { data: g, error: e2 } = await window._sb.from('band_songs').select('*').is('band_id', null).range(from, from + 999);
+      if (e2) throw e2;
+      if (!g || g.length === 0) break;
+      globalSongs = globalSongs.concat(g);
+      if (g.length < 1000) break;
+      from += 1000;
+    }
+
+    function getScore(s) {
+      var sc = 0;
+      if (s.artist) sc += 2;
+      if (s.key) sc += 2;
+      if (s.bpm > 0) sc += 1;
+      if (s.singer && s.singer !== 'ไม่ระบุ') sc += 1;
+      if (s.era) sc += 1;
+      if (s.nationality) sc += 1;
+      if (s.tags && s.tags.length > 0) sc += 1;
+      if (s.notes) sc += 1;
+      return sc;
+    }
+
+    var migrated = 0;
+    var merged = 0;
+
+    for (var i = 0; i < owned.length; i++) {
+      var o = owned[i];
+      var nameL = (o.name || '').trim().toLowerCase();
+      var artistL = (o.artist || '').trim().toLowerCase();
+
+      var match = globalSongs.find(function(g) {
+        return (g.name || '').trim().toLowerCase() === nameL &&
+               (g.artist || '').trim().toLowerCase() === artistL;
+      });
+
+      if (!match) {
+        match = globalSongs.find(function(g) {
+          return (g.name || '').trim().toLowerCase() === nameL;
+        });
+      }
+
+      if (match) {
+        var so = getScore(o);
+        var sg = getScore(match);
+        if (so > sg) {
+          var up = {
+            artist: o.artist || match.artist,
+            key: o.key || match.key,
+            bpm: o.bpm > 0 ? o.bpm : match.bpm,
+            singer: o.singer || match.singer,
+            era: o.era || match.era,
+            nationality: o.nationality || match.nationality,
+            mood: o.mood || match.mood,
+            tags: (o.tags && o.tags.length > 0) ? o.tags : match.tags,
+            notes: o.notes || match.notes,
+            verified: true
+          };
+          await window._sb.from('band_songs').update(up).eq('id', match.id);
+        }
+        await window._sb.from('band_song_refs').insert({ band_id: bandId, song_id: match.id }).catch(function(){});
+        await window._sb.from('band_songs').delete().eq('id', o.id);
+        merged++;
+      } else {
+        await window._sb.from('band_songs').update({ band_id: null, source: 'global' }).eq('id', o.id);
+        await window._sb.from('band_song_refs').insert({ band_id: bandId, song_id: o.id }).catch(function(){});
+        migrated++;
+      }
+    }
+    alert('โอนย้ายสำเร็จ!\nย้ายใหม่: ' + migrated + ' เพลง\nรวมกับเพลงซ้ำที่มีอยู่แล้ว: ' + merged + ' เพลง');
+    location.reload();
+  } catch (err) {
+    alert('Error: ' + err.message);
+    setBodyLoading(false);
+  }
+};

@@ -1692,7 +1692,7 @@ window.onload = function() {
   var _addWrap = document.getElementById('addSongBandWrap');
   if (_addWrap && _smBandId) _addWrap.style.display = 'block';
   var _libTabs = document.getElementById('libTabs');
-  if (_libTabs && _smBandId) _libTabs.style.display = 'flex';
+  // if (_libTabs && _smBandId) _libTabs.style.display = 'flex'; // Temporarily disabled band library
 
   // Preload band library so badges show as soon as songs render
   if (_smBandId) loadBandLibrary();

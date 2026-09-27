@@ -81,7 +81,7 @@
   <!-- Toolbar -->
   <div class="as-toolbar">
     <input type="text" id="asSearch" class="as-search" placeholder="🔍 ค้นหาชื่อเพลง ศิลปิน คีย์..." oninput="searchInputChanged()">
-    <select id="asSource" class="as-filter" onchange="filterTable()">
+    <select id="asSource" class="as-filter" onchange="filterTable()" style="display:none">
       <option value="">ทุกแหล่ง</option>
       <option value="global">คลังกลาง</option>
       <option value="band">คลังวง</option>
@@ -159,6 +159,7 @@
     <button type="button" class="btn-export" onclick="exportSongs('csv')" title="ส่งออกเป็น CSV">📤 CSV</button>
     <button type="button" class="btn-export" onclick="exportSongsExcel()" title="ส่งออกเป็น Excel (มี Dropdown)">📤 Excel</button>
     <button type="button" class="btn-export" onclick="exportSongs('json')" title="ส่งออกเป็น JSON">📤 JSON</button>
+    <button type="button" class="btn-add" style="background:#8b5cf6" onclick="migrateBandToGlobal()" title="ย้ายเพลงทั้งหมดจากคลังวงไปรวมกับคลังกลาง">🚀 โอนย้ายคลังเพลง</button>
     <button type="button" id="undoAllBtn" class="btn-undo-all" onclick="undoAllDirty()" disabled>🔄 ยกเลิกการแก้ไขทั้งหมด</button>
     <button type="button" id="saveAllBtn" class="btn-save-all" onclick="saveAllDirty()" disabled>💾 บันทึกทั้งหมด</button>
     <button type="button" id="smToggleBtn" class="btn-sm-toggle" onclick="toggleSongManagerPanel()" style="display:none">👥 จัดการผู้ดูแลเพลง</button>
