@@ -149,8 +149,6 @@
   </div>
 </div>
 
-</div>
-
 <div class="panel">
   <h3 id="resultTitle">🎼 เพลงที่ค้นพบ</h3>
   <div id="result"></div>
@@ -2062,22 +2060,32 @@ function _getDurCached(n,a){
 }
 function _fetchDur(name,artist,cb){
   var term=encodeURIComponent((name||'')+(artist?' '+artist:''));
+  
+  function fallbackMusicBrainz() {
+    var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
+    if(artist)q+='+AND+artist:'+encodeURIComponent('"'+artist+'"');
+    fetch('https://musicbrainz.org/ws/2/recording/?query='+q+'&fmt=json&limit=1',{headers:{'User-Agent':'BandThai/1.0'}})
+      .then(function(r){return r.json();})
+      .then(function(d){var rr=d&&d.recordings;if(rr&&rr.length&&rr[0].length>0)cb(Math.round(rr[0].length/1000),true);else cb(DUR_FALLBACK,false);})
+      .catch(function(){cb(DUR_FALLBACK,false);});
+  }
+
   fetch('https://itunes.apple.com/search?term='+term+'&media=music&entity=song&limit=5&country=TH')
-    .then(function(r){return r.json();})
+    .then(function(r){
+      if(!r.ok) throw new Error('iTunes status: '+r.status);
+      return r.json();
+    })
     .then(function(data){
       var results=(data&&data.results)||[];
       var nm=(name||'').toLowerCase();
       var match=results.find(function(r){return r.trackTimeMillis>0&&r.trackName&&r.trackName.toLowerCase().indexOf(nm.substring(0,Math.min(nm.length,5)))>=0;})||results.find(function(r){return r.trackTimeMillis>0;});
       if(match&&match.trackTimeMillis>0){cb(Math.round(match.trackTimeMillis/1000),true);}
       else{
-        var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
-        if(artist)q+='+AND+artist:'+encodeURIComponent('"'+artist+'"');
-        fetch('https://musicbrainz.org/ws/2/recording/?query='+q+'&fmt=json&limit=1',{headers:{'User-Agent':'BandThai/1.0'}})
-          .then(function(r){return r.json();})
-          .then(function(d){var rr=d&&d.recordings;if(rr&&rr.length&&rr[0].length>0)cb(Math.round(rr[0].length/1000),true);else cb(DUR_FALLBACK,false);})
-          .catch(function(){cb(DUR_FALLBACK,false);});
+        fallbackMusicBrainz();
       }
-    }).catch(function(){cb(DUR_FALLBACK,false);});
+    }).catch(function(){
+      fallbackMusicBrainz();
+    });
 }
 function _processDurQueue(){
   if(!_durQueue.length){_durRunning=false;updatePlDurBar();return;}
@@ -2088,7 +2096,7 @@ function _processDurQueue(){
     _durCache[k]=sec;if(exact)_durExact[k]=true;
     try{sessionStorage.setItem('dur_'+k.substring(0,60),JSON.stringify({s:sec,e:exact}));}catch(e){}
     updatePlDurBar();
-    setTimeout(_processDurQueue,600);
+    setTimeout(_processDurQueue,1500);
   });
 }
 function _queueDurFetch(songs){
