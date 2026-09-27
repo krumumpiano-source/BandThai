@@ -2051,6 +2051,7 @@ document.addEventListener("click", (e) => {
 
 // ── Duration tracking ──────────────────────────────────────────
 var _durCache={},_durExact={},_durQueue=[],_durRunning=false;
+var _itunesBlocked=false;
 var DUR_FALLBACK=240,DUR_GAP=20;
 function _durKey(n,a){return((n||'')+'|||'+(a||'')).toLowerCase();}
 function _getDurCached(n,a){
@@ -2070,9 +2071,17 @@ function _fetchDur(name,artist,cb){
       .catch(function(){cb(DUR_FALLBACK,false);});
   }
 
+  if(_itunesBlocked){
+    fallbackMusicBrainz();
+    return;
+  }
+
   fetch('https://itunes.apple.com/search?term='+term+'&media=music&entity=song&limit=5&country=TH')
     .then(function(r){
-      if(!r.ok) throw new Error('iTunes status: '+r.status);
+      if(!r.ok) {
+        if(r.status===429) _itunesBlocked=true;
+        throw new Error('iTunes status: '+r.status);
+      }
       return r.json();
     })
     .then(function(data){
@@ -2084,6 +2093,7 @@ function _fetchDur(name,artist,cb){
         fallbackMusicBrainz();
       }
     }).catch(function(){
+      _itunesBlocked=true;
       fallbackMusicBrainz();
     });
 }
