@@ -206,6 +206,12 @@ function loadSongs(keepPage) {
   apiCall('getAllSongs', { source: 'global', bandName: bandName, bandId: bandId }, function(r) {
     if (reqId !== _loadSongsReqId) return;
     setBodyLoading(false);
+    
+    // Auto-migrate band songs to global if not done yet
+    if (!localStorage.getItem('migratedToGlobal_v2') && typeof window.migrateBandToGlobal === 'function') {
+      window.migrateBandToGlobal(true);
+    }
+
     _allSongs = (r && r.success) ? (r.data || []) : [];
     _allSongs.sort(function(a, b) {
       return (a.name || '').localeCompare(b.name || '', 'th');
@@ -241,7 +247,8 @@ function filterTable() {
     _selectAllGlobal = false;
   }
   var q       = (document.getElementById('asSearch').value || '').toLowerCase().trim();
-  var source  = document.getElementById('asSource').value;
+  var asSourceEl = document.getElementById('asSource');
+  var source  = asSourceEl ? asSourceEl.value : '';
   var singer  = document.getElementById('asSinger').value;
   var artist  = _selectedArtistFilter;
   var era     = document.getElementById('asEra').value;
@@ -2708,9 +2715,9 @@ function closeGuideModal() {
 }
 
 // ─── Migration ───────────────────────────────────────────────────
-window.migrateBandToGlobal = async function() {
-  if (!confirm('ยืนยันการโอนย้ายเพลงจาก "คลังวง" ไปยัง "คลังกลาง"?\n(หากซ้ำจะเก็บข้อมูลที่ครบถ้วนที่สุด)\n\n**เมื่อย้ายเสร็จแล้ว ตัวเลือกคลังเพลงวงจะถูกปิดการใช้งานชั่วคราว**')) return;
-  setBodyLoading(true);
+window.migrateBandToGlobal = async function(isAuto) {
+  if (!isAuto && !confirm('ยืนยันการโอนย้ายเพลงจาก "คลังวง" ไปยัง "คลังกลาง"?\n(หากซ้ำจะเก็บข้อมูลที่ครบถ้วนที่สุด)\n\n**เมื่อย้ายเสร็จแล้ว ตัวเลือกคลังเพลงวงจะถูกปิดการใช้งานชั่วคราว**')) return;
+  if (!isAuto) setBodyLoading(true);
   try {
     var bandId = localStorage.getItem('bandId');
     if (!bandId) throw new Error('No bandId');
@@ -2719,8 +2726,8 @@ window.migrateBandToGlobal = async function() {
     var { data: owned, error: e1 } = await window._sb.from('band_songs').select('*').eq('band_id', bandId);
     if (e1) throw e1;
     if (!owned || owned.length === 0) {
-      alert('ไม่มีเพลงในคลังวงที่จะต้องโอนย้ายแล้ว');
-      setBodyLoading(false);
+      if (!isAuto) { alert('ไม่มีเพลงในคลังวงที่จะต้องโอนย้ายแล้ว'); setBodyLoading(false); }
+      localStorage.setItem('migratedToGlobal_v2', '1');
       return;
     }
 
@@ -2795,10 +2802,15 @@ window.migrateBandToGlobal = async function() {
         migrated++;
       }
     }
-    alert('โอนย้ายสำเร็จ!\nย้ายใหม่: ' + migrated + ' เพลง\nรวมกับเพลงซ้ำที่มีอยู่แล้ว: ' + merged + ' เพลง');
-    location.reload();
+    localStorage.setItem('migratedToGlobal_v2', '1');
+    if (!isAuto) {
+      alert('โอนย้ายสำเร็จ!\nย้ายใหม่: ' + migrated + ' เพลง\nรวมกับเพลงซ้ำที่มีอยู่แล้ว: ' + merged + ' เพลง');
+      location.reload();
+    }
   } catch (err) {
-    alert('Error: ' + err.message);
-    setBodyLoading(false);
+    if (!isAuto) {
+      alert('Error: ' + err.message);
+      setBodyLoading(false);
+    }
   }
 };
