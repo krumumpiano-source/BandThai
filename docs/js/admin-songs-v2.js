@@ -688,7 +688,7 @@ function updateBulkToolbar() {
   }
 }
 
-function bulkAction(action) {
+function bulkAction(action, val) {
   var cbs = document.querySelectorAll('.song-cb:checked');
   if (cbs.length === 0) return;
   var count = cbs.length;
@@ -747,6 +747,34 @@ function bulkAction(action) {
       }, 3000); // 3 seconds delay
     }
     nextAI();
+  } else if (action === 'nationality') {
+    if (!confirm('ยืนยันเปลี่ยนสัญชาติ ' + count + ' เพลง เป็น "' + val + '" ใช่หรือไม่?')) return;
+    
+    var ids = [];
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+    
+    var i = 0;
+    function nextNat() {
+      if (i >= ids.length) {
+        showToast('🌍 เปลี่ยนสัญชาติเสร็จสิ้น ' + ids.length + ' เพลง', 'success');
+        clearSongsCache();
+        loadSongs();
+        document.getElementById('selectAllCb').checked = false;
+        updateBulkToolbar();
+        return;
+      }
+      var song = _allSongs.find(function(s) { return s.id === ids[i]; });
+      if (song) {
+        var payload = Object.assign({}, song, { songId: song.id, nationality: val });
+        apiCall('updateSong', payload, function(r) {
+           i++;
+           nextNat();
+        });
+      } else {
+        i++; nextNat();
+      }
+    }
+    nextNat();
   }
 }
 
