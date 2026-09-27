@@ -575,6 +575,10 @@ function saveVerifiedSongs() {
 }
 
 function renderTable() {
+  _selectAllGlobal = false;
+  var selectAllCb = document.getElementById('selectAllCb');
+  if (selectAllCb) selectAllCb.checked = false;
+  
   var tb = document.getElementById('songTbody');
   if (!tb) return;
   var maxPage = Math.ceil(_filtered.length / _perPage) || 1;
@@ -670,33 +674,63 @@ function renderTable() {
   tb.innerHTML = html;
 }
 
+var _selectAllGlobal = false;
+
+window.toggleSelectAllGlobal = function(flag) {
+  _selectAllGlobal = flag;
+  if (!flag) {
+    document.getElementById('selectAllCb').checked = false;
+    var cbs = document.querySelectorAll('.song-cb');
+    cbs.forEach(function(cb) { cb.checked = false; });
+  }
+  updateBulkToolbar();
+};
+
 function toggleSelectAll() {
   var checked = document.getElementById('selectAllCb').checked;
   var cbs = document.querySelectorAll('.song-cb');
   cbs.forEach(function(cb) { cb.checked = checked; });
+  if (!checked) _selectAllGlobal = false;
   updateBulkToolbar();
 }
 
 function updateBulkToolbar() {
+  var cbs = document.querySelectorAll('.song-cb');
   var selected = document.querySelectorAll('.song-cb:checked').length;
   var bulkEl = document.getElementById('bulkActions');
-  document.getElementById('selCount').textContent = selected;
-  if (selected > 0) {
+  var selCountSpan = document.getElementById('selCount');
+  
+  if (_selectAllGlobal) {
+    selCountSpan.innerHTML = _filtered.length + ' รายการที่ค้นพบทั้งหมด <a href="#" onclick="window.toggleSelectAllGlobal(false); return false;" style="color:#EF4444;margin-left:8px;text-decoration:underline;font-weight:normal">ยกเลิก</a>';
+    bulkEl.style.display = 'flex';
+  } else if (selected > 0) {
+    var isAllPageSelected = (selected === cbs.length && cbs.length > 0);
+    if (isAllPageSelected && _filtered.length > selected) {
+      selCountSpan.innerHTML = selected + ' รายการที่เลือก <a href="#" onclick="window.toggleSelectAllGlobal(true); return false;" style="color:#3B82F6;margin-left:8px;text-decoration:underline;font-weight:normal">เลือกทั้งหมด ' + _filtered.length + ' รายการในผลการค้นหานี้</a>';
+    } else {
+      selCountSpan.textContent = selected + ' รายการที่เลือก:';
+    }
     bulkEl.style.display = 'flex';
   } else {
+    selCountSpan.textContent = '0 รายการที่เลือก:';
     bulkEl.style.display = 'none';
   }
 }
 
 function bulkAction(action, val) {
   var cbs = document.querySelectorAll('.song-cb:checked');
-  if (cbs.length === 0) return;
-  var count = cbs.length;
+  if (cbs.length === 0 && !_selectAllGlobal) return;
+  
+  var ids = [];
+  if (_selectAllGlobal) {
+    ids = _filtered.map(function(s) { return s.id; });
+  } else {
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+  }
+  var count = ids.length;
 
   if (action === 'delete') {
     if (!confirm('ยืนยันลบ ' + count + ' เพลงที่เลือก?\n\nการลบจะไม่กระทบลิสที่บันทึกแล้ว')) return;
-    var ids = [];
-    cbs.forEach(function(cb) { ids.push(cb.value); });
     
     var i = 0;
     function nextDelete() {
@@ -707,6 +741,7 @@ function bulkAction(action, val) {
         refilterKeepPage();
         apiCall('cleanupOrphanArtists', {}, function() { loadArtists(); });
         document.getElementById('selectAllCb').checked = false;
+        _selectAllGlobal = false;
         updateBulkToolbar();
         return;
       }
@@ -719,24 +754,24 @@ function bulkAction(action, val) {
   } else if (action === 'verify') {
     if (!confirm('ยืนยันข้อมูล ' + count + ' เพลงที่เลือก?')) return;
     var userName = localStorage.getItem('userName') || localStorage.getItem('userId') || 'unknown';
-    cbs.forEach(function(cb) {
-      _verifiedSongs[cb.value] = { by: userName, at: new Date().toISOString() };
+    ids.forEach(function(id) {
+      _verifiedSongs[id] = { by: userName, at: new Date().toISOString() };
     });
     saveVerifiedSongs();
     showToast('✅ ยืนยันข้อมูล ' + count + ' เพลงแล้ว', 'success');
     refilterKeepPage();
     document.getElementById('selectAllCb').checked = false;
+    _selectAllGlobal = false;
     updateBulkToolbar();
   } else if (action === 'ai') {
     if (!confirm('ใช้ AI เติมข้อมูลให้ ' + count + ' เพลงที่เลือก?\n\n(อาจใช้เวลาสักครู่ และระบบจะประมวลผลทีละเพลงเพื่อป้องกัน API ลิมิต)')) return;
-    var ids = [];
-    cbs.forEach(function(cb) { ids.push(cb.value); });
     
     var i = 0;
     function nextAI() {
       if (i >= ids.length) {
         showToast('🤖 เติมข้อมูล AI เสร็จสิ้น ' + ids.length + ' เพลง', 'success');
         document.getElementById('selectAllCb').checked = false;
+        _selectAllGlobal = false;
         updateBulkToolbar();
         return;
       }
@@ -750,9 +785,6 @@ function bulkAction(action, val) {
   } else if (action === 'nationality') {
     if (!confirm('ยืนยันเปลี่ยนสัญชาติ ' + count + ' เพลง เป็น "' + val + '" ใช่หรือไม่?')) return;
     
-    var ids = [];
-    cbs.forEach(function(cb) { ids.push(cb.value); });
-    
     var i = 0;
     function nextNat() {
       if (i >= ids.length) {
@@ -760,6 +792,7 @@ function bulkAction(action, val) {
         clearSongsCache();
         loadSongs();
         document.getElementById('selectAllCb').checked = false;
+        _selectAllGlobal = false;
         updateBulkToolbar();
         return;
       }
