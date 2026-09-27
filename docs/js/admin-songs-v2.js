@@ -782,13 +782,13 @@ function bulkAction(action, val) {
       }, 3000); // 3 seconds delay
     }
     nextAI();
-  } else if (action === 'nationality') {
-    if (!confirm('ยืนยันเปลี่ยนสัญชาติ ' + count + ' เพลง เป็น "' + val + '" ใช่หรือไม่?')) return;
+  } else if (action === 'format') {
+    if (!confirm('ยืนยันจัดฟอร์แมตข้อความ (ลบ Spacebar ซ้ำซ้อน, จัดตัวพิมพ์) ให้กับ ' + count + ' เพลง?')) return;
     
     var i = 0;
-    function nextNat() {
+    function nextFormat() {
       if (i >= ids.length) {
-        showToast('🌍 เปลี่ยนสัญชาติเสร็จสิ้น ' + ids.length + ' เพลง', 'success');
+        showToast('✨ จัดฟอร์แมตข้อความสำเร็จ ' + ids.length + ' เพลง', 'success');
         clearSongsCache();
         loadSongs();
         document.getElementById('selectAllCb').checked = false;
@@ -798,16 +798,32 @@ function bulkAction(action, val) {
       }
       var song = _allSongs.find(function(s) { return s.id === ids[i]; });
       if (song) {
-        var payload = Object.assign({}, song, { songId: song.id, nationality: val });
-        apiCall('updateSong', payload, function(r) {
-           i++;
-           nextNat();
-        });
+        var oldName = song.name || '';
+        var oldArtist = song.artist || '';
+        var newName = oldName.replace(/\s+/g, ' ').trim();
+        // Capitalize English words
+        if (/^[a-zA-Z0-9\s\(\)\-\.]+$/.test(newName)) {
+          newName = newName.toLowerCase().replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+        }
+        var newArtist = oldArtist.replace(/\s+/g, ' ').trim();
+        if (/^[a-zA-Z0-9\s\(\)\-\.]+$/.test(newArtist)) {
+          newArtist = newArtist.toLowerCase().replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+        }
+        
+        if (newName !== oldName || newArtist !== oldArtist) {
+          var payload = Object.assign({}, song, { songId: song.id, name: newName, artist: newArtist });
+          apiCall('updateSong', payload, function(r) {
+             i++;
+             nextFormat();
+          });
+        } else {
+          i++; nextFormat();
+        }
       } else {
-        i++; nextNat();
+        i++; nextFormat();
       }
     }
-    nextNat();
+    nextFormat();
   }
 }
 
@@ -1326,6 +1342,94 @@ function _downloadFile(name, content, mime) {
   var a    = document.createElement('a');
   a.href = url; a.download = name; a.click();
   URL.revokeObjectURL(url);
+}
+
+// ─── Bulk Edit ──────────────────────────────────────────────────────
+function openBulkEditModal() {
+  document.getElementById('beField').value = '';
+  document.getElementById('beValueGroup').style.display = 'none';
+  document.getElementById('bulkEditModal').style.display = 'flex';
+}
+
+function closeBulkEditModal() {
+  document.getElementById('bulkEditModal').style.display = 'none';
+}
+
+function renderBulkEditOptions() {
+  var field = document.getElementById('beField').value;
+  var valSel = document.getElementById('beValue');
+  var group = document.getElementById('beValueGroup');
+  if (!field) {
+    group.style.display = 'none';
+    return;
+  }
+  var html = '<option value="">-- เลือก --</option>';
+  var opts = [];
+  if (field === 'nationality') opts = _AS_NATIONALITY_OPTS;
+  else if (field === 'era') opts = _ERA_OPTS;
+  else if (field === 'tags') opts = _GENRE_OPTS;
+  else if (field === 'mood') opts = _MOOD_OPTS;
+  else if (field === 'singer') opts = ['ชาย', 'หญิง', 'ชาย/หญิง', ''];
+  
+  if (field === 'era') {
+    opts.forEach(function(o) { 
+      var label = _ERA_LABELS[o] ? (o + ' (' + _ERA_LABELS[o] + ')') : o;
+      html += '<option value="' + o + '">' + (label || '(ลบข้อมูล)') + '</option>'; 
+    });
+  } else {
+    opts.forEach(function(o) { html += '<option value="' + o + '">' + (o || '(ลบข้อมูล)') + '</option>'; });
+  }
+  valSel.innerHTML = html;
+  group.style.display = 'block';
+}
+
+function submitBulkEdit() {
+  var field = document.getElementById('beField').value;
+  var val = document.getElementById('beValue').value;
+  if (!field) return alert('กรุณาเลือกคอลัมน์ที่ต้องการแก้ไข');
+  
+  var cbs = document.querySelectorAll('.song-cb:checked');
+  if (cbs.length === 0 && !_selectAllGlobal) return;
+  
+  var ids = [];
+  if (_selectAllGlobal) {
+    ids = _filtered.map(function(s) { return s.id; });
+  } else {
+    cbs.forEach(function(cb) { ids.push(cb.value); });
+  }
+  var count = ids.length;
+
+  var fieldNames = {
+    'nationality': 'สัญชาติ', 'era': 'ยุค', 'tags': 'แนวเพลง', 'mood': 'อารมณ์', 'singer': 'นักร้อง'
+  };
+  
+  if (!confirm('ยืนยันเปลี่ยน ' + fieldNames[field] + ' เป็น "' + val + '" สำหรับ ' + count + ' เพลง?')) return;
+  
+  var i = 0;
+  function nextEdit() {
+    if (i >= ids.length) {
+      showToast('✏️ แก้ไขข้อมูล ' + fieldNames[field] + ' สำเร็จ ' + ids.length + ' เพลง', 'success');
+      closeBulkEditModal();
+      clearSongsCache();
+      loadSongs();
+      document.getElementById('selectAllCb').checked = false;
+      _selectAllGlobal = false;
+      updateBulkToolbar();
+      return;
+    }
+    var song = _allSongs.find(function(s) { return s.id === ids[i]; });
+    if (song) {
+      var payload = Object.assign({}, song, { songId: song.id });
+      payload[field] = val;
+      apiCall('updateSong', payload, function(r) {
+         i++;
+         nextEdit();
+      });
+    } else {
+      i++; nextEdit();
+    }
+  }
+  nextEdit();
 }
 
 // ─── Import ───────────────────────────────────────────────────────

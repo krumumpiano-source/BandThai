@@ -181,11 +181,8 @@
       <!-- Bulk Actions Toolbar -->
       <div id="bulkActions" style="display:none; padding:8px 16px; background:#EFF6FF; border-bottom:1px solid #BFDBFE; align-items:center; gap:10px;">
         <span id="selCount" style="font-size:13px; color:#1E3A8A; font-weight:600;">0 รายการที่เลือก:</span>
-        <select class="btn-sm" style="background:#fff;border:1px solid #cbd5e1;border-radius:4px;padding:2px 6px;cursor:pointer" onchange="if(this.value){ bulkAction('nationality', this.value); this.value=''; }">
-          <option value="">-- เปลี่ยนสัญชาติ --</option>
-          <option value="ไทย">เปลี่ยนเป็น: ไทย</option>
-          <option value="สากล">เปลี่ยนเป็น: สากล</option>
-        </select>
+        <button type="button" class="btn-sm" style="background:#1E40AF;color:#fff;border:none" onclick="openBulkEditModal()">✏️ แก้ไขข้อมูล (Bulk Edit)</button>
+        <button type="button" class="btn-sm" style="background:#F59E0B;color:#fff;border:none" onclick="bulkAction('format')">✨ จัดระเบียบข้อความ</button>
         <button type="button" class="btn-sm" style="background:#10B981;color:#fff;border:none" onclick="bulkAction('verify')">✅ ยืนยันข้อมูล</button>
         <button type="button" class="btn-sm" style="background:#8b5cf6;color:#fff;border:none" onclick="bulkAction('ai')">🤖 เติมข้อมูลด้วย AI</button>
         <button type="button" class="btn-sm" style="background:#EF4444;color:#fff;border:none" onclick="bulkAction('delete')">🗑️ ลบ</button>
@@ -248,6 +245,36 @@
     <div class="modal-actions">
       <button type="button" class="btn-secondary" onclick="closeImportModal()">ยกเลิก</button>
       <button type="button" id="importSaveBtn" class="btn-primary" onclick="submitImport()" style="display:none">💾 บันทึกเพลงใหม่</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Bulk Edit Modal ─────────────────────────────────────────────── -->
+<div id="bulkEditModal" class="modal-bg" style="display:none">
+  <div class="modal-box" style="max-width:400px">
+    <h3>✏️ แก้ไขข้อมูลหลายรายการ (Bulk Edit)</h3>
+    <p style="font-size:13px;color:#6B7280;margin:-6px 0 14px">ระบบจะอัปเดตข้อมูลให้กับทุกเพลงที่ถูกเลือกไว้</p>
+    
+    <div class="m-group">
+      <label>เลือกคอลัมน์ที่ต้องการแก้ไข</label>
+      <select id="beField" class="m-select" onchange="renderBulkEditOptions()">
+        <option value="">-- เลือกคอลัมน์ --</option>
+        <option value="nationality">สัญชาติ</option>
+        <option value="era">ยุค (Era)</option>
+        <option value="tags">แนวเพลง (Genre)</option>
+        <option value="mood">อารมณ์ (Mood)</option>
+        <option value="singer">นักร้อง (ชาย/หญิง)</option>
+      </select>
+    </div>
+
+    <div class="m-group" id="beValueGroup" style="display:none">
+      <label>เลือกข้อมูลใหม่</label>
+      <select id="beValue" class="m-select"></select>
+    </div>
+
+    <div class="modal-actions" style="margin-top:20px">
+      <button type="button" class="btn-secondary" onclick="closeBulkEditModal()">ยกเลิก</button>
+      <button type="button" class="btn-primary" onclick="submitBulkEdit()">💾 บันทึกการเปลี่ยนแปลง</button>
     </div>
   </div>
 </div>
