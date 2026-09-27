@@ -2969,13 +2969,15 @@ function initRealtime() {
       if (_isExplicitMaster) {
         setTimeout(function() { broadcastEvent('state_sync', getState()); }, 50);
       } else if (_playlist.length > 0) {
-        // Stagger fallback response: earlier joiner responds faster (500ms)
+        // Stagger fallback response: earlier joiner responds faster (400ms), later joiner slower (1500ms)
+        // Cancel if we receive state_sync before the timer fires
         var isSenior = (d.joinedAt && _joinedAt < d.joinedAt);
-        if (isSenior) {
-          setTimeout(function() {
-            broadcastEvent('state_sync', getState());
-          }, 400 + Math.random() * 200);
-        }
+        var delay = isSenior ? (400 + Math.random() * 200) : (1500 + Math.random() * 500);
+        if (window._pendingStateSyncTimer) clearTimeout(window._pendingStateSyncTimer);
+        window._pendingStateSyncTimer = setTimeout(function() {
+          window._pendingStateSyncTimer = null;
+          broadcastEvent('state_sync', getState());
+        }, delay);
       }
     })
     .on('broadcast', { event: 'takeover_master' }, function(payload) {
@@ -3091,6 +3093,7 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'state_sync' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
+      if (window._pendingStateSyncTimer) { clearTimeout(window._pendingStateSyncTimer); window._pendingStateSyncTimer = null; }
       var d = payload.payload || {};
       
       if (d.masterBy && !_isExplicitMaster) {
