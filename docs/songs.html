@@ -2051,7 +2051,7 @@ document.addEventListener("click", (e) => {
 
 // ── Duration tracking ──────────────────────────────────────────
 var _durCache={},_durExact={},_durQueue=[],_durRunning=false;
-var _itunesBlocked=false;
+var _itunesBlocked=false, _musicBrainzBlocked=false;
 var DUR_FALLBACK=240,DUR_GAP=20;
 function _durKey(n,a){return((n||'')+'|||'+(a||'')).toLowerCase();}
 function _getDurCached(n,a){
@@ -2063,10 +2063,20 @@ function _fetchDur(name,artist,cb){
   var term=encodeURIComponent((name||'')+(artist?' '+artist:''));
   
   function fallbackMusicBrainz() {
+    if(_musicBrainzBlocked){
+      cb(DUR_FALLBACK,false);
+      return;
+    }
     var q='recording:'+encodeURIComponent('"'+(name||'')+'"');
     if(artist)q+='+AND+artist:'+encodeURIComponent('"'+artist+'"');
     fetch('https://musicbrainz.org/ws/2/recording/?query='+q+'&fmt=json&limit=1',{headers:{'User-Agent':'BandThai/1.0'}})
-      .then(function(r){return r.json();})
+      .then(function(r){
+        if(!r.ok) {
+          if(r.status===503 || r.status===429) _musicBrainzBlocked=true;
+          throw new Error('MusicBrainz status: '+r.status);
+        }
+        return r.json();
+      })
       .then(function(d){var rr=d&&d.recordings;if(rr&&rr.length&&rr[0].length>0)cb(Math.round(rr[0].length/1000),true);else cb(DUR_FALLBACK,false);})
       .catch(function(){cb(DUR_FALLBACK,false);});
   }
