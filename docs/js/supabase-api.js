@@ -155,7 +155,6 @@
         case 'getSong':            return doGetOne('band_songs', d.songId);
         case 'addSong': {
           var _sdata = Object.assign({}, d.data || d);
-          delete _sdata.nationality;
           var _uid = localStorage.getItem('userId') || '';
           var _uname = localStorage.getItem('userName') || '';
           if (_uid) { _sdata.created_by = _uid; _sdata.createdBy = _uid; _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
@@ -165,7 +164,6 @@
         }
         case 'updateSong': {
           var _sdata = Object.assign({}, d.data || d);
-          delete _sdata.nationality;
           var _uid = localStorage.getItem('userId') || '';
           if (_uid) { _sdata.updated_by = _uid; _sdata.updatedBy = _uid; }
           var _sr = await doUpdate('band_songs', d.songId, _sdata);
@@ -776,7 +774,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
@@ -847,7 +845,7 @@
 
         // 1. Referenced global songs
         var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, mood, tags, notes, source, created_at, updated_at)')
+          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
           .eq('band_id', bandId);
         if (refErr) throw refErr;
         (refs || []).forEach(function(r) {
@@ -944,7 +942,7 @@
 
       // 1. Referenced global songs matching term
       var { data: refs } = await sb.from('band_song_refs')
-        .select('song_id, band_songs!inner(name, key, bpm, singer, artist)')
+        .select('song_id, band_songs!inner(name, key, bpm, singer, artist, nationality)')
         .eq('band_id', bandId);
       (refs || []).forEach(function(r) {
         var s = r.band_songs;
