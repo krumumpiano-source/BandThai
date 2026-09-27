@@ -995,7 +995,7 @@ function saveRow(songId) {
       var row = document.querySelector('tr[data-id="' + songId + '"]');
       if (row) row.classList.remove('row-dirty');
       var idx = _allSongs.findIndex(function(s){ return s.id === songId; });
-      if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood, updatedBy: localStorage.getItem('userName') || '', updatedAt: new Date().toISOString() });
+      if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood, nationality: data.nationality, updatedBy: localStorage.getItem('userName') || '', updatedAt: new Date().toISOString() });
       // Reset verified status on edit
       if (_verifiedSongs[songId]) {
         delete _verifiedSongs[songId];
@@ -1042,7 +1042,7 @@ function saveAllDirty() {
         var rowBtn = document.getElementById('sbtn-' + songId);
         if (rowBtn) { rowBtn.disabled = true; rowBtn.textContent = '💾'; }
         var idx = _allSongs.findIndex(function(s){ return s.id === songId; });
-        if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood });
+        if (idx >= 0) Object.assign(_allSongs[idx], { name: data.name, artist: data.artist, key: data.key, bpm: data.bpm, singer: data.singer, era: data.era, tags: data.tags, mood: data.mood, nationality: data.nationality });
       } else { failed++; }
       _checkAllDone();
     });
@@ -1960,7 +1960,7 @@ var _AS_TAGS_OPTS = ['ป๊อป','ร็อค','ดิสโก้','แร�
 var _AS_MOOD_OPTS = ['มัน / สนุก','หวาน / โรแมนติก','เศร้า / อกหัก','นิ่ง / ผ่อนคลาย','ฮึกเหิม / ยิ่งใหญ่'];
 var _AS_KEY_OPTS  = ['C / Am','1#','2#','3#','4#','5#','6#','7#','1b','2b','3b','4b','5b','6b','7b'];
 var _AS_SINGER_OPTS = ['ชาย','หญิง','ชาย/หญิง'];
-var _AS_NATIONALITY_OPTS = ['ไทย','สากล'];
+var _AS_NATIONALITY_OPTS = ['','ไทย','สากล'];
 var _AS_ITUNES_FIELDS = [
   { f:'name',   label:'ชื่อเพลง', icon:'🎶', type:'text' },
   { f:'artist', label:'ศิลปิน',   icon:'👤', type:'text' },
