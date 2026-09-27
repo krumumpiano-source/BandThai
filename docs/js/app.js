@@ -11,7 +11,6 @@
 (function () {
   if (document.getElementById('_sb_sdk')) return;
 
-  // 1) Load config.js ก่อน
   function loadScript(src, id, onload) {
     var s = document.createElement('script');
     if (id) s.id = id;
@@ -20,16 +19,12 @@
     document.head.appendChild(s);
   }
 
+  // 1) Load Supabase SDK and config.js in parallel
+  loadScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.2/dist/umd/supabase.min.js', '_sb_sdk', null);
+  
   loadScript('js/config.js', '_sb_cfg', function () {
-    // 2) Load Supabase SDK
-    loadScript(
-      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.103.2/dist/umd/supabase.min.js',
-      '_sb_sdk',
-      function () {
-        // 3) Load supabase-api.js
-        loadScript('js/supabase-api.js?v=20260927a', '_sb_api', null);
-      }
-    );
+    // 2) Load supabase-api.js after config is ready (api wrapper waits for SDK internally)
+    loadScript('js/supabase-api.js?v=20260927a', '_sb_api', null);
   });
 
   // 4) Ensure wage-utils.js is loaded

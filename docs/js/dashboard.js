@@ -420,17 +420,8 @@ function nav(page) {
     if (!band) band = 'วงดนตรี';
     document.getElementById('welcomeName').textContent = 'สวัสดี, ' + name;
     document.getElementById('welcomeBand').textContent = '🎵 ' + band;
-    // Refresh band name from server (in case localStorage is stale/empty)
-    var _wbBandId = localStorage.getItem('bandId') || '';
-    if (_wbBandId) {
-      apiCall('getBandSettings', { bandId: _wbBandId }, function(r) {
-        if (r && r.success && r.data && r.data.bandName) {
-          localStorage.setItem('bandName', r.data.bandName);
-          document.getElementById('welcomeBand').textContent = '🎵 ' + r.data.bandName;
-        }
-      });
-    }
-
+    // Refresh band name from server handled inside qciLoadSettings now
+    
     // Quick Check-In init
     qciBandId = localStorage.getItem('bandId') || '';
     qciSelectedDate = new Date();
@@ -449,10 +440,12 @@ function nav(page) {
 
     qciLoadSettings(function() {
       qciRenderVenues(); /* venues → auto-selects single venue → renders slots */
-      qciCheckExisting();
-      dashLoadPlaylistForDate();
-      loadEarningsSummary('week'); // ต้องรอ settings โหลดเสร็จก่อน
     });
+    
+    // Fire parallel requests immediately
+    qciCheckExisting();
+    dashLoadPlaylistForDate();
+    loadEarningsSummary('week');
 
     document.getElementById('qciConfirmBtn').addEventListener('click', qciConfirm);
     document.getElementById('qciResetBtn').addEventListener('click', qciReset);
