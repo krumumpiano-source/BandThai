@@ -687,12 +687,14 @@ function loadInitial(forceRefresh) {
   var returnPage = 1;
   try {
     // คืนค่า source (global/band) ก่อนโหลดหน้า
-    var rs = sessionStorage.getItem('songs_returnSource') || sessionStorage.getItem('songs_currentSource') || '';
+    // Force global source only
+    var rs = 'global';
+    sessionStorage.setItem('songs_currentSource', 'global');
     if (rs && rs !== _currentSource) {
       _currentSource = rs;
       document.querySelectorAll('.lib-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.source === rs); });
       var titleEl = document.getElementById('resultTitle');
-      if (titleEl) titleEl.textContent = rs === 'band' ? '🎸 เพลงในคลังวง' : '🎼 เพลงที่ค้นพบ';
+      if (titleEl) titleEl.textContent = '🎼 เพลงที่ค้นพบ';
     }
     sessionStorage.removeItem('songs_returnSource');
 
