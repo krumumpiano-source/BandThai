@@ -876,7 +876,9 @@ function renderNextPreview() {
   if (nb) { nb.textContent = ns.bpm ? ns.bpm + ' BPM' : ''; nb.style.display = ns.bpm ? '' : 'none'; }
   var nSinger = document.getElementById('nextSinger');
   if (nSinger) {
-    nSinger.style.display = 'none';
+    nSinger.textContent = ns.artist ? ' · ' + ns.artist : '';
+    nSinger.style.display = ns.artist ? '' : 'none';
+    nSinger.style.color = 'var(--text2)';
   }
   preview.classList.remove('hidden');
 }
@@ -911,6 +913,7 @@ function renderSongList() {
     var hbdT = _parseHbdTime(s.name);
     if (hbdT && !s._skipped) badges += '<span class="badge-hbd">🎂 ' + String(hbdT.hours).padStart(2,'0') + ':' + String(hbdT.minutes).padStart(2,'0') + '</span>';
     var meta = [];
+    if (s.artist) meta.push('👤 ' + escHtml(s.artist));
     if (s._key || s.key) meta.push('🎵 ' + formatKey(s._key || s.key));
     if (s.bpm)  meta.push(s.bpm + ' BPM');
 
@@ -929,7 +932,6 @@ function renderSongList() {
         '<div class="si-content">' +
           '<div style="display:flex; justify-content:space-between; align-items:baseline; gap:8px;">' +
             '<div class="si-name" style="flex:1; min-width:0;">' + escHtml(s.name) + '</div>' +
-            (s.artist ? '<div style="font-size:0.85rem; color:var(--text2); white-space:nowrap; flex-shrink:0; font-weight:400;">' + escHtml(s.artist) + '</div>' : '') +
           '</div>' +
           (meta.length ? '<div class="si-meta">' + meta.join(' · ') + '</div>' : '') +
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
