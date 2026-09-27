@@ -654,7 +654,7 @@ function renderTable() {
     var finalRowClass = (rowClass + singerClass).trim();
 
     html += '<tr data-id="' + id + '"' + (finalRowClass ? ' class="' + finalRowClass + '"' : '') + '>' +
-      '<td style="text-align:center"><input type="checkbox" class="song-cb" value="' + id + '"' + (_selectedIds[id] ? ' checked' : '') + ' onchange="window.toggleSongCb(this)"></td>' +
+      '<td style="text-align:center"><input type="checkbox" class="song-cb" value="' + id + '"' + (_selectedIds[id] ? ' checked' : '') + ' onclick="window.toggleSongCb(this, event)"></td>' +
       '<td><input class="il-input" data-field="name" value="' + esc(dName) + '" oninput="markDirty(this)" placeholder="ชื่อเพลง"></td>' +
       '<td><input class="il-input" data-field="artist" value="' + esc(dArtist) + '" list="artistDatalist" oninput="markDirty(this)" placeholder="ศิลปิน"></td>' +
       '<td class="hide-md">' + _buildSel('key',  _KEY_OPTS,   dKey,  'il-key',   null,        false) + '</td>' +
@@ -677,10 +677,29 @@ function renderTable() {
 }
 
 var _selectAllGlobal = false;
+var _lastCheckedCb = null;
 
-window.toggleSongCb = function(cb) {
-  if (cb.checked) _selectedIds[cb.value] = true;
-  else delete _selectedIds[cb.value];
+window.toggleSongCb = function(cb, e) {
+  if (e && e.shiftKey && _lastCheckedCb) {
+    var cbs = Array.from(document.querySelectorAll('.song-cb'));
+    var start = cbs.indexOf(_lastCheckedCb);
+    var end = cbs.indexOf(cb);
+    if (start !== -1 && end !== -1) {
+      var min = Math.min(start, end);
+      var max = Math.max(start, end);
+      var isChecked = _lastCheckedCb.checked;
+      for (var i = min; i <= max; i++) {
+        cbs[i].checked = isChecked;
+        if (isChecked) _selectedIds[cbs[i].value] = true;
+        else delete _selectedIds[cbs[i].value];
+      }
+    }
+  } else {
+    if (cb.checked) _selectedIds[cb.value] = true;
+    else delete _selectedIds[cb.value];
+    _lastCheckedCb = cb;
+  }
+  
   if (!cb.checked) _selectAllGlobal = false;
   updateBulkToolbar();
 };
@@ -843,12 +862,13 @@ function bulkAction(action, val) {
     }
     nextFormat();
   } else if (action === 'nationality') {
-    if (!confirm('ยืนยันเปลี่ยนสัญชาติ ' + count + ' เพลง เป็น "' + val + '" ใช่หรือไม่?')) return;
+    var autoDetect = (val === 'auto');
+    if (!confirm(autoDetect ? 'ยืนยันสแกนและแยกสัญชาติอัตโนมัติจากชื่อเพลง (ถ้ามีภาษาไทย = ไทย, นอกนั้น = สากล) สำหรับ ' + count + ' เพลง?' : 'ยืนยันเปลี่ยนสัญชาติ ' + count + ' เพลง เป็น "' + val + '" ใช่หรือไม่?')) return;
     
     var i = 0;
-    function nextNat() {
+    function nextNatChunk() {
       if (i >= ids.length) {
-        showToast('🌍 เปลี่ยนสัญชาติเสร็จสิ้น ' + ids.length + ' เพลง', 'success');
+        showToast(autoDetect ? ('🇹🇭🌍 แยกสัญชาติอัตโนมัติเสร็จสิ้น ' + ids.length + ' เพลง') : ('🌍 เปลี่ยนสัญชาติเสร็จสิ้น ' + ids.length + ' เพลง'), 'success');
         clearSongsCache();
         loadSongs();
         document.getElementById('selectAllCb').checked = false;
@@ -857,18 +877,23 @@ function bulkAction(action, val) {
         updateBulkToolbar();
         return;
       }
-      var song = _allSongs.find(function(s) { return s.id === ids[i]; });
-      if (song) {
-        var payload = Object.assign({}, song, { songId: song.id, nationality: val });
-        apiCall('updateSong', payload, function(r) {
-           i++;
-           nextNat();
+      var chunk = ids.slice(i, i + 15);
+      i += 15;
+      var promises = chunk.map(function(id) {
+        var song = _allSongs.find(function(s) { return s.id === id; });
+        if (!song) return Promise.resolve();
+        var targetVal = val;
+        if (autoDetect) {
+          targetVal = /[\u0E00-\u0E7F]/.test(song.name || '') ? 'ไทย' : 'สากล';
+        }
+        var payload = Object.assign({}, song, { songId: song.id, nationality: targetVal });
+        return new Promise(function(resolve) {
+           apiCall('updateSong', payload, resolve);
         });
-      } else {
-        i++; nextNat();
-      }
+      });
+      Promise.all(promises).then(nextNatChunk);
     }
-    nextNat();
+    nextNatChunk();
   }
 }
 
