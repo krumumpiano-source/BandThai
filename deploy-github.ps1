@@ -20,7 +20,7 @@ git push origin $branch
 
 if ($branch -eq "dev") {
   Write-Host ""
-  Write-Host "🔄 กำลังอัปเดตเว็บจริง (Merge dev -> main)..." -ForegroundColor Cyan
+  Write-Host "Auto-merging dev to main for GitHub Pages..." -ForegroundColor Cyan
   git checkout main
   git merge dev
   git push origin main

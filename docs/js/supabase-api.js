@@ -913,9 +913,10 @@
       }
 
       // Global songs (server-side pagination)
+      var dbSortKey = (sortKey === 'least_played' || sortKey === 'most_played') ? 'name' : sortKey;
       var q = sb.from('band_songs')
         .select('*', { count: 'exact' })
-        .order(sortKey, { ascending: sortAsc })
+        .order(dbSortKey, { ascending: sortAsc })
         .range(from, to)
         .is('band_id', null);
 
