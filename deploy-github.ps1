@@ -2,7 +2,7 @@
 # deploy-github.ps1  — Push ทุก่างไปยัง GitHub
 # ─────────────────────────────────────────────────────────────────
 param(
-  [string]$msg = "migrate to Supabase"
+  [string]$msg = "update"
 )
 
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path

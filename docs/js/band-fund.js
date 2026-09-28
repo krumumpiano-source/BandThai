@@ -43,6 +43,8 @@ var _allTx      = [];
       _loadFundInProgress = false;
       if (!(r && r.success)) { showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); return; }
       _allTx = r.data.transactions || [];
+      window.fundLedgerData = _allTx;
+      window._currentFundBalance = r.data.balance || 0;
 
       document.getElementById('sBalance').textContent  = formatCurrency(r.data.balance || 0);
       document.getElementById('sIncome').textContent   = formatCurrency(r.data.totalIncome || 0);
@@ -338,3 +340,167 @@ var _allTx      = [];
       });
     });
   }
+
+  // ── ฟีเจอร์ 1: ปันผลกองกลาง ──
+  function handleDividend() {
+      const total = parseFloat(document.getElementById('dividendTotal').value);
+      const members = parseInt(document.getElementById('dividendMembers').value);
+      
+      if (!total || total <= 0 || !members || members <= 0) {
+        showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error');
+        return;
+      }
+      if (total > window._currentFundBalance) {
+        showToast('ยอดเงินปันผลเกินกว่ายอดคงเหลือในกองกลาง', 'error');
+        return;
+      }
+      
+      const perPerson = total / members;
+      
+      apiCall('addFundTransaction', {
+          type: 'expense',
+          category: 'คืนเงินสมาชิก',
+          amount: total,
+          note: `ปันผลสมาชิก ${members} คน (คนละ ${perPerson.toFixed(2)} บาท)`,
+          what: 'ปันผลกองกลาง',
+          date: new Date().toISOString().split('T')[0]
+      }, function(r) {
+          if (r && r.success) { showToast('บันทึกปันผลสำเร็จ', 'success'); loadFund(); }
+          else showToast((r && r.message)||'เกิดข้อผิดพลาด', 'error');
+      });
+  }
+
+  // ── ฟีเจอร์ 2: คำนวณคืนเงินคนออกวง ──
+  function handleExitRefund() {
+      const startDate = document.getElementById('exitStartDate').value;
+      const members = parseInt(document.getElementById('exitAvgMembers').value);
+      
+      if (!startDate || !members || members <= 0) {
+        showToast('กรุณากรอกวันที่และจำนวนสมาชิกให้ครบถ้วน', 'error');
+        return;
+      }
+      
+      let incomes = 0, expenses = 0;
+      (window.fundLedgerData || []).forEach(tx => {
+          if ((tx.date || tx.tx_date) >= startDate && tx.status === 'approved') {
+              if (tx.type === 'income') incomes += parseFloat(tx.amount || 0);
+              if (tx.type === 'expense') expenses += parseFloat(tx.amount || 0);
+          }
+      });
+      
+      const netProfit = incomes - expenses;
+      if (netProfit <= 0) {
+        showToast('ไม่มีกำไรในช่วงเวลานี้', 'error');
+        return;
+      }
+      const refundPerPerson = netProfit / members;
+      
+      apiCall('addFundTransaction', {
+          type: 'expense',
+          category: 'คืนเงินสมาชิก',
+          amount: refundPerPerson,
+          what: 'คืนเงินลาออก',
+          note: `คำนวณจาก ${startDate} สมาชิก ${members} คน (กำไรสุทธิ ${netProfit.toFixed(2)} บาท)`,
+          date: new Date().toISOString().split('T')[0]
+      }, function(r) {
+          if (r && r.success) { showToast('บันทึกคืนเงินสำเร็จ', 'success'); loadFund(); }
+          else showToast((r && r.message)||'เกิดข้อผิดพลาด', 'error');
+      });
+  }
+
+  // ── ฟีเจอร์ 3: ระบบยืมเงินฉุกเฉิน ──
+  function handleLoanRequest() {
+      const amount = parseFloat(document.getElementById('loanAmount').value);
+      if (!amount || amount <= 0) {
+        showToast('กรุณาระบุยอดที่ต้องการยืม', 'error');
+        return;
+      }
+      if (amount > (window._currentFundBalance / 2)) {
+        showToast('ยืมได้สูงสุดไม่เกินโควต้า', 'error');
+        return;
+      }
+      
+      const fee = Math.ceil(amount / 1000) * 50;
+      const totalDebt = amount + fee;
+      
+      apiCall('addFundTransaction', {
+          type: 'expense',
+          category: 'อื่นๆ',
+          what: 'ยืมเงินฉุกเฉิน',
+          amount: amount,
+          note: `{"fee": ${fee}, "total_debt": ${totalDebt}, "type": "loan"}`,
+          date: new Date().toISOString().split('T')[0]
+      }, function(r) {
+          if (r && r.success) { 
+            showToast('ส่งคำขอยืมเงินแล้ว (รออนุมัติ)', 'success'); 
+            loadFund();
+            document.getElementById('loanAmount').value = '';
+            document.getElementById('loanSummary').textContent = 'ยอดเงินที่ได้รับ: 0 บาท | ค่าธรรมเนียม: 0 บาท | ยอดหนี้รวม: 0 บาท';
+          }
+          else showToast((r && r.message)||'เกิดข้อผิดพลาด', 'error');
+      });
+  }
+
+  // ── Event Listeners สำหรับคำนวณแบบ Realtime ──
+  document.addEventListener('DOMContentLoaded', () => {
+      // อัปเดตโควต้าเมื่อกองกลางโหลดเสร็จ
+      const interval = setInterval(() => {
+        if (typeof window._currentFundBalance !== 'undefined') {
+          document.getElementById('loanLimit').textContent = (window._currentFundBalance / 2).toLocaleString() + ' บาท';
+          // clearInterval(interval); // ไม่เคลียร์เพราะค่าอาจเปลี่ยน
+        }
+      }, 1000);
+      
+      document.getElementById('dividendTotal').addEventListener('input', function() {
+          const total = parseFloat(this.value);
+          const members = parseInt(document.getElementById('dividendMembers').value);
+          if (members > 0 && total >= 0) {
+              document.getElementById('dividendPerPerson').textContent = `${(total / members).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท`;
+          }
+      });
+      document.getElementById('dividendMembers').addEventListener('input', function() {
+          const total = parseFloat(document.getElementById('dividendTotal').value);
+          const members = parseInt(this.value);
+          if (members > 0 && total >= 0) {
+              document.getElementById('dividendPerPerson').textContent = `${(total / members).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท`;
+          }
+      });
+      
+      document.getElementById('exitStartDate').addEventListener('change', calcRefund);
+      document.getElementById('exitAvgMembers').addEventListener('input', calcRefund);
+
+      function calcRefund() {
+          const startDate = document.getElementById('exitStartDate').value;
+          const members = parseInt(document.getElementById('exitAvgMembers').value);
+          if (startDate && members > 0) {
+              let incomes = 0, expenses = 0;
+              (window.fundLedgerData || []).forEach(tx => {
+                  if ((tx.date || tx.tx_date) >= startDate && tx.status === 'approved') {
+                      if (tx.type === 'income') incomes += parseFloat(tx.amount || 0);
+                      if (tx.type === 'expense') expenses += parseFloat(tx.amount || 0);
+                  }
+              });
+              const netProfit = incomes - expenses;
+              const refundPerPerson = netProfit > 0 ? (netProfit / members) : 0;
+              
+              document.getElementById('netProfit').textContent = `${netProfit.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท`;
+              document.getElementById('refundPerPerson').textContent = `${refundPerPerson.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท`;
+          }
+      }
+      
+      document.getElementById('loanAmount').addEventListener('input', function() {
+          const amount = parseFloat(this.value);
+          if (!amount || amount <= 0) {
+            document.getElementById('loanSummary').textContent = 'ยอดเงินที่ได้รับ: 0 บาท | ค่าธรรมเนียม: 0 บาท | ยอดหนี้รวม: 0 บาท';
+            return;
+          }
+          
+          const fee = Math.ceil(amount / 1000) * 50;
+          const totalDebt = amount + fee;
+          
+          document.getElementById('loanSummary').textContent = 
+              `ยอดเงินที่ได้รับ: ${amount.toLocaleString()} บาท | ` +
+              `ค่าธรรมเนียม: ${fee.toLocaleString()} บาท | ` +
+              `ยอดหนี้รวม: ${totalDebt.toLocaleString()} บาท`;
+      });
+  });

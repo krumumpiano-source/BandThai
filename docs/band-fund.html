@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -49,6 +49,7 @@
         <button class="fund-tab active" onclick="switchTab('ledger',this)">📒 บัญชีรายการ</button>
         <button class="fund-tab" onclick="switchTab('pending',this)">⏳ รออนุมัติ <span class="tab-badge" id="pendingBadge" style="display:none">0</span></button>
         <button class="fund-tab" onclick="switchTab('add',this)">➕ บันทึกรายการ</button>
+        <button class="fund-tab" onclick="switchTab('tools',this)">🛠️ เครื่องมือจัดการ</button>
       </div>
 
       <!-- ── Tab: Ledger ── -->
@@ -166,6 +167,78 @@
               <button type="submit" class="btn btn-primary" id="saveTxBtn">📤 ส่งคำขอ</button>
             </div>
           </form>
+        </div>
+      </div>
+      </div>
+
+      <!-- ── Tab: Tools ── -->
+      <div id="tabTools" class="tab-pane">
+        <div class="card mb-4" style="margin-bottom:var(--spacing-md)">
+          <div class="card-header">
+            <h3 class="card-title">💸 ปันผลกองกลาง</h3>
+          </div>
+          <div style="padding:var(--spacing-lg)">
+            <div class="form-group">
+              <label>ยอดเงินที่ต้องการปันผลรวม:</label>
+              <input type="number" id="dividendTotal" min="0">
+            </div>
+            <div class="form-group">
+              <label>จำนวนสมาชิกที่หาร:</label>
+              <input type="number" id="dividendMembers" min="1">
+            </div>
+            <div class="form-group">
+              <label>ส่วนแบ่งต่อคน:</label>
+              <div id="dividendPerPerson" style="background:var(--bg-lighter);padding:12px;border-radius:8px">0 บาท</div>
+            </div>
+            <button class="btn btn-primary" onclick="handleDividend()">บันทึกการปันผล</button>
+          </div>
+        </div>
+
+        <div class="card mb-4" style="margin-bottom:var(--spacing-md)">
+          <div class="card-header">
+            <h3 class="card-title">👋 คำนวณคืนเงินคนออกวง</h3>
+          </div>
+          <div style="padding:var(--spacing-lg)">
+            <div class="form-group">
+              <label>วันที่เริ่มเข้าวง:</label>
+              <input type="date" id="exitStartDate">
+            </div>
+            <div class="form-group">
+              <label>จำนวนสมาชิกเฉลี่ยในช่วงเวลานั้น:</label>
+              <input type="number" id="exitAvgMembers" min="1">
+            </div>
+            <div class="form-group">
+              <label>กำไรสุทธิในช่วงเวลา:</label>
+              <div id="netProfit" style="background:var(--bg-lighter);padding:12px;border-radius:8px">0 บาท</div>
+            </div>
+            <div class="form-group">
+              <label>ส่วนแบ่งที่ได้คืน:</label>
+              <div id="refundPerPerson" style="background:var(--bg-lighter);padding:12px;border-radius:8px;font-weight:bold;color:var(--premium-gold)">0 บาท</div>
+            </div>
+            <button class="btn btn-primary" onclick="handleExitRefund()">บันทึกคืนเงิน</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">🆘 ระบบยืมเงินฉุกเฉิน</h3>
+          </div>
+          <div style="padding:var(--spacing-lg)">
+            <div style="background:var(--bg-lighter);padding:12px;border-radius:8px;margin-bottom:var(--spacing-md);color:var(--premium-text)">
+              โควต้ายืมสูงสุด: <span id="loanLimit" style="font-weight:bold;color:var(--premium-gold)">0 บาท</span>
+            </div>
+            <div class="form-group">
+              <label>ยอดที่ต้องการยืม:</label>
+              <input type="number" id="loanAmount" min="0">
+            </div>
+            <div class="form-group">
+              <label>สรุปการชำระ:</label>
+              <div id="loanSummary" style="background:var(--bg-lighter);padding:12px;border-radius:8px;font-size:0.9em">
+                ยอดเงินที่ได้รับ: 0 บาท | ค่าธรรมเนียม: 0 บาท | ยอดหนี้รวม: 0 บาท
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="handleLoanRequest()">ส่งคำขอยืมเงิน</button>
+          </div>
         </div>
       </div>
     </div>
