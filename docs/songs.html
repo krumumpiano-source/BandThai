@@ -63,6 +63,23 @@
     </div>
   </div>
 
+  <!-- ── Quick Ideas Panel ── -->
+  <div class="panel quick-ideas-panel" style="background:linear-gradient(135deg, rgba(246,173,85,0.15), rgba(246,173,85,0.02)); border: 1px solid rgba(246,173,85,0.3); margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-size:18px">💡</span>
+      <strong style="color:var(--premium-gold);font-size:15px;">คิดไม่ออก? ลองดูไอเดียเหล่านี้ (Quick Ideas)</strong>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="randomizeSongs()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+        🎲 สุ่มเพลงมาให้ที
+      </button>
+      <button onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
+        🔥 เรียงตามเพลงเล่นบ่อย
+      </button>
+    </div>
+    <div id="quickIdeasResults" style="display:none; margin-top:12px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:10px; max-height:250px; overflow-y:auto;"></div>
+  </div>
+
   <!-- ── Filter Panel ── -->
   <div class="panel filter-panel" id="filterPanel">
     <div class="filter-toggle" onclick="document.getElementById('filterPanel').classList.toggle('expanded')">
@@ -134,6 +151,7 @@
         <!-- FIELD-BUG-5: sortOption แสดงตลอดเวลา (ไม่ซ่อน) -->
         <select id="sortOption" onchange="onFilterChange()" style="font-weight:600;color:var(--primary)">
           <option value="name">เรียง: ก-ฮ</option>
+          <option value="most_played">เรียง: เล่นบ่อย</option>
           <option value="least_played">เรียง: เล่นน้อย</option>
         </select>
       </div>
@@ -3370,6 +3388,49 @@ window.onload = function() {
     });
   }
 };
+// --- Quick Ideas Functions ---
+function randomizeSongs() {
+  if (!_pageData || _pageData.length === 0) {
+    alert('ไม่พบเพลงที่ตรงกับเงื่อนไขในหน้านี้ (ลองลบคำค้นหาออกก่อน)');
+    return;
+  }
+  
+  var resultsDiv = document.getElementById('quickIdeasResults');
+  if (resultsDiv.style.display === 'block') {
+    resultsDiv.style.display = 'none';
+    return;
+  }
+
+  var randomSongs = [];
+  var pool = _pageData.slice();
+  var numToPick = Math.min(5, pool.length);
+  
+  for (var i = 0; i < numToPick; i++) {
+    var randomIndex = Math.floor(Math.random() * pool.length);
+    randomSongs.push(pool.splice(randomIndex, 1)[0]);
+  }
+
+  var html = '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#4a5568;">🎲 สุ่มมาให้ ' + numToPick + ' เพลง:</div>';
+  randomSongs.forEach(function(song) {
+    var sName = escapeHtml(song.name || '');
+    var sArtist = escapeHtml(song.artist || '');
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9;">';
+    html += '  <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;color:var(--premium-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sName + '</div><div style="font-size:11px;color:#718096;">' + sArtist + '</div></div>';
+    html += '  <button onclick="addSongToPlaylist(\'' + (song.id || song.songId) + '\', \'' + sName.replace(/'/g, "\\'") + '\', \'' + sArtist.replace(/'/g, "\\'") + '\')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:12px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">+ เพิ่มลงลิส</button>';
+    html += '</div>';
+  });
+  
+  resultsDiv.innerHTML = html;
+  resultsDiv.style.display = 'block';
+}
+
+function sortByTopPlayed() {
+  var sortOpt = document.getElementById('sortOption');
+  if (sortOpt) {
+    sortOpt.value = 'most_played';
+    onFilterChange();
+  }
+}
 </script>
 
 <!-- Floating Help Button -->

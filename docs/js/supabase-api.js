@@ -832,7 +832,7 @@
       var sortKey = d.sortKey || 'name';
       var sortAsc = d.sortAsc !== false;
 
-      var SORT_OK = ['name','artist','bpm','singer','era','tags','mood','key','created_at','updated_at','least_played'];
+      var SORT_OK = ['name','artist','bpm','singer','era','tags','mood','key','created_at','updated_at','least_played','most_played'];
       if (SORT_OK.indexOf(sortKey) < 0) sortKey = 'name';
 
       var from = (page - 1) * perPage;
@@ -886,6 +886,17 @@
             var countA = recentCounts[a.id || a.song_id] || 0;
             var countB = recentCounts[b.id || b.song_id] || 0;
             if (countA !== countB) return countA - countB;
+            var tA = new Date(a.created_at || 0).getTime();
+            var tB = new Date(b.created_at || 0).getTime();
+            if (tA !== tB) return tB - tA;
+            return (a.name || '').localeCompare(b.name || '');
+          });
+        } else if (sortKey === 'most_played') {
+          var recentCounts = d.recentPlayCounts || {};
+          all.sort(function(a, b) {
+            var countA = recentCounts[a.id || a.song_id] || 0;
+            var countB = recentCounts[b.id || b.song_id] || 0;
+            if (countA !== countB) return countB - countA;
             var tA = new Date(a.created_at || 0).getTime();
             var tB = new Date(b.created_at || 0).getTime();
             if (tA !== tB) return tB - tA;
