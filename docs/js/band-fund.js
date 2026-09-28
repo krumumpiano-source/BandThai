@@ -39,6 +39,7 @@ var _allTx      = [];
 
   /* ── Load ── */
   var _loadFundInProgress = false;
+  var _bandProfiles = [];
   function loadFund() {
     if (_loadFundInProgress) return;
     _loadFundInProgress = true;
@@ -61,6 +62,27 @@ var _allTx      = [];
       populateMonthFilter();
       renderLedger();
       renderPending();
+      
+      if (_isManager && _bandProfiles.length === 0) {
+        apiCall('getBandProfiles', {}, function(res) {
+          if (res && res.success) {
+            _bandProfiles = res.data || [];
+            var sel = document.getElementById('exitMemberSelect');
+            if (sel) {
+              _bandProfiles.forEach(function(m) {
+                var opt = document.createElement('option');
+                // Store created_at in value (fallback to today if missing)
+                opt.value = m.created_at ? m.created_at.split('T')[0] : '';
+                opt.textContent = (m.nickname || m.user_name || 'ไม่ทราบชื่อ') + ' (' + (m.role==='manager'?'ผู้จัดการ':'สมาชิก') + ')';
+                // Add member ID as dataset in case we need it
+                opt.dataset.id = m.id;
+                opt.dataset.name = m.nickname || m.user_name || 'ไม่ทราบชื่อ';
+                sel.appendChild(opt);
+              });
+            }
+          }
+        });
+      }
     });
   }
 
@@ -471,6 +493,16 @@ var _allTx      = [];
       
       document.getElementById('exitStartDate').addEventListener('change', calcRefund);
       document.getElementById('exitAvgMembers').addEventListener('input', calcRefund);
+      
+      var exitSel = document.getElementById('exitMemberSelect');
+      if (exitSel) {
+        exitSel.addEventListener('change', function() {
+          if (this.value) {
+            document.getElementById('exitStartDate').value = this.value;
+            calcRefund();
+          }
+        });
+      }
 
       function calcRefund() {
           const startDate = document.getElementById('exitStartDate').value;
