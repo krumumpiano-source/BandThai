@@ -89,10 +89,9 @@ function renderMainNav(containerId) {
     navLink('dashboard', '📊 ' + _t('nav_dashboard'), 'ภาพรวมงาน สถิติ และทางลัด') +
     (_simpleMenu
       ? navLink('songs', '🎵 ' + _t('nav_songs'), 'เพลงทั้งหมดและเซ็ตลิสต์')
-      : navSubmenu('🎵', 'เพลง', 'คลังเพลง สถิติ และเซ็ตลิสต์', ['songs', 'song-insights', 'setlist'],
+      : navSubmenu('🎵', 'เพลง', 'คลังเพลง และสถิติ', ['songs', 'song-insights'],
           navLink('songs',         '🎵 คลังเพลง',  'เพลงทั้งหมดของวง') +
-          navLink('song-insights', '📊 สถิติเพลง', 'เพลงที่เล่นบ่อย / ไม่เคยเล่น') +
-          navLink('setlist',       '🎼 เซ็ตลิสต์',  'จัดลำดับเพลงสำหรับงาน')
+          navLink('song-insights', '📊 สถิติเพลง', 'เพลงที่เล่นบ่อย / ไม่เคยเล่น')
         )
     ) +
     navLink('schedule', '📅 ' + _t('nav_schedule'), 'ปฏิทินงานและตารางนัด') +
