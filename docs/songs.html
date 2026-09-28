@@ -3395,12 +3395,12 @@ function randomizeSongs() {
   btn.innerHTML = '⏳ กำลังสุ่ม...';
   
   var q = document.getElementById('searchText').value.trim();
-  var singer = document.getElementById('filterSinger').value;
-  var era = document.getElementById('filterEra').value;
-  var nat = document.getElementById('filterNat').value;
-  var genre = document.getElementById('filterGenre').value;
-  var mood = document.getElementById('filterMood').value;
-  var artist = document.getElementById('filterArtist').value;
+  var singer = document.getElementById('singer').value;
+  var era = document.getElementById('era').value;
+  var nat = document.getElementById('nationality').value;
+  var genre = document.getElementById('genre').value;
+  var mood = document.getElementById('mood').value;
+  var artist = document.getElementById('artist') ? document.getElementById('artist').value : '';
   
   if (typeof apiCall === 'function') {
     apiCall('getSongsPage', {
