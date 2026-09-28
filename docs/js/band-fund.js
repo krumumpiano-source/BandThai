@@ -16,6 +16,9 @@ var _allTx      = [];
       document.getElementById('submitInfoBox').className = 'submit-info manager-info';
       document.getElementById('submitInfoBox').textContent = '✅ ในฐานะผู้จัดการวง รายการที่คุณบันทึกจะเข้าบัญชีทันทีโดยไม่ต้องรออนุมัติ';
       document.getElementById('saveTxBtn').textContent = '💾 บันทึก';
+    } else {
+      if(document.getElementById('managerToolDividend')) document.getElementById('managerToolDividend').style.display = 'none';
+      if(document.getElementById('managerToolRefund')) document.getElementById('managerToolRefund').style.display = 'none';
     }
 
     document.getElementById('txDate').value = (function(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); })(new Date());
