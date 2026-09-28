@@ -907,6 +907,10 @@
           if (!sortAsc) all.reverse();
         }
 
+        if (d.randomLimit) {
+          var shuffled = all.sort(function() { return 0.5 - Math.random(); });
+          return { success: true, data: toCamelList(shuffled.slice(0, d.randomLimit)) };
+        }
         var total = all.length;
         var sliced = all.slice(from, from + perPage);
         return { success: true, data: toCamelList(sliced), total: total };
@@ -916,9 +920,13 @@
       var dbSortKey = (sortKey === 'least_played' || sortKey === 'most_played') ? 'name' : sortKey;
       var q = sb.from('band_songs')
         .select('*', { count: 'exact' })
-        .order(dbSortKey, { ascending: sortAsc })
-        .range(from, to)
         .is('band_id', null);
+        
+      if (d.randomLimit) {
+        q = q.limit(100);
+      } else {
+        q = q.order(dbSortKey, { ascending: sortAsc }).range(from, to);
+      }
 
       if (search) {
         var s = search.replace(/[,.()'"\\]/g, '');
@@ -943,6 +951,11 @@
 
       var { data, error, count } = await q;
       if (error) throw error;
+
+      if (d.randomLimit) {
+        var shuffledGlobal = (data || []).sort(function() { return 0.5 - Math.random(); });
+        return { success: true, data: toCamelList(shuffledGlobal.slice(0, d.randomLimit)) };
+      }
 
       return { success: true, data: toCamelList(data || []), total: count || 0 };
     }

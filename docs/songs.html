@@ -3390,34 +3390,53 @@ window.onload = function() {
 };
 // --- Quick Ideas Functions ---
 function randomizeSongs() {
-  if (!_pageData || _pageData.length === 0) {
-    alert('ไม่พบเพลงที่ตรงกับเงื่อนไขในหน้านี้ (ลองลบคำค้นหาออกก่อน)');
-    return;
+  var btn = document.querySelector('.quick-ideas-panel button:first-child');
+  var origText = btn.innerHTML;
+  btn.innerHTML = '⏳ กำลังสุ่ม...';
+  
+  var q = document.getElementById('searchText').value.trim();
+  var singer = document.getElementById('filterSinger').value;
+  var era = document.getElementById('filterEra').value;
+  var nat = document.getElementById('filterNat').value;
+  var genre = document.getElementById('filterGenre').value;
+  var mood = document.getElementById('filterMood').value;
+  var artist = document.getElementById('filterArtist').value;
+  
+  if (typeof apiCall === 'function') {
+    apiCall('getSongsPage', {
+      source: _currentSource,
+      search: q,
+      singer: singer,
+      era: era,
+      nationality: nat,
+      genre: genre,
+      mood: mood,
+      artist: artist,
+      randomLimit: 5,
+      recentPlayCounts: window._recentPlayCounts || {}
+    }, function(res) {
+      btn.innerHTML = origText;
+      if (res && res.success && res.data && res.data.length > 0) {
+        var resultsDiv = document.getElementById('quickIdeasResults');
+        var html = '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#4a5568;">🎲 สุ่มตามเงื่อนไขได้ ' + res.data.length + ' เพลง:</div>';
+        res.data.forEach(function(song) {
+          var sName = escapeHtml(song.name || '');
+          var sArtist = escapeHtml(song.artist || '');
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9;">';
+          html += '  <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;color:var(--premium-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sName + '</div><div style="font-size:11px;color:#718096;">' + sArtist + '</div></div>';
+          html += '  <button onclick="addSongToPlaylist(\'' + (song.id || song.songId) + '\', \'' + sName.replace(/'/g, "\\'") + '\', \'' + sArtist.replace(/'/g, "\\'") + '\')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:12px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">+ เพิ่มลงลิส</button>';
+          html += '</div>';
+        });
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+      } else {
+        alert('ไม่พบเพลงที่ตรงกับเงื่อนไขเลย (ลองลดเงื่อนไขหรือคำค้นหาลง)');
+      }
+    });
+  } else {
+    btn.innerHTML = origText;
+    alert('ระบบยังไม่พร้อมใช้งาน โปรดรอสักครู่');
   }
-  
-  var resultsDiv = document.getElementById('quickIdeasResults');
-
-  var randomSongs = [];
-  var pool = _pageData.slice();
-  var numToPick = Math.min(5, pool.length);
-  
-  for (var i = 0; i < numToPick; i++) {
-    var randomIndex = Math.floor(Math.random() * pool.length);
-    randomSongs.push(pool.splice(randomIndex, 1)[0]);
-  }
-
-  var html = '<div style="font-size:13px;font-weight:600;margin-bottom:8px;color:#4a5568;">🎲 สุ่มมาให้ ' + numToPick + ' เพลง:</div>';
-  randomSongs.forEach(function(song) {
-    var sName = escapeHtml(song.name || '');
-    var sArtist = escapeHtml(song.artist || '');
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9;">';
-    html += '  <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;color:var(--premium-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sName + '</div><div style="font-size:11px;color:#718096;">' + sArtist + '</div></div>';
-    html += '  <button onclick="addSongToPlaylist(\'' + (song.id || song.songId) + '\', \'' + sName.replace(/'/g, "\\'") + '\', \'' + sArtist.replace(/'/g, "\\'") + '\')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:12px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">+ เพิ่มลงลิส</button>';
-    html += '</div>';
-  });
-  
-  resultsDiv.innerHTML = html;
-  resultsDiv.style.display = 'block';
 }
 
 function sortByTopPlayed() {
