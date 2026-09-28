@@ -1,4 +1,4 @@
-﻿/**
+/**
  * BandThai — Navigation (Sidebar)
  * renderMainNav() — ไฟล์นี้เป็นที่เดียวที่ renderMainNav ถูกนิยาม
  */
@@ -83,7 +83,7 @@ function renderMainNav(containerId) {
     ? '<div class="sidebar-user-instrument">' + _escHtml(instrument) + '</div>'
     : '';
   // ── เมนูสมาชิกวง (ทุกบทบาท) ─────────────────────────
-  var _simpleMenu = localStorage.getItem('accessibility_simple_menu') !== '0';
+  var _simpleMenu = localStorage.getItem('accessibility_simple_menu') === '1';
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
     navLink('dashboard', '📊 ' + _t('nav_dashboard'), 'ภาพรวมงาน สถิติ และทางลัด') +
