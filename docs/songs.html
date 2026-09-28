@@ -76,7 +76,7 @@
       <button onclick="randomizeSongs()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
         🎲 สุ่มเพลงมาให้ที
       </button>
-      <button onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
+      <button id="quickIdeasTopPlayedBtn" onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
         🔥 เรียงตามเพลงเล่นบ่อย
       </button>
     </div>
@@ -146,7 +146,7 @@
         <!-- FIELD-BUG-4: เปลี่ยนจาก select เป็น text + autocomplete เหมือน admin-songs -->
         <div class="ac-wrap-songs" style="position:relative;display:inline-block">
           <input type="text" id="artist" placeholder="ทุกศิลปิน" autocomplete="off"
-            style="height:32px;border:1px solid var(--premium-light-gray);border-radius:var(--radius-sm);padding:0 8px;font-size:var(--text-sm);background:var(--premium-card);color:var(--premium-text);min-width:110px"
+            style="height:40px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 30px 8px 12px;font-size:14px;background:#fff url('data:image/svg+xml;utf8,<svg fill=%22%23a0aec0%22 height=%2224%22 viewBox=%220 0 24 24%22 width=%2224%22 xmlns=%22http://www.w3.org/2000/svg%22><path d=%22M7 10l5 5 5-5z%22/></svg>') no-repeat right 4px center;color:#2d3748;min-width:130px;outline:none;box-sizing:border-box;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.02);"
             oninput="_onArtistFilterInput()" onfocus="_openArtistFilterAC()" onblur="setTimeout(function(){_closeArtistFilterAC()},200)">
           <div id="artistACList" style="display:none;position:absolute;top:100%;left:0;min-width:160px;max-height:220px;overflow-y:auto;background:var(--premium-card);border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999"></div>
         </div>
@@ -799,12 +799,22 @@ function switchLibrary(source) {
   if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
   // FIELD-BUG-5: sortOption แสดงเสมอ แต่ default value ต่างกันตาม source
   var sortOpt = document.getElementById('sortOption');
+  var topPlayedBtn = document.getElementById('quickIdeasTopPlayedBtn');
+  
   if (sortOpt) {
     sortOpt.style.display = 'inline-block'; // แสดงเสมอ
     if (source === 'global') {
       sortOpt.value = 'name';
+      for (var i=0; i<sortOpt.options.length; i++) {
+        if (sortOpt.options[i].value === 'most_played' || sortOpt.options[i].value === 'least_played') sortOpt.options[i].style.display = 'none';
+      }
+      if (topPlayedBtn) topPlayedBtn.style.display = 'none';
     } else if (source === 'band') {
       sortOpt.value = 'least_played'; // Default เล่นน้อยสำหรับคลังวง
+      for (var i=0; i<sortOpt.options.length; i++) {
+        sortOpt.options[i].style.display = '';
+      }
+      if (topPlayedBtn) topPlayedBtn.style.display = 'flex';
     }
   }
   // exit select mode if active
