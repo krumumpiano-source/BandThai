@@ -3433,12 +3433,15 @@ function randomizeSongs() {
         var resultsDiv = document.getElementById('quickIdeasResults');
         var html = '<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#4a5568;border-bottom:1px solid #edf2f7;padding-bottom:8px;">🎲 สุ่มจากเงื่อนไขได้ ' + res.data.length + ' เพลง:</div>';
         html += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">';
-        res.data.forEach(function(song) {
+        
+        window._quickIdeasSongs = res.data;
+        
+        res.data.forEach(function(song, idx) {
           var sName = escapeHtml(song.name || '');
           var sArtist = escapeHtml(song.artist || '');
           html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#fafafa;border:1px solid #edf2f7;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.02);">';
           html += '  <div style="flex:1;min-width:0;padding-right:8px;"><div style="font-weight:600;font-size:14px;color:var(--premium-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sName + '</div><div style="font-size:11px;color:#718096;">' + sArtist + '</div></div>';
-          html += '  <button onclick="addSongToPlaylist(\'' + (song.id || song.songId) + '\', \'' + sName.replace(/'/g, "\\'") + '\', \'' + sArtist.replace(/'/g, "\\'") + '\')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;box-shadow:0 2px 4px rgba(246,173,85,0.2);transition:all 0.1s;">+ เพิ่มลงลิส</button>';
+          html += '  <button onclick="addQuickIdeaSong(' + idx + ')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;box-shadow:0 2px 4px rgba(246,173,85,0.2);transition:all 0.1s;">+ เพิ่มลงลิส</button>';
           html += '</div>';
         });
         html += '</div>';
@@ -3453,6 +3456,34 @@ function randomizeSongs() {
     alert('ระบบยังไม่พร้อมใช้งาน โปรดรอสักครู่');
   }
 }
+
+window.addQuickIdeaSong = function(idx) {
+  var song = window._quickIdeasSongs && window._quickIdeasSongs[idx];
+  if (!song) return;
+  var songId = song.id || song.songId || '';
+  
+  if (songId && _addedSongIds[songId]) {
+    alert('เพลงนี้ถูกเพิ่มลงใน Setlist แล้ว');
+    return;
+  }
+  
+  var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
+  if (freq >= 4) {
+    var confirmMsg = '⚠️ เพลง "' + (song.name || '') + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งในช่วง 7 วันที่ผ่านมา\n\nเพลงนี้คุณเล่นบ่อยเกินไปแล้ว เปลี่ยนบ้างนะ!\n\nต้องการเพิ่มเพลงนี้จริงๆ หรือไม่?';
+    if (!confirm(confirmMsg)) return;
+  }
+  
+  addSong(song);
+  _lastAddedIndex = playlistData.length - 1;
+  if (songId) _addedSongIds[songId] = true;
+  
+  var btn = event.currentTarget;
+  if (btn) {
+    btn.innerHTML = '✓ เพิ่มแล้ว';
+    btn.style.background = '#48bb78';
+    btn.style.boxShadow = '0 2px 4px rgba(72,187,120,0.2)';
+  }
+};
 
 function sortByTopPlayed() {
   var sortOpt = document.getElementById('sortOption');
