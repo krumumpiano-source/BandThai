@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>à¸„à¸¥à¸±à¸‡à¹€à¸žà¸¥à¸‡ â€” BandThai</title>
+  <title>คลังเพลง — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -29,158 +29,147 @@
   <div class="split-left">
   <div id="songPageHeader" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-lg);position:relative;overflow:hidden">
     <!-- Decorative bg -->
-    <div style="position:absolute;top:-20px;right:-20px;font-size:120px;opacity:.06;pointer-events:none;line-height:1">ðŸŽµ</div>
+    <div style="position:absolute;top:-20px;right:-20px;font-size:120px;opacity:.06;pointer-events:none;line-height:1">🎵</div>
     <!-- Row 1: branding -->
     <div style="display:flex;align-items:center;gap:14px;min-width:0">
-      <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(246,173,85,.35)">ðŸŽ¶</div>
+      <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(246,173,85,.35)">🎶</div>
       <div style="flex:1;min-width:0">
-        <h2 id="songLibTitle" style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">à¸„à¸¥à¸±à¸‡à¹€à¸žà¸¥à¸‡</h2>
-        <p style="margin:3px 0 0;font-size:var(--text-sm);color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">à¸£à¸§à¸¡à¹€à¸žà¸¥à¸‡à¸®à¸´à¸•à¸—à¸¸à¸à¹à¸™à¸§ à¸žà¸£à¹‰à¸­à¸¡à¹ƒà¸«à¹‰à¸§à¸‡à¸‚à¸­à¸‡à¸„à¸¸à¸“à¹€à¸¥à¸·à¸­à¸à¹ƒà¸Šà¹‰à¹„à¸”à¹‰à¹€à¸¥à¸¢</p>
+        <h2 id="songLibTitle" style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">คลังเพลง</h2>
+        <p style="margin:3px 0 0;font-size:var(--text-sm);color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รวมเพลงฮิตทุกแนว พร้อมให้วงของคุณเลือกใช้ได้เลย</p>
       </div>
     </div>
     <!-- Row 2: stats -->
     <div style="display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:20px;padding:6px 14px">
-        <span style="font-size:16px">ðŸ“€</span>
-        <span id="headerTotalSongs" style="font-size:13px;font-weight:600">â€” à¹€à¸žà¸¥à¸‡</span>
+        <span style="font-size:16px">📀</span>
+        <span id="headerTotalSongs" style="font-size:13px;font-weight:600">— เพลง</span>
       </div>
       <div id="headerBandInfo" style="display:none;align-items:center;gap:6px;background:rgba(246,173,85,.15);border:1px solid rgba(246,173,85,.3);border-radius:20px;padding:6px 14px">
-        <span style="font-size:16px">ðŸŽ¸</span>
+        <span style="font-size:16px">🎸</span>
         <span id="headerBandName" style="font-size:13px;font-weight:600;color:#f6ad55"></span>
       </div>
     </div>
     <!-- Row 3: action buttons -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">
-      <button onclick="loadInitial(true)" title="à¹‚à¸«à¸¥à¸”à¹ƒà¸«à¸¡à¹ˆ" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">ðŸ”„</button>
+      <button onclick="loadInitial(true)" title="โหลดใหม่" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">🔄</button>
       <button id="plAddModeBtn" onclick="togglePlAddMode()" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(56,161,105,.3)">&#x2611;&#xFE0F; &#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe2b;&#xe25;&#xe32;&#xe22;&#xe40;&#xe1e;&#xe25;&#xe07;</button>
-      <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">ðŸŽµ à¹€à¸¥à¸·à¸­à¸à¹€à¸žà¸¥à¸‡à¹€à¸‚à¹‰à¸²à¸§à¸‡</button>
+      <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
       <!-- Live Button -->
       <button id="liveModeBtn" onclick="goLiveMode()" hidden style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
-        <span style="font-size:18px;line-height:1">ðŸŽ¤</span>
+        <span style="font-size:18px;line-height:1">🎤</span>
         <span style="font-size:13px;font-weight:700;line-height:1.2">Live</span>
-        <span style="font-size:9px;opacity:.8;line-height:1;white-space:nowrap">à¹€à¸›à¸´à¸”à¹‚à¸«à¸¡à¸” Live</span>
+        <span style="font-size:9px;opacity:.8;line-height:1;white-space:nowrap">เปิดโหมด Live</span>
       </button>
     </div>
   </div>
 
-  <!-- â”€â”€ Quick Ideas Panel â”€â”€ -->
-  <div class="panel quick-ideas-panel" style="background:linear-gradient(135deg, rgba(246,173,85,0.15), rgba(246,173,85,0.02)); border: 1px solid rgba(246,173,85,0.3); margin-bottom:16px;">
-    <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-      <span style="font-size:24px;line-height:1;">ðŸ’¡</span>
-      <div>
-        <strong style="color:var(--premium-gold);font-size:16px;display:block;margin-bottom:4px;">à¸„à¸´à¸”à¹„à¸¡à¹ˆà¸­à¸­à¸à¸§à¹ˆà¸²à¸ˆà¸°à¹€à¸¥à¹ˆà¸™à¹€à¸žà¸¥à¸‡à¸­à¸°à¹„à¸£à¸”à¸µ? (Quick Ideas)</strong>
-        <span style="font-size:13px;color:#4a5568;">à¹€à¸„à¸¥à¹‡à¸”à¸¥à¸±à¸š: à¸„à¸¸à¸“à¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸¥à¸·à¸­à¸ <strong>"à¸•à¸±à¸§à¸à¸£à¸­à¸‡"</strong> à¸”à¹‰à¸²à¸™à¸¥à¹ˆà¸²à¸‡à¸à¹ˆà¸­à¸™ (à¹€à¸Šà¹ˆà¸™ à¹à¸™à¸§à¸£à¹‡à¸­à¸„, à¸¢à¸¸à¸„ 90s) à¹à¸¥à¹‰à¸§à¸„à¹ˆà¸­à¸¢à¸à¸”à¸›à¸¸à¹ˆà¸¡à¸ªà¸¸à¹ˆà¸¡ à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰à¹„à¸”à¹‰à¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸•à¸£à¸‡à¸à¸±à¸šà¸‡à¸²à¸™à¸—à¸µà¹ˆà¸ªà¸¸à¸”</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:36px;">
-      <button onclick="randomizeSongs()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
-        ðŸŽ² à¸ªà¸¸à¹ˆà¸¡à¹€à¸žà¸¥à¸‡à¸¡à¸²à¹ƒà¸«à¹‰à¸—à¸µ
-      </button>
-      <button id="quickIdeasTopPlayedBtn" onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
-        ðŸ”¥ à¹€à¸£à¸µà¸¢à¸‡à¸•à¸²à¸¡à¹€à¸žà¸¥à¸‡à¹€à¸¥à¹ˆà¸™à¸šà¹ˆà¸­à¸¢
-      </button>
-    </div>
-    <div id="quickIdeasResults" style="display:none; margin-top:16px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px;"></div>
-  </div>
-
-  <!-- â”€â”€ Filter Panel â”€â”€ -->
+  <!-- ── Filter Panel ── -->
   <div class="panel filter-panel" id="filterPanel">
     <div class="filter-toggle" onclick="document.getElementById('filterPanel').classList.toggle('expanded')">
-      <span style="font-weight:700; color:var(--premium-text); display:flex; align-items:center; gap:8px;">ðŸ” à¸„à¹‰à¸™à¸«à¸²à¹à¸¥à¸°à¸•à¸±à¸§à¸à¸£à¸­à¸‡</span>
-      <span class="ft-icon">â–¼</span>
+      <span style="font-weight:700; color:var(--premium-text); display:flex; align-items:center; gap:8px;">🔍 ค้นหาและตัวกรอง</span>
+      <span class="ft-icon">▼</span>
     </div>
     
     <div class="filter-content">
       <!-- Search Box -->
-      <div style="display:flex; gap:8px; margin-bottom:12px;"><div class="song-search-wrap" style="margin-top:0; margin-bottom:0; flex:1;">
-        <input id="searchText" type="text" placeholder="à¸„à¹‰à¸™à¸«à¸²à¹€à¸žà¸¥à¸‡ à¸Šà¸·à¹ˆà¸­à¸¨à¸´à¸¥à¸›à¸´à¸™ à¸«à¸£à¸·à¸­à¸„à¸µà¸¢à¹Œ..." oninput="applyTextFilter()" class="song-search-input">
-        <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">âœ•</button>
-      </div>
-        <button type="button" onclick="randomizeSongs()" style="background:var(--premium-gold);color:#fff;border:none;border-radius:24px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(246,173,85,0.4);white-space:nowrap;">💡 สุ่มเพลง</button>
+      <div class="song-search-wrap" style="margin-top:0; margin-bottom:12px;">
+        <input id="searchText" type="text" placeholder="ค้นหาเพลง ชื่อศิลปิน หรือคีย์..." oninput="applyTextFilter()" class="song-search-input">
+        <button type="button" id="searchClearBtn" class="song-search-clear" onclick="document.getElementById('searchText').value='';applyTextFilter();this.style.display='none'" style="display:none">✕</button>
       </div>
 
       <div class="filters">
         <select id="singer" onchange="onFilterChange()">
-          <option value="">à¸™à¸±à¸à¸£à¹‰à¸­à¸‡</option>
-          <option value="à¸Šà¸²à¸¢">à¸Šà¸²à¸¢</option>
-          <option value="à¸«à¸à¸´à¸‡">à¸«à¸à¸´à¸‡</option>
-          <option value="à¸„à¸¹à¹ˆ">à¸„à¸¹à¹ˆ</option>
+          <option value="">นักร้อง</option>
+          <option value="ชาย">ชาย</option>
+          <option value="หญิง">หญิง</option>
+          <option value="คู่">คู่</option>
         </select>
 
         <select id="era" onchange="onFilterChange()">
-          <option value="">à¸¢à¸¸à¸„à¹€à¸žà¸¥à¸‡</option>
+          <option value="">ยุคเพลง</option>
           <option value="80s">2523-2532 (80s)</option>
           <option value="90s">2533-2542 (90s)</option>
           <option value="2000s">2543-2553 (00s)</option>
           <option value="2010s">2554-2562 (10s)</option>
-          <option value="2020s">2563-à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™ (20s)</option>
+          <option value="2020s">2563-ปัจจุบัน (20s)</option>
         </select>
 
         <select id="nationality" onchange="onFilterChange()">
-          <option value="">à¸ªà¸±à¸à¸Šà¸²à¸•à¸´à¹€à¸žà¸¥à¸‡</option>
-          <option value="à¹„à¸—à¸¢">à¹„à¸—à¸¢</option>
-          <option value="à¸ªà¸²à¸à¸¥">à¸ªà¸²à¸à¸¥</option>
+          <option value="">สัญชาติเพลง</option>
+          <option value="ไทย">ไทย</option>
+          <option value="สากล">สากล</option>
         </select>
 
         <select id="genre" onchange="onFilterChange()">
-          <option value="">à¹à¸™à¸§à¹€à¸žà¸¥à¸‡</option>
-          <option value="à¸›à¹Šà¸­à¸›">à¸›à¹Šà¸­à¸›</option>
-          <option value="à¸£à¹‡à¸­à¸„">à¸£à¹‡à¸­à¸„</option>
-          <option value="à¸”à¸´à¸ªà¹‚à¸à¹‰">à¸”à¸´à¸ªà¹‚à¸à¹‰</option>
-          <option value="à¹à¸£à¹Šà¸Ÿ/à¸®à¸´à¸›à¸®à¸­à¸›">à¹à¸£à¹Šà¸Ÿ/à¸®à¸´à¸›à¸®à¸­à¸›</option>
-          <option value="à¸¥à¸¹à¸à¸—à¸¸à¹ˆà¸‡ / à¸­à¸µà¸ªà¸²à¸™">à¸¥à¸¹à¸à¸—à¸¸à¹ˆà¸‡ / à¸­à¸µà¸ªà¸²à¸™</option>
-          <option value="à¹€à¸žà¸·à¹ˆà¸­à¸Šà¸µà¸§à¸´à¸•">à¹€à¸žà¸·à¹ˆà¸­à¸Šà¸µà¸§à¸´à¸•</option>
-          <option value="à¸­à¸²à¸£à¹Œà¹à¸­à¸™à¸”à¹Œà¸šà¸µ">à¸­à¸²à¸£à¹Œà¹à¸­à¸™à¸”à¹Œà¸šà¸µ</option>
-          <option value="à¹à¸ˆà¹Šà¸ª / à¸šà¸¥à¸¹à¸ªà¹Œ">à¹à¸ˆà¹Šà¸ª / à¸šà¸¥à¸¹à¸ªà¹Œ</option>
-          <option value="à¹€à¸£à¸à¹€à¸à¹‰">à¹€à¸£à¸à¹€à¸à¹‰</option>
-          <option value="à¸­à¸´à¸™à¸”à¸µà¹‰">à¸­à¸´à¸™à¸”à¸µà¹‰</option>
+          <option value="">แนวเพลง</option>
+          <option value="ป๊อป">ป๊อป</option>
+          <option value="ร็อค">ร็อค</option>
+          <option value="ดิสโก้">ดิสโก้</option>
+          <option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option>
+          <option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option>
+          <option value="เพื่อชีวิต">เพื่อชีวิต</option>
+          <option value="อาร์แอนด์บี">อาร์แอนด์บี</option>
+          <option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option>
+          <option value="เรกเก้">เรกเก้</option>
+          <option value="อินดี้">อินดี้</option>
         </select>
 
         <select id="mood" onchange="onFilterChange()">
-          <option value="">à¸­à¸²à¸£à¸¡à¸“à¹Œ</option>
-          <option value="à¸¡à¸±à¸™ / à¸ªà¸™à¸¸à¸">à¸¡à¸±à¸™ / à¸ªà¸™à¸¸à¸</option>
-          <option value="à¸«à¸§à¸²à¸™ / à¹‚à¸£à¹à¸¡à¸™à¸•à¸´à¸">à¸«à¸§à¸²à¸™ / à¹‚à¸£à¹à¸¡à¸™à¸•à¸´à¸</option>
-          <option value="à¹€à¸¨à¸£à¹‰à¸² / à¸­à¸à¸«à¸±à¸">à¹€à¸¨à¸£à¹‰à¸² / à¸­à¸à¸«à¸±à¸</option>
-          <option value="à¸™à¸´à¹ˆà¸‡ / à¸œà¹ˆà¸­à¸™à¸„à¸¥à¸²à¸¢">à¸™à¸´à¹ˆà¸‡ / à¸œà¹ˆà¸­à¸™à¸„à¸¥à¸²à¸¢</option>
-          <option value="à¸®à¸¶à¸à¹€à¸«à¸´à¸¡ / à¸¢à¸´à¹ˆà¸‡à¹ƒà¸«à¸à¹ˆ">à¸®à¸¶à¸à¹€à¸«à¸´à¸¡ / à¸¢à¸´à¹ˆà¸‡à¹ƒà¸«à¸à¹ˆ</option>
+          <option value="">อารมณ์</option>
+          <option value="มัน / สนุก">มัน / สนุก</option>
+          <option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option>
+          <option value="เศร้า / อกหัก">เศร้า / อกหัก</option>
+          <option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option>
+          <option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option>
         </select>
 
-        <!-- FIELD-BUG-4: à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸ˆà¸²à¸ select à¹€à¸›à¹‡à¸™ text + autocomplete à¹€à¸«à¸¡à¸·à¸­à¸™ admin-songs -->
+        <!-- FIELD-BUG-4: เปลี่ยนจาก select เป็น text + autocomplete เหมือน admin-songs -->
         <div class="ac-wrap-songs" style="position:relative;display:inline-block">
-          <input type="text" id="artist" placeholder="à¸—à¸¸à¸à¸¨à¸´à¸¥à¸›à¸´à¸™" autocomplete="off"
+          <input type="text" id="artist" placeholder="ทุกศิลปิน" autocomplete="off"
             style="height:40px;border:1px solid #e2e8f0;border-radius:8px;padding:8px 30px 8px 12px;font-size:14px;background:#fff url('data:image/svg+xml;utf8,<svg fill=%22%23a0aec0%22 height=%2224%22 viewBox=%220 0 24 24%22 width=%2224%22 xmlns=%22http://www.w3.org/2000/svg%22><path d=%22M7 10l5 5 5-5z%22/></svg>') no-repeat right 4px center;color:#2d3748;min-width:130px;outline:none;box-sizing:border-box;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.02);"
             oninput="_onArtistFilterInput()" onfocus="_openArtistFilterAC()" onblur="setTimeout(function(){_closeArtistFilterAC()},200)">
           <div id="artistACList" style="display:none;position:absolute;top:100%;left:0;min-width:160px;max-height:220px;overflow-y:auto;background:var(--premium-card);border:1px solid var(--premium-light-gray);border-radius:var(--radius-md);box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999"></div>
         </div>
 
-        <!-- FIELD-BUG-5: sortOption à¹à¸ªà¸”à¸‡à¸•à¸¥à¸­à¸”à¹€à¸§à¸¥à¸² (à¹„à¸¡à¹ˆà¸‹à¹ˆà¸­à¸™) -->
+        <!-- FIELD-BUG-5: sortOption แสดงตลอดเวลา (ไม่ซ่อน) -->
         <select id="sortOption" onchange="onFilterChange()" style="font-weight:600;color:var(--primary)">
-          <option value="name">à¹€à¸£à¸µà¸¢à¸‡: à¸-à¸®</option>
-          <option value="most_played">à¹€à¸£à¸µà¸¢à¸‡: à¹€à¸¥à¹ˆà¸™à¸šà¹ˆà¸­à¸¢</option>
-          <option value="least_played">à¹€à¸£à¸µà¸¢à¸‡: à¹€à¸¥à¹ˆà¸™à¸™à¹‰à¸­à¸¢</option>
+          <option value="name">เรียง: ก-ฮ</option>
+          <option value="most_played">เรียง: เล่นบ่อย</option>
+          <option value="least_played">เรียง: เล่นน้อย</option>
         </select>
       </div>
+
+      <!-- Quick Ideas Buttons -->
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;">
+        <button onclick="randomizeSongs()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
+          ?? ????????
+        </button>
+        <button id="quickIdeasTopPlayedBtn" onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
+          ?? ????????????
+        </button>
+      </div>
+      <div id="quickIdeasResults" style="display:none; margin-top:16px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px;"></div>
     </div>
 
   <!-- Add song to band library -->
   <div id="addSongBandWrap" style="display:none;margin-top:12px">
     <a href="add-song.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--premium-off-white);border:1.5px dashed var(--premium-gold);border-radius:var(--radius-md);padding:10px 18px;text-decoration:none;color:var(--premium-text);font-size:var(--text-sm);font-weight:600;transition:background .15s,border-color .15s">
-      <span style="font-size:18px">âž•</span>
-      <span>à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸žà¸¥à¸‡</span>
-      <span style="font-size:11px;color:var(--premium-text-muted);font-weight:400">â€” à¸£à¸­à¹à¸­à¸”à¸¡à¸´à¸™à¸­à¸™à¸¸à¸¡à¸±à¸•à¸´</span>
+      <span style="font-size:18px">➕</span>
+      <span>เพิ่มเพลง</span>
+      <span style="font-size:11px;color:var(--premium-text-muted);font-weight:400">— รอแอดมินอนุมัติ</span>
     </a>
   </div>
 </div>
 
 <div class="panel">
-  <h3 id="resultTitle">ðŸŽ¼ à¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸„à¹‰à¸™à¸žà¸š</h3>
+  <h3 id="resultTitle">🎼 เพลงที่ค้นพบ</h3>
   <div id="result"></div>
 
   <div class="pagination">
-    <button onclick="prevPage()" id="prevBtn">â¬… à¸à¹ˆà¸­à¸™à¸«à¸™à¹‰à¸²</button>
+    <button onclick="prevPage()" id="prevBtn">⬅ ก่อนหน้า</button>
     <div class="page-info" id="pageInfo"></div>
-    <span class="page-jump"><input type="number" id="pageJumpInput" min="1" value="1" inputmode="numeric" onkeydown="if(event.key==='Enter'){goToPage()}"> <button onclick="goToPage()" class="page-jump-btn">à¹„à¸›</button></span>
-    <button onclick="nextPage()" id="nextBtn">à¸–à¸±à¸”à¹„à¸› âž¡</button>
+    <span class="page-jump"><input type="number" id="pageJumpInput" min="1" value="1" inputmode="numeric" onkeydown="if(event.key==='Enter'){goToPage()}"> <button onclick="goToPage()" class="page-jump-btn">ไป</button></span>
+    <button onclick="nextPage()" id="nextBtn">ถัดไป ➡</button>
   </div>
 </div>
 </div> <!-- /split-left -->
@@ -189,8 +178,8 @@
 <div class="split-right" id="playlistSection">
   <div class="panel">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-    <h3 style="margin-bottom:0;">ðŸ“‹ à¸¥à¸´à¸ªà¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¹€à¸¥à¸·à¸­à¸</h3>
-    <button class="pl-close-btn" onclick="toggleMobilePlaylist()" style="display:none; background:none; border:none; font-size:20px; color:var(--premium-text-muted); padding:4px;">âœ•</button>
+    <h3 style="margin-bottom:0;">📋 ลิสเพลงที่เลือก</h3>
+    <button class="pl-close-btn" onclick="toggleMobilePlaylist()" style="display:none; background:none; border:none; font-size:20px; color:var(--premium-text-muted); padding:4px;">✕</button>
   </div>
 
   <!-- Badge: existing playlists for selected date -->
@@ -198,59 +187,59 @@
 
   <div class="pl-ctrl-grid">
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">ðŸ“… à¸§à¸±à¸™à¸—à¸µà¹ˆ</label>
+      <label class="pl-ctrl-label">📅 วันที่</label>
       <input type="date" id="useDate" onchange="onPlaylistDateChange()">
     </div>
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">ðŸ“ à¸Šà¸·à¹ˆà¸­à¸£à¹‰à¸²à¸™</label>
+      <label class="pl-ctrl-label">📍 ชื่อร้าน</label>
       <select id="venue" onchange="onPlaylistVenueChange()">
-        <option value="">à¹€à¸¥à¸·à¸­à¸à¸£à¹‰à¸²à¸™</option>
+        <option value="">เลือกร้าน</option>
       </select>
     </div>
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">ðŸ• à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²</label>
+      <label class="pl-ctrl-label">🕐 ช่วงเวลา</label>
       <select id="timeSlot" onchange="onTimeSlotChange()">
-        <option value="">à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²</option>
+        <option value="">ช่วงเวลา</option>
       </select>
       <div id="manualTimeWrap" class="manual-time-wrap">
-        <input type="text" id="manualTimeSlot" placeholder="à¹€à¸Šà¹ˆà¸™ 18:00-21:00" oninput="onManualTimeInput()">
+        <input type="text" id="manualTimeSlot" placeholder="เช่น 18:00-21:00" oninput="onManualTimeInput()">
       </div>
     </div>
   </div>
 
   <div class="offsite-fields" id="offsiteFields">
     <div class="offsite-only" id="customVenueWrap">
-      <input type="text" id="customVenue" placeholder="à¸£à¸°à¸šà¸¸à¸Šà¸·à¹ˆà¸­à¸‡à¸²à¸™ / à¸ªà¸–à¸²à¸™à¸—à¸µà¹ˆ" oninput="onOffsiteInputsChange()">
+      <input type="text" id="customVenue" placeholder="ระบุชื่องาน / สถานที่" oninput="onOffsiteInputsChange()">
     </div>
     <div class="offsite-only" id="customTimeSlotWrap">
-      <input type="text" id="customTimeSlot" placeholder="à¹€à¸Šà¹ˆà¸™ 18:00-21:00 à¸«à¸£à¸·à¸­ à¸£à¸­à¸šà¸„à¹ˆà¸³" oninput="onOffsiteInputsChange()">
+      <input type="text" id="customTimeSlot" placeholder="เช่น 18:00-21:00 หรือ รอบค่ำ" oninput="onOffsiteInputsChange()">
     </div>
   </div>
 
-  <div class="offsite-note" id="offsiteNote">ðŸŽª à¸‡à¸²à¸™à¸™à¸­à¸: à¹€à¸¥à¸·à¸­à¸à¸Šà¸·à¹ˆà¸­à¸‡à¸²à¸™à¹à¸¥à¸°à¸žà¸´à¸¡à¸žà¹Œà¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¹€à¸­à¸‡à¹„à¸”à¹‰</div>
+  <div class="offsite-note" id="offsiteNote">🎪 งานนอก: เลือกชื่องานและพิมพ์ช่วงเวลาเองได้</div>
 
   <div class="action-buttons">
-    <button onclick="addBreak()">âž• à¹€à¸žà¸´à¹ˆà¸¡à¸žà¸±à¸</button>
-    <button onclick="copyPlaylist()">ðŸ“‹ à¸„à¸±à¸”à¸¥à¸­à¸ &amp; à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ª</button>
-    <button onclick="showHistory()" style="background:#4a5568">ðŸ“— à¸›à¸£à¸°à¸§à¸±à¸•à¸´</button>
-    <button onclick="refreshPlaylist()" style="background:var(--danger)">ðŸ”„ à¸£à¸µà¹€à¸Ÿà¸£à¸Šà¸¥à¸´à¸ª</button>
-    <button id="keyModeBtn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="à¸ªà¸¥à¸±à¸šà¸à¸²à¸£à¹à¸ªà¸”à¸‡à¸„à¸µà¸¢à¹Œà¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡à¸•à¸±à¸§à¹€à¸¥à¸‚à¹à¸¥à¸°à¸­à¸±à¸à¸©à¸£">ðŸ”¤ à¸­à¸±à¸à¸©à¸£</button>
+    <button onclick="addBreak()">➕ เพิ่มพัก</button>
+    <button onclick="copyPlaylist()">📋 คัดลอก &amp; บันทึกลิส</button>
+    <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
+    <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
+    <button id="keyModeBtn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
   </div>
 
   <div class="copy-options">
     <label style="display:flex;align-items:center;gap:6px">
       <input type="checkbox" id="copySpeed" checked>
-      à¹à¸ªà¸”à¸‡à¸„à¸§à¸²à¸¡à¹€à¸£à¹‡à¸§ (BPM)
+      แสดงความเร็ว (BPM)
     </label>
 
     <label style="display:flex;align-items:center;gap:6px">
       <input type="checkbox" id="copyKey" checked>
-      à¹à¸ªà¸”à¸‡à¸„à¸µà¸¢à¹Œ
+      แสดงคีย์
     </label>
 
     <label style="display:flex;align-items:center;gap:6px">
       <input type="checkbox" id="copyArtist">
-      à¹à¸ªà¸”à¸‡à¸Šà¸·à¹ˆà¸­à¸¨à¸´à¸¥à¸›à¸´à¸™
+      แสดงชื่อศิลปิน
     </label>
   </div>
 
@@ -258,8 +247,8 @@
   <!-- Duration Bar -->
   <div id="plDurBar" style="display:none;margin-top:10px;padding:12px 14px;border-radius:10px;background:#f8fafc;border:1.5px solid #e2e8f0">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-      <span style="font-size:12px;font-weight:700;color:#4a5568" id="plDurLabel">â± à¹€à¸§à¸¥à¸²à¸£à¸§à¸¡</span>
-      <span style="font-size:12px;font-weight:700" id="plDurText">â€”</span>
+      <span style="font-size:12px;font-weight:700;color:#4a5568" id="plDurLabel">⏱ เวลารวม</span>
+      <span style="font-size:12px;font-weight:700" id="plDurText">—</span>
     </div>
     <div style="background:#e2e8f0;border-radius:20px;height:10px;overflow:hidden">
       <div id="plDurFill" style="height:100%;border-radius:20px;transition:transform .4s cubic-bezier(0.4, 0, 0.2, 1),background .3s;width:100%;transform-origin:left;transform:scaleX(0);background:#38a169"></div>
@@ -288,33 +277,33 @@
 
 <!-- Select Mode Floating Bar -->
 <div id="selectBar" style="display:none">
-  <div class="sb-count" id="sbCount">à¹€à¸¥à¸·à¸­à¸à¹à¸¥à¹‰à¸§ 0 à¹€à¸žà¸¥à¸‡</div>
+  <div class="sb-count" id="sbCount">เลือกแล้ว 0 เพลง</div>
   <div style="display:flex;gap:8px">
-    <button class="sb-btn sb-add" id="sbAddBtn" onclick="cloneSelectedToBand()" disabled>âž• à¹€à¸žà¸´à¹ˆà¸¡à¹ƒà¸™à¸„à¸¥à¸±à¸‡à¸§à¸‡</button>
-    <button class="sb-btn sb-cancel" onclick="exitSelectMode()">âœ• à¸¢à¸à¹€à¸¥à¸´à¸</button>
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="cloneSelectedToBand()" disabled>➕ เพิ่มในคลังวง</button>
+    <button class="sb-btn sb-cancel" onclick="exitSelectMode()">✕ ยกเลิก</button>
   </div>
 </div>
 
 
-<div id="toast" class="toast">ðŸ“‹ à¸„à¸±à¸”à¸¥à¸­à¸ & à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¸ªà¸³à¹€à¸£à¹‡à¸ˆ!</div>
+<div id="toast" class="toast">📋 คัดลอก & บันทึกลิสสำเร็จ!</div>
 <!-- Undo toast -->
 <div id="undoToast" style="display:none;position:fixed;bottom:max(20px,env(safe-area-inset-bottom,20px));left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;border-radius:99px;padding:10px 8px 10px 18px;font-size:14px;font-weight:600;z-index:4000;box-shadow:0 4px 20px rgba(0,0,0,.4);white-space:nowrap;align-items:center;gap:10px;max-width:calc(100vw - 32px)">
   <span class="undo-msg" style="overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0"></span>
-  <button onclick="undoLastAdd()" style="background:var(--premium-gold);color:#fff;border:none;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:unset">à¸¢à¸à¹€à¸¥à¸´à¸</button>
+  <button onclick="undoLastAdd()" style="background:var(--premium-gold);color:#fff;border:none;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;min-height:unset">ยกเลิก</button>
 </div>
 
 <!-- History Modal -->
 <div id="historyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:2000;overflow-y:auto;padding:16px">
   <div style="max-width:660px;margin:0 auto;background:#fff;border-radius:16px;padding:24px;position:relative">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <h3 style="margin:0">ðŸ“— à¸”à¸¹à¸¥à¸´à¸ªà¸¢à¹‰à¸­à¸™à¸«à¸¥à¸±à¸‡</h3>
-      <button onclick="closeHistory()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">âœ•</button>
+      <h3 style="margin:0">📗 ดูลิสย้อนหลัง</h3>
+      <button onclick="closeHistory()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">✕</button>
     </div>
     <div style="margin-bottom:16px">
-      <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px">à¹€à¸¥à¸·à¸­à¸à¸§à¸±à¸™à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸”à¸¹</label>
+      <label style="font-size:13px;color:#4a5568;font-weight:600;display:block;margin-bottom:6px">เลือกวันที่ต้องการดู</label>
       <input type="date" id="historyDatePicker" onchange="filterHistoryByDate(this.value)" style="width:100%;padding:10px 14px;border-radius:8px;border:1.5px solid #e2e8f0;font-size:15px">
     </div>
-    <div id="historyList"><p style="text-align:center;color:#888;padding:24px 0">à¹€à¸¥à¸·à¸­à¸à¸§à¸±à¸™à¹€à¸žà¸·à¹ˆà¸­à¸”à¸¹à¸¥à¸´à¸ª</p></div>
+    <div id="historyList"><p style="text-align:center;color:#888;padding:24px 0">เลือกวันเพื่อดูลิส</p></div>
   </div>
 </div>
 
@@ -335,7 +324,7 @@ function showSongsAlert(msg) {
   t.textContent = msg;
   t.style.display = 'block';
   t.classList.add('show');
-  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.style.display='none'; t.textContent='ðŸ“‹ à¸„à¸±à¸”à¸¥à¸­à¸ & à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¸ªà¸³à¹€à¸£à¹‡à¸ˆ!'; }, 300); }, 3000);
+  setTimeout(function() { t.classList.remove('show'); setTimeout(function() { t.style.display='none'; t.textContent='📋 คัดลอก & บันทึกลิสสำเร็จ!'; }, 300); }, 3000);
 }
 
 let _pageData = [];
@@ -348,7 +337,7 @@ var _savedPageBeforeSearch = null;
 var _loadRequestId = 0;
 var _loadSpinTimer = null;
 
-// â”€â”€ Select mode state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Select mode state ──────────────────────────────────────────────
 var _selectMode = false;
 var _selectedIds = {};
 var _bandLibraryIds = {}; // song_id => true for songs already in band library (refs + owned)
@@ -390,7 +379,7 @@ function setLoading(loading) {
   var resultEl = getEl("result");
   if (!resultEl) return;
   if (loading) {
-    resultEl.innerHTML = '<div class="result-loading"><div class="spinner"></div><div class="result-loading-text">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”...</div></div>';
+    resultEl.innerHTML = '<div class="result-loading"><div class="spinner"></div><div class="result-loading-text">กำลังโหลด...</div></div>';
     resultEl.classList.add("is-loading");
   } else {
     resultEl.classList.remove("is-loading");
@@ -401,16 +390,16 @@ function getFilterValues() {
   var singerEl = getEl("singer");
   var eraEl = getEl("era");
   var nationalityEl = getEl("nationality");
-  var genreEl = getEl("genre"); // FIELD-BUG-1: id=genre à¹à¸•à¹ˆ DB column = tags, API layer à¹à¸›à¸¥à¸‡à¹ƒà¸«à¹‰à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡
+  var genreEl = getEl("genre"); // FIELD-BUG-1: id=genre แต่ DB column = tags, API layer แปลงให้ถูกต้อง
   var moodEl = getEl("mood");
   var sortOptionEl = getEl("sortOption");
   return {
     singer: singerEl ? singerEl.value : "",
     era: eraEl ? eraEl.value : "",
     nationality: nationalityEl ? nationalityEl.value : "",
-    genre: genreEl ? genreEl.value : "", // à¸ªà¹ˆà¸‡à¹„à¸› API à¸”à¹‰à¸§à¸¢ key 'genre' â†’ API à¹à¸›à¸¥à¸‡à¹€à¸›à¹‡à¸™ 'tags'
+    genre: genreEl ? genreEl.value : "", // ส่งไป API ด้วย key 'genre' → API แปลงเป็น 'tags'
     mood: moodEl ? moodEl.value : "",
-    artist: _selectedArtistFilter || '',  // FIELD-BUG-4: à¹ƒà¸Šà¹‰à¸•à¸±à¸§à¹à¸›à¸£ state à¹à¸—à¸™ select.value
+    artist: _selectedArtistFilter || '',  // FIELD-BUG-4: ใช้ตัวแปร state แทน select.value
     sortKey: sortOptionEl ? sortOptionEl.value : "name"
   };
 }
@@ -451,7 +440,7 @@ function onFilterChange() {
   applyFiltersAndRender();
 }
 
-// â”€â”€ Select Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Select Mode ────────────────────────────────────────────────────
 function toggleSelectMode() {
   if (_selectMode) { exitSelectMode(); } else { enterSelectMode(); }
 }
@@ -509,9 +498,9 @@ var _bandLibraryByNameAndSinger = {};
 function _normSinger(s) {
   if (!s) return '';
   var v = s.toString().trim().toLowerCase();
-  if (v === 'à¸Šà¸²à¸¢' || v === 'male') return 'male';
-  if (v === 'à¸«à¸à¸´à¸‡' || v === 'female') return 'female';
-  if (v === 'à¸„à¸¹à¹ˆ' || v === 'duet' || v === 'à¸Šà¸²à¸¢/à¸«à¸à¸´à¸‡') return 'duet';
+  if (v === 'ชาย' || v === 'male') return 'male';
+  if (v === 'หญิง' || v === 'female') return 'female';
+  if (v === 'คู่' || v === 'duet' || v === 'ชาย/หญิง') return 'duet';
   return v;
 }
 
@@ -619,18 +608,18 @@ function loadBandLibrary() {
 
 function cloneSelectedToBand() {
   var ids = Object.keys(_selectedIds);
-  if (!ids.length) { showSongsAlert('à¸à¸£à¸¸à¸“à¸²à¹€à¸¥à¸·à¸­à¸à¹€à¸žà¸¥à¸‡à¸à¹ˆà¸­à¸™'); return; }
+  if (!ids.length) { showSongsAlert('กรุณาเลือกเพลงก่อน'); return; }
   var btn = document.getElementById('sbAddBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'à¸à¸³à¸¥à¸±à¸‡à¹€à¸žà¸´à¹ˆà¸¡...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'กำลังเพิ่ม...'; }
   apiCall('cloneSongsToBand', { ids: ids }, function(r) {
-    if (btn) { btn.disabled = false; btn.textContent = 'âž• à¹€à¸žà¸´à¹ˆà¸¡à¹ƒà¸™à¸„à¸¥à¸±à¸‡à¸§à¸‡'; }
+    if (btn) { btn.disabled = false; btn.textContent = '➕ เพิ่มในคลังวง'; }
     if (r && r.success) {
-      showSongsAlert('âœ… à¹€à¸žà¸´à¹ˆà¸¡ ' + r.added + ' à¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸„à¸¥à¸±à¸‡à¸§à¸‡à¹à¸¥à¹‰à¸§' + (r.skipped ? ' (' + r.skipped + ' à¸‹à¹‰à¸³)' : ''));
+      showSongsAlert('✅ เพิ่ม ' + r.added + ' เพลงในคลังวงแล้ว' + (r.skipped ? ' (' + r.skipped + ' ซ้ำ)' : ''));
       _bandLibraryLoaded = false;
       exitSelectMode();
       loadBandLibrary();
     } else {
-      showSongsAlert((r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”');
+      showSongsAlert((r && r.message) || 'เกิดข้อผิดพลาด');
     }
   });
 }
@@ -638,7 +627,7 @@ function cloneSelectedToBand() {
 
 function loadPage(page) {
   currentPage = page || 1;
-  // à¸šà¸±à¸™à¸—à¸¶à¸à¸«à¸™à¹‰à¸²à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™à¹à¸¥à¸° source à¹ƒà¸™ sessionStorage à¹€à¸žà¸·à¹ˆà¸­à¸à¸¥à¸±à¸šà¸¡à¸²à¸«à¸™à¹‰à¸²à¹€à¸”à¸´à¸¡à¹€à¸¡à¸·à¹ˆà¸­ navigate à¹„à¸›à¸«à¸™à¹‰à¸²à¸­à¸·à¹ˆà¸™à¹à¸¥à¹‰à¸§à¸à¸¥à¸±à¸šà¸¡à¸²
+  // บันทึกหน้าปัจจุบันและ source ใน sessionStorage เพื่อกลับมาหน้าเดิมเมื่อ navigate ไปหน้าอื่นแล้วกลับมา
   try { sessionStorage.setItem('songs_currentPage', currentPage); sessionStorage.setItem('songs_currentSource', _currentSource); } catch(ex) {}
   var resultEl = getEl("result");
   var _rc = resultEl ? resultEl.querySelector(".result-columns") : null;
@@ -704,10 +693,10 @@ function loadPage(page) {
 }
 
 function loadInitial(forceRefresh) {
-  // à¸„à¸·à¸™à¸«à¸™à¹‰à¸²à¹€à¸”à¸´à¸¡à¸–à¹‰à¸²à¸¡à¸²à¸ˆà¸²à¸ edit-song.html (à¹€à¸Šà¹ˆà¸™ à¸à¸”à¸šà¸±à¸™à¸—à¸¶à¸à¹à¸¥à¹‰à¸§à¸à¸¥à¸±à¸šà¸¡à¸²)
+  // คืนหน้าเดิมถ้ามาจาก edit-song.html (เช่น กดบันทึกแล้วกลับมา)
   var returnPage = 1;
   try {
-    // à¸„à¸·à¸™à¸„à¹ˆà¸² source (global/band) à¸à¹ˆà¸­à¸™à¹‚à¸«à¸¥à¸”à¸«à¸™à¹‰à¸²
+    // คืนค่า source (global/band) ก่อนโหลดหน้า
     // Force global source only
     var rs = 'global';
     sessionStorage.setItem('songs_currentSource', 'global');
@@ -715,14 +704,14 @@ function loadInitial(forceRefresh) {
       _currentSource = rs;
       document.querySelectorAll('.lib-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.source === rs); });
       var titleEl = document.getElementById('resultTitle');
-      if (titleEl) titleEl.textContent = 'ðŸŽ¼ à¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸„à¹‰à¸™à¸žà¸š';
+      if (titleEl) titleEl.textContent = '🎼 เพลงที่ค้นพบ';
     }
     sessionStorage.removeItem('songs_returnSource');
 
     var rp = parseInt(sessionStorage.getItem('songs_returnPage') || '0', 10);
     if (rp > 1) { returnPage = rp; sessionStorage.removeItem('songs_returnPage'); }
     else {
-      // à¸–à¹‰à¸²à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸¡à¸²à¸ˆà¸²à¸ edit-song à¹ƒà¸«à¹‰à¸„à¸·à¸™à¸«à¸™à¹‰à¸²à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¹ƒà¸™à¹€à¸‹à¸ªà¸Šà¸±à¸™à¸™à¸µà¹‰
+      // ถ้าไม่ได้มาจาก edit-song ให้คืนหน้าล่าสุดในเซสชันนี้
       var sp = parseInt(sessionStorage.getItem('songs_currentPage') || '1', 10);
       if (sp > 1) returnPage = sp;
     }
@@ -792,19 +781,19 @@ function switchLibrary(source) {
   });
   // update title
   var titleEl = document.getElementById('resultTitle');
-  if (titleEl) titleEl.textContent = source === 'band' ? 'ðŸŽ¸ à¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸„à¸¥à¸±à¸‡à¸§à¸‡' : 'ðŸŽ¼ à¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸„à¹‰à¸™à¸žà¸š';
+  if (titleEl) titleEl.textContent = source === 'band' ? '🎸 เพลงในคลังวง' : '🎼 เพลงที่ค้นพบ';
   // hide select mode btn in band view, show in global
   var smBtn = document.getElementById('selectModeBtn');
   if (smBtn) smBtn.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'flex' : 'none';
   // hide add-song-band link in band view
   var addWrap = document.getElementById('addSongBandWrap');
   if (addWrap) addWrap.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'block' : 'none';
-  // FIELD-BUG-5: sortOption à¹à¸ªà¸”à¸‡à¹€à¸ªà¸¡à¸­ à¹à¸•à¹ˆ default value à¸•à¹ˆà¸²à¸‡à¸à¸±à¸™à¸•à¸²à¸¡ source
+  // FIELD-BUG-5: sortOption แสดงเสมอ แต่ default value ต่างกันตาม source
   var sortOpt = document.getElementById('sortOption');
   var topPlayedBtn = document.getElementById('quickIdeasTopPlayedBtn');
   
   if (sortOpt) {
-    sortOpt.style.display = 'inline-block'; // à¹à¸ªà¸”à¸‡à¹€à¸ªà¸¡à¸­
+    sortOpt.style.display = 'inline-block'; // แสดงเสมอ
     if (source === 'global') {
       sortOpt.value = 'name';
       for (var i=0; i<sortOpt.options.length; i++) {
@@ -812,7 +801,7 @@ function switchLibrary(source) {
       }
       if (topPlayedBtn) topPlayedBtn.style.display = 'none';
     } else if (source === 'band') {
-      sortOpt.value = 'least_played'; // Default à¹€à¸¥à¹ˆà¸™à¸™à¹‰à¸­à¸¢à¸ªà¸³à¸«à¸£à¸±à¸šà¸„à¸¥à¸±à¸‡à¸§à¸‡
+      sortOpt.value = 'least_played'; // Default เล่นน้อยสำหรับคลังวง
       for (var i=0; i<sortOpt.options.length; i++) {
         sortOpt.options[i].style.display = '';
       }
@@ -830,27 +819,27 @@ function switchLibrary(source) {
 function deleteBandSong(songId, songName, libType) {
   var isRef = (libType === 'ref');
   var msg = isRef
-    ? 'à¸™à¸³ "' + songName + '" à¸­à¸­à¸à¸ˆà¸²à¸à¸„à¸¥à¸±à¸‡à¸§à¸‡?'
-    : 'à¸¥à¸š "' + songName + '" à¸­à¸­à¸à¸ˆà¸²à¸à¸„à¸¥à¸±à¸‡à¸§à¸‡?';
+    ? 'นำ "' + songName + '" ออกจากคลังวง?'
+    : 'ลบ "' + songName + '" ออกจากคลังวง?';
   if (!confirm(msg)) return;
 
   if (isRef) {
     apiCall('removeFromBandLibrary', { songId: songId }, function(r) {
       if (r && r.success) {
-        showSongsAlert('âœ… à¸™à¸³ "' + songName + '" à¸­à¸­à¸à¹à¸¥à¹‰à¸§');
+        showSongsAlert('✅ นำ "' + songName + '" ออกแล้ว');
         _bandLibraryLoaded = false;
         loadPage(currentPage);
       } else {
-        showSongsAlert('âŒ ' + ((r && r.message) || 'à¸¥à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ'));
+        showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
       }
     });
   } else {
     apiCall('deleteSong', { songId: songId }, function(r) {
       if (r && r.success) {
-        showSongsAlert('ðŸ—‘ï¸ à¸¥à¸š "' + songName + '" à¹à¸¥à¹‰à¸§');
+        showSongsAlert('🗑️ ลบ "' + songName + '" แล้ว');
         loadPage(currentPage);
       } else {
-        showSongsAlert('âŒ ' + ((r && r.message) || 'à¸¥à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ'));
+        showSongsAlert('❌ ' + ((r && r.message) || 'ลบไม่สำเร็จ'));
       }
     });
   }
@@ -885,7 +874,7 @@ function _buildMeta(s) {
     if (s.singer === 'duet') lbl = '\u0e04\u0e39\u0e48';
     tags.push('<span class="' + cls + '">' + lbl + '</span>');
   }
-  // FIELD-BUG-3: à¹à¸ªà¸”à¸‡ era / mood / genre(tags) / nationality à¹ƒà¸™à¸à¸²à¸£à¹Œà¸”à¹€à¸žà¸¥à¸‡à¸”à¹‰à¸§à¸¢
+  // FIELD-BUG-3: แสดง era / mood / genre(tags) / nationality ในการ์ดเพลงด้วย
   if (s.era) tags.push('<span class="sm-tag" style="background:rgba(99,102,241,.15);color:#6366f1">' + escapeHtml(s.era) + '</span>');
   if (s.tags) tags.push('<span class="sm-tag" style="background:rgba(16,185,129,.12);color:#059669">' + escapeHtml(s.tags) + '</span>'); // tags = genre column in DB (FIELD-BUG-1)
   if (s.mood) tags.push('<span class="sm-tag" style="background:rgba(245,158,11,.12);color:#d97706">' + escapeHtml(s.mood) + '</span>');
@@ -926,8 +915,8 @@ function renderPage() {
       // Batch add to playlist mode
       if (typeof _plAddMode !== 'undefined' && _plAddMode) {
         var plSel = (typeof _plSelectedForAdd !== 'undefined' && _plSelectedForAdd[s.id || s.songId || '']);
-        // song manager à¹€à¸«à¹‡à¸™ âœï¸ à¹€à¸‰à¸žà¸²à¸°à¸•à¸­à¸™à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ band library + owned songs à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
-        // (global library à¹ƒà¸Šà¹‰ updateSong â†’ band_songs à¸‹à¸¶à¹ˆà¸‡à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸•à¹‰à¸­à¸‡à¸ªà¸³à¸«à¸£à¸±à¸š global songs)
+        // song manager เห็น ✏️ เฉพาะตอนอยู่ใน band library + owned songs เท่านั้น
+        // (global library ใช้ updateSong → band_songs ซึ่งไม่ถูกต้องสำหรับ global songs)
         var _canInlineEdit = _isSongManager && _currentSource === 'band' && (s.libType || 'owned') === 'owned';
         buf.push(
           '<div class="result-item' + (plSel ? ' pl-selected' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" style="cursor:pointer" onclick="(function(el){var si=el.getAttribute(\'data-index\');var sd=_pageData[parseInt(si,10)];if(sd){togglePlSelection(sd.id||sd.songId||\'\',el)}})(this)">' +
@@ -936,7 +925,7 @@ function renderPage() {
           '<div class="song-title">' + titleHtml + newTag + '</div>' +
           artistHtml + metaHtml +
           '</div>' +
-          (_canInlineEdit ? '<div class="song-actions" onclick="event.stopPropagation()"><button onclick="tapAddSong(event, ' + idx + ')" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#0f172a; padding:6px 12px; border-radius:16px; font-weight:600; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px;"><span style="color:#10b981; font-weight:bold;">+</span> เพิ่ม</button><span class="song-mgr-edit-btn" data-songid="' + songId + '" data-index="' + idx + '" title="à¹à¸à¹‰à¹„à¸‚à¹€à¸žà¸¥à¸‡" style="font-size:15px">âœï¸</span></div>' : '') +
+          (_canInlineEdit ? '<div class="song-actions" onclick="event.stopPropagation()"><span class="song-mgr-edit-btn" data-songid="' + songId + '" data-index="' + idx + '" title="แก้ไขเพลง" style="font-size:15px">✏️</span></div>' : '') +
           '</div>'
         );
       } else if (_selectMode) {
@@ -963,48 +952,48 @@ function renderPage() {
       } else if (_currentSource === 'band') {
         var libType = s.libType || 'owned';
         var isRowAdded = !!_addedSongIds[songId];
-        var rowBadge = isRowAdded ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">âœ… à¹€à¸¥à¸·à¸­à¸à¹à¸¥à¹‰à¸§</span>' : '';
+        var rowBadge = isRowAdded ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">✅ เลือกแล้ว</span>' : '';
         if (libType === 'ref') {
           buf.push(
-            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" >' +
+            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
             '<div class="song-title">' + titleHtml + newTag + rowBadge + '</div>' +
             artistHtml + metaHtml +
             '</div>' +
-            '<div class="song-actions" onclick="event.stopPropagation()"><button onclick="tapAddSong(event, ' + idx + ')" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#0f172a; padding:6px 12px; border-radius:16px; font-weight:600; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px;"><span style="color:#10b981; font-weight:bold;">+</span> เพิ่ม</button>' +
+            '<div class="song-actions" onclick="event.stopPropagation()">' +
             '<span class="edit-band-btn" data-songid="' + songId + '" data-libtype="ref" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
             '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + escapeHtml(s.name).replace(/"/g,'&quot;') + '" data-libtype="ref" title="\u0e19\u0e33\u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07">\u2715</span>' +
             '</div></div>'
           );
         } else {
           buf.push(
-            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" >' +
+            '<div class="result-item tap-add' + (isRowAdded ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
             '<div class="result-item-left">' +
             '<div class="song-title">' + titleHtml + newTag + rowBadge + '</div>' +
             artistHtml + metaHtml +
             '</div>' +
-            '<div class="song-actions" onclick="event.stopPropagation()"><button onclick="tapAddSong(event, ' + idx + ')" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#0f172a; padding:6px 12px; border-radius:16px; font-weight:600; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px;"><span style="color:#10b981; font-weight:bold;">+</span> เพิ่ม</button>' +
+            '<div class="song-actions" onclick="event.stopPropagation()">' +
             '<span class="edit-band-btn" data-songid="' + songId + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270F\uFE0F</span>' +
             '<span class="del-band-btn" data-songid="' + songId + '" data-name="' + escapeHtml(s.name).replace(/"/g,'&quot;') + '" data-libtype="owned" title="\u0e25\u0e1a">\u2715</span>' +
             '</div></div>'
           );
         }
       } else {
-        // Global source â€” suggest for everyone (updateSong targets band_songs so cannot edit global songs)
+        // Global source — suggest for everyone (updateSong targets band_songs so cannot edit global songs)
         var isInBand = _bandLibraryIds && !!_bandLibraryIds[songId];
         var inBandBadge = isInBand ? '<span class="in-lib-tag">\u2705 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07\u0e27\u0e07</span>' : '';
         var isRowAddedG = !!_addedSongIds[songId];
-        var rowBadgeG = isRowAddedG ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">âœ… à¹€à¸¥à¸·à¸­à¸à¹à¸¥à¹‰à¸§</span>' : inBandBadge;
+        var rowBadgeG = isRowAddedG ? '<span class="in-lib-tag" style="background:#fef08a;color:#b45309;border-color:#fde047;">✅ เลือกแล้ว</span>' : inBandBadge;
         var editBtn = _isSongManager
           ? '<span class="edit-global-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openDirectEditModal(\'' + songId + '\',' + idx + ')">\u270F\uFE0F \u0e41\u0e01\u0e49\u0e44\u0e02</span>'
           : '<span class="suggest-song-btn" data-songid="' + songId + '" data-index="' + idx + '" title="\u0e41\u0e19\u0e30\u0e19\u0e33\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e25\u0e07" onclick="openSuggestModal(\'' + songId + '\',' + idx + ')">\u{1F4DD} \u0e41\u0e19\u0e30\u0e19\u0e33</span>';
         buf.push(
-          '<div class="result-item tap-add' + (isRowAddedG ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" >' +
+          '<div class="result-item tap-add' + (isRowAddedG ? ' row-added' : '') + '" data-index="' + idx + '" data-songid="' + songId + '" onclick="tapAddSong(event,' + idx + ')" style="cursor:pointer">' +
           '<div class="result-item-left">' +
           '<div class="song-title">' + titleHtml + newTag + rowBadgeG + '</div>' +
           artistHtml + metaHtml +
           '</div>' +
-          '<div class="song-actions" onclick="event.stopPropagation()"><button onclick="tapAddSong(event, ' + idx + ')" style="background:#f1f5f9; border:1px solid #cbd5e1; color:#0f172a; padding:6px 12px; border-radius:16px; font-weight:600; font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px;"><span style="color:#10b981; font-weight:bold;">+</span> เพิ่ม</button>' +
+          '<div class="song-actions" onclick="event.stopPropagation()">' +
           editBtn +
           '</div></div>'
         );
@@ -1076,7 +1065,7 @@ document.addEventListener("click", function (e) {
     if (geid && !isNaN(geidx)) openDirectEditModal(geid, geidx);
   }
   if (e.target && e.target.classList && e.target.classList.contains("song-mgr-edit-btn")) {
-    // Song manager direct edit â€” open inline edit modal (does NOT navigate away)
+    // Song manager direct edit — open inline edit modal (does NOT navigate away)
     var meid = e.target.getAttribute("data-songid");
     var meidx = parseInt(e.target.getAttribute("data-index"), 10);
     if (meid && !isNaN(meidx)) openDirectEditModal(meid, meidx);
@@ -1086,7 +1075,7 @@ document.addEventListener("click", function (e) {
     var elib = e.target.getAttribute("data-libtype") || 'owned';
     if (eid) {
       if (elib === 'ref') {
-        // Detach ref â†’ create band-owned copy â†’ edit
+        // Detach ref → create band-owned copy → edit
         e.target.style.opacity = '0.5';
         e.target.style.pointerEvents = 'none';
         try { sessionStorage.setItem('songs_returnPage', currentPage); sessionStorage.setItem('songs_returnSource', _currentSource); } catch(ex) {}
@@ -1097,7 +1086,7 @@ document.addEventListener("click", function (e) {
             e.target.style.opacity = '';
             e.target.style.pointerEvents = '';
             try { sessionStorage.removeItem('songs_returnPage'); } catch(ex) {}
-            showSongsAlert('âŒ ' + ((r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”'));
+            showSongsAlert('❌ ' + ((r && r.message) || 'เกิดข้อผิดพลาด'));
           }
         });
       } else {
@@ -1120,7 +1109,7 @@ var _plExistingForDate = []; // existing playlists for selected date
 function loadBandSettings() {
   var bandId = localStorage.getItem('bandId') || '';
   var bandName = localStorage.getItem('bandName') || '';
-  if (!bandId && !bandName) { console.warn('[Songs] No bandId/bandName â€” skip loadBandSettings'); return; }
+  if (!bandId && !bandName) { console.warn('[Songs] No bandId/bandName — skip loadBandSettings'); return; }
   var SKEY = 'band_settings_' + (bandId || bandName);
   var cached = null;
   try { cached = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); } catch(e) {}
@@ -1128,7 +1117,7 @@ function loadBandSettings() {
   function applySettings(s, source) {
     console.log('[Songs] applySettings from:', source, 'venues:', (s && s.venues) ? s.venues.length : 0, 'schedule keys:', s && s.schedule ? Object.keys(s.schedule) : []);
     _plBandSettings = s;
-    // à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š role â†’ à¸–à¹‰à¸²à¹€à¸›à¹‡à¸™ admin/manager à¸«à¸£à¸·à¸­à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ songManagers à¸–à¸·à¸­à¸§à¹ˆà¸²à¸ˆà¸±à¸”à¸à¸²à¸£à¹€à¸žà¸¥à¸‡à¹„à¸”à¹‰
+    // ตรวจสอบ role → ถ้าเป็น admin/manager หรืออยู่ใน songManagers ถือว่าจัดการเพลงได้
     var _smRole = localStorage.getItem('userRole') || 'member';
     if (_smRole === 'admin' || _smRole === 'manager') {
       _isSongManager = true;
@@ -1140,9 +1129,9 @@ function loadBandSettings() {
     var venueEl = document.getElementById('venue');
     if (!venueEl) { console.warn('[Songs] #venue element not found'); return; }
     var prevVenue = venueEl.value || '';
-    // à¹€à¸•à¸´à¸¡ venues
+    // เติม venues
     var venues = (s && s.venues) || [];
-    venueEl.innerHTML = '<option value="">à¹€à¸¥à¸·à¸­à¸à¸£à¹‰à¸²à¸™</option>';
+    venueEl.innerHTML = '<option value="">เลือกร้าน</option>';
     venues.forEach(function(v) {
       var opt = document.createElement('option');
       opt.value = v.venueName || v.name || '';
@@ -1151,7 +1140,7 @@ function loadBandSettings() {
     });
     var offsiteOpt = document.createElement('option');
     offsiteOpt.value = '__offsite__';
-    offsiteOpt.textContent = 'à¸‡à¸²à¸™à¸™à¸­à¸ / à¸‡à¸²à¸™à¸žà¸´à¹€à¸¨à¸©';
+    offsiteOpt.textContent = 'งานนอก / งานพิเศษ';
     venueEl.appendChild(offsiteOpt);
     if (prevVenue) {
       venueEl.value = prevVenue;
@@ -1174,7 +1163,7 @@ function loadBandSettings() {
   }
 
   if (cached && cached.ts && (Date.now() - cached.ts) < 10*60*1000 && cached.data) {
-    // à¸–à¹‰à¸² cached à¹„à¸¡à¹ˆà¸¡à¸µ venues â†’ à¸¥à¸­à¸‡ merge à¸à¸±à¸š localStorage
+    // ถ้า cached ไม่มี venues → ลอง merge กับ localStorage
     if ((!cached.data.venues || cached.data.venues.length === 0)) {
       var ls = getLocalFallback();
       if (ls) { applySettings(ls, 'localStorage-fallback'); return; }
@@ -1184,7 +1173,7 @@ function loadBandSettings() {
   apiCall('getBandSettings', { bandId: bandId }, function(r) {
     if (r && r.success && r.data) {
       try { sessionStorage.setItem(SKEY, JSON.stringify({ ts: Date.now(), data: r.data })); } catch(e) {}
-      // à¸–à¹‰à¸² API à¸„à¸·à¸™ venues à¸§à¹ˆà¸²à¸‡ â†’ à¸¥à¸­à¸‡ localStorage
+      // ถ้า API คืน venues ว่าง → ลอง localStorage
       if ((!r.data.venues || r.data.venues.length === 0)) {
         var ls = getLocalFallback();
         if (ls) { applySettings(ls, 'localStorage-after-api'); return; }
@@ -1200,7 +1189,7 @@ function loadBandSettings() {
   });
 }
 
-/* â”€â”€ Get venueId from venue name â”€â”€ */
+/* ── Get venueId from venue name ── */
 function plGetVenueId(name) {
   var venues = (_plBandSettings && _plBandSettings.venues) || [];
   for (var i = 0; i < venues.length; i++) {
@@ -1211,7 +1200,7 @@ function plGetVenueId(name) {
   return '';
 }
 
-/* â”€â”€ Get slots for a given date + venue from scheduleData â”€â”€ */
+/* ── Get slots for a given date + venue from scheduleData ── */
 function plGetSlotsForDate() {
   if (!_plBandSettings) return [];
   var dateEl = document.getElementById('useDate');
@@ -1299,32 +1288,32 @@ function validatePlaylistContext(actionLabel) {
     var customVenueEl = document.getElementById('customVenue');
     var customTimeEl = document.getElementById('customTimeSlot');
     if (!getActiveVenueValue()) {
-      showSongsAlert('âš ï¸ à¹ƒà¸ªà¹ˆà¸Šà¸·à¹ˆà¸­à¸‡à¸²à¸™à¸à¹ˆà¸­à¸™' + actionLabel);
+      showSongsAlert('⚠️ ใส่ชื่องานก่อน' + actionLabel);
       if (customVenueEl) customVenueEl.focus();
       return false;
     }
     if (!getActiveTimeSlotValue()) {
-      showSongsAlert('âš ï¸ à¹ƒà¸ªà¹ˆà¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¸à¹ˆà¸­à¸™' + actionLabel);
+      showSongsAlert('⚠️ ใส่ช่วงเวลาก่อน' + actionLabel);
       if (customTimeEl) customTimeEl.focus();
       return false;
     }
     return true;
   }
   if (slots.length > 0 && timeEl && !timeEl.value) {
-    showSongsAlert('âš ï¸ à¹€à¸¥à¸·à¸­à¸à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¸à¹ˆà¸­à¸™' + actionLabel);
+    showSongsAlert('⚠️ เลือกช่วงเวลาก่อน' + actionLabel);
     timeEl.focus();
     timeEl.style.borderColor = '#e53e3e';
     setTimeout(function(){ timeEl.style.borderColor = ''; }, 3000);
     return false;
   }
   if (timeEl && timeEl.value === '__custom__' && !getActiveTimeSlotValue()) {
-    showSongsAlert('âš ï¸ à¸žà¸´à¸¡à¸žà¹Œà¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²à¸à¹ˆà¸­à¸™' + actionLabel);
+    showSongsAlert('⚠️ พิมพ์ช่วงเวลาก่อน' + actionLabel);
     var manualEl = document.getElementById('manualTimeSlot');
     if (manualEl) { manualEl.focus(); manualEl.style.borderColor = '#e53e3e'; setTimeout(function(){ manualEl.style.borderColor = ''; }, 3000); }
     return false;
   }
   if (venueEl && venueEl.options.length > 1 && !venueEl.value) {
-    showSongsAlert('âš ï¸ à¹€à¸¥à¸·à¸­à¸à¸£à¹‰à¸²à¸™à¸à¹ˆà¸­à¸™' + actionLabel);
+    showSongsAlert('⚠️ เลือกร้านก่อน' + actionLabel);
     venueEl.focus();
     venueEl.style.borderColor = '#e53e3e';
     setTimeout(function(){ venueEl.style.borderColor = ''; }, 3000);
@@ -1371,7 +1360,7 @@ function applyPlaylistContext(entry) {
           break;
         }
       }
-      // à¸–à¹‰à¸²à¹„à¸¡à¹ˆà¹€à¸ˆà¸­ slot à¹ƒà¸™ dropdown â†’ à¹ƒà¸Šà¹‰ __custom__ à¹à¸¥à¹‰à¸§à¹€à¸•à¸´à¸¡à¸Šà¹ˆà¸­à¸‡à¸žà¸´à¸¡à¸žà¹Œà¹€à¸­à¸‡
+      // ถ้าไม่เจอ slot ใน dropdown → ใช้ __custom__ แล้วเติมช่องพิมพ์เอง
       if (!matchedSlot) {
         timeEl.value = '__custom__';
         var manualEl = document.getElementById('manualTimeSlot');
@@ -1428,13 +1417,13 @@ function plFindExistingIndex(venueName, timeSlot) {
   return matches.length === 1 ? matches[0].idx : -1;
 }
 
-/* â”€â”€ When date changes â†’ refresh time slots & check existing playlists â”€â”€ */
+/* ── When date changes → refresh time slots & check existing playlists ── */
 function onPlaylistDateChange() {
   refreshTimeSlots();
   checkExistingPlaylists(true);
 }
 
-/* â”€â”€ When venue changes â†’ refresh time slots (re-filter by venue) â”€â”€ */
+/* ── When venue changes → refresh time slots (re-filter by venue) ── */
 function onPlaylistVenueChange() {
   var offsite = isOffsiteMode();
   setOffsiteMode(offsite);
@@ -1446,12 +1435,12 @@ function onPlaylistVenueChange() {
   checkExistingPlaylists(offsite);
 }
 
-/* â”€â”€ Refresh timeSlot dropdown based on date + venue â”€â”€ */
+/* ── Refresh timeSlot dropdown based on date + venue ── */
 function refreshTimeSlots() {
   var timeEl = document.getElementById('timeSlot');
   if (!timeEl) return;
   if (isOffsiteMode()) {
-    timeEl.innerHTML = '<option value="">à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²</option>';
+    timeEl.innerHTML = '<option value="">ช่วงเวลา</option>';
     timeEl.style.display = 'none';
     return;
   }
@@ -1459,7 +1448,7 @@ function refreshTimeSlots() {
   var previousValue = timeEl.value || '';
   var slots = plGetSlotsForDate();
   var selectedVenue = plGetSelectedVenue();
-  timeEl.innerHTML = '<option value="">à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸²</option>';
+  timeEl.innerHTML = '<option value="">ช่วงเวลา</option>';
   if (slots.length === 0) {
     // Fallback: show all hourly rates
     var rates = (_plBandSettings && _plBandSettings.hourlyRates) || [];
@@ -1483,15 +1472,15 @@ function refreshTimeSlots() {
       var existingCount = _plExistingForDate.filter(function(e) {
         return plEntryMatches(e, selectedVenue, key);
       }).length;
-      opt.textContent = key + (existingCount ? ' âœ… à¸¡à¸µà¸¥à¸´à¸ªà¹à¸¥à¹‰à¸§' : '');
+      opt.textContent = key + (existingCount ? ' ✅ มีลิสแล้ว' : '');
       if (existingCount) opt.style.color = '#48bb78';
       timeEl.appendChild(opt);
     });
   }
-  // à¹€à¸žà¸´à¹ˆà¸¡à¸•à¸±à¸§à¹€à¸¥à¸·à¸­à¸ "à¸žà¸´à¸¡à¸žà¹Œà¹€à¸­à¸‡"
+  // เพิ่มตัวเลือก "พิมพ์เอง"
   var customOpt = document.createElement('option');
   customOpt.value = '__custom__';
-  customOpt.textContent = 'âœï¸ à¸žà¸´à¸¡à¸žà¹Œà¹€à¸­à¸‡...';
+  customOpt.textContent = '✏️ พิมพ์เอง...';
   timeEl.appendChild(customOpt);
   // Restore previous value
   if (previousValue && Array.prototype.some.call(timeEl.options, function(opt) { return opt.value === previousValue; })) {
@@ -1502,7 +1491,7 @@ function refreshTimeSlots() {
   if (manualWrap) manualWrap.classList.toggle('active', timeEl.value === '__custom__');
 }
 
-/* â”€â”€ Check which slots already have playlists for selected date â”€â”€ */
+/* ── Check which slots already have playlists for selected date ── */
 function checkExistingPlaylists(autoLoad) {
   var dateEl = document.getElementById('useDate');
   var bandId = localStorage.getItem('bandId') || '';
@@ -1528,7 +1517,7 @@ function checkExistingPlaylists(autoLoad) {
   });
 }
 
-/* â”€â”€ Update time slot option labels with âœ… for existing playlists â”€â”€ */
+/* ── Update time slot option labels with ✅ for existing playlists ── */
 function refreshTimeSlotsLabels() {
   var timeEl = document.getElementById('timeSlot');
   if (!timeEl) return;
@@ -1547,12 +1536,12 @@ function refreshTimeSlotsLabels() {
       var match = matches[0];
       creator = match && match.createdBy ? match.createdBy : '';
     }
-    opt.textContent = baseKey + (exists ? ' âœ… à¸¡à¸µà¸¥à¸´à¸ªà¹à¸¥à¹‰à¸§' + (creator ? ' (' + creator + ')' : '') : '');
+    opt.textContent = baseKey + (exists ? ' ✅ มีลิสแล้ว' + (creator ? ' (' + creator + ')' : '') : '');
     opt.style.color = exists ? '#276749' : '';
   });
 }
 
-/* â”€â”€ Show badge above playlist section about existing playlists for selected date â”€â”€ */
+/* ── Show badge above playlist section about existing playlists for selected date ── */
 function renderExistingPlaylistsBadge() {
   var badge = document.getElementById('plExistingBadge');
   if (!badge) return;
@@ -1571,11 +1560,11 @@ function renderExistingPlaylistsBadge() {
   var quotaHtml =
     '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:' + (used > 0 ? '10px' : '0') + '">'
     + '<span style="font-size:var(--text-xs);font-weight:700;color:' + (pct >= 100 ? '#e53e3e' : '#276749') + '">'
-    +   'ðŸ“Š à¹‚à¸„à¸§à¸•à¹‰à¸²à¸¥à¸´à¸ªà¸§à¸±à¸™à¸™à¸µà¹‰ (' + planLabel + ')'
+    +   '📊 โควต้าลิสวันนี้ (' + planLabel + ')'
     + '</span>'
     + '<span style="font-size:var(--text-xs);font-weight:700;color:' + barColor + '">'
-    +   used + ' / ' + dayLimit + ' à¸¥à¸´à¸ª'
-    +   (pct >= 100 ? ' â€” à¹€à¸•à¹‡à¸¡à¹à¸¥à¹‰à¸§' : '')
+    +   used + ' / ' + dayLimit + ' ลิส'
+    +   (pct >= 100 ? ' — เต็มแล้ว' : '')
     + '</span>'
     + '</div>'
     + '<div style="height:6px;border-radius:99px;background:#c6f6d5;margin-bottom:' + (used > 0 ? '12px' : '4px') + ';overflow:hidden">'
@@ -1588,11 +1577,11 @@ function renderExistingPlaylistsBadge() {
     var creator = p.createdBy || '';
     var count   = (p.songs || []).length;
     return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff;border-radius:var(--radius-sm);border:1px solid #c6f6d5;flex-wrap:wrap;margin-bottom:6px">'
-      + '<span style="font-size:14px">âœ…</span>'
-      + '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' Â· ' : '') + slot + '</span>'
-      + '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' à¹€à¸žà¸¥à¸‡' + (creator ? ' Â· à¹‚à¸”à¸¢ ' + creator : '') + '</span>'
-      + '<button onclick="loadExistingPlaylist(' + idx + ')" style="margin-left:auto;padding:4px 12px;font-size:12px;background:#38a169;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">ðŸ“‚ à¹‚à¸«à¸¥à¸”/à¹à¸à¹‰à¹„à¸‚</button>'
-      + '<button onclick="deleteExistingPlaylist(' + idx + ')" style="padding:4px 10px;font-size:12px;background:#e53e3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">ðŸ—‘ à¸¥à¸š</button>'
+      + '<span style="font-size:14px">✅</span>'
+      + '<span style="font-weight:600;font-size:var(--text-sm)">' + (venue ? venue + ' · ' : '') + slot + '</span>'
+      + '<span style="color:var(--premium-text-muted);font-size:var(--text-xs)">' + count + ' เพลง' + (creator ? ' · โดย ' + creator : '') + '</span>'
+      + '<button onclick="loadExistingPlaylist(' + idx + ')" style="margin-left:auto;padding:4px 12px;font-size:12px;background:#38a169;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">📂 โหลด/แก้ไข</button>'
+      + '<button onclick="deleteExistingPlaylist(' + idx + ')" style="padding:4px 10px;font-size:12px;background:#e53e3e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:600">🗑 ลบ</button>'
       + '</div>';
   }).join('');
 
@@ -1600,29 +1589,29 @@ function renderExistingPlaylistsBadge() {
   badge.style.display = 'block';
 }
 
-/* â”€â”€ Delete an existing playlist from DB â”€â”€ */
+/* ── Delete an existing playlist from DB ── */
 function deleteExistingPlaylist(idx) {
   var p = _plExistingForDate[idx];
   if (!p) return;
-  var label = (p.venue ? p.venue + ' Â· ' : '') + (p.timeSlot || '') + ' (' + (p.songs || []).length + ' à¹€à¸žà¸¥à¸‡)';
-  if (!confirm('à¸¥à¸šà¸¥à¸´à¸ª: ' + label + ' à¹ƒà¸Šà¹ˆà¹„à¸«à¸¡?')) return;
+  var label = (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || '') + ' (' + (p.songs || []).length + ' เพลง)';
+  if (!confirm('ลบลิส: ' + label + ' ใช่ไหม?')) return;
   apiCall('deletePlaylistHistory', { id: p.id, bandId: localStorage.getItem('bandId') || '' }, function(r) {
     if (r && r.success) {
       _plExistingForDate.splice(idx, 1);
       renderExistingPlaylistsBadge();
       refreshTimeSlotsLabels();
-      showSongsAlert('ðŸ—‘ à¸¥à¸šà¸¥à¸´à¸ª ' + label + ' à¹à¸¥à¹‰à¸§');
+      showSongsAlert('🗑 ลบลิส ' + label + ' แล้ว');
     } else {
-      showSongsAlert('âŒ à¸¥à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ: ' + ((r && r.message) || ''));
+      showSongsAlert('❌ ลบไม่สำเร็จ: ' + ((r && r.message) || ''));
     }
   });
 }
 
-/* â”€â”€ Load an existing playlist into the editable list â”€â”€ */
+/* ── Load an existing playlist into the editable list ── */
 function loadExistingPlaylist(idx, silent) {
   var p = _plExistingForDate[idx];
   if (!p) return;
-  if (!silent && playlistData.length > 0 && !confirm('à¹à¸—à¸™à¸—à¸µà¹ˆà¸¥à¸´à¸ªà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™ ' + playlistData.length + ' à¹€à¸žà¸¥à¸‡ à¸”à¹‰à¸§à¸¢à¸¥à¸´à¸ªà¸—à¸µà¹ˆà¹€à¸¥à¸·à¸­à¸?')) return;
+  if (!silent && playlistData.length > 0 && !confirm('แทนที่ลิสปัจจุบัน ' + playlistData.length + ' เพลง ด้วยลิสที่เลือก?')) return;
   playlistData = (p.songs || []).map(function(s) {
     return enrichSongFromBandLibrary({
       name: s.name || '',
@@ -1638,11 +1627,11 @@ function loadExistingPlaylist(idx, silent) {
   renderPlaylist();
   applyPlaylistContext(p);
   if (!silent) {
-    showSongsAlert('âœ… à¹‚à¸«à¸¥à¸”à¸¥à¸´à¸ªà¹à¸¥à¹‰à¸§ ' + (p.venue ? p.venue + ' Â· ' : '') + (p.timeSlot || ''));
+    showSongsAlert('✅ โหลดลิสแล้ว ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || ''));
   }
 }
 
-/* â”€â”€ Auto-load when user picks a time slot that already has a saved playlist â”€â”€ */
+/* ── Auto-load when user picks a time slot that already has a saved playlist ── */
 function onTimeSlotChange() {
   var timeEl = document.getElementById('timeSlot');
   var manualWrap = document.getElementById('manualTimeWrap');
@@ -1681,7 +1670,7 @@ function autoLoadPlaylistForSlot() {
     });
   });
   renderPlaylist();
-  showSongsAlert('âœ… à¹‚à¸«à¸¥à¸”à¸¥à¸´à¸ªà¸‚à¸­à¸‡à¸ªà¸¥à¹‡à¸­à¸•à¸™à¸µà¹‰à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´ (' + playlistData.length + ' à¹€à¸žà¸¥à¸‡)');
+  showSongsAlert('✅ โหลดลิสของสล็อตนี้อัตโนมัติ (' + playlistData.length + ' เพลง)');
 }
 
 window.onload = function() {
@@ -1689,11 +1678,11 @@ window.onload = function() {
       checkAdGate();
   try { if (typeof renderMainNav === 'function') renderMainNav('mainNav'); } catch(e) { console.error('[Songs] renderMainNav error:', e); }
   try { if (typeof applyTranslations === 'function') applyTranslations(); } catch(e) {}
-  // à¹à¸ªà¸”à¸‡à¸Šà¸·à¹ˆà¸­à¸§à¸‡à¹ƒà¸™ header
+  // แสดงชื่อวงใน header
   var libTitle = document.getElementById('songLibTitle');
-  if (libTitle) { var bn = localStorage.getItem('bandName'); libTitle.textContent = 'à¸„à¸¥à¸±à¸‡à¹€à¸žà¸¥à¸‡' + (bn ? ' ' + bn : ''); }
+  if (libTitle) { var bn = localStorage.getItem('bandName'); libTitle.textContent = 'คลังเพลง' + (bn ? ' ' + bn : ''); }
 
-  // à¸•à¸±à¹‰à¸‡ date à¸à¹ˆà¸­à¸™à¹€à¸ªà¸¡à¸­ à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰ loadBandSettings â†’ onPlaylistDateChange à¹€à¸«à¹‡à¸™ date à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡
+  // ตั้ง date ก่อนเสมอ เพื่อให้ loadBandSettings → onPlaylistDateChange เห็น date ถูกต้อง
   var dateInput = document.getElementById('useDate');
   if (dateInput) {
     var today = new Date();
@@ -1703,7 +1692,7 @@ window.onload = function() {
     dateInput.value = yyyy + '-' + mm + '-' + dd;
   }
 
-  // Auto-fill date/venue/timeSlot à¸ˆà¸²à¸ URL params (à¹€à¸Šà¹ˆà¸™à¸à¸”à¸›à¸¸à¹ˆà¸¡ âœï¸ à¸ˆà¸²à¸ dashboard)
+  // Auto-fill date/venue/timeSlot จาก URL params (เช่นกดปุ่ม ✏️ จาก dashboard)
   var _urlParams = new URLSearchParams(location.search);
   var _urlDate = _urlParams.get('date');
   if (_urlDate && dateInput) dateInput.value = _urlDate;
@@ -1863,10 +1852,10 @@ function tapAddSong(e, idx) {
   var songId = song.id || song.songId || '';
   var row = e.currentTarget;
 
-  // à¸–à¹‰à¸²à¹€à¸žà¸´à¹ˆà¸¡à¹„à¸›à¹à¸¥à¹‰à¸§ â†’ à¹€à¸­à¸²à¸­à¸­à¸ (toggle off)
+  // ถ้าเพิ่มไปแล้ว → เอาออก (toggle off)
   if (songId && _addedSongIds[songId]) {
     delete _addedSongIds[songId];
-    // à¸«à¸² index à¹ƒà¸™ playlistData à¹à¸¥à¹‰à¸§à¸¥à¸šà¸­à¸­à¸ (à¹€à¸­à¸²à¸•à¸±à¸§à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¸­à¸­à¸)
+    // หา index ใน playlistData แล้วลบออก (เอาตัวล่าสุดออก)
     for (var j = playlistData.length - 1; j >= 0; j--) {
       var ps = playlistData[j];
       if ((ps.id || ps.songId || '') === songId) {
@@ -1876,7 +1865,7 @@ function tapAddSong(e, idx) {
     }
     renderPlaylist();
     if (row) row.classList.remove('row-added', 'just-added');
-    // à¸‹à¹ˆà¸­à¸™ undo toast à¸–à¹‰à¸²à¹€à¸›à¸´à¸”à¸­à¸¢à¸¹à¹ˆà¸ªà¸³à¸«à¸£à¸±à¸šà¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰
+    // ซ่อน undo toast ถ้าเปิดอยู่สำหรับเพลงนี้
     clearTimeout(_undoToastTimer);
     var t = document.getElementById('undoToast');
     if (t) t.style.display = 'none';
@@ -1886,13 +1875,13 @@ function tapAddSong(e, idx) {
   var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
   
   if (freq >= 4) {
-    var confirmMsg = 'âš ï¸ à¹€à¸žà¸¥à¸‡ "' + name + '" à¸–à¸¹à¸à¹€à¸¥à¹ˆà¸™à¹„à¸›à¹à¸¥à¹‰à¸§ ' + freq + ' à¸„à¸£à¸±à¹‰à¸‡à¹ƒà¸™à¸Šà¹ˆà¸§à¸‡ 7 à¸§à¸±à¸™à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™à¸¡à¸²\n\nà¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸„à¸¸à¸“à¹€à¸¥à¹ˆà¸™à¸šà¹ˆà¸­à¸¢à¹€à¸à¸´à¸™à¹„à¸›à¹à¸¥à¹‰à¸§ à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸šà¹‰à¸²à¸‡à¸™à¸°!\n\nà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸ˆà¸£à¸´à¸‡à¹† à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?';
+    var confirmMsg = '⚠️ เพลง "' + name + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งในช่วง 7 วันที่ผ่านมา\n\nเพลงนี้คุณเล่นบ่อยเกินไปแล้ว เปลี่ยนบ้างนะ!\n\nต้องการเพิ่มเพลงนี้จริงๆ หรือไม่?';
     if (!confirm(confirmMsg)) {
       return; // abort
     }
   }
 
-  // à¹€à¸žà¸´à¹ˆà¸¡à¹ƒà¸«à¸¡à¹ˆ
+  // เพิ่มใหม่
   addSong(song);
   _lastAddedIndex = playlistData.length - 1;
   if (songId) _addedSongIds[songId] = true;
@@ -1907,7 +1896,7 @@ function tapAddSong(e, idx) {
   var t2 = document.getElementById('undoToast');
   if (t2) {
     var msg = t2.querySelector('.undo-msg');
-    if (msg) msg.textContent = 'âž• ' + name + ' à¹€à¸žà¸´à¹ˆà¸¡à¹ƒà¸™à¸¥à¸´à¸ªà¹à¸¥à¹‰à¸§';
+    if (msg) msg.textContent = '➕ ' + name + ' เพิ่มในลิสแล้ว';
     t2.style.display = 'flex';
     _undoToastTimer = setTimeout(function() {
       t2.style.display = 'none';
@@ -1944,7 +1933,7 @@ function addBreak(){
 }
 
 function refreshPlaylist(){
-  if(confirm("à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸¥à¹‰à¸²à¸‡à¸¥à¸´à¸ªà¹€à¸žà¸¥à¸‡à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?")){
+  if(confirm("ต้องการล้างลิสเพลงทั้งหมดหรือไม่?")){
     playlistData = [];
     renderPlaylist();
   }
@@ -1958,7 +1947,7 @@ function renderPlaylist(){
     ul.innerHTML = "";
 
     if(playlistData.length === 0){
-      ul.innerHTML = '<li style="color:var(--muted);text-align:center;padding:20px;">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸¥à¸´à¸ª</li>';
+      ul.innerHTML = '<li style="color:var(--muted);text-align:center;padding:20px;">ยังไม่มีเพลงในลิส</li>';
       return;
     }
 
@@ -1970,11 +1959,11 @@ function renderPlaylist(){
 
       if(s.break){
         li.innerHTML = `
-          <span class="break">à¸žà¸±à¸</span>
+          <span class="break">พัก</span>
           <span>
-            <span class="move-btn move-up" data-index="${i}" title="à¸¢à¹‰à¸²à¸¢à¸‚à¸¶à¹‰à¸™">â¬†ï¸</span>
-            <span class="move-btn move-down" data-index="${i}" title="à¸¢à¹‰à¸²à¸¢à¸¥à¸‡">â¬‡ï¸</span>
-            <span class="del remove-item" data-index="${i}" title="à¸¥à¸š">âœ•</span>
+            <span class="move-btn move-up" data-index="${i}" title="ย้ายขึ้น">⬆️</span>
+            <span class="move-btn move-down" data-index="${i}" title="ย้ายลง">⬇️</span>
+            <span class="del remove-item" data-index="${i}" title="ลบ">✕</span>
           </span>`;
         fragment.appendChild(li);
         return;
@@ -1997,15 +1986,15 @@ function renderPlaylist(){
           </div>
 
           <div class="transpose">
-            <span class="tp-btn tp-down" data-index="${i}" data-step="-1" title="à¸¥à¸”à¸„à¸µà¸¢à¹Œ">âˆ’</span>
-            <span class="tp-btn tp-up" data-index="${i}" data-step="1" title="à¹€à¸žà¸´à¹ˆà¸¡à¸„à¸µà¸¢à¹Œ">+</span>
+            <span class="tp-btn tp-down" data-index="${i}" data-step="-1" title="ลดคีย์">−</span>
+            <span class="tp-btn tp-up" data-index="${i}" data-step="1" title="เพิ่มคีย์">+</span>
           </div>
         </div>
 
         <span>
-          <span class="move-btn move-up" data-index="${i}" title="à¸¢à¹‰à¸²à¸¢à¸‚à¸¶à¹‰à¸™">â¬†ï¸</span>
-          <span class="move-btn move-down" data-index="${i}" title="à¸¢à¹‰à¸²à¸¢à¸¥à¸‡">â¬‡ï¸</span>
-          <span class="del remove-item" data-index="${i}" title="à¸¥à¸š">âœ•</span>
+          <span class="move-btn move-up" data-index="${i}" title="ย้ายขึ้น">⬆️</span>
+          <span class="move-btn move-down" data-index="${i}" title="ย้ายลง">⬇️</span>
+          <span class="del remove-item" data-index="${i}" title="ลบ">✕</span>
         </span>`;
       fragment.appendChild(li);
     });
@@ -2082,7 +2071,7 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// â”€â”€ Duration tracking â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Duration tracking ──────────────────────────────────────────
 var _durCache={},_durExact={},_durQueue=[],_durRunning=false;
 var _itunesBlocked=false, _musicBrainzBlocked=false;
 var DUR_FALLBACK=240,DUR_GAP=20;
@@ -2187,44 +2176,44 @@ function updatePlDurBar(){
   var label=document.getElementById('plDurLabel');
   var note=document.getElementById('plDurNote');
   var h=Math.floor(totalSec/3600),m=Math.floor((totalSec%3600)/60),sc=totalSec%60;
-  var durStr=h>0?(h+' à¸Šà¸¡. '+m+' à¸™à¸²à¸—à¸µ'):(m+' à¸™à¸²à¸—à¸µ '+sc+' à¸§à¸´');
+  var durStr=h>0?(h+' ชม. '+m+' นาที'):(m+' นาที '+sc+' วิ');
   text.textContent=durStr;
   if(targetMin>0){
     var pct=Math.min(100,Math.round(totalMin/targetMin*100));
     fill.style.transform='scaleX('+(pct/100)+')';
     fill.style.background=pct>=95?'#38a169':pct>=75?'#d97706':'#e53e3e';
-    label.textContent='â± '+totalMin+' / '+targetMin+' à¸™à¸²à¸—à¸µ ('+pct+'%)';
+    label.textContent='⏱ '+totalMin+' / '+targetMin+' นาที ('+pct+'%)';
     var diff=targetMin-totalMin;
-    if(diff>0)note.innerHTML='<span style="color:#c53030">âš ï¸ à¸‚à¸²à¸”à¸­à¸µà¸ '+diff+' à¸™à¸²à¸—à¸µ ('+Math.ceil(diff/4)+' à¹€à¸žà¸¥à¸‡)</span>';
-    else if(diff>=-3)note.innerHTML='<span style="color:#276749">âœ… à¸„à¸£à¸šà¹€à¸šà¸£à¸„à¹à¸¥à¹‰à¸§!</span>';
-    else note.innerHTML='<span style="color:#2b6cb0">âœ… à¸„à¸£à¸šà¹à¸¥à¹‰à¸§ (à¹€à¸à¸´à¸™ '+Math.abs(diff)+' à¸™à¸²à¸—à¸µ)</span>';
+    if(diff>0)note.innerHTML='<span style="color:#c53030">⚠️ ขาดอีก '+diff+' นาที ('+Math.ceil(diff/4)+' เพลง)</span>';
+    else if(diff>=-3)note.innerHTML='<span style="color:#276749">✅ ครบเบรคแล้ว!</span>';
+    else note.innerHTML='<span style="color:#2b6cb0">✅ ครบแล้ว (เกิน '+Math.abs(diff)+' นาที)</span>';
   } else {
     fill.style.transform='scaleX(1)';fill.style.background='#3182ce';
-    label.textContent='â± à¹€à¸§à¸¥à¸²à¸£à¸§à¸¡ (à¸›à¸£à¸°à¸¡à¸²à¸“)';
-    note.textContent='à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸² â€” à¸„à¸³à¸™à¸§à¸“à¹à¸šà¸šà¸›à¸£à¸°à¸¡à¸²à¸“';
+    label.textContent='⏱ เวลารวม (ประมาณ)';
+    note.textContent='ไม่มีข้อมูลช่วงเวลา — คำนวณแบบประมาณ';
   }
   _queueDurFetch(songs);
 }
 
-// â”€â”€ Validate duration before save/live â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Validate duration before save/live ───────────────────────────
 function _checkDurBeforeAction(actionName, onOk) {
   var songs=playlistData.filter(function(s){return!s.break;});
   if(!songs.length){onOk();return;}
   var slot=getActiveTimeSlotValue?getActiveTimeSlotValue():'';
   var targetMin=_parseSlotMinutes(slot);
-  if(!targetMin){onOk();return;} // à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸Šà¹ˆà¸§à¸‡à¹€à¸§à¸¥à¸² à¸œà¹ˆà¸²à¸™à¹„à¸”à¹‰
+  if(!targetMin){onOk();return;} // ไม่มีข้อมูลช่วงเวลา ผ่านได้
   var totalSec=songs.reduce(function(acc,s){return acc+_getDurCached(s.name,s.artist)+DUR_GAP;},0);
   var totalMin=Math.round(totalSec/60);
   var diff=targetMin-totalMin;
   if(diff>0){
     var actName = (actionName || '').trim();
-    var title = 'âš ï¸ à¹€à¸§à¸¥à¸²à¹à¸ªà¸”à¸‡à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸„à¸£à¸š ' + targetMin + ' à¸™à¸²à¸—à¸µ';
-    var message = 'à¹€à¸§à¸¥à¸²à¸£à¸§à¸¡à¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸¥à¸´à¸ªà¸¢à¸±à¸‡à¸‚à¸²à¸”à¸­à¸µà¸ ' + diff + ' à¸™à¸²à¸—à¸µ (' + totalMin + ' / ' + targetMin + ' à¸™à¸²à¸—à¸µ â€” à¸‚à¸²à¸”à¸­à¸µà¸à¸›à¸£à¸°à¸¡à¸²à¸“ ' + Math.ceil(diff/4) + ' à¹€à¸žà¸¥à¸‡)\n\nà¸„à¸¸à¸“à¸•à¹‰à¸­à¸‡à¸à¸²à¸£' + (actName ? actName : 'à¸”à¸³à¹€à¸™à¸´à¸™à¸à¸²à¸£') + 'à¸•à¹ˆà¸­à¹„à¸›à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?';
+    var title = '⚠️ เวลาแสดงยังไม่ครบ ' + targetMin + ' นาที';
+    var message = 'เวลารวมเพลงในลิสยังขาดอีก ' + diff + ' นาที (' + totalMin + ' / ' + targetMin + ' นาที — ขาดอีกประมาณ ' + Math.ceil(diff/4) + ' เพลง)\n\nคุณต้องการ' + (actName ? actName : 'ดำเนินการ') + 'ต่อไปหรือไม่?';
     if (typeof showConfirm === 'function') {
       showConfirm({
         title: title,
         message: message,
-        confirmText: 'à¸¢à¸·à¸™à¸¢à¸±à¸™' + (actName ? ' (' + actName + ')' : ''),
+        confirmText: 'ยืนยัน' + (actName ? ' (' + actName + ')' : ''),
         danger: false
       }).then(function(ok) {
         if (ok) onOk();
@@ -2239,14 +2228,14 @@ function _checkDurBeforeAction(actionName, onOk) {
   onOk();
 }
 
-// â”€â”€ Patch renderPlaylist to also update duration bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Patch renderPlaylist to also update duration bar ────────────
 var _origRenderForDur = renderPlaylist;
 renderPlaylist = function(){
   _origRenderForDur();
   setTimeout(updatePlDurBar, 0);
 };
 
-// â”€â”€ Update bar when timeSlot changes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Update bar when timeSlot changes ────────────────────────────
 (function(){
   var origOTSC = typeof onTimeSlotChange === 'function' ? onTimeSlotChange : null;
   if(origOTSC) onTimeSlotChange = function(){
@@ -2287,7 +2276,7 @@ function _doCopyAndSave(){
 
     let n = 0;
     const body = playlistData.map(s=>{
-      if(s.break) return "à¸žà¸±à¸";
+      if(s.break) return "พัก";
       n++;
 
       const artistTxt =
@@ -2304,11 +2293,11 @@ function _doCopyAndSave(){
 
     const textToCopy = header + body;
 
-    // â”€â”€ 1) à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¸à¹ˆà¸­à¸™à¹€à¸ªà¸¡à¸­ (à¹„à¸¡à¹ˆà¸‚à¸¶à¹‰à¸™à¸à¸±à¸š clipboard) â”€â”€
+    // ── 1) บันทึกลิสก่อนเสมอ (ไม่ขึ้นกับ clipboard) ──
     saveHistory(function(saveOk) {
       var toastMsg = saveOk
-        ? 'ðŸ“‹ à¸„à¸±à¸”à¸¥à¸­à¸ & à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¸ªà¸³à¹€à¸£à¹‡à¸ˆ!'
-        : 'âš ï¸ à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ â€” à¸¥à¸­à¸‡à¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡';
+        ? '📋 คัดลอก & บันทึกลิสสำเร็จ!'
+        : '⚠️ บันทึกลิสไม่สำเร็จ — ลองอีกครั้ง';
       var toast = document.getElementById('toast');
       if (toast) {
         toast.textContent = toastMsg;
@@ -2319,12 +2308,12 @@ function _doCopyAndSave(){
           setTimeout(function(){ toast.style.display='none'; },300);
         },2500);
       }
-      if (saveOk) checkExistingPlaylists(); // refresh used-count à¸«à¸¥à¸±à¸‡ save à¸ªà¸³à¹€à¸£à¹‡à¸ˆ
+      if (saveOk) checkExistingPlaylists(); // refresh used-count หลัง save สำเร็จ
     });
 
-    // â”€â”€ 2) à¸„à¸±à¸”à¸¥à¸­à¸à¸¥à¸‡ clipboard à¹à¸¢à¸à¸•à¹ˆà¸²à¸‡à¸«à¸²à¸ â”€â”€
+    // ── 2) คัดลอกลง clipboard แยกต่างหาก ──
     function doCopy() {
-      // à¸¥à¸­à¸‡ modern API à¸à¹ˆà¸­à¸™ (à¸£à¸­à¸‡à¸£à¸±à¸šà¸¡à¸·à¸­à¸–à¸·à¸­à¸”à¸µà¸à¸§à¹ˆà¸²)
+      // ลอง modern API ก่อน (รองรับมือถือดีกว่า)
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(textToCopy).catch(function() {
           fallbackCopy(textToCopy);
@@ -2352,8 +2341,8 @@ function _doCopyAndSave(){
 }
 
 function copyPlaylist(){
-  if(playlistData.length === 0){ showSongsAlert('âš ï¸ à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸¥à¸´à¸ª'); return; }
-  if (!validatePlaylistContext('à¸šà¸±à¸™à¸—à¸¶à¸')) return;
+  if(playlistData.length === 0){ showSongsAlert('⚠️ ไม่มีเพลงในลิส'); return; }
+  if (!validatePlaylistContext('บันทึก')) return;
   checkPlaylistLimit(function() { _doCopyAndSave(); });
 }
 
@@ -2361,7 +2350,7 @@ var _historyCache = [];
 var _savingHistory = false;
 
 function goLiveMode() {
-  if (!validatePlaylistContext('à¹€à¸‚à¹‰à¸² live mode')) return;
+  if (!validatePlaylistContext('เข้า live mode')) return;
   var date = (document.getElementById('useDate') || {}).value || '';
   var venue = getActiveVenueValue();
   var slot = getActiveTimeSlotValue();
@@ -2388,7 +2377,7 @@ function goLiveMode() {
     localStorage.setItem('live_backup_' + bandId + '_' + date, JSON.stringify({ current: 0, playlist: backupSongs }));
   }
 
-  // à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™à¸¥à¸‡ DB à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´à¸à¹ˆà¸­à¸™à¹€à¸‚à¹‰à¸² Live Mode à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰ Live Mode à¹„à¸”à¹‰à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸žà¸¥à¸‡à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¸•à¸£à¸‡à¸à¸±à¸™à¸—à¸±à¸™à¸—à¸µ
+  // บันทึกลิสปัจจุบันลง DB อัตโนมัติก่อนเข้า Live Mode เพื่อให้ Live Mode ได้ข้อมูลเพลงล่าสุดตรงกันทันที
   if (playlistData.filter(function(s){ return !s.break; }).length > 0) {
     saveHistory(function() {
       location.href = liveUrl;
@@ -2399,13 +2388,13 @@ function goLiveMode() {
 }
 
 function saveHistoryManual() {
-  if (playlistData.length === 0) { showSongsAlert('âš ï¸ à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸¥à¸´à¸ª'); return; }
-  if (!validatePlaylistContext('à¸šà¸±à¸™à¸—à¸¶à¸')) return;
+  if (playlistData.length === 0) { showSongsAlert('⚠️ ยังไม่มีเพลงในลิส'); return; }
+  if (!validatePlaylistContext('บันทึก')) return;
   checkPlaylistLimit(function() {
     saveHistory(function(ok) {
       var toast = document.getElementById('toast');
       if (toast) {
-        toast.textContent = ok ? 'ðŸ’¾ à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ªà¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢!' : 'âš ï¸ à¸šà¸±à¸™à¸—à¸¶à¸à¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ â€” à¸¥à¸­à¸‡à¸­à¸µà¸à¸„à¸£à¸±à¹‰à¸‡';
+        toast.textContent = ok ? '💾 บันทึกลิสเรียบร้อย!' : '⚠️ บันทึกไม่สำเร็จ — ลองอีกครั้ง';
         toast.style.display = 'block';
         toast.classList.add('show');
         setTimeout(function(){
@@ -2420,7 +2409,7 @@ function saveHistoryManual() {
 
 function saveHistory(onDone) {
   if (playlistData.length === 0) { if (onDone) onDone(false); return; }
-  if (_savingHistory) { if (onDone) onDone(false); return; } // à¸›à¹‰à¸­à¸‡à¸à¸±à¸™ double-save
+  if (_savingHistory) { if (onDone) onDone(false); return; } // ป้องกัน double-save
   _savingHistory = true;
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
@@ -2464,17 +2453,17 @@ function saveHistory(onDone) {
 
 function showHistory() {
   document.getElementById('historyModal').style.display = 'block';
-  document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">à¸à¸³à¸¥à¸±à¸‡à¹‚à¸«à¸¥à¸”...</p>';
+  document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">กำลังโหลด...</p>';
   var bandId   = localStorage.getItem('bandId')   || '';
   var bandName = localStorage.getItem('bandName') || '';
   var picker = document.getElementById('historyDatePicker');
   apiCall('getPlaylistHistory', { bandId: bandId, bandName: bandName }, function(r) {
     _historyCache = (r && r.success && r.data) ? r.data : [];
     if (_historyCache.length === 0) {
-      document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µà¸›à¸£à¸°à¸§à¸±à¸•à¸´</p>';
+      document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">ยังไม่มีประวัติ</p>';
       return;
     }
-    // à¸•à¸±à¹‰à¸‡à¸§à¸±à¸™à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¸—à¸µà¹ˆà¸¡à¸µà¸›à¸£à¸°à¸§à¸±à¸•à¸´
+    // ตั้งวันล่าสุดที่มีประวัติ
     var latestDate = _historyCache[0].date || '';
     if (picker && latestDate) picker.value = latestDate;
     filterHistoryByDate(latestDate);
@@ -2483,29 +2472,29 @@ function showHistory() {
 
 function filterHistoryByDate(date) {
   var el = document.getElementById('historyList');
-  if (!date) { el.innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">à¹€à¸¥à¸·à¸­à¸à¸§à¸±à¸™à¹€à¸žà¸·à¹ˆà¸­à¸”à¸¹à¸¥à¸´à¸ª</p>'; return; }
+  if (!date) { el.innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">เลือกวันเพื่อดูลิส</p>'; return; }
   var matches = _historyCache.filter(function(h){ return h.date === date; });
   if (matches.length === 0) {
-    el.innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">à¹„à¸¡à¹ˆà¸žà¸šà¸¥à¸´à¸ªà¸‚à¸­à¸‡à¸§à¸±à¸™à¸™à¸µà¹‰</p>'; return;
+    el.innerHTML = '<p style="text-align:center;color:#888;padding:24px 0">ไม่พบลิสของวันนี้</p>'; return;
   }
   el.innerHTML = matches.map(function(h, i) {
-    var label = [h.venue, h.timeSlot].filter(Boolean).join(' Â· ') || 'à¸¥à¸´à¸ªà¸—à¸µà¹ˆ ' + (i+1);
+    var label = [h.venue, h.timeSlot].filter(Boolean).join(' · ') || 'ลิสที่ ' + (i+1);
     var ts = h.createdAt ? new Date(h.createdAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}) : '';
-    var creator = h.createdBy ? 'ðŸ‘¤ ' + h.createdBy : '';
+    var creator = h.createdBy ? '👤 ' + h.createdBy : '';
     var songs = (h.songs || []).map(function(s, n){
       return '<div style="padding:3px 0;font-size:13px;border-bottom:1px solid #f1f5f9;color:#374151">'+
         (n+1)+'. <strong>'+s.name+'</strong>'+
         (s.key ? ' <span style="background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:4px;font-size:11px">'+formatKey(s.key)+'</span>' : '')+
-        (s.bpm ? ' <span style="color:#6b7280;font-size:11px">â–¸ '+s.bpm+'</span>' : '')+
+        (s.bpm ? ' <span style="color:#6b7280;font-size:11px">▸ '+s.bpm+'</span>' : '')+
         '</div>';
     }).join('');
     var idx = _historyCache.indexOf(h);
     return '<div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:12px">'+
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
         '<div><div style="font-weight:700;font-size:15px">'+label+'</div>'+
-        (ts || creator ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">'+(creator ? creator : '')+(ts && creator ? ' Â· ' : '')+(ts ? 'à¹€à¸§à¸¥à¸²: '+ts : '')+'</div>' : '')+
+        (ts || creator ? '<div style="font-size:11px;color:#9ca3af;margin-top:2px">'+(creator ? creator : '')+(ts && creator ? ' · ' : '')+(ts ? 'เวลา: '+ts : '')+'</div>' : '')+
         '</div>'+
-        '<button onclick="loadHistoryEntry('+idx+')" style="background:#2d3748;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;min-height:unset;white-space:nowrap">ðŸ“¥ à¹‚à¸«à¸¥à¸”à¸¥à¸´à¸ªà¸™à¸µà¹‰</button>'+
+        '<button onclick="loadHistoryEntry('+idx+')" style="background:#2d3748;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;min-height:unset;white-space:nowrap">📥 โหลดลิสนี้</button>'+
       '</div>'+
       '<div>'+songs+'</div>'+
       '</div>';
@@ -2515,7 +2504,7 @@ function filterHistoryByDate(date) {
 function loadHistoryEntry(idx) {
   var h = _historyCache[idx];
   if (!h || !h.songs) return;
-  if (playlistData.length > 0 && !confirm('à¸¥à¹‰à¸²à¸‡à¸¥à¸´à¸ªà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™à¹à¸¥à¹‰à¸§à¹‚à¸«à¸¥à¸”à¸¥à¸´à¸ªà¸™à¸µà¹‰?')) return;
+  if (playlistData.length > 0 && !confirm('ล้างลิสปัจจุบันแล้วโหลดลิสนี้?')) return;
   playlistData = h.songs.map(function(s){
     return enrichSongFromBandLibrary({
       name:        s.name || '',
@@ -2536,12 +2525,12 @@ function loadHistoryEntry(idx) {
   closeHistory();
   var toast = document.getElementById('toast');
   if (toast) {
-    toast.textContent = 'à¹‚à¸«à¸¥à¸”à¸¥à¸´à¸ªà¸à¸¥à¸±à¸šà¸¡à¸²à¹à¸¥à¹‰à¸§';
+    toast.textContent = 'โหลดลิสกลับมาแล้ว';
     toast.style.display = 'block';
     toast.classList.add('show');
     setTimeout(function(){
       toast.classList.remove('show');
-      setTimeout(function(){ toast.style.display='none'; toast.textContent='à¸„à¸±à¸”à¸¥à¸­à¸à¸¥à¸´à¸ªà¸ªà¸³à¹€à¸£à¹‡à¸ˆ'; },300);
+      setTimeout(function(){ toast.style.display='none'; toast.textContent='คัดลอกลิสสำเร็จ'; },300);
     },2000);
   }
 }
@@ -2551,29 +2540,29 @@ function closeHistory() {
 }
 </script>
 
-<!-- â•â• SUGGEST EDIT MODAL â•â• -->
+<!-- ══ SUGGEST EDIT MODAL ══ -->
 <div id="suggestModal" class="sug-overlay">
 <div class="sug-card">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <h3 id="sugModalTitle" style="margin:0">ðŸ’¡ à¹à¸™à¸°à¸™à¸³à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚</h3>
-    <button onclick="closeSuggestModal()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">âœ•</button>
+    <h3 id="sugModalTitle" style="margin:0">💡 แนะนำการแก้ไข</h3>
+    <button onclick="closeSuggestModal()" style="background:none;border:1.5px solid #cbd5e0;color:#4a5568;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer;min-height:unset;padding:0;flex-shrink:0">✕</button>
   </div>
-  <p id="sugModalHint" style="font-size:13px;color:#64748b;margin:0 0 16px;line-height:1.5">ðŸ“Œ à¸à¸²à¸£à¹à¸™à¸°à¸™à¸³à¸ˆà¸°à¸–à¸¹à¸à¸ªà¹ˆà¸‡à¹ƒà¸«à¹‰à¹à¸­à¸”à¸¡à¸´à¸™à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸šà¸à¹ˆà¸­à¸™à¹à¸à¹‰à¹„à¸‚à¸ˆà¸£à¸´à¸‡ à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸‰à¸žà¸²à¸°à¸Šà¹ˆà¸­à¸‡à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚</p>
+  <p id="sugModalHint" style="font-size:13px;color:#64748b;margin:0 0 16px;line-height:1.5">📌 การแนะนำจะถูกส่งให้แอดมินตรวจสอบก่อนแก้ไขจริง เปลี่ยนเฉพาะช่องที่ต้องการแก้ไข</p>
   <input type="hidden" id="sugSongId">
   <div class="sug-field">
-    <label>à¸Šà¸·à¹ˆà¸­à¹€à¸žà¸¥à¸‡</label>
-    <input type="text" id="sugName" placeholder="à¸Šà¸·à¹ˆà¸­à¹€à¸žà¸¥à¸‡">
+    <label>ชื่อเพลง</label>
+    <input type="text" id="sugName" placeholder="ชื่อเพลง">
     <div class="sug-current" id="sugNameCur"></div>
   </div>
   <div class="sug-field">
-    <label>à¸¨à¸´à¸¥à¸›à¸´à¸™</label>
-    <input type="text" id="sugArtist" placeholder="à¸¨à¸´à¸¥à¸›à¸´à¸™">
+    <label>ศิลปิน</label>
+    <input type="text" id="sugArtist" placeholder="ศิลปิน">
     <div class="sug-current" id="sugArtistCur"></div>
   </div>
   <div class="sug-row">
     <div class="sug-field">
-      <label>à¸„à¸µà¸¢à¹Œ</label>
-      <select id="sugKey"><option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option><option value="C">C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
+      <label>คีย์</label>
+      <select id="sugKey"><option value="">— ไม่เปลี่ยน —</option><option value="C">C / Am</option><optgroup label="# Sharp"><option>1#</option><option>2#</option><option>3#</option><option>4#</option><option>5#</option><option>6#</option><option>7#</option></optgroup><optgroup label="b Flat"><option>1b</option><option>2b</option><option>3b</option><option>4b</option><option>5b</option><option>6b</option><option>7b</option></optgroup></select>
       <div class="sug-current" id="sugKeyCur"></div>
     </div>
     <div class="sug-field">
@@ -2584,48 +2573,48 @@ function closeHistory() {
   </div>
   <div class="sug-row">
     <div class="sug-field">
-      <label>à¸ªà¸±à¸à¸Šà¸²à¸•à¸´à¹€à¸žà¸¥à¸‡</label>
+      <label>สัญชาติเพลง</label>
       <select id="sugNationality">
-        <option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option>
-        <option value="à¹„à¸—à¸¢">à¹„à¸—à¸¢</option>
-        <option value="à¸ªà¸²à¸à¸¥">à¸ªà¸²à¸à¸¥</option>
+        <option value="">— ไม่เปลี่ยน —</option>
+        <option value="ไทย">ไทย</option>
+        <option value="สากล">สากล</option>
       </select>
       <div class="sug-current" id="sugNationalityCur"></div>
     </div>
     <div class="sug-field">
-      <label>à¹à¸™à¸§à¹€à¸žà¸¥à¸‡</label>
-      <select id="sugGenre"><option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option><option value="à¸›à¹Šà¸­à¸›">à¸›à¹Šà¸­à¸›</option><option value="à¸£à¹‡à¸­à¸„">à¸£à¹‡à¸­à¸„</option><option value="à¸”à¸´à¸ªà¹‚à¸à¹‰">à¸”à¸´à¸ªà¹‚à¸à¹‰</option><option value="à¹à¸£à¹Šà¸Ÿ/à¸®à¸´à¸›à¸®à¸­à¸›">à¹à¸£à¹Šà¸Ÿ/à¸®à¸´à¸›à¸®à¸­à¸›</option><option value="à¸¥à¸¹à¸à¸—à¸¸à¹ˆà¸‡ / à¸­à¸µà¸ªà¸²à¸™">à¸¥à¸¹à¸à¸—à¸¸à¹ˆà¸‡ / à¸­à¸µà¸ªà¸²à¸™</option><option value="à¹€à¸žà¸·à¹ˆà¸­à¸Šà¸µà¸§à¸´à¸•">à¹€à¸žà¸·à¹ˆà¸­à¸Šà¸µà¸§à¸´à¸•</option><option value="à¸­à¸²à¸£à¹Œà¹à¸­à¸™à¸”à¹Œà¸šà¸µ">à¸­à¸²à¸£à¹Œà¹à¸­à¸™à¸”à¹Œà¸šà¸µ</option><option value="à¹à¸ˆà¹Šà¸ª / à¸šà¸¥à¸¹à¸ªà¹Œ">à¹à¸ˆà¹Šà¸ª / à¸šà¸¥à¸¹à¸ªà¹Œ</option><option value="à¹€à¸£à¸à¹€à¸à¹‰">à¹€à¸£à¸à¹€à¸à¹‰</option><option value="à¸­à¸´à¸™à¸”à¸µà¹‰">à¸­à¸´à¸™à¸”à¸µà¹‰</option></select>
+      <label>แนวเพลง</label>
+      <select id="sugGenre"><option value="">— ไม่เปลี่ยน —</option><option value="ป๊อป">ป๊อป</option><option value="ร็อค">ร็อค</option><option value="ดิสโก้">ดิสโก้</option><option value="แร๊ฟ/ฮิปฮอป">แร๊ฟ/ฮิปฮอป</option><option value="ลูกทุ่ง / อีสาน">ลูกทุ่ง / อีสาน</option><option value="เพื่อชีวิต">เพื่อชีวิต</option><option value="อาร์แอนด์บี">อาร์แอนด์บี</option><option value="แจ๊ส / บลูส์">แจ๊ส / บลูส์</option><option value="เรกเก้">เรกเก้</option><option value="อินดี้">อินดี้</option></select>
       <div class="sug-current" id="sugGenreCur"></div>
     </div>
   </div>
   <div class="sug-row">
     <div class="sug-field">
-      <label>à¸™à¸±à¸à¸£à¹‰à¸­à¸‡</label>
-      <select id="sugSinger"><option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option><option value="à¸Šà¸²à¸¢">ðŸŽ¤ à¸Šà¸²à¸¢</option><option value="à¸«à¸à¸´à¸‡">ðŸŽ¤ à¸«à¸à¸´à¸‡</option><option value="à¸Šà¸²à¸¢/à¸«à¸à¸´à¸‡">ðŸŽ¤ðŸŽ¤ à¸„à¸¹à¹ˆ</option></select>
+      <label>นักร้อง</label>
+      <select id="sugSinger"><option value="">— ไม่เปลี่ยน —</option><option value="ชาย">🎤 ชาย</option><option value="หญิง">🎤 หญิง</option><option value="ชาย/หญิง">🎤🎤 คู่</option></select>
       <div class="sug-current" id="sugSingerCur"></div>
     </div>
   </div>
   <div class="sug-row">
     <div class="sug-field">
-      <label>à¸¢à¸¸à¸„</label>
-      <select id="sugEra"><option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option><option value="80s">80s</option><option value="90s">90s</option><option value="2000s">00s</option><option value="2010s">10s</option><option value="2020s">20s</option></select>
+      <label>ยุค</label>
+      <select id="sugEra"><option value="">— ไม่เปลี่ยน —</option><option value="80s">80s</option><option value="90s">90s</option><option value="2000s">00s</option><option value="2010s">10s</option><option value="2020s">20s</option></select>
       <div class="sug-current" id="sugEraCur"></div>
     </div>
     <div class="sug-field">
-      <label>à¸­à¸²à¸£à¸¡à¸“à¹Œ</label>
-      <select id="sugMood"><option value="">â€” à¹„à¸¡à¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â€”</option><option value="à¸¡à¸±à¸™ / à¸ªà¸™à¸¸à¸">à¸¡à¸±à¸™ / à¸ªà¸™à¸¸à¸</option><option value="à¸«à¸§à¸²à¸™ / à¹‚à¸£à¹à¸¡à¸™à¸•à¸´à¸">à¸«à¸§à¸²à¸™ / à¹‚à¸£à¹à¸¡à¸™à¸•à¸´à¸</option><option value="à¹€à¸¨à¸£à¹‰à¸² / à¸­à¸à¸«à¸±à¸">à¹€à¸¨à¸£à¹‰à¸² / à¸­à¸à¸«à¸±à¸</option><option value="à¸™à¸´à¹ˆà¸‡ / à¸œà¹ˆà¸­à¸™à¸„à¸¥à¸²à¸¢">à¸™à¸´à¹ˆà¸‡ / à¸œà¹ˆà¸­à¸™à¸„à¸¥à¸²à¸¢</option><option value="à¸®à¸¶à¸à¹€à¸«à¸´à¸¡ / à¸¢à¸´à¹ˆà¸‡à¹ƒà¸«à¸à¹ˆ">à¸®à¸¶à¸à¹€à¸«à¸´à¸¡ / à¸¢à¸´à¹ˆà¸‡à¹ƒà¸«à¸à¹ˆ</option></select>
+      <label>อารมณ์</label>
+      <select id="sugMood"><option value="">— ไม่เปลี่ยน —</option><option value="มัน / สนุก">มัน / สนุก</option><option value="หวาน / โรแมนติก">หวาน / โรแมนติก</option><option value="เศร้า / อกหัก">เศร้า / อกหัก</option><option value="นิ่ง / ผ่อนคลาย">นิ่ง / ผ่อนคลาย</option><option value="ฮึกเหิม / ยิ่งใหญ่">ฮึกเหิม / ยิ่งใหญ่</option></select>
       <div class="sug-current" id="sugMoodCur"></div>
     </div>
   </div>
   <div class="sug-field" id="sugNoteField">
-    <label>à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸ (à¹„à¸¡à¹ˆà¸šà¸±à¸‡à¸„à¸±à¸š)</label>
-    <textarea id="sugNote" placeholder="à¹€à¸Šà¹ˆà¸™ à¸Šà¸·à¹ˆà¸­à¸¨à¸´à¸¥à¸›à¸´à¸™à¸ªà¸°à¸à¸”à¸œà¸´à¸”, à¸„à¸µà¸¢à¹Œà¹„à¸¡à¹ˆà¸•à¸£à¸‡ à¸¯à¸¥à¸¯"></textarea>
+    <label>หมายเหตุ (ไม่บังคับ)</label>
+    <textarea id="sugNote" placeholder="เช่น ชื่อศิลปินสะกดผิด, คีย์ไม่ตรง ฯลฯ"></textarea>
   </div>
   <div id="sugErrorBanner" style="display:none;background:#fee2e2;border:1.5px solid #fca5a5;border-radius:10px;padding:11px 14px;margin-bottom:12px;color:#b91c1c;font-weight:600;font-size:13px"></div>
   <div class="sug-actions" style="flex-wrap:wrap;gap:8px">
-    <button class="sug-btn-cancel" onclick="closeSuggestModal()">à¸¢à¸à¹€à¸¥à¸´à¸</button>
-    <button id="sugDeleteBtn" onclick="deleteGlobalSong()" style="display:none;background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;border-radius:10px;padding:0 16px;height:42px;font-size:13px;font-weight:600;cursor:pointer;min-height:unset">ðŸ—‘ï¸ à¸¥à¸šà¹€à¸žà¸¥à¸‡</button>
-    <button class="sug-btn-send" id="sugSendBtn" onclick="submitSuggestion()">ðŸ“¤ à¸ªà¹ˆà¸‡à¹à¸™à¸°à¸™à¸³</button>
+    <button class="sug-btn-cancel" onclick="closeSuggestModal()">ยกเลิก</button>
+    <button id="sugDeleteBtn" onclick="deleteGlobalSong()" style="display:none;background:#fee2e2;color:#b91c1c;border:1.5px solid #fca5a5;border-radius:10px;padding:0 16px;height:42px;font-size:13px;font-weight:600;cursor:pointer;min-height:unset">🗑️ ลบเพลง</button>
+    <button class="sug-btn-send" id="sugSendBtn" onclick="submitSuggestion()">📤 ส่งแนะนำ</button>
   </div>
 </div>
 </div>
@@ -2646,42 +2635,42 @@ function _fillSuggestModal(song, songId) {
   document.getElementById('sugNationality').value = song.nationality || '';
   document.getElementById('sugNote').value = '';
 
-  document.getElementById('sugNameCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.name || 'â€”');
-  document.getElementById('sugArtistCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.artist || 'â€”');
-  document.getElementById('sugKeyCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.key ? formatKey(song.key) : 'â€”');
-  document.getElementById('sugBpmCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + ((song.bpm > 0) ? song.bpm : 'â€”');
-  document.getElementById('sugGenreCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.tags || 'â€”');
-  document.getElementById('sugSingerCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.singer || 'â€”');
-  document.getElementById('sugEraCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.era || 'â€”');
-  document.getElementById('sugMoodCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.mood || 'â€”');
-  document.getElementById('sugNationalityCur').textContent = 'à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™: ' + (song.nationality || 'â€”');
+  document.getElementById('sugNameCur').textContent = 'ปัจจุบัน: ' + (song.name || '—');
+  document.getElementById('sugArtistCur').textContent = 'ปัจจุบัน: ' + (song.artist || '—');
+  document.getElementById('sugKeyCur').textContent = 'ปัจจุบัน: ' + (song.key ? formatKey(song.key) : '—');
+  document.getElementById('sugBpmCur').textContent = 'ปัจจุบัน: ' + ((song.bpm > 0) ? song.bpm : '—');
+  document.getElementById('sugGenreCur').textContent = 'ปัจจุบัน: ' + (song.tags || '—');
+  document.getElementById('sugSingerCur').textContent = 'ปัจจุบัน: ' + (song.singer || '—');
+  document.getElementById('sugEraCur').textContent = 'ปัจจุบัน: ' + (song.era || '—');
+  document.getElementById('sugMoodCur').textContent = 'ปัจจุบัน: ' + (song.mood || '—');
+  document.getElementById('sugNationalityCur').textContent = 'ปัจจุบัน: ' + (song.nationality || '—');
 }
 
 function openSuggestModal(songId, idx) {
   var song = _pageData[idx];
   if (!song) return;
   _editDirectMode = false;
-  document.getElementById('sugModalTitle').textContent = 'ðŸ’¡ à¹à¸™à¸°à¸™à¸³à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚';
+  document.getElementById('sugModalTitle').textContent = '💡 แนะนำการแก้ไข';
   document.getElementById('sugModalHint').style.display = '';
   document.getElementById('sugNoteField').style.display = '';
-  document.getElementById('sugSendBtn').textContent = 'ðŸ“¤ à¸ªà¹ˆà¸‡à¹à¸™à¸°à¸™à¸³';
+  document.getElementById('sugSendBtn').textContent = '📤 ส่งแนะนำ';
   document.getElementById('sugErrorBanner').style.display = 'none';
   _fillSuggestModal(song, songId);
   document.getElementById('suggestModal').style.display = 'block';
 }
 
-// à¹€à¸›à¸´à¸” modal à¹ƒà¸™à¹‚à¸«à¸¡à¸”à¹à¸à¹‰à¹„à¸‚à¸•à¸£à¸‡ (song manager / admin / manager)
+// เปิด modal ในโหมดแก้ไขตรง (song manager / admin / manager)
 function openDirectEditModal(songId, idx) {
   var song = (idx >= 0 && idx < _pageData.length) ? _pageData[idx] : null;
   if (!song) {
-    showToast('à¹„à¸¡à¹ˆà¸žà¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹€à¸žà¸¥à¸‡', 'error');
+    showToast('ไม่พบข้อมูลเพลง', 'error');
     return;
   }
   _editDirectMode = true;
-  document.getElementById('sugModalTitle').textContent = 'âœï¸ à¹à¸à¹‰à¹„à¸‚à¹€à¸žà¸¥à¸‡';
+  document.getElementById('sugModalTitle').textContent = '✏️ แก้ไขเพลง';
   document.getElementById('sugModalHint').style.display = 'none';
   document.getElementById('sugNoteField').style.display = 'none';
-  document.getElementById('sugSendBtn').textContent = 'ðŸ’¾ à¸šà¸±à¸™à¸—à¸¶à¸';
+  document.getElementById('sugSendBtn').textContent = '💾 บันทึก';
   document.getElementById('sugDeleteBtn').style.display = 'inline-flex';
   document.getElementById('sugErrorBanner').style.display = 'none';
   _fillSuggestModal(song, songId);
@@ -2696,20 +2685,20 @@ function closeSuggestModal() {
 
 function deleteGlobalSong() {
   var songId = document.getElementById('sugSongId').value;
-  var songName = document.getElementById('sugName').value || 'à¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰';
+  var songName = document.getElementById('sugName').value || 'เพลงนี้';
   if (!songId) return;
-  if (!confirm('à¸¢à¸·à¸™à¸¢à¸±à¸™à¸¥à¸š "' + songName + '" à¸­à¸­à¸à¸ˆà¸²à¸à¸„à¸¥à¸±à¸‡à¸à¸¥à¸²à¸‡?\nà¸à¸²à¸£à¸¥à¸šà¸™à¸µà¹‰à¹„à¸¡à¹ˆà¸ªà¸²à¸¡à¸²à¸£à¸–à¸à¸¹à¹‰à¸„à¸·à¸™à¹„à¸”à¹‰')) return;
+  if (!confirm('ยืนยันลบ "' + songName + '" ออกจากคลังกลาง?\nการลบนี้ไม่สามารถกู้คืนได้')) return;
   var btn = document.getElementById('sugDeleteBtn');
-  btn.disabled = true; btn.textContent = 'à¸à¸³à¸¥à¸±à¸‡à¸¥à¸š...';
+  btn.disabled = true; btn.textContent = 'กำลังลบ...';
   apiCall('deleteSong', { songId: songId }, function(r) {
-    btn.disabled = false; btn.textContent = 'ðŸ—‘ï¸ à¸¥à¸šà¹€à¸žà¸¥à¸‡';
+    btn.disabled = false; btn.textContent = '🗑️ ลบเพลง';
     if (r && r.success) {
-      showToast('âœ… à¸¥à¸šà¹€à¸žà¸¥à¸‡à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢', 'success');
+      showToast('✅ ลบเพลงเรียบร้อย', 'success');
       closeSuggestModal();
       _pageData = _pageData.filter(function(s) { return (s.id || s.songId || '') !== songId; });
       renderPage();
     } else {
-      showToast((r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸” à¸¥à¸šà¹„à¸¡à¹ˆà¸ªà¸³à¹€à¸£à¹‡à¸ˆ', 'error');
+      showToast((r && r.message) || 'เกิดข้อผิดพลาด ลบไม่สำเร็จ', 'error');
     }
   });
 }
@@ -2722,7 +2711,7 @@ function submitSuggestion() {
   var songId = document.getElementById('sugSongId').value;
   if (!songId) return;
   var btn = document.getElementById('sugSendBtn');
-  btn.disabled = true; btn.textContent = 'à¸à¸³à¸¥à¸±à¸‡à¸šà¸±à¸™à¸—à¸¶à¸...';
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
 
   // Collect only changed fields
   var changes = {};
@@ -2747,22 +2736,22 @@ function submitSuggestion() {
   if (newNationality && newNationality !== (_sugOriginal.nationality || '')) changes.nationality = newNationality;
 
   if (Object.keys(changes).length === 0) {
-    showToast('à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹à¸›à¸¥à¸‡', 'error');
+    showToast('ไม่มีข้อมูลที่เปลี่ยนแปลง', 'error');
     btn.disabled = false;
-    btn.textContent = _editDirectMode ? 'ðŸ’¾ à¸šà¸±à¸™à¸—à¸¶à¸' : 'ðŸ“¤ à¸ªà¹ˆà¸‡à¹à¸™à¸°à¸™à¸³';
+    btn.textContent = _editDirectMode ? '💾 บันทึก' : '📤 ส่งแนะนำ';
     return;
   }
 
   if (_editDirectMode) {
-    // à¸œà¸¹à¹‰à¸”à¸¹à¹à¸¥à¹€à¸žà¸¥à¸‡ â€” à¸šà¸±à¸™à¸—à¸¶à¸à¸•à¸£à¸‡à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸œà¹ˆà¸²à¸™ suggestion workflow
+    // ผู้ดูแลเพลง — บันทึกตรงโดยไม่ผ่าน suggestion workflow
     var errBanner = document.getElementById('sugErrorBanner');
     errBanner.style.display = 'none';
     apiCall('updateSong', { songId: songId, data: changes }, function(r) {
-      btn.disabled = false; btn.textContent = 'ðŸ’¾ à¸šà¸±à¸™à¸—à¸¶à¸';
+      btn.disabled = false; btn.textContent = '💾 บันทึก';
       if (r && r.success) {
-        showToast('âœ… à¸šà¸±à¸™à¸—à¸¶à¸à¸à¸²à¸£à¹à¸à¹‰à¹„à¸‚à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢', 'success');
+        showToast('✅ บันทึกการแก้ไขเรียบร้อย', 'success');
         closeSuggestModal();
-        // à¸­à¸±à¸žà¹€à¸”à¸—à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹ƒà¸™ _pageData à¹à¸šà¸š in-place à¹à¸¥à¹‰à¸§ re-render
+        // อัพเดทข้อมูลใน _pageData แบบ in-place แล้ว re-render
         var editedName = changes.name || (_sugOriginal ? _sugOriginal.name : '');
         for (var pi = 0; pi < _pageData.length; pi++) {
           if ((_pageData[pi].id || _pageData[pi].songId || '') === songId) {
@@ -2773,7 +2762,7 @@ function submitSuggestion() {
         }
         renderPage();
 
-        // à¸­à¸±à¸žà¹€à¸”à¸— _bandLibraryMap à¹à¸¥à¸° _bandLibraryMapById
+        // อัพเดท _bandLibraryMap และ _bandLibraryMapById
         if (songId && _bandLibraryMapById[songId]) {
           Object.assign(_bandLibraryMapById[songId], changes);
         }
@@ -2783,7 +2772,7 @@ function submitSuggestion() {
           Object.assign(_bandLibraryMap[ek], changes);
         }
 
-        // à¸­à¸±à¸žà¹€à¸”à¸—à¹€à¸žà¸¥à¸‡à¹ƒà¸™ playlistData à¸—à¸±à¸™à¸—à¸µà¸«à¸²à¸à¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¸¥à¸´à¸ªà¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™
+        // อัพเดทเพลงใน playlistData ทันทีหากเพลงนี้อยู่ในลิสปัจจุบัน
         var plChanged = false;
         var editedNameLower = (editedName || '').trim().toLowerCase();
         playlistData.forEach(function(ps) {
@@ -2804,8 +2793,8 @@ function submitSuggestion() {
         });
         if (plChanged) renderPlaylist();
       } else {
-        var msg = (r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸” à¸à¸£à¸¸à¸“à¸²à¸¥à¸­à¸‡à¹ƒà¸«à¸¡à¹ˆ';
-        errBanner.textContent = 'âŒ ' + msg;
+        var msg = (r && r.message) || 'เกิดข้อผิดพลาด กรุณาลองใหม่';
+        errBanner.textContent = '❌ ' + msg;
         errBanner.style.display = 'block';
         showToast(msg, 'error');
       }
@@ -2816,12 +2805,12 @@ function submitSuggestion() {
       suggestedData: changes,
       note: document.getElementById('sugNote').value.trim()
     }, function(r) {
-      btn.disabled = false; btn.textContent = 'ðŸ“¤ à¸ªà¹ˆà¸‡à¹à¸™à¸°à¸™à¸³';
+      btn.disabled = false; btn.textContent = '📤 ส่งแนะนำ';
       if (r && r.success) {
-        showToast('à¸ªà¹ˆà¸‡à¹à¸™à¸°à¸™à¸³à¹€à¸£à¸µà¸¢à¸šà¸£à¹‰à¸­à¸¢ à¹à¸­à¸”à¸¡à¸´à¸™à¸ˆà¸°à¸•à¸£à¸§à¸ˆà¸ªà¸­à¸š', 'success');
+        showToast('ส่งแนะนำเรียบร้อย แอดมินจะตรวจสอบ', 'success');
         closeSuggestModal();
       } else {
-        showToast((r && r.message) || 'à¹€à¸à¸´à¸”à¸‚à¹‰à¸­à¸œà¸´à¸”à¸žà¸¥à¸²à¸”', 'error');
+        showToast((r && r.message) || 'เกิดข้อผิดพลาด', 'error');
       }
     });
   }
@@ -2829,35 +2818,35 @@ function submitSuggestion() {
 </script>
 
 <script>
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   Ad Gate â€” à¸ˆà¸³à¸à¸±à¸”à¸¥à¸´à¸ªà¹€à¸žà¸¥à¸‡à¸•à¸²à¸¡à¸ˆà¸³à¸™à¸§à¸™à¹€à¸šà¸£à¸„à¸‚à¸­à¸‡à¸§à¸±à¸™
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════════════
+   Ad Gate — จำกัดลิสเพลงตามจำนวนเบรคของวัน
+   ═══════════════════════════════════════════════ */
 
-// â”€â”€ Plan helpers â”€â”€
+// ── Plan helpers ──
 function getBandPlan() {
   return localStorage.getItem('plan_override') || localStorage.getItem('band_plan') || 'free';
 }
 
-// â”€â”€ à¸ˆà¸³à¸™à¸§à¸™à¸¥à¸´à¸ªà¸ªà¸¹à¸‡à¸ªà¸¸à¸”à¸•à¹ˆà¸­à¸§à¸±à¸™ à¸•à¸²à¸¡à¹à¸žà¹‡à¸à¹€à¸à¸ˆ â”€â”€
-// à¸Ÿà¸£à¸µà¸—à¸¸à¸à¸Ÿà¸µà¹€à¸ˆà¸­à¸£à¹Œ â€” à¸—à¸¸à¸ plan à¹„à¸”à¹‰ 8 à¸¥à¸´à¸ª/à¸§à¸±à¸™
+// ── จำนวนลิสสูงสุดต่อวัน ตามแพ็กเกจ ──
+// ฟรีทุกฟีเจอร์ — ทุก plan ได้ 8 ลิส/วัน
 function getPlaylistDayLimit() {
   return 8;
 }
 
-// â”€â”€ Check limit then proceed â”€â”€
+// ── Check limit then proceed ──
 function checkPlaylistLimit(thenDo) {
   var dayLimit  = getPlaylistDayLimit();
   var usedToday = _plExistingForDate.length;
   if (usedToday < dayLimit) { thenDo(); return; }
-  showSongsAlert('âš ï¸ à¸„à¸£à¸šà¸¥à¸´à¸¡à¸´à¸• ' + dayLimit + ' à¸¥à¸´à¸ª/à¸§à¸±à¸™ à¹à¸¥à¹‰à¸§ â€” à¸¥à¸šà¸¥à¸´à¸ªà¹€à¸à¹ˆà¸²à¸à¹ˆà¸­à¸™à¹€à¸žà¸·à¹ˆà¸­à¸ªà¸£à¹‰à¸²à¸‡à¹ƒà¸«à¸¡à¹ˆ');
+  showSongsAlert('⚠️ ครบลิมิต ' + dayLimit + ' ลิส/วัน แล้ว — ลบลิสเก่าก่อนเพื่อสร้างใหม่');
 }
 
-// â”€â”€ Key Display Mode Toggle â”€â”€
+// ── Key Display Mode Toggle ──
 function toggleKeyMode() {
   toggleKeyDisplayMode();
   var newMode = getKeyDisplayMode();
   var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = newMode === 'number' ? 'ðŸ”¤ à¸­à¸±à¸à¸©à¸£' : 'ðŸ”¢ à¸•à¸±à¸§à¹€à¸¥à¸‚';
+  if (btn) btn.textContent = newMode === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
   renderPlaylist();
   applyTextFilter();
 }
@@ -2865,10 +2854,10 @@ function toggleKeyMode() {
 // Initialize key button text
 (function() {
   var btn = document.getElementById('keyModeBtn');
-  if (btn) btn.textContent = getKeyDisplayMode() === 'number' ? 'ðŸ”¤ à¸­à¸±à¸à¸©à¸£' : 'ðŸ”¢ à¸•à¸±à¸§à¹€à¸¥à¸‚';
+  if (btn) btn.textContent = getKeyDisplayMode() === 'number' ? '🔤 อักษร' : '🔢 ตัวเลข';
 })();
 
-// â”€â”€ Ad Gate â”€â”€
+// ── Ad Gate ──
 var _adGateCallback = null;
 var _adGateTimer    = null;
 
@@ -2882,7 +2871,7 @@ function showAdGate(callback) {
   if (limitNote) {
     var limit = getPlaylistDayLimit();
     var used  = _plExistingForDate.length;
-    limitNote.textContent = 'à¸„à¸¸à¸“à¸ªà¸£à¹‰à¸²à¸‡à¸¥à¸´à¸ªà¹„à¸›à¹à¸¥à¹‰à¸§ ' + used + '/' + limit + ' à¸¥à¸´à¸ª (à¸•à¸²à¸¡à¸ˆà¸³à¸™à¸§à¸™à¹€à¸šà¸£à¸„à¸‚à¸­à¸‡à¸§à¸±à¸™à¸™à¸µà¹‰)';
+    limitNote.textContent = 'คุณสร้างลิสไปแล้ว ' + used + '/' + limit + ' ลิส (ตามจำนวนเบรคของวันนี้)';
   }
   if (confirmBtn) { confirmBtn.style.display = 'none'; confirmBtn.onclick = null; }
   if (countdown)  { countdown.textContent = '30'; countdown.style.display = 'block'; }
@@ -2918,30 +2907,30 @@ function closeAdGate() {
 <!-- Ad Gate Modal -->
 <div id="adGateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;align-items:center;justify-content:center;padding:16px">
   <div style="background:#1a202c;border-radius:18px;padding:28px 24px;max-width:360px;width:100%;border:1.5px solid #f6ad55;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.6)">
-    <div style="font-size:44px;margin-bottom:10px">ðŸ“º</div>
-    <h3 style="color:#f6ad55;margin:0 0 6px;font-size:19px;font-weight:700">à¸”à¸¹à¹‚à¸†à¸©à¸“à¸²à¸ªà¸±à¹‰à¸™ 1 à¸„à¸¥à¸´à¸›</h3>
+    <div style="font-size:44px;margin-bottom:10px">📺</div>
+    <h3 style="color:#f6ad55;margin:0 0 6px;font-size:19px;font-weight:700">ดูโฆษณาสั้น 1 คลิป</h3>
     <p id="adGateLimitNote" style="color:#a0aec0;font-size:13px;margin:0 0 16px;line-height:1.5"></p>
     <div style="background:#2d3748;border-radius:10px;padding:20px 16px;margin-bottom:16px;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid #4a5568">
-      <span style="font-size:28px;margin-bottom:6px">ðŸŽ¬</span>
-      <span style="color:#718096;font-size:12px">à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¹‚à¸†à¸©à¸“à¸² (à¸£à¸­ AdSense à¸­à¸™à¸¸à¸¡à¸±à¸•à¸´)</span>
+      <span style="font-size:28px;margin-bottom:6px">🎬</span>
+      <span style="color:#718096;font-size:12px">พื้นที่โฆษณา (รอ AdSense อนุมัติ)</span>
     </div>
     <div style="margin-bottom:16px">
-      <span style="color:#a0aec0;font-size:13px">à¸£à¸­ </span>
+      <span style="color:#a0aec0;font-size:13px">รอ </span>
       <span id="adGateCountdown" style="font-size:32px;font-weight:700;color:#f6ad55">30</span>
-      <span style="color:#a0aec0;font-size:13px"> à¸§à¸´à¸™à¸²à¸—à¸µ</span>
+      <span style="color:#a0aec0;font-size:13px"> วินาที</span>
     </div>
-    <button id="adGateConfirmBtn" style="display:none;width:100%;padding:13px;background:#38a169;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">âœ… à¸£à¸±à¸šà¸Šà¸¡à¸„à¸£à¸šà¹à¸¥à¹‰à¸§ â€” à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ª</button>
-    <button onclick="closeAdGate()" style="width:100%;padding:10px;background:transparent;color:#718096;border:1px solid #4a5568;border-radius:10px;font-size:13px;cursor:pointer;margin-top:10px;font-family:inherit">âœ• à¸¢à¸à¹€à¸¥à¸´à¸</button>
-    <p style="color:#4a5568;font-size:11px;margin-top:14px;line-height:1.5">à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸ªà¸£à¹‰à¸²à¸‡à¸¥à¸´à¸ªà¹„à¸¡à¹ˆà¸ˆà¸³à¸à¸±à¸”?<br><a href="band-settings.html" style="color:#f6ad55;font-weight:600">à¸­à¸±à¸žà¹€à¸à¸£à¸” Pro Package</a></p>
+    <button id="adGateConfirmBtn" style="display:none;width:100%;padding:13px;background:#38a169;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">✅ รับชมครบแล้ว — บันทึกลิส</button>
+    <button onclick="closeAdGate()" style="width:100%;padding:10px;background:transparent;color:#718096;border:1px solid #4a5568;border-radius:10px;font-size:13px;cursor:pointer;margin-top:10px;font-family:inherit">✕ ยกเลิก</button>
+    <p style="color:#4a5568;font-size:11px;margin-top:14px;line-height:1.5">ต้องการสร้างลิสไม่จำกัด?<br><a href="band-settings.html" style="color:#f6ad55;font-weight:600">อัพเกรด Pro Package</a></p>
   </div>
 </div>
 
 <script>
-/* Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ 
+/* â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
    UPGRADE: 6 improvements for faster setlist building
-   Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢ Ã¢â€¢  */
+   â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â•  */
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ A. Floating Playlist Counter Ã¢â€â‚¬Ã¢â€â‚¬
+// â”€â”€ A. Floating Playlist Counter â”€â”€
 function updatePlaylistFloating() {
   var el = document.getElementById('playlistFloating');
   var countEl = document.getElementById('pfCount');
@@ -2970,19 +2959,19 @@ renderPlaylist = function() {
   updatePlaylistFloating();
 };
 
-// â”€â”€ Patch goLiveMode, copyPlaylist and saveHistoryManual (after they are defined) â”€â”€
+// ── Patch goLiveMode, copyPlaylist and saveHistoryManual (after they are defined) ──
 var _origGoLiveMode = goLiveMode;
 goLiveMode = function() {
-  _checkDurBeforeAction('à¹€à¸‚à¹‰à¸² Live Mode', function(){ _origGoLiveMode(); });
+  _checkDurBeforeAction('เข้า Live Mode', function(){ _origGoLiveMode(); });
 };
 var _origCopyPlaylist = copyPlaylist;
 copyPlaylist = function() {
-  _checkDurBeforeAction('à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ª', function(){ _origCopyPlaylist(); });
+  _checkDurBeforeAction('บันทึกลิส', function(){ _origCopyPlaylist(); });
 };
 if (typeof saveHistoryManual === 'function') {
   var _origSaveHistoryManual = saveHistoryManual;
   saveHistoryManual = function() {
-    _checkDurBeforeAction('à¸šà¸±à¸™à¸—à¸¶à¸à¸¥à¸´à¸ª', function(){ _origSaveHistoryManual(); });
+    _checkDurBeforeAction('บันทึกลิส', function(){ _origSaveHistoryManual(); });
   };
 }
 
@@ -3070,13 +3059,13 @@ function batchAddToPlaylist() {
       var songId = song.id || song.songId || '';
       var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
       if (freq >= 4) {
-        overplayed.push(song.name + ' (' + freq + ' à¸„à¸£à¸±à¹‰à¸‡)');
+        overplayed.push(song.name + ' (' + freq + ' ครั้ง)');
       }
     }
   });
 
   if (overplayed.length > 0) {
-    var confirmMsg = 'âš ï¸ à¸¡à¸µà¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸–à¸¹à¸à¹€à¸¥à¹ˆà¸™à¸šà¹ˆà¸­à¸¢à¸¡à¸²à¸à¹ƒà¸™à¸Šà¹ˆà¸§à¸‡ 7 à¸§à¸±à¸™à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™à¸¡à¸²:\n- ' + overplayed.join('\n- ') + '\n\nà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸žà¸¥à¸‡à¹€à¸«à¸¥à¹ˆà¸²à¸™à¸µà¹‰à¹ƒà¸™à¸¥à¸´à¸ªà¸ˆà¸£à¸´à¸‡à¹† à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?';
+    var confirmMsg = '⚠️ มีเพลงที่ถูกเล่นบ่อยมากในช่วง 7 วันที่ผ่านมา:\n- ' + overplayed.join('\n- ') + '\n\nต้องการเพิ่มเพลงเหล่านี้ในลิสจริงๆ หรือไม่?';
     if (!confirm(confirmMsg)) {
       return; // abort
     }
@@ -3102,10 +3091,10 @@ function batchAddToPlaylist() {
   });
   renderPlaylist();
   exitPlAddMode();
-  showSongsAlert('âœ… à¹€à¸žà¸´à¹ˆà¸¡ ' + addedNames.length + ' à¹€à¸žà¸¥à¸‡à¹ƒà¸™à¸¥à¸´à¸ªà¹à¸¥à¹‰à¸§');
+  showSongsAlert('✅ เพิ่ม ' + addedNames.length + ' เพลงในลิสแล้ว');
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ E. Recently Used Songs Ã¢â€â‚¬Ã¢â€â‚¬
+// â”€â”€ E. Recently Used Songs â”€â”€
 var RECENT_KEY = 'recentSongs_' + (localStorage.getItem('bandId') || 'default');
 var MAX_RECENT = 20;
 
@@ -3173,7 +3162,7 @@ addSong = function(song) {
   renderRecentSongs();
 };
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ F. Save/Restore Filter State Ã¢â€â‚¬Ã¢â€â‚¬
+// â”€â”€ F. Save/Restore Filter State â”€â”€
 var FILTER_KEY = 'songFilters_' + (localStorage.getItem('bandId') || 'default');
 
 function saveFilterState() {
@@ -3206,12 +3195,12 @@ function restoreFilterState() {
         if (btn) btn.style.display = 'flex';
       }
     }
-    // artist: restore à¸—à¸±à¹‰à¸‡ input text à¹à¸¥à¸° state variable
+    // artist: restore ทั้ง input text และ state variable
     if (state.artist) {
       var aInp = document.getElementById('artist');
       if (aInp) aInp.value = state.artist;
       _selectedArtistFilter = state.artist;
-      window._pendingArtistFilter = state.artist; // à¸£à¸­ populateArtistFilter à¸”à¹‰à¸§à¸¢
+      window._pendingArtistFilter = state.artist; // รอ populateArtistFilter ด้วย
     }
     return !!(state.singer || state.era || state.genre || state.mood || state.search || state.sortOption);
   } catch(e) { return false; }
@@ -3246,7 +3235,7 @@ populateArtistFilter = function() {
   }, 800);
 };
 
-// â”€â”€ Save/Restore Draft Playlist State â”€â”€
+// ── Save/Restore Draft Playlist State ──
 var DRAFT_PL_KEY = 'draftPlaylist_' + (localStorage.getItem('bandId') || 'default');
 
 function saveDraftPlaylist() {
@@ -3369,7 +3358,7 @@ setTimeout(function() {
   });
 }, 1000);
 
-// â”€â”€ Init on load â”€â”€
+// ── Init on load ──
 var _origOnload = window.onload;
 window.onload = function() {
   // Restore filters BEFORE the original onload calls loadInitial
@@ -3407,7 +3396,7 @@ window.onload = function() {
 function randomizeSongs() {
   var btn = document.querySelector('.quick-ideas-panel button:first-child');
   var origText = btn.innerHTML;
-  btn.innerHTML = 'â³ à¸à¸³à¸¥à¸±à¸‡à¸ªà¸¸à¹ˆà¸¡...';
+  btn.innerHTML = '⏳ กำลังสุ่ม...';
   
   var q = document.getElementById('searchText').value.trim();
   var singer = document.getElementById('singer').value;
@@ -3433,7 +3422,7 @@ function randomizeSongs() {
       btn.innerHTML = origText;
       if (res && res.success && res.data && res.data.length > 0) {
         var resultsDiv = document.getElementById('quickIdeasResults');
-        var html = '<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#4a5568;border-bottom:1px solid #edf2f7;padding-bottom:8px;">ðŸŽ² à¸ªà¸¸à¹ˆà¸¡à¸ˆà¸²à¸à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¹„à¸”à¹‰ ' + res.data.length + ' à¹€à¸žà¸¥à¸‡:</div>';
+        var html = '<div style="font-size:13px;font-weight:600;margin-bottom:12px;color:#4a5568;border-bottom:1px solid #edf2f7;padding-bottom:8px;">🎲 สุ่มจากเงื่อนไขได้ ' + res.data.length + ' เพลง:</div>';
         html += '<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px;">';
         
         window._quickIdeasSongs = res.data;
@@ -3443,19 +3432,19 @@ function randomizeSongs() {
           var sArtist = escapeHtml(song.artist || '');
           html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:#fafafa;border:1px solid #edf2f7;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.02);">';
           html += '  <div style="flex:1;min-width:0;padding-right:8px;"><div style="font-weight:600;font-size:14px;color:var(--premium-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + sName + '</div><div style="font-size:11px;color:#718096;">' + sArtist + '</div></div>';
-          html += '  <button onclick="addQuickIdeaSong(' + idx + ')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;box-shadow:0 2px 4px rgba(246,173,85,0.2);transition:all 0.1s;">+ à¹€à¸žà¸´à¹ˆà¸¡à¸¥à¸‡à¸¥à¸´à¸ª</button>';
+          html += '  <button onclick="addQuickIdeaSong(' + idx + ')" style="background:var(--premium-gold);color:#fff;border:none;border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;flex-shrink:0;box-shadow:0 2px 4px rgba(246,173,85,0.2);transition:all 0.1s;">+ เพิ่มลงลิส</button>';
           html += '</div>';
         });
         html += '</div>';
         resultsDiv.innerHTML = html;
         resultsDiv.style.display = 'block';
       } else {
-        alert('à¹„à¸¡à¹ˆà¸žà¸šà¹€à¸žà¸¥à¸‡à¸—à¸µà¹ˆà¸•à¸£à¸‡à¸à¸±à¸šà¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¹€à¸¥à¸¢ (à¸¥à¸­à¸‡à¸¥à¸”à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¸«à¸£à¸·à¸­à¸„à¸³à¸„à¹‰à¸™à¸«à¸²à¸¥à¸‡)');
+        alert('ไม่พบเพลงที่ตรงกับเงื่อนไขเลย (ลองลดเงื่อนไขหรือคำค้นหาลง)');
       }
     });
   } else {
     btn.innerHTML = origText;
-    alert('à¸£à¸°à¸šà¸šà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡à¹ƒà¸Šà¹‰à¸‡à¸²à¸™ à¹‚à¸›à¸£à¸”à¸£à¸­à¸ªà¸±à¸à¸„à¸£à¸¹à¹ˆ');
+    alert('ระบบยังไม่พร้อมใช้งาน โปรดรอสักครู่');
   }
 }
 
@@ -3465,13 +3454,13 @@ window.addQuickIdeaSong = function(idx) {
   var songId = song.id || song.songId || '';
   
   if (songId && _addedSongIds[songId]) {
-    alert('à¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸–à¸¹à¸à¹€à¸žà¸´à¹ˆà¸¡à¸¥à¸‡à¹ƒà¸™ Setlist à¹à¸¥à¹‰à¸§');
+    alert('เพลงนี้ถูกเพิ่มลงใน Setlist แล้ว');
     return;
   }
   
   var freq = window._recentPlayCounts ? (window._recentPlayCounts[songId] || 0) : 0;
   if (freq >= 4) {
-    var confirmMsg = 'âš ï¸ à¹€à¸žà¸¥à¸‡ "' + (song.name || '') + '" à¸–à¸¹à¸à¹€à¸¥à¹ˆà¸™à¹„à¸›à¹à¸¥à¹‰à¸§ ' + freq + ' à¸„à¸£à¸±à¹‰à¸‡à¹ƒà¸™à¸Šà¹ˆà¸§à¸‡ 7 à¸§à¸±à¸™à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™à¸¡à¸²\n\nà¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸„à¸¸à¸“à¹€à¸¥à¹ˆà¸™à¸šà¹ˆà¸­à¸¢à¹€à¸à¸´à¸™à¹„à¸›à¹à¸¥à¹‰à¸§ à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸šà¹‰à¸²à¸‡à¸™à¸°!\n\nà¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸žà¸¥à¸‡à¸™à¸µà¹‰à¸ˆà¸£à¸´à¸‡à¹† à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ?';
+    var confirmMsg = '⚠️ เพลง "' + (song.name || '') + '" ถูกเล่นไปแล้ว ' + freq + ' ครั้งในช่วง 7 วันที่ผ่านมา\n\nเพลงนี้คุณเล่นบ่อยเกินไปแล้ว เปลี่ยนบ้างนะ!\n\nต้องการเพิ่มเพลงนี้จริงๆ หรือไม่?';
     if (!confirm(confirmMsg)) return;
   }
   
@@ -3481,7 +3470,7 @@ window.addQuickIdeaSong = function(idx) {
   
   var btn = event.currentTarget;
   if (btn) {
-    btn.innerHTML = 'âœ“ à¹€à¸žà¸´à¹ˆà¸¡à¹à¸¥à¹‰à¸§';
+    btn.innerHTML = '✓ เพิ่มแล้ว';
     btn.style.background = '#48bb78';
     btn.style.boxShadow = '0 2px 4px rgba(72,187,120,0.2)';
   }
@@ -3497,7 +3486,7 @@ function sortByTopPlayed() {
 </script>
 
 <!-- Floating Help Button -->
-<a href="user-manual.html" class="fab-help" aria-label="à¸„à¸¹à¹ˆà¸¡à¸·à¸­à¹ƒà¸Šà¹‰à¸‡à¸²à¸™" style="bottom:calc(80px + env(safe-area-inset-bottom,0))">â“<span class="fab-help-label">à¸„à¸¹à¹ˆà¸¡à¸·à¸­à¹ƒà¸Šà¹‰à¸‡à¸²à¸™</span></a>
+<a href="user-manual.html" class="fab-help" aria-label="คู่มือใช้งาน" style="bottom:calc(80px + env(safe-area-inset-bottom,0))">❓<span class="fab-help-label">คู่มือใช้งาน</span></a>
 
 </body>
 </html>
