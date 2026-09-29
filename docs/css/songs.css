@@ -691,7 +691,7 @@ html{scroll-behavior:smooth}
 .filter-toggle {
   display: none;
 }
-@media(min-width: 1024px) {
+@media(min-width: 768px) {
   .layout-split {
     display: grid;
     grid-template-columns: 1fr 400px;

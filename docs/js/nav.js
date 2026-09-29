@@ -86,45 +86,45 @@ function renderMainNav(containerId) {
   var _simpleMenu = localStorage.getItem('accessibility_simple_menu') === '1';
   var memberLinks =
     navSection('🎸 สมาชิกวง') +
-    navLink('dashboard', '📊 ' + _t('nav_dashboard'), 'ภาพรวมงาน สถิติ และทางลัด') +
+    navLink('dashboard', '📊 ' + _t('nav_dashboard'), '') +
     (_simpleMenu
-      ? navLink('songs', '🎵 ' + _t('nav_songs'), 'เพลงทั้งหมดและเซ็ตลิสต์')
-      : navSubmenu('🎵', 'เพลง', 'คลังเพลง และสถิติ', ['songs', 'song-insights'],
-          navLink('songs',         '🎵 คลังเพลง',  'เพลงทั้งหมดของวง') +
-          navLink('song-insights', '📊 สถิติเพลง', 'เพลงที่เล่นบ่อย / ไม่เคยเล่น')
+      ? navLink('songs', '🎵 ' + _t('nav_songs'), '')
+      : navSubmenu('🎵', 'เพลง', '', ['songs', 'song-insights'],
+          navLink('songs',         '🎵 คลังเพลง',  '') +
+          navLink('song-insights', '📊 สถิติเพลง', '')
         )
     ) +
-    navLink('schedule', '📅 ' + _t('nav_schedule'), 'ปฏิทินงานและตารางนัด') +
-    navLink('reports', '🛡️ รายงานวง', 'รายงานการทำงานและลิสเพลง') +
-    (_simpleMenu ? '' : navSubmenu('💰', 'การเงิน', 'รายได้และเงินกองกลาง', ['statistics', 'band-fund'],
-        navLink('statistics', '💰 รายได้รวม',   'สรุปรายได้รายเดือน') +
-        navLink('band-fund',  '💰 เงินกองกลาง', 'บัญชีรายรับรายจ่ายกองกลาง')
+    navLink('schedule', '📅 ' + _t('nav_schedule'), '') +
+    navLink('reports', '🛡️ รายงานวง', '') +
+    (_simpleMenu ? '' : navSubmenu('💰', 'การเงิน', '', ['statistics', 'band-fund'],
+        navLink('statistics', '💰 รายได้รวม',   '') +
+        navLink('band-fund',  '💰 เงินกองกลาง', '')
       )
     ) +
-    (_simpleMenu ? '' : navLink('equipment', '🎸 ' + _t('nav_equipment'), 'อุปกรณ์วงและงบซ่อมบำรุง')) +
-    navLink('band-info',  '👥 ' + _t('nav_bandInfo'),  'สมาชิก ช่องทางติดต่อ ร้านที่เล่น') +
-    navLink('my-profile', '👤 ' + _t('nav_myProfile'), 'ข้อมูลส่วนตัวและอัตราค่าตัว');
+    (_simpleMenu ? '' : navLink('equipment', '🎸 ' + _t('nav_equipment'), '')) +
+    navLink('band-info',  '👥 ' + _t('nav_bandInfo'),  '') +
+    navLink('my-profile', '👤 ' + _t('nav_myProfile'), '');
 
   // ── ลิงก์อัปเกรด (ปิดถาวร — ฟรีทุกฟีเจอร์) ──────────────
   var upgradeLink = '';
 
   memberLinks += upgradeLink;
-  memberLinks += navLink('user-manual', '📖 คู่มือใช้งาน', 'วิธีใช้งานระบบอย่างละเอียด');
+  memberLinks += navLink('user-manual', '📖 คู่มือใช้งาน', '');
 
   // ── เมนูผู้จัดการวง ───────────────────────────────────
   var managerLinks = isManager ? (
     navSection('👔 ผู้จัดการวง') +
-    navSubmenu('📋', 'เบิกจ่าย', 'ลงเวลาและจ่ายเงิน', ['attendance-payroll', 'external-payout', 'job-history'],
-      navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    'เช็คชื่อเข้างาน & เบิกจ่ายค่าตัว') +
-      navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'จ่ายเงินให้คนนอกวง') +
-      (_simpleMenu ? '' : navLink('job-history', '📁 ประวัติงานนอก', 'ประวัติและรายละเอียดงานนอกทั้งหมด'))
+    navSubmenu('📋', 'เบิกจ่าย', '', ['attendance-payroll', 'external-payout', 'job-history'],
+      navLink('attendance-payroll', '📋 ' + _t('nav_attendance'),    '') +
+      navLink('external-payout',    '💵 ' + _t('nav_externalPayout'),'') +
+      (_simpleMenu ? '' : navLink('job-history', '📁 ประวัติงานนอก', ''))
     ) +
-    navSubmenu('🧮', 'งานนอก', 'คำนวณ เสนอราคา และสัญญา', ['job-calculator', 'quotation', 'contract'],
-      navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator'), 'คำนวณราคารับงานนอก') +
-      navLink('quotation',      '📄 ' + _t('nav_quotation'),     'สร้างและส่งใบเสนอราคา') +
-      navLink('contract',       '📜 สัญญาว่าจ้าง',               'สัญญาจ้างวงดนตรี')
+    navSubmenu('🧮', 'งานนอก', '', ['job-calculator', 'quotation', 'contract'],
+      navLink('job-calculator', '🧮 ' + _t('nav_jobCalculator'), '') +
+      navLink('quotation',      '📄 ' + _t('nav_quotation'),     '') +
+      navLink('contract',       '📜 สัญญาว่าจ้าง',               '')
     ) +
-    navLink('band-settings', '⚙️ ' + _t('nav_settings'), 'ตั้งค่าวง ร้าน และตาราง')
+    navLink('band-settings', '⚙️ ' + _t('nav_settings'), '')
   ) : '';
 
   // ── เมนูแอดมิน (collapsible submenu) ────────────────────
@@ -138,7 +138,7 @@ function renderMainNav(containerId) {
     navSection('🔧 แอดมิน') +
     '<li>' +
       '<div class="nav-submenu-toggle' + (_adminPage ? ' open' : '') + '" onclick="this.classList.toggle(\'open\');this.nextElementSibling.classList.toggle(\'open\')">' +
-        '<div>🔧 แอดมิน<span class="nav-link-desc">จัดการผู้ใช้และระบบ</span></div>' +
+        '<div>🔧 แอดมิน</div>' +
         '<span class="arrow">▼</span>' +
       '</div>' +
       '<ul class="nav-submenu-items' + (_adminPage ? ' open' : '') + '">' +
