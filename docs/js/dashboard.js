@@ -1336,14 +1336,36 @@ function nav(page) {
     var img = document.getElementById('dashQrCode');
     var urlEl = document.getElementById('dashQrUrl');
     var expiryEl = document.getElementById('dashQrExpiry');
+    
+    var dateDecoded = decodeURIComponent(date);
+    var venueDecoded = decodeURIComponent(venue);
+    var timeSlotDecoded = decodeURIComponent(timeSlot);
 
-    var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
-    var url = base + 'live.html?guest=1&band=' + encodeURIComponent(bandId) +
-              '&date=' + encodeURIComponent(decodeURIComponent(date)) +
-              '&venue=' + encodeURIComponent(decodeURIComponent(venue)) +
-              '&timeSlot=' + encodeURIComponent(decodeURIComponent(timeSlot));
-    img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-    urlEl.textContent = url;
-    expiryEl.textContent = 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
-    modal.classList.add('show');
+    if (typeof apiCall === 'function') {
+      apiCall('createGuestToken', { date: dateDecoded, venue: venueDecoded, timeSlot: timeSlotDecoded }, function(r) {
+        if (r && r.success && r.data) {
+          var token = r.data.token;
+          var base = location.origin + location.pathname.replace(/[^\/]*$/, '');
+          var url = base + 'live.html?guest=1&band=' + encodeURIComponent(bandId) +
+                    '&date=' + encodeURIComponent(dateDecoded) +
+                    '&venue=' + encodeURIComponent(venueDecoded) +
+                    '&timeSlot=' + encodeURIComponent(timeSlotDecoded) +
+                    '&token=' + encodeURIComponent(token);
+          
+          img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+          urlEl.textContent = url;
+          
+          var exp = r.data.expiresAt ? new Date(r.data.expiresAt) : null;
+          expiryEl.textContent = exp 
+            ? 'หมดอายุ: ' + exp.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' (' + exp.toLocaleDateString('th-TH') + ')'
+            : 'ใครสแกนก็เข้าได้ ไม่ต้องสมัคร';
+            
+          modal.classList.add('show');
+        } else {
+          alert('ไม่สามารถสร้าง QR Code ได้');
+        }
+      });
+    } else {
+      alert('ไม่สามารถเชื่อมต่อระบบได้');
+    }
   }
