@@ -27,12 +27,12 @@
 <main>
 <div class="container layout-split">
   <div class="split-left">
-  <div id="songPageHeader" style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);color:#fff;border-radius:var(--radius-xl);padding:var(--spacing-lg) var(--spacing-xl);margin-bottom:var(--spacing-lg);position:relative;overflow:hidden">
+  <div id="songPageHeader" class="premium-header">
     <!-- Decorative bg -->
-    <div style="position:absolute;top:-20px;right:-20px;font-size:120px;opacity:.06;pointer-events:none;line-height:1">🎵</div>
+    
     <!-- Row 1: branding -->
     <div style="display:flex;align-items:center;gap:14px;min-width:0">
-      <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;box-shadow:0 4px 12px rgba(246,173,85,.35)">🎶</div>
+      <div class="header-logo-box"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></div>
       <div style="flex:1;min-width:0">
         <h2 id="songLibTitle" style="margin:0;font-family:var(--font-family-display);font-size:var(--text-xl);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">คลังเพลง</h2>
         <p style="margin:3px 0 0;font-size:var(--text-sm);color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">รวมเพลงฮิตทุกแนว พร้อมให้วงของคุณเลือกใช้ได้เลย</p>
@@ -41,22 +41,22 @@
     <!-- Row 2: stats -->
     <div style="display:flex;align-items:center;gap:16px;margin-top:14px;flex-wrap:wrap">
       <div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border-radius:20px;padding:6px 14px">
-        <span style="font-size:16px">📀</span>
+        <span class="icon-inline"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg></span>
         <span id="headerTotalSongs" style="font-size:13px;font-weight:600">— เพลง</span>
       </div>
       <div id="headerBandInfo" style="display:none;align-items:center;gap:6px;background:rgba(246,173,85,.15);border:1px solid rgba(246,173,85,.3);border-radius:20px;padding:6px 14px">
-        <span style="font-size:16px">🎸</span>
+        <span class="icon-inline"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span>
         <span id="headerBandName" style="font-size:13px;font-weight:600;color:#f6ad55"></span>
       </div>
     </div>
     <!-- Row 3: action buttons -->
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">
-      <button onclick="loadInitial(true)" title="โหลดใหม่" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0">🔄</button>
-      <button id="plAddModeBtn" onclick="togglePlAddMode()" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#38a169,#2f855a);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(56,161,105,.3)">&#x2611;&#xFE0F; &#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe2b;&#xe25;&#xe32;&#xe22;&#xe40;&#xe1e;&#xe25;&#xe07;</button>
-      <button id="selectModeBtn" onclick="toggleSelectMode()" style="display:none;align-items:center;gap:6px;background:linear-gradient(135deg,var(--premium-gold),#f6ad55);color:#fff;border:none;border-radius:24px;padding:0 18px;height:38px;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:0 2px 8px rgba(246,173,85,.3)">🎵 เลือกเพลงเข้าวง</button>
+      <button onclick="loadInitial(true)" title="โหลดใหม่" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:36px;height:36px;min-height:36px;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg> <span class="sr-only"></span></button>
+      <button id="plAddModeBtn" class="pl-add-mode-btn" onclick="togglePlAddMode()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg> เลือกหลายเพลง</button>
+      <button id="selectModeBtn" class="select-mode-btn" onclick="toggleSelectMode()" style="display:none;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg> เลือกเพลงเข้าวง</button>
       <!-- Live Button -->
-      <button id="liveModeBtn" onclick="goLiveMode()" hidden style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:linear-gradient(135deg,#0d9488,#0f766e);color:#fff;border:none;border-radius:14px;padding:6px 14px;min-width:64px;cursor:pointer;box-shadow:0 0 12px rgba(13,148,136,0.5)">
-        <span style="font-size:18px;line-height:1">🎤</span>
+      <button id="liveModeBtn" class="live-mode-btn" onclick="goLiveMode()" hidden>
+        <span style="font-size:18px;line-height:1"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v10"></path><path d="M8 2v10"></path><path d="M16 2v10"></path><rect x="8" y="2" width="8" height="10" rx="4" ry="4"></rect><path d="M8 12a4 4 0 0 0 8 0"></path><path d="M12 16v6"></path><path d="M8 22h8"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path></svg></span>
         <span style="font-size:13px;font-weight:700;line-height:1.2">Live</span>
         <span style="font-size:9px;opacity:.8;line-height:1;white-space:nowrap">เปิดโหมด Live</span>
       </button>
@@ -64,20 +64,20 @@
   </div>
 
   <!-- ── Quick Ideas Panel ── -->
-  <div class="panel quick-ideas-panel" style="background:linear-gradient(135deg, rgba(246,173,85,0.15), rgba(246,173,85,0.02)); border: 1px solid rgba(246,173,85,0.3); margin-bottom:16px;">
+  <div class="panel quick-ideas-panel premium-idea-panel">
     <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-      <span style="font-size:24px;line-height:1;">💡</span>
+      <span style="font-size:24px;line-height:1;color:var(--premium-gold);"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.9 1.3 1.5 1.5 2.5"></path><path d="M9 18h6"></path><path d="M10 22h4"></path></svg></span>
       <div>
         <strong style="color:var(--premium-gold);font-size:16px;display:block;margin-bottom:4px;">คิดไม่ออกว่าจะเล่นเพลงอะไรดี? (Quick Ideas)</strong>
         <span style="font-size:13px;color:#4a5568;">เคล็ดลับ: คุณสามารถเลือก <strong>"ตัวกรอง"</strong> ด้านล่างก่อน (เช่น แนวร็อค, ยุค 90s) แล้วค่อยกดปุ่มสุ่ม เพื่อให้ได้เพลงที่ตรงกับงานที่สุด</span>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:36px;">
-      <button onclick="randomizeSongs()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
-        🎲 สุ่มเพลงมาให้ที
+      <button class="btn-ghost" onclick="randomizeSongs()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><path d="M9 9h.01"></path><path d="M15 9h.01"></path><path d="M9 15h.01"></path><path d="M15 15h.01"></path></svg> สุ่มเพลงมาให้ที
       </button>
-      <button id="quickIdeasTopPlayedBtn" onclick="sortByTopPlayed()" style="background:#fff;border:1px solid #e2e8f0;color:#4a5568;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 2px 6px rgba(0,0,0,0.05);transition:all 0.2s;">
-        🔥 เรียงตามเพลงเล่นบ่อย
+      <button class="btn-ghost" id="quickIdeasTopPlayedBtn" onclick="sortByTopPlayed()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg> เรียงตามเพลงเล่นบ่อย
       </button>
     </div>
     <div id="quickIdeasResults" style="display:none; margin-top:16px; background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px;"></div>
@@ -86,7 +86,7 @@
   <!-- ── Filter Panel ── -->
   <div class="panel filter-panel" id="filterPanel">
     <div class="filter-toggle" onclick="document.getElementById('filterPanel').classList.toggle('expanded')">
-      <span style="font-weight:700; color:var(--premium-text); display:flex; align-items:center; gap:8px;">🔍 ค้นหาและตัวกรอง</span>
+      <span style="font-weight:700; color:var(--premium-text); display:flex; align-items:center; gap:8px;"><span style="display:inline-flex;align-items:center;gap:6px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> ค้นหาและตัวกรอง</span></span>
       <span class="ft-icon">▼</span>
     </div>
     
@@ -163,7 +163,7 @@
   <!-- Add song to band library -->
   <div id="addSongBandWrap" style="display:none;margin-top:12px">
     <a href="add-song.html" style="display:inline-flex;align-items:center;gap:8px;background:var(--premium-off-white);border:1.5px dashed var(--premium-gold);border-radius:var(--radius-md);padding:10px 18px;text-decoration:none;color:var(--premium-text);font-size:var(--text-sm);font-weight:600;transition:background .15s,border-color .15s">
-      <span style="font-size:18px">➕</span>
+      <span class="icon-inline"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg></span>
       <span>เพิ่มเพลง</span>
       <span style="font-size:11px;color:var(--premium-text-muted);font-weight:400">— รอแอดมินอนุมัติ</span>
     </a>
@@ -171,7 +171,7 @@
 </div>
 
 <div class="panel">
-  <h3 id="resultTitle">🎼 เพลงที่ค้นพบ</h3>
+  <h3 id="resultTitle"><span class="icon-inline" style="color:var(--premium-gold); margin-right:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span> เพลงที่ค้นพบ</h3>
   <div id="result"></div>
 
   <div class="pagination">
@@ -187,7 +187,7 @@
 <div class="split-right" id="playlistSection">
   <div class="panel">
   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px;">
-    <h3 style="margin-bottom:0;">📋 ลิสเพลงที่เลือก</h3>
+    <h3 style="margin-bottom:0;"><span style="display:inline-flex;align-items:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg> ลิสเพลงที่เลือก</span></h3>
     <button class="pl-close-btn" onclick="toggleMobilePlaylist()" style="display:none; background:none; border:none; font-size:20px; color:var(--premium-text-muted); padding:4px;">✕</button>
   </div>
 
@@ -196,17 +196,17 @@
 
   <div class="pl-ctrl-grid">
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">📅 วันที่</label>
+      <label class="pl-ctrl-label"><span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg> วันที่</span></label>
       <input type="date" id="useDate" onchange="onPlaylistDateChange()">
     </div>
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">📍 ชื่อร้าน</label>
+      <label class="pl-ctrl-label"><span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> ชื่อร้าน</span></label>
       <select id="venue" onchange="onPlaylistVenueChange()">
         <option value="">เลือกร้าน</option>
       </select>
     </div>
     <div class="pl-ctrl-item">
-      <label class="pl-ctrl-label">🕐 ช่วงเวลา</label>
+      <label class="pl-ctrl-label"><span style="display:inline-flex;align-items:center;gap:4px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> ช่วงเวลา</span></label>
       <select id="timeSlot" onchange="onTimeSlotChange()">
         <option value="">ช่วงเวลา</option>
       </select>
@@ -228,11 +228,11 @@
   <div class="offsite-note" id="offsiteNote">🎪 งานนอก: เลือกชื่องานและพิมพ์ช่วงเวลาเองได้</div>
 
   <div class="action-buttons">
-    <button onclick="addBreak()">➕ เพิ่มพัก</button>
-    <button onclick="copyPlaylist()">📋 คัดลอก &amp; บันทึกลิส</button>
-    <button onclick="showHistory()" style="background:#4a5568">📗 ประวัติ</button>
-    <button onclick="refreshPlaylist()" style="background:var(--danger)">🔄 รีเฟรชลิส</button>
-    <button id="keyModeBtn" onclick="toggleKeyMode()" style="background:#8b5cf6;color:#fff" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร">🔤 อักษร</button>
+    <button onclick="addBreak()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> เพิ่มพัก</button>
+    <button onclick="copyPlaylist()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg> คัดลอกลิส</button>
+    <button onclick="showHistory()" class="btn-dark"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"></path><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"></path><polyline points="12 7 12 12 15 15"></polyline></svg> ประวัติ</button>
+    <button onclick="refreshPlaylist()" class="btn-danger"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg> รีเฟรชลิส</button>
+    <button id="keyModeBtn" onclick="toggleKeyMode()" class="btn-purple" title="สลับการแสดงคีย์ระหว่างตัวเลขและอักษร"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="15" y2="20"></line><line x1="12" y1="4" x2="12" y2="20"></line></svg> อักษร</button>
   </div>
 
   <div class="copy-options">
@@ -278,8 +278,8 @@
 <div id="plAddBar">
   <div class="pab-count" id="pabCount">&#xe40;&#xe25;&#xe37;&#xe2d;&#xe01;&#xe41;&#xe25;&#xe49;&#xe27; 0 &#xe40;&#xe1e;&#xe25;&#xe07;</div>
   <div style="display:flex;gap:8px">
-    <button class="pab-btn pab-add" id="pabAddBtn" onclick="batchAddToPlaylist()" disabled>&#x2795; &#xe40;&#xe1e;&#xe34;&#xe48;&#xe21;&#xe43;&#xe19;&#xe25;&#xe34;&#xe2a;</button>
-    <button class="pab-btn pab-cancel" onclick="exitPlAddMode()">&#x2715; &#xe22;&#xe01;&#xe40;&#xe25;&#xe34;&#xe01;</button>
+    <button class="pab-btn pab-add" id="pabAddBtn" onclick="batchAddToPlaylist()" disabled><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> เพิ่มในลิส</button>
+    <button class="pab-btn pab-cancel" onclick="exitPlAddMode()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> ยกเลิก</button>
   </div>
 </div>
 </main>
@@ -288,8 +288,8 @@
 <div id="selectBar" style="display:none">
   <div class="sb-count" id="sbCount">เลือกแล้ว 0 เพลง</div>
   <div style="display:flex;gap:8px">
-    <button class="sb-btn sb-add" id="sbAddBtn" onclick="cloneSelectedToBand()" disabled>➕ เพิ่มในคลังวง</button>
-    <button class="sb-btn sb-cancel" onclick="exitSelectMode()">✕ ยกเลิก</button>
+    <button class="sb-btn sb-add" id="sbAddBtn" onclick="cloneSelectedToBand()" disabled><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg> เพิ่มในคลังวง</button>
+    <button class="sb-btn sb-cancel" onclick="exitSelectMode()"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> ยกเลิก</button>
   </div>
 </div>
 
@@ -713,7 +713,7 @@ function loadInitial(forceRefresh) {
       _currentSource = rs;
       document.querySelectorAll('.lib-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.source === rs); });
       var titleEl = document.getElementById('resultTitle');
-      if (titleEl) titleEl.textContent = '🎼 เพลงที่ค้นพบ';
+      if (titleEl) titleEl.textContent = '<span class="icon-inline" style="color:var(--premium-gold); margin-right:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span> เพลงที่ค้นพบ';
     }
     sessionStorage.removeItem('songs_returnSource');
 
@@ -790,7 +790,7 @@ function switchLibrary(source) {
   });
   // update title
   var titleEl = document.getElementById('resultTitle');
-  if (titleEl) titleEl.textContent = source === 'band' ? '🎸 เพลงในคลังวง' : '🎼 เพลงที่ค้นพบ';
+  if (titleEl) titleEl.textContent = source === 'band' ? '🎸 เพลงในคลังวง' : '<span class="icon-inline" style="color:var(--premium-gold); margin-right:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg></span> เพลงที่ค้นพบ';
   // hide select mode btn in band view, show in global
   var smBtn = document.getElementById('selectModeBtn');
   if (smBtn) smBtn.style.display = (source === 'global' && localStorage.getItem('bandId')) ? 'flex' : 'none';
@@ -2929,7 +2929,7 @@ function closeAdGate() {
       <span style="color:#a0aec0;font-size:13px"> วินาที</span>
     </div>
     <button id="adGateConfirmBtn" style="display:none;width:100%;padding:13px;background:#38a169;color:#fff;border:none;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;font-family:inherit">✅ รับชมครบแล้ว — บันทึกลิส</button>
-    <button onclick="closeAdGate()" style="width:100%;padding:10px;background:transparent;color:#718096;border:1px solid #4a5568;border-radius:10px;font-size:13px;cursor:pointer;margin-top:10px;font-family:inherit">✕ ยกเลิก</button>
+    <button onclick="closeAdGate()" style="width:100%;padding:10px;background:transparent;color:#718096;border:1px solid #4a5568;border-radius:10px;font-size:13px;cursor:pointer;margin-top:10px;font-family:inherit"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg> ยกเลิก</button>
     <p style="color:#4a5568;font-size:11px;margin-top:14px;line-height:1.5">ต้องการสร้างลิสไม่จำกัด?<br><a href="band-settings.html" style="color:#f6ad55;font-weight:600">อัพเกรด Pro Package</a></p>
   </div>
 </div>
