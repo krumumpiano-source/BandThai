@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>ใบเสนอราคา — BandThai</title>
+  <title>?????????? � BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -21,71 +21,71 @@
   <div id="toast"></div>
   <div id="confirmModal"></div>
 
-  <!-- ══ Print/PDF Preview (hidden) ══ -->
+  <!-- -- Print/PDF Preview (hidden) -- -->
   <div id="quotPreview"></div>
 
-  <!-- ══ Quotation Edit Modal ══ -->
+  <!-- -- Quotation Edit Modal -- -->
   <div id="quotModal" class="modal-backdrop" style="display:none">
     <div class="modal q-modal-form" style="max-width:740px;max-height:92vh;overflow-y:auto">
       <div class="modal-header">
-        <h3 class="modal-title" id="quotModalTitle">ใบเสนอราคาใหม่</h3>
-        <button class="modal-close" onclick="closeModal()">×</button>
+        <h3 class="modal-title" id="quotModalTitle">??????????????</h3>
+        <button class="modal-close" onclick="closeModal()">�</button>
       </div>
       <form id="quotForm">
         <input type="hidden" id="quotId">
         <div class="form-r">
-          <div class="form-group"><label>ลูกค้า / เจ้าภาพ *</label><input type="text" id="qClient" required></div>
-          <div class="form-group"><label>เบอร์โทร</label><input type="tel" id="qClientPhone"></div>
+          <div class="form-group"><label>?????? / ??????? *</label><input type="text" id="qClient" required></div>
+          <div class="form-group"><label>????????</label><input type="tel" id="qClientPhone"></div>
         </div>
         <div class="form-r">
-          <div class="form-group"><label>วันที่ออกใบเสนอ</label><input type="date" id="qDate"></div>
-          <div class="form-group"><label>วันที่แสดง</label><input type="date" id="qEventDate"></div>
+          <div class="form-group"><label>???????????????</label><input type="date" id="qDate"></div>
+          <div class="form-group"><label>??????????</label><input type="date" id="qEventDate"></div>
         </div>
         <div class="form-r">
-          <div class="form-group"><label>เวลาแสดง</label><input type="time" id="qEventTime"></div>
-          <div class="form-group"><label>ชื่องาน / อีเวนต์</label><input type="text" id="qJobName"></div>
+          <div class="form-group"><label>????????</label><input type="time" id="qEventTime"></div>
+          <div class="form-group"><label>??????? / ???????</label><input type="text" id="qJobName"></div>
         </div>
-        <div class="form-group"><label>สถานที่</label><input type="text" id="qVenue"></div>
-        <div class="form-group"><label>สมาชิกที่ร่วมงาน</label><input type="text" id="qMembers" placeholder="เช่น พี่กล้า (มือกีตาร์), ป้อม (มือเบส)"></div>
-        <div class="form-group"><label>รายการบริการ</label>
+        <div class="form-group"><label>???????</label><input type="text" id="qVenue"></div>
+        <div class="form-group"><label>????????????????</label><input type="text" id="qMembers" placeholder="???? ??????? (?????????), ???? (??????)"></div>
+        <div class="form-group"><label>????????????</label>
           <div id="qItems"></div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="addItem()">+ เพิ่มรายการ</button>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="addItem()">+ ???????????</button>
         </div>
         <div class="form-r">
-          <div class="form-group"><label>ส่วนลด (บาท)</label><input type="number" id="qDiscount" value="0" min="0" oninput="calcTotal()"></div>
+          <div class="form-group"><label>?????? (???)</label><input type="number" id="qDiscount" value="0" min="0" oninput="calcTotal()"></div>
           <div class="form-group"><label>VAT (%)</label><input type="number" id="qVat" value="0" min="0" oninput="calcTotal()"></div>
         </div>
         <div style="text-align:right;background:var(--premium-off-white);padding:var(--spacing-md);border-radius:var(--radius-md);margin-bottom:var(--spacing-md)">
-          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">ยอดก่อนส่วนลด: <span id="qSubtotalRaw">0</span></div>
-          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">หลังส่วนลด: <span id="qSubtotal">0</span></div>
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">?????????????: <span id="qSubtotalRaw">0</span></div>
+          <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">??????????: <span id="qSubtotal">0</span></div>
           <div style="font-size:var(--text-sm);color:var(--premium-text-muted)">VAT: <span id="qVatAmt">0</span></div>
-          <div style="font-size:var(--text-xl);font-weight:700;color:var(--premium-gold)">รวมทั้งสิ้น: <span id="qTotal">0</span></div>
+          <div style="font-size:var(--text-xl);font-weight:700;color:var(--premium-gold)">???????????: <span id="qTotal">0</span></div>
         </div>
         <div class="form-r">
           <div class="form-group">
-            <label>สถานะ</label>
+            <label>?????</label>
             <select id="qStatus">
-              <option value="draft">ร่าง</option>
-              <option value="sent">ส่งแล้ว</option>
-              <option value="approved">อนุมัติ / ตกลง</option>
-              <option value="cancelled">ยกเลิก</option>
+              <option value="draft">????</option>
+              <option value="sent">???????</option>
+              <option value="approved">??????? / ????</option>
+              <option value="cancelled">??????</option>
             </select>
           </div>
           <div class="form-group">
-            <label>เงื่อนไขการชำระ</label>
+            <label>???????????????</label>
             <select id="qPaymentTerm">
-              <option value="ชำระเต็มจำนวนก่อนแสดง">ชำระเต็มจำนวนก่อนแสดง</option>
-              <option value="มัดจำ 50% ส่วนที่เหลือวันแสดง">มัดจำ 50% ส่วนที่เหลือวันแสดง</option>
-              <option value="มัดจำ 30% ส่วนที่เหลือวันแสดง">มัดจำ 30% ส่วนที่เหลือวันแสดง</option>
-              <option value="ชำระหลังเสร็จงาน">ชำระหลังเสร็จงาน</option>
+              <option value="?????????????????????">?????????????????????</option>
+              <option value="????? 50% ???????????????????">????? 50% ???????????????????</option>
+              <option value="????? 30% ???????????????????">????? 30% ???????????????????</option>
+              <option value="????????????????">????????????????</option>
             </select>
           </div>
         </div>
-        <div class="form-group"><label>หมายเหตุ / เงื่อนไขพิเศษ</label><textarea id="qNotes" rows="2"></textarea></div>
+        <div class="form-group"><label>???????? / ?????????????</label><textarea id="qNotes" rows="2"></textarea></div>
         <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);flex-wrap:wrap">
-          <button type="button" class="btn btn-secondary" onclick="closeModal()">ยกเลิก</button>
-          <button type="button" class="btn btn-ghost" onclick="previewQuot()">👁️ ดูตัวอย่าง</button>
-          <button type="submit" class="btn btn-primary" id="saveQuotBtn">บันทึก</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">??????</button>
+          <button type="button" class="btn btn-ghost" onclick="previewQuot()">??? ??????????</button>
+          <button type="submit" class="btn btn-primary" id="saveQuotBtn">??????</button>
         </div>
       </form>
     </div>
@@ -94,33 +94,33 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">📄 ใบเสนอราคา</h1>
+        <h1 class="page-title">?? ??????????</h1>
         <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="window.location.href='job-calculator.html'">🔙 คำนวณงาน</button>
-          <button class="btn btn-primary" onclick="openModal(null)">+ ใบเสนอราคาใหม่</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.location.href='job-calculator.html'">?? ????????</button>
+          <button class="btn btn-primary" onclick="openModal(null)">+ ??????????????</button>
         </div>
       </div>
 
       <!-- Cal data banner -->
       <div id="calcBanner" style="display:none;background:rgba(34,197,94,.1);border:1px solid #22c55e;border-radius:var(--radius-md);padding:var(--spacing-md);margin-bottom:var(--spacing-md);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--spacing-sm)">
-        <div>✅ <b>มีข้อมูลจากหน้าคำนวณงาน</b> — กดเพื่อสร้างใบเสนอราคาจากข้อมูลนั้น</div>
-        <button class="btn btn-primary btn-sm" onclick="openFromCalc()">📄 สร้างใหม่จากการคำนวณ</button>
+        <div>? <b>???????????????????????</b> � ???????????????????????????????????</div>
+        <button class="btn btn-primary btn-sm" onclick="openFromCalc()">?? ????????????????????</button>
       </div>
 
       <div class="card">
         <div class="table-responsive">
           <table class="table">
             <thead><tr>
-              <th>เลขที่</th>
-              <th>ลูกค้า</th>
-              <th>ชื่องาน</th>
-              <th>วันที่ออก</th>
-              <th>วันแสดง</th>
-              <th>ยอดรวม</th>
-              <th>สถานะ</th>
+              <th>??????</th>
+              <th>??????</th>
+              <th>???????</th>
+              <th>?????????</th>
+              <th>???????</th>
+              <th>??????</th>
+              <th>?????</th>
               <th></th>
             </tr></thead>
-            <tbody id="quotBody"><tr><td colspan="8" class="text-center">กำลังโหลด...</td></tr></tbody>
+            <tbody id="quotBody"><tr><td colspan="8" class="text-center">?????????...</td></tr></tbody>
           </table>
         </div>
       </div>

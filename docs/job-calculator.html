@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>คำนวณราคางาน — BandThai</title>
+  <title>???????????? � BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -22,227 +22,227 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">🧮 คำนวณราคางาน</h1>
-        <button class="btn btn-secondary btn-sm" onclick="resetForm()">🔄 รีเซ็ต</button>
+        <h1 class="page-title">?? ????????????</h1>
+        <button class="btn btn-secondary btn-sm" onclick="resetForm()">?? ??????</button>
       </div>
 
       <div class="jc-grid">
-        <!-- ═══════ LEFT: INPUT ═══════ -->
+        <!-- ------- LEFT: INPUT ------- -->
         <div class="jc-left">
 
-          <!-- ① ข้อมูลงาน -->
+          <!-- ? ????????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">1</span><span class="sec-icon">📋</span><h3>ข้อมูลงาน</h3></div>
+            <div class="sec-head"><span class="sec-num">1</span><span class="sec-icon">??</span><h3>?????????</h3></div>
             <div class="form-grid-2">
-              <div class="form-group"><label>ชื่องาน / อีเวนต์ *</label><input type="text" id="jobName" placeholder="เช่น งานแต่งงาน ประชุมสัมมนา" oninput="recalc()"></div>
-              <div class="form-group"><label>ลูกค้า / เจ้าภาพ *</label><input type="text" id="clientName" placeholder="ชื่อเจ้าภาพ" oninput="recalc()"></div>
+              <div class="form-group"><label>??????? / ??????? *</label><input type="text" id="jobName" placeholder="???? ?????????? ????????????" oninput="recalc()"></div>
+              <div class="form-group"><label>?????? / ??????? *</label><input type="text" id="clientName" placeholder="???????????" oninput="recalc()"></div>
             </div>
             <div class="form-grid-2">
-              <div class="form-group"><label>เบอร์โทรเจ้าภาพ</label><input type="tel" id="clientPhone" placeholder="0812345678" oninput="recalc()"></div>
-              <div class="form-group"><label>ไลน์ ID / อีเมล</label><input type="text" id="clientContact" placeholder="Line ID / Email" oninput="recalc()"></div>
+              <div class="form-group"><label>???????????????</label><input type="tel" id="clientPhone" placeholder="0812345678" oninput="recalc()"></div>
+              <div class="form-group"><label>???? ID / ?????</label><input type="text" id="clientContact" placeholder="Line ID / Email" oninput="recalc()"></div>
             </div>
             <div class="form-grid-2">
-              <div class="form-group"><label>วันที่แสดง *</label><input type="date" id="eventDate" oninput="recalc()"></div>
-              <div class="form-group"><label>เวลาเริ่มแสดง</label><input type="time" id="eventTime" value="19:00" oninput="recalc()"></div>
+              <div class="form-group"><label>?????????? *</label><input type="date" id="eventDate" oninput="recalc()"></div>
+              <div class="form-group"><label>?????????????</label><input type="time" id="eventTime" value="19:00" oninput="recalc()"></div>
             </div>
-            <div class="form-group"><label>สถานที่ / โรงแรม / ห้องจัดเลี้ยง</label><input type="text" id="venueName" placeholder="เช่น โรงแรมเซ็นทรัล ห้องนภาลัย บอลรูม" oninput="recalc()"></div>
+            <div class="form-group"><label>??????? / ?????? / ?????????????</label><input type="text" id="venueName" placeholder="???? ?????????????? ?????????? ??????" oninput="recalc()"></div>
           </div>
 
-          <!-- ② สมาชิก -->
+          <!-- ? ?????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">2</span><span class="sec-icon">👥</span><h3>สมาชิกวงที่ร่วมงาน</h3></div>
+            <div class="sec-head"><span class="sec-num">2</span><span class="sec-icon">??</span><h3>??????????????????</h3></div>
             <div class="form-grid-2" style="margin-bottom:var(--spacing-md)">
               <div class="form-group">
-                <label>โหมดค่าตัว</label>
+                <label>??????????</label>
                 <div class="toggle-group">
-                  <button id="modeEqual" class="active" onclick="setMemberMode('equal')">เท่ากัน</button>
-                  <button id="modeCustom" onclick="setMemberMode('custom')">กำหนดเอง</button>
+                  <button id="modeEqual" class="active" onclick="setMemberMode('equal')">???????</button>
+                  <button id="modeCustom" onclick="setMemberMode('custom')">????????</button>
                 </div>
               </div>
               <div class="form-group" id="defaultRateWrap">
-                <label>ค่าตัวเริ่มต้น/คน (บาท)</label>
+                <label>??????????????/?? (???)</label>
                 <input type="number" id="defaultRate" value="1500" min="0" step="100" oninput="updateDefaultRates()">
               </div>
             </div>
-            <div id="membersLoadMsg" style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:var(--spacing-sm)">⏳ กำลังโหลดสมาชิก...</div>
+            <div id="membersLoadMsg" style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:var(--spacing-sm)">? ???????????????...</div>
             <div id="membersGrid" class="members-grid" style="display:none"></div>
             <div style="margin-top:var(--spacing-sm);font-size:var(--text-sm);color:var(--premium-text-muted)">
-              สมาชิกที่เลือก: <b id="selectedCount">0</b> คน &nbsp;|&nbsp; รวมค่าตัวนักดนตรี: <b id="totalMemberCost" style="color:var(--premium-gold)">฿0</b>
+              ??????????????: <b id="selectedCount">0</b> ?? &nbsp;|&nbsp; ?????????????????: <b id="totalMemberCost" style="color:var(--premium-gold)">?0</b>
             </div>
           </div>
 
-          <!-- ③ รายละเอียดการแสดง -->
+          <!-- ? ????????????????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">3</span><span class="sec-icon">🎸</span><h3>รายละเอียดการแสดง</h3></div>
+            <div class="sec-head"><span class="sec-num">3</span><span class="sec-icon">??</span><h3>?????????????????</h3></div>
             <div class="form-grid-3">
-              <div class="form-group"><label>ระยะเวลาแสดง (ชั่วโมง)</label><input type="number" id="showHours" value="3" min="0.5" step="0.5" oninput="recalc()"></div>
-              <div class="form-group"><label>จำนวนรอบ</label><input type="number" id="showSessions" value="1" min="1" oninput="recalc()"></div>
-              <div class="form-group"><label>พักระหว่างรอบ (นาที)</label><input type="number" id="breakMins" value="15" min="0" oninput="recalc()"></div>
+              <div class="form-group"><label>???????????? (???????)</label><input type="number" id="showHours" value="3" min="0.5" step="0.5" oninput="recalc()"></div>
+              <div class="form-group"><label>????????</label><input type="number" id="showSessions" value="1" min="1" oninput="recalc()"></div>
+              <div class="form-group"><label>????????????? (????)</label><input type="number" id="breakMins" value="15" min="0" oninput="recalc()"></div>
             </div>
-            <div class="form-group"><label>หมายเหตุการแสดง</label><input type="text" id="showNote" placeholder="เช่น อะคูสติก, ฟูลแบนด์, มีช่วงคาราโอเกะ" oninput="recalc()"></div>
+            <div class="form-group"><label>???????????????</label><input type="text" id="showNote" placeholder="???? ????????, ????????, ???????????????" oninput="recalc()"></div>
           </div>
 
-          <!-- ④ การเดินทาง -->
+          <!-- ? ?????????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">4</span><span class="sec-icon">🗺️</span><h3>การเดินทาง</h3></div>
+            <div class="sec-head"><span class="sec-num">4</span><span class="sec-icon">???</span><h3>??????????</h3></div>
             <div class="form-grid-2" style="margin-bottom:var(--spacing-md)">
               <div class="form-group">
-                <label>📍 ต้นทาง (จุดออกเดินทาง)</label>
-                <input type="text" id="origin" placeholder="เช่น กรุงเทพมหานคร" oninput="updateMapUrl()">
+                <label>?? ?????? (?????????????)</label>
+                <input type="text" id="origin" placeholder="???? ?????????????" oninput="updateMapUrl()">
               </div>
               <div class="form-group">
-                <label>📍 ปลายทาง (สถานที่งาน)</label>
-                <input type="text" id="destination" placeholder="เช่น พัทยา ชลบุรี" oninput="updateMapUrl()">
+                <label>?? ??????? (??????????)</label>
+                <input type="text" id="destination" placeholder="???? ????? ??????" oninput="updateMapUrl()">
               </div>
             </div>
             <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap;margin-bottom:var(--spacing-md)">
-              <button class="btn btn-secondary btn-sm" onclick="openGoogleMaps()">🗺️ เปิด Google Maps</button>
-              <button class="btn btn-ghost btn-sm" onclick="openDistanceCalc()">📏 ดูระยะทาง (แล้วกรอกกลับ)</button>
+              <button class="btn btn-secondary btn-sm" onclick="openGoogleMaps()">??? ???? Google Maps</button>
+              <button class="btn btn-ghost btn-sm" onclick="openDistanceCalc()">?? ????????? (????????????)</button>
             </div>
             <div class="map-wrap" id="mapWrap">
-              <div class="map-placeholder" id="mapPlaceholder">🗺️ ใส่ต้นทางและปลายทางเพื่อดูแผนที่</div>
+              <div class="map-placeholder" id="mapPlaceholder">??? ????????????????????????????????</div>
             </div>
             <div class="form-grid-2" style="margin-top:var(--spacing-md)">
               <div class="form-group">
-                <label>ระยะทาง 1 เที่ยว (กม.) *</label>
+                <label>??????? 1 ?????? (??.) *</label>
                 <div style="display:flex;align-items:center;gap:var(--spacing-sm)">
                   <input type="number" id="distanceKm" value="0" min="0" step="1" oninput="recalc()" style="flex:1">
-                  <span style="font-size:var(--text-sm);color:var(--premium-text-muted);white-space:nowrap">× 2 = <b id="roundTripKm">0</b> กม.</span>
+                  <span style="font-size:var(--text-sm);color:var(--premium-text-muted);white-space:nowrap">� 2 = <b id="roundTripKm">0</b> ??.</span>
                 </div>
               </div>
               <div class="form-group">
-                <label>ราคาน้ำมัน/พลังงาน (บาท/ลิตร หรือ/kWh)</label>
+                <label>??????????/??????? (???/???? ????/kWh)</label>
                 <input type="number" id="fuelUnitPrice" value="40" min="0" step="0.5" oninput="recalc()">
               </div>
             </div>
             <div style="margin-bottom:var(--spacing-sm)">
-              <label style="font-size:var(--text-sm);font-weight:600;color:var(--premium-text-muted)">ยานพาหนะที่ใช้</label>
+              <label style="font-size:var(--text-sm);font-weight:600;color:var(--premium-text-muted)">??????????????</label>
             </div>
             <div id="vehicleList"></div>
-            <button class="btn btn-ghost btn-sm" onclick="addVehicle()">+ เพิ่มยานพาหนะ</button>
+            <button class="btn btn-ghost btn-sm" onclick="addVehicle()">+ ?????????????</button>
             <div style="margin-top:var(--spacing-sm);font-size:var(--text-sm);color:var(--premium-text-muted)">
-              รวมค่าเดินทาง (ไป-กลับ): <b id="totalTravelCost" style="color:var(--premium-gold)">฿0</b>
+              ????????????? (??-????): <b id="totalTravelCost" style="color:var(--premium-gold)">?0</b>
             </div>
           </div>
 
-          <!-- ⑤ ที่พัก -->
+          <!-- ? ?????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">5</span><span class="sec-icon">🏨</span><h3>ที่พัก</h3></div>
+            <div class="sec-head"><span class="sec-num">5</span><span class="sec-icon">??</span><h3>??????</h3></div>
             <div class="form-group">
-              <label>มีที่พักหรือไม่?</label>
+              <label>????????????????</label>
               <div class="toggle-group" style="max-width:200px">
-                <button id="accomNo" class="active" onclick="toggleSection('accom',false)">ไม่มี</button>
-                <button id="accomYes" onclick="toggleSection('accom',true)">มี</button>
+                <button id="accomNo" class="active" onclick="toggleSection('accom',false)">?????</button>
+                <button id="accomYes" onclick="toggleSection('accom',true)">??</button>
               </div>
             </div>
             <div class="cond-section" id="accomSection">
               <div class="form-grid-3">
-                <div class="form-group"><label>จำนวนห้อง</label><input type="number" id="accomRooms" value="2" min="1" oninput="recalc()"></div>
-                <div class="form-group"><label>จำนวนคืน</label><input type="number" id="accomNights" value="1" min="1" oninput="recalc()"></div>
-                <div class="form-group"><label>ราคา/ห้อง/คืน (บาท)</label><input type="number" id="accomPrice" value="800" min="0" step="50" oninput="recalc()"></div>
+                <div class="form-group"><label>?????????</label><input type="number" id="accomRooms" value="2" min="1" oninput="recalc()"></div>
+                <div class="form-group"><label>????????</label><input type="number" id="accomNights" value="1" min="1" oninput="recalc()"></div>
+                <div class="form-group"><label>????/????/??? (???)</label><input type="number" id="accomPrice" value="800" min="0" step="50" oninput="recalc()"></div>
               </div>
-              <div class="form-group"><label>ชื่อโรงแรม / ที่พัก</label><input type="text" id="accomName" placeholder="เช่น โรงแรมเซ็นทรัล" oninput="recalc()"></div>
-              <div style="font-size:var(--text-sm)">รวมค่าที่พัก: <b id="totalAccomCost" style="color:var(--premium-gold)">฿0</b></div>
+              <div class="form-group"><label>?????????? / ??????</label><input type="text" id="accomName" placeholder="???? ??????????????" oninput="recalc()"></div>
+              <div style="font-size:var(--text-sm)">????????????: <b id="totalAccomCost" style="color:var(--premium-gold)">?0</b></div>
             </div>
           </div>
 
-          <!-- ⑥ อาหาร -->
+          <!-- ? ????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">6</span><span class="sec-icon">🍽️</span><h3>อาหาร</h3></div>
+            <div class="sec-head"><span class="sec-num">6</span><span class="sec-icon">???</span><h3>?????</h3></div>
             <div class="form-group">
-              <label>มีค่าอาหารหรือไม่?</label>
+              <label>??????????????????</label>
               <div class="toggle-group" style="max-width:200px">
-                <button id="foodNo" class="active" onclick="toggleSection('food',false)">ไม่มี</button>
-                <button id="foodYes" onclick="toggleSection('food',true)">มี</button>
+                <button id="foodNo" class="active" onclick="toggleSection('food',false)">?????</button>
+                <button id="foodYes" onclick="toggleSection('food',true)">??</button>
               </div>
             </div>
             <div class="cond-section" id="foodSection">
               <div class="form-grid-4">
-                <div class="form-group"><label>จำนวนคน</label><input type="number" id="foodPeople" value="5" min="1" oninput="recalc()"></div>
-                <div class="form-group"><label>มื้อ/วัน</label><input type="number" id="foodMeals" value="2" min="1" max="6" oninput="recalc()"></div>
-                <div class="form-group"><label>จำนวนวัน</label><input type="number" id="foodDays" value="1" min="1" oninput="recalc()"></div>
-                <div class="form-group"><label>ราคา/มื้อ (บาท)</label><input type="number" id="foodPricePerMeal" value="100" min="0" step="10" oninput="recalc()"></div>
+                <div class="form-group"><label>???????</label><input type="number" id="foodPeople" value="5" min="1" oninput="recalc()"></div>
+                <div class="form-group"><label>????/???</label><input type="number" id="foodMeals" value="2" min="1" max="6" oninput="recalc()"></div>
+                <div class="form-group"><label>????????</label><input type="number" id="foodDays" value="1" min="1" oninput="recalc()"></div>
+                <div class="form-group"><label>????/???? (???)</label><input type="number" id="foodPricePerMeal" value="100" min="0" step="10" oninput="recalc()"></div>
               </div>
-              <div style="font-size:var(--text-sm)">รวมค่าอาหาร (<b id="foodSummaryText">0 คน × 0 มื้อ</b>): <b id="totalFoodCost" style="color:var(--premium-gold)">฿0</b></div>
+              <div style="font-size:var(--text-sm)">??????????? (<b id="foodSummaryText">0 ?? � 0 ????</b>): <b id="totalFoodCost" style="color:var(--premium-gold)">?0</b></div>
             </div>
           </div>
 
-          <!-- ⑦ ค่าใช้จ่ายอื่นๆ -->
+          <!-- ? ??????????????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">7</span><span class="sec-icon">💼</span><h3>ค่าใช้จ่ายอื่นๆ</h3></div>
+            <div class="sec-head"><span class="sec-num">7</span><span class="sec-icon">??</span><h3>???????????????</h3></div>
             <div id="expenseList"></div>
-            <button class="btn btn-ghost btn-sm" onclick="addExpense()">+ เพิ่มรายการ</button>
-            <div style="margin-top:var(--spacing-sm);font-size:var(--text-sm)">รวมค่าใช้จ่ายอื่นๆ: <b id="totalOtherCost" style="color:var(--premium-gold)">฿0</b></div>
+            <button class="btn btn-ghost btn-sm" onclick="addExpense()">+ ???????????</button>
+            <div style="margin-top:var(--spacing-sm);font-size:var(--text-sm)">??????????????????: <b id="totalOtherCost" style="color:var(--premium-gold)">?0</b></div>
           </div>
 
-          <!-- ⑧ การตั้งราคา -->
+          <!-- ? ??????????? -->
           <div class="card" style="margin-bottom:var(--spacing-lg)">
-            <div class="sec-head"><span class="sec-num">8</span><span class="sec-icon">💰</span><h3>การตั้งราคา</h3></div>
+            <div class="sec-head"><span class="sec-num">8</span><span class="sec-icon">??</span><h3>???????????</h3></div>
             <div class="form-grid-3">
               <div class="form-group">
-                <label>กองกลางวง (%)</label>
+                <label>????????? (%)</label>
                 <input type="number" id="fundPct" value="10" min="0" max="50" step="1" oninput="recalc()">
               </div>
               <div class="form-group">
-                <label>กำไรขั้นต่ำ (%)</label>
+                <label>??????????? (%)</label>
                 <input type="number" id="profitPct" value="20" min="0" max="100" step="5" oninput="recalc()">
               </div>
               <div class="form-group">
-                <label>บัฟเฟอร์เผื่อต่อรอง (%)</label>
+                <label>??????????????????? (%)</label>
                 <input type="number" id="bufferPct" value="15" min="0" max="50" step="5" oninput="recalc()">
               </div>
             </div>
             <p style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-top:0">
-              💡 ราคาแนะนำ = ต้นทุน + กำไร + บัฟเฟอร์ — ให้เจ้าภาพต่อรองได้โดยไม่ขาดทุน
+              ?? ????????? = ?????? + ???? + ???????? � ???????????????????????????????
             </p>
           </div>
 
         </div><!-- end left -->
 
-        <!-- ═══════ RIGHT: SUMMARY ═══════ -->
+        <!-- ------- RIGHT: SUMMARY ------- -->
         <div class="jc-sticky">
           <div class="card">
-            <div class="sec-head" style="margin-bottom:var(--spacing-md)"><span class="sec-icon">📊</span><h3>สรุปค่าใช้จ่าย</h3></div>
+            <div class="sec-head" style="margin-bottom:var(--spacing-md)"><span class="sec-icon">??</span><h3>??????????????</h3></div>
             <div class="summary-section">
-              <div class="summary-section-title">ต้นทุน</div>
-              <div class="sum-row"><span>👥 ค่าตัวนักดนตรี</span><span id="s_member">฿0</span></div>
+              <div class="summary-section-title">??????</div>
+              <div class="sum-row"><span>?? ??????????????</span><span id="s_member">?0</span></div>
               <div class="sum-row indent" id="s_member_detail" style="display:none"><span id="s_member_d" style="font-size:var(--text-xs)"></span><span></span></div>
-              <div class="sum-row"><span>🗺️ ค่าเดินทาง (ไป-กลับ)</span><span id="s_travel">฿0</span></div>
-              <div class="sum-row" id="s_accom_row" style="display:none"><span>🏨 ค่าที่พัก</span><span id="s_accom">฿0</span></div>
-              <div class="sum-row" id="s_food_row" style="display:none"><span>🍽️ ค่าอาหาร</span><span id="s_food">฿0</span></div>
-              <div class="sum-row" id="s_other_row" style="display:none"><span>💼 ค่าอื่นๆ</span><span id="s_other">฿0</span></div>
+              <div class="sum-row"><span>??? ?????????? (??-????)</span><span id="s_travel">?0</span></div>
+              <div class="sum-row" id="s_accom_row" style="display:none"><span>?? ?????????</span><span id="s_accom">?0</span></div>
+              <div class="sum-row" id="s_food_row" style="display:none"><span>??? ????????</span><span id="s_food">?0</span></div>
+              <div class="sum-row" id="s_other_row" style="display:none"><span>?? ????????</span><span id="s_other">?0</span></div>
             </div>
             <hr class="sum-divider">
             <div class="summary-section">
-              <div class="sum-row" style="font-weight:700"><span>รวมต้นทุน</span><span id="s_totalCost" style="font-size:var(--text-xl);color:var(--premium-gold)">฿0</span></div>
-              <div class="sum-row indent"><span>+ กองกลางวง (<span id="s_fundPct">10</span>%)</span><span id="s_fund">฿0</span></div>
-              <div class="sum-row indent"><span>+ กำไรขั้นต่ำ (<span id="s_profitPct">20</span>%)</span><span id="s_profit">฿0</span></div>
+              <div class="sum-row" style="font-weight:700"><span>?????????</span><span id="s_totalCost" style="font-size:var(--text-xl);color:var(--premium-gold)">?0</span></div>
+              <div class="sum-row indent"><span>+ ????????? (<span id="s_fundPct">10</span>%)</span><span id="s_fund">?0</span></div>
+              <div class="sum-row indent"><span>+ ??????????? (<span id="s_profitPct">20</span>%)</span><span id="s_profit">?0</span></div>
             </div>
             <hr class="sum-divider">
             <div style="margin-bottom:var(--spacing-md)">
-              <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:4px">⚠️ ราคาต่ำสุดที่รับได้ (ห้ามต่ำกว่านี้)</div>
-              <div class="sum-row" style="font-size:var(--text-xl);font-weight:700;color:#ef4444"><span>ราคาขั้นต่ำ</span><span id="s_minPrice">฿0</span></div>
+              <div style="font-size:var(--text-xs);color:var(--premium-text-muted);margin-bottom:4px">?? ??????????????????? (??????????????)</div>
+              <div class="sum-row" style="font-size:var(--text-xl);font-weight:700;color:#ef4444"><span>???????????</span><span id="s_minPrice">?0</span></div>
             </div>
             <div class="price-big">
-              <div class="price-big-label">ราคาแนะนำในการเสนอ</div>
-              <div class="price-big-val" id="s_suggestPrice">฿0</div>
-              <div style="margin-top:6px"><span class="price-buffer-badge" id="s_bufferBadge">เผื่อต่อรอง +0%</span></div>
+              <div class="price-big-label">??????????????????</div>
+              <div class="price-big-val" id="s_suggestPrice">?0</div>
+              <div style="margin-top:6px"><span class="price-buffer-badge" id="s_bufferBadge">??????????? +0%</span></div>
             </div>
             <div class="form-group">
-              <label style="font-weight:700">💬 ราคาที่ต้องการเสนอ (บาท)</label>
+              <label style="font-weight:700">?? ?????????????????? (???)</label>
               <input type="number" id="proposedPrice" value="0" min="0" step="500" oninput="recalc()" style="font-size:var(--text-xl);font-weight:700;text-align:center;color:var(--premium-gold)">
-              <div id="priceWarning" style="margin-top:4px;font-size:var(--text-xs);display:none;color:#ef4444">⚠️ ราคาต่ำกว่าต้นทุน! อาจขาดทุน</div>
+              <div id="priceWarning" style="margin-top:4px;font-size:var(--text-xs);display:none;color:#ef4444">?? ?????????????????! ?????????</div>
             </div>
             <hr class="sum-divider">
             <div class="form-group">
-              <label>หมายเหตุ / เงื่อนไขเพิ่มเติม</label>
-              <textarea id="calcNotes" rows="2" placeholder="เช่น รวมค่าอุปกรณ์ ค่า PA ค่า stage แล้ว"></textarea>
+              <label>???????? / ?????????????????</label>
+              <textarea id="calcNotes" rows="2" placeholder="???? ????????????? ??? PA ??? stage ????"></textarea>
             </div>
             <button class="btn btn-primary" style="width:100%;font-size:var(--text-base);padding:var(--spacing-md)" onclick="goToQuotation()">
-              📄 สร้างใบเสนอราคา →
+              ?? ??????????????? ?
             </button>
             <button class="btn btn-secondary" style="width:100%;margin-top:var(--spacing-sm)" onclick="saveToLocal()">
-              💾 บันทึกร่าง
+              ?? ??????????
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>เกมส์ดนตรี — BandThai</title>
+  <title>?????????? � BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -25,76 +25,76 @@
 
   <main>
     <div class="container">
-      <!-- ── Page Header ── -->
+      <!-- -- Page Header -- -->
       <div class="page-header">
-        <h1 class="page-title">🎮 เกมส์ดนตรี</h1>
-        <div id="onlineBadge" class="online-badge">🟢 0 คนออนไลน์</div>
+        <h1 class="page-title">?? ??????????</h1>
+        <div id="onlineBadge" class="online-badge">?? 0 ?????????</div>
       </div>
 
-      <!-- ══ LOBBY ══ -->
+      <!-- -- LOBBY -- -->
       <div id="gameLobby">
         <div class="game-grid">
           <div class="game-card" onclick="startGame('quiz')">
-            <div class="playing-badge" id="playingQuiz">0 กำลังเล่น</div>
-            <div class="game-card-icon">🎵</div>
-            <div class="game-card-name">ทายเพลง</div>
-            <div class="game-card-desc">ดูคำใบ้แล้วทายว่าเพลงอะไร</div>
+            <div class="playing-badge" id="playingQuiz">0 ?????????</div>
+            <div class="game-card-icon">??</div>
+            <div class="game-card-name">???????</div>
+            <div class="game-card-desc">?????????????????????????</div>
             <div class="game-card-stats" id="statsQuiz"></div>
           </div>
           <div class="game-card" onclick="startGame('chord')">
-            <div class="playing-badge" id="playingChord">0 กำลังเล่น</div>
-            <div class="game-card-icon">🎹</div>
-            <div class="game-card-name">ทายคีย์</div>
-            <div class="game-card-desc">บอกชื่อเพลง ทายว่าคีย์อะไร</div>
+            <div class="playing-badge" id="playingChord">0 ?????????</div>
+            <div class="game-card-icon">??</div>
+            <div class="game-card-name">???????</div>
+            <div class="game-card-desc">??????????? ??????????????</div>
             <div class="game-card-stats" id="statsChord"></div>
           </div>
           <div class="game-card" onclick="startGame('rhythm')">
-            <div class="playing-badge" id="playingRhythm">0 กำลังเล่น</div>
-            <div class="game-card-icon">🥁</div>
-            <div class="game-card-name">จับจังหวะ</div>
-            <div class="game-card-desc">ฟังจังหวะแล้วเคาะตาม</div>
+            <div class="playing-badge" id="playingRhythm">0 ?????????</div>
+            <div class="game-card-icon">??</div>
+            <div class="game-card-name">?????????</div>
+            <div class="game-card-desc">????????????????????</div>
             <div class="game-card-stats" id="statsRhythm"></div>
           </div>
           <div class="game-card" onclick="startGame('chain')">
-            <div class="playing-badge" id="playingChain">0 กำลังเล่น</div>
-            <div class="game-card-icon">🔤</div>
-            <div class="game-card-name">ต่อชื่อเพลง</div>
-            <div class="game-card-desc">ต่อคำด้วยพยัญชนะตัวสุดท้าย</div>
+            <div class="playing-badge" id="playingChain">0 ?????????</div>
+            <div class="game-card-icon">??</div>
+            <div class="game-card-name">???????????</div>
+            <div class="game-card-desc">??????????????????????????</div>
             <div class="game-card-stats" id="statsChain"></div>
           </div>
           <div class="game-card" onclick="startGame('bpmguess')">
-            <div class="playing-badge" id="playingBpmguess">0 กำลังเล่น</div>
-            <div class="game-card-icon">🎯</div>
-            <div class="game-card-name">ทาย BPM</div>
-            <div class="game-card-desc">ฟัง metronome แล้วทายความเร็ว</div>
+            <div class="playing-badge" id="playingBpmguess">0 ?????????</div>
+            <div class="game-card-icon">??</div>
+            <div class="game-card-name">??? BPM</div>
+            <div class="game-card-desc">??? metronome ???????????????</div>
             <div class="game-card-stats" id="statsBpmguess"></div>
           </div>
         </div>
 
         <!-- Online Players -->
         <div class="online-section" id="onlineSection">
-          <h3>👥 กำลังออนไลน์</h3>
+          <h3>?? ????????????</h3>
           <div id="onlineList"></div>
         </div>
 
         <!-- Leaderboard -->
         <div class="lb-section">
-          <h3>🏆 กระดานคะแนน</h3>
-          <div id="leaderboard"><div class="lb-empty">กำลังโหลด...</div></div>
+          <h3>?? ???????????</h3>
+          <div id="leaderboard"><div class="lb-empty">?????????...</div></div>
         </div>
       </div>
 
-      <!-- ══ GAME PANEL ══ -->
+      <!-- -- GAME PANEL -- -->
       <div id="gamePanel" style="display:none">
         <div class="game-header">
-          <button class="btn-back" onclick="exitGame()">← กลับ</button>
+          <button class="btn-back" onclick="exitGame()">? ????</button>
           <div class="game-header-info">
             <div class="g-title" id="gTitle"></div>
             <div class="g-round" id="gRound"></div>
           </div>
           <div class="game-score-box">
             <div class="score-num" id="gScore">0</div>
-            <div class="score-label">คะแนน</div>
+            <div class="score-label">?????</div>
           </div>
         </div>
         <div class="timer-bar" id="timerBar"><div class="timer-fill" id="timerFill"></div></div>
