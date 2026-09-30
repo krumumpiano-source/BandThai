@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ─────────────────────────────────────────────────────────────────
 function preloadBandSongs(onDone) {
   if (!_bandId) { if (onDone) onDone(); return; }
-  apiCall('getAllSongs', { source: 'band', bandId: _bandId }, function(r) {
+  apiCall('getAllSongs', { source: 'global', bandId: _bandId }, function(r) {
     if (r && r.success && r.data) {
       _allSongs = r.data.slice().sort(function(a, b) {
         return (a.name || '').localeCompare(b.name || '', 'th');
