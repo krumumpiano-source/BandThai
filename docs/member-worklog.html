@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>?????????????? � BandThai</title>
+  <title>ส่วนแบ่งรายได้ — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -18,48 +18,48 @@
 
       <!-- Header -->
       <div class="page-header" style="margin-bottom:16px">
-        <h1 class="page-title">?? ??????????????</h1>
-        <p style="font-size:.82rem;color:var(--premium-text-muted);margin:4px 0 0">??????????????????????????????????????????? (????????????)</p>
+        <h1 class="page-title">💰 ส่วนแบ่งรายได้</h1>
+        <p style="font-size:.82rem;color:var(--premium-text-muted);margin:4px 0 0">คิดจากสัดส่วนงานที่แต่ละคนดูแลในระบบทั้งหมด (คะแนนงานสะสม)</p>
       </div>
 
       <!-- Stats bar -->
       <div class="stats-bar" id="statsBar">
-        <div class="stat-chip"><div class="sc-num" id="statTotal">�</div><div class="sc-lbl">?? ???????????</div></div>
-        <div class="stat-chip"><div class="sc-num" id="statHistorical">�</div><div class="sc-lbl">?? ???????? (??????????)</div></div>
-        <div class="stat-chip"><div class="sc-num" id="statTracked">�</div><div class="sc-lbl">? ????????????</div></div>
-        <div class="stat-chip"><div class="sc-num" id="statSince">�</div><div class="sc-lbl">? ?????????????</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statTotal">—</div><div class="sc-lbl">🎵 เพลงทั้งหมด</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statHistorical">—</div><div class="sc-lbl">📅 คะแนนฐาน (ก่อนติดตาม)</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statTracked">—</div><div class="sc-lbl">✅ คะแนนงานสะสม</div></div>
+        <div class="stat-chip"><div class="sc-num" id="statSince">—</div><div class="sc-lbl">⚡ ติดตามตั้งแต่</div></div>
       </div>
 
       <!-- Admin Reserved % Setting (only admin sees this) -->
       <div class="reserved-card" id="adminReservedCard" style="display:none">
         <div class="reserved-card-title">
-          <span>??? ???????????????????</span>
+          <span>🏗️ ส่วนสงวนเจ้าของระบบ</span>
           <span class="reserved-pct-display" id="reservedPctDisplay">60%</span>
         </div>
         <div class="reserved-pools">
           <div class="pool-chip">
             <div class="pc-num pool1-num" id="pool1Display">60%</div>
-            <div class="pc-lbl">??? ??????????????<br>(?????????????? admin)</div>
+            <div class="pc-lbl">🏗️ กองเจ้าของระบบ<br>(ขั้นต่ำสงวนให้ admin)</div>
           </div>
           <div class="pool-chip">
             <div class="pc-num pool2-num" id="pool2Display">40%</div>
-            <div class="pc-lbl">?? ??????????<br>(????????????????)</div>
+            <div class="pc-lbl">📊 กองงานดูแล<br>(แบ่งตามคะแนนสะสม)</div>
           </div>
         </div>
         <input type="range" id="reservedPctSlider" class="reserved-slider"
           min="0" max="95" step="5" value="60"
           oninput="onReservedPctChange(this.value)">
         <div class="reserved-hint">
-          <strong style="color:var(--premium-gold)">??????????????</strong> =
-          ???????????? ??? AI ?????? ?????? ??????????????????????????????????????<br>
-          <strong style="color:#68d391">??????????</strong> =
-          ???????????????????????????? (??? admin ????)<br>
-          <span style="color:rgba(255,255,255,.4)">?? ????????????????????????????? ???????????????????????????????????????</span>
+          <strong style="color:var(--premium-gold)">กองเจ้าของระบบ</strong> =
+          งานสร้างระบบ ค่า AI ออกแบบ วางแผน และดูแลทุกส่วนที่ไม่ได้บันทึกเป็นคะแนน<br>
+          <strong style="color:#68d391">กองงานดูแล</strong> =
+          แบ่งตามคะแนนสะสมจริงของทุกคน (รวม admin ด้วย)<br>
+          <span style="color:rgba(255,255,255,.4)">💡 แม้ระบบจะนิ่งและไม่มีใครทำงาน คะแนนสะสมก็คงที่ทำให้สัดส่วนมีเสถียรภาพ</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           <button class="btn btn-primary btn-sm" id="saveReservedBtn" onclick="saveReservedPct()"
             style="background:var(--premium-gold);border:none;padding:8px 18px;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-family:inherit">
-            ?? ????????????????
+            💾 บันทึกการตั้งค่า
           </button>
           <span id="saveReservedMsg" style="font-size:.77rem;color:rgba(255,255,255,.6)"></span>
         </div>
@@ -67,54 +67,54 @@
 
       <!-- Revenue Calculator -->
       <div class="revenue-box">
-        <label>?? ??????????????</label>
-        <input type="number" id="monthlyIncome" class="revenue-input" placeholder="????????????? (???)" min="0" oninput="calcRevenue()">
+        <label>💵 รายได้เดือนนี้</label>
+        <input type="number" id="monthlyIncome" class="revenue-input" placeholder="ระบุจำนวนเงิน (บาท)" min="0" oninput="calcRevenue()">
         <div>
-          <div class="revenue-hint">?????????????????????????</div>
+          <div class="revenue-hint">กรอกยอดรวมรายได้ที่จะแบ่ง</div>
           <div class="revenue-total" id="revenueTotal"></div>
         </div>
       </div>
 
       <!-- Info note -->
       <div class="info-note" id="infoNote" style="display:none">
-        ?? <div id="infoNoteText"></div>
+        ℹ️ <div id="infoNoteText"></div>
       </div>
 
       <!-- Member Table -->
       <div class="member-table-wrap" id="memberTableWrap">
         <div class="member-table-head">
-          <h2>?? ???????????????</h2>
+          <h2>👥 สัดส่วนการทำงาน</h2>
           <span id="memberCount"></span>
         </div>
-        <div id="memberTableBody" style="padding:32px;text-align:center;color:var(--premium-text-muted)">? ?????????...</div>
+        <div id="memberTableBody" style="padding:32px;text-align:center;color:var(--premium-text-muted)">⏳ กำลังโหลด...</div>
       </div>
 
       <!-- Collapsible activity log -->
       <details class="log-details" id="logDetails" ontoggle="if(this.open) loadLogIfNeeded()">
         <summary>
-          <span>?? ??????????????????????</span>
-          <span style="font-size:.75rem;font-weight:400;color:var(--premium-text-muted)">??????????? ?</span>
+          <span>📋 ประวัติการทำงานละเอียด</span>
+          <span style="font-size:.75rem;font-weight:400;color:var(--premium-text-muted)">คลิกเพื่อดู ▼</span>
         </summary>
         <div class="log-wrap">
           <div class="log-filters">
-            <select id="logFilterUser"><option value="">?????</option></select>
+            <select id="logFilterUser"><option value="">ทุกคน</option></select>
             <select id="logFilterAction">
-              <option value="">?????????</option>
-              <option value="add_song">?????????</option>
-              <option value="edit_song">?????????</option>
-              <option value="delete_song">??????</option>
-              <option value="merge_songs">??????????</option>
-              <option value="bulk_add">??????????????</option>
-              <option value="add_artist">???????????</option>
-              <option value="edit_artist">???????????</option>
-              <option value="delete_artist">????????</option>
+              <option value="">ทุกประเภท</option>
+              <option value="add_song">เพิ่มเพลง</option>
+              <option value="edit_song">แก้ไขเพลง</option>
+              <option value="delete_song">ลบเพลง</option>
+              <option value="merge_songs">รวมเพลงซ้ำ</option>
+              <option value="bulk_add">เพิ่มเพลงกลุ่ม</option>
+              <option value="add_artist">เพิ่มศิลปิน</option>
+              <option value="edit_artist">แก้ไขศิลปิน</option>
+              <option value="delete_artist">ลบศิลปิน</option>
             </select>
             <input type="date" id="logFrom">
             <input type="date" id="logTo">
-            <button class="btn-sm primary" onclick="applyLogFilter()">?? ????</button>
-            <button class="btn-sm" onclick="exportCsv()">?? CSV</button>
+            <button class="btn-sm primary" onclick="applyLogFilter()">🔍 กรอง</button>
+            <button class="btn-sm" onclick="exportCsv()">📥 CSV</button>
           </div>
-          <div id="logTableArea"><div class="log-empty">???? ???? ???????????????</div></div>
+          <div id="logTableArea"><div class="log-empty">คลิก กรอง เพื่อโหลดข้อมูล</div></div>
         </div>
       </details>
 

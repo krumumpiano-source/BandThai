@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>????????????? � BandThai</title>
+  <title>ข้อมูลส่วนตัว — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -22,268 +22,268 @@
   <main>
     <div class="container" style="max-width:720px">
       <div class="page-header">
-        <h1 class="page-title">?? ?????????????</h1>
+        <h1 class="page-title">👤 ข้อมูลส่วนตัว</h1>
       </div>
 
-      <!-- Avatar + ?????????? -->
+      <!-- Avatar + ชื่อแสดงผล -->
       <div class="section-card">
         <div class="profile-avatar-wrap">
-          <div class="profile-avatar" id="avatarIcon">??</div>
+          <div class="profile-avatar" id="avatarIcon">🎤</div>
           <div class="profile-name-display">
-            <div class="full-name" id="displayFullName">?????????...</div>
+            <div class="full-name" id="displayFullName">กำลังโหลด...</div>
             <div class="nickname" id="displayNickname"></div>
             <div class="instrument" id="displayInstrument"></div>
           </div>
         </div>
       </div>
 
-      <!-- ?????????????????? -->
+      <!-- ฟอร์มข้อมูลส่วนตัว -->
       <div class="section-card">
-        <h3>?? ??????????????????</h3>
+        <h3>📝 แก้ไขข้อมูลส่วนตัว</h3>
         <form id="profileForm">
-          <div class="form-section-label">?????????????</div>
+          <div class="form-section-label">ข้อมูลส่วนตัว</div>
           <div class="form-row-3">
             <div class="form-group">
-              <label>????????</label>
+              <label>คำนำหน้า</label>
               <select id="title" class="form-control">
-                <option value="???">???</option>
-                <option value="???">???</option>
-                <option value="??????">??????</option>
-                <option value="?.?.">?.?.</option>
-                <option value="?.?.">?.?.</option>
-                <option value="???????">???????</option>
+                <option value="นาย">นาย</option>
+                <option value="นาง">นาง</option>
+                <option value="นางสาว">นางสาว</option>
+                <option value="ด.ช.">ด.ช.</option>
+                <option value="ด.ญ.">ด.ญ.</option>
+                <option value="ไม่ระบุ">ไม่ระบุ</option>
               </select>
             </div>
             <div class="form-group">
-              <label>???? <span style="color:#c53030">*</span></label>
-              <input type="text" id="firstName" class="form-control" placeholder="????????" required>
+              <label>ชื่อ <span style="color:#c53030">*</span></label>
+              <input type="text" id="firstName" class="form-control" placeholder="ชื่อจริง" required>
             </div>
             <div class="form-group">
-              <label>??????? <span style="color:#c53030">*</span></label>
-              <input type="text" id="lastName" class="form-control" placeholder="???????" required>
+              <label>นามสกุล <span style="color:#c53030">*</span></label>
+              <input type="text" id="lastName" class="form-control" placeholder="นามสกุล" required>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>???????? <span style="color:#c53030">*</span></label>
-              <input type="text" id="nickname" class="form-control" placeholder="????????" required>
-              <small style="color:var(--premium-text-muted)">?????????????????</small>
+              <label>ชื่อเล่น <span style="color:#c53030">*</span></label>
+              <input type="text" id="nickname" class="form-control" placeholder="ชื่อเล่น" required>
+              <small style="color:var(--premium-text-muted)">ชื่อที่แสดงในระบบ</small>
             </div>
             <div class="form-group">
-              <label>??????? / ????????????</label>
+              <label>ตำแหน่ง / เครื่องดนตรี</label>
               <select id="instrument" class="form-control">
-                <option value="">-- ????? --</option>
-                <option value="??????">?? ??????</option>
-                <option value="??????????">?? ??????????</option>
-                <option value="???????????">?? ???????????</option>
-                <option value="???????????">?? ???????????</option>
-                <option value="?????????">?? ?????????</option>
-                <option value="?????????">?? ?????????</option>
-                <option value="????">?? ????</option>
-                <option value="???????????">?? ???????????</option>
-                <option value="???????">?? ???????</option>
-                <option value="????????">?? ????????</option>
-                <option value="???????">?? ???????</option>
-                <option value="???????????">?? ???????????</option>
-                <option value="?????">?????</option>
+                <option value="">-- เลือก --</option>
+                <option value="ร้องนำ">🎤 ร้องนำ</option>
+                <option value="ร้องประสาน">🎤 ร้องประสาน</option>
+                <option value="กีตาร์ไฟฟ้า">🎸 กีตาร์ไฟฟ้า</option>
+                <option value="กีตาร์โปร่ง">🎸 กีตาร์โปร่ง</option>
+                <option value="กีตาร์เบส">🎸 กีตาร์เบส</option>
+                <option value="คีย์บอร์ด">🎹 คีย์บอร์ด</option>
+                <option value="กลอง">🥁 กลอง</option>
+                <option value="เพอร์คัสชัน">🥁 เพอร์คัสชัน</option>
+                <option value="ทรัมเปต">🎺 ทรัมเปต</option>
+                <option value="แซกโซโฟน">🎷 แซกโซโฟน</option>
+                <option value="ไวโอลิน">🎻 ไวโอลิน</option>
+                <option value="ผู้จัดการวง">📋 ผู้จัดการวง</option>
+                <option value="อื่นๆ">อื่นๆ</option>
               </select>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>?????????????</label>
+              <label>เบอร์โทรศัพท์</label>
               <input type="tel" id="phone" class="form-control" placeholder="0xx-xxx-xxxx">
             </div>
           </div>
 
-          <!-- ?????????????? -->
-          <div class="form-section-label">?? ??????????????</div>
+          <!-- ช่องทางรับเงิน -->
+          <div class="form-section-label">💳 ช่องทางรับเงิน</div>
           <div class="form-row">
             <div class="form-group">
-              <label>???????</label>
+              <label>ช่องทาง</label>
               <select id="paymentMethod" class="form-control">
-                <option value="">-- ????? --</option>
-                <option value="promptpay">?????????</option>
-                <option value="truemoney">?????????</option>
-                <option value="bank_kbank">?? ?.????????</option>
-                <option value="bank_scb">?? ?.??????????</option>
-                <option value="bank_bbl">?? ?.???????</option>
-                <option value="bank_ktb">?? ?.???????</option>
-                <option value="bank_bay">?? ?.???????</option>
-                <option value="bank_ttb">?? ?.????????????</option>
-                <option value="bank_gsb">?? ?.??????</option>
-                <option value="bank_other">?? ???????????</option>
+                <option value="">-- เลือก --</option>
+                <option value="promptpay">พร้อมเพย์</option>
+                <option value="truemoney">ทรูมันนี่</option>
+                <option value="bank_kbank">🟢 ธ.กสิกรไทย</option>
+                <option value="bank_scb">🟣 ธ.ไทยพาณิชย์</option>
+                <option value="bank_bbl">🔵 ธ.กรุงเทพ</option>
+                <option value="bank_ktb">🔵 ธ.กรุงไทย</option>
+                <option value="bank_bay">🟡 ธ.กรุงศรี</option>
+                <option value="bank_ttb">🟠 ธ.ทหารไทยธนชาต</option>
+                <option value="bank_gsb">🏦 ธ.ออมสิน</option>
+                <option value="bank_other">🏦 ธนาคารอื่นๆ</option>
               </select>
             </div>
             <div class="form-group">
-              <label>???????? / ????????</label>
-              <input type="text" id="paymentAccount" class="form-control" placeholder="???????? ???? ??????????????">
+              <label>เลขบัญชี / เบอร์โทร</label>
+              <input type="text" id="paymentAccount" class="form-control" placeholder="เลขบัญชี หรือ เบอร์พร้อมเพย์">
             </div>
           </div>
 
-          <!-- ???????????????????? -->
-          <div class="form-section-label">?? ????????????????????</div>
+          <!-- ข้อมูลตามบัตรประชาชน -->
+          <div class="form-section-label">🪪 ข้อมูลตามบัตรประชาชน</div>
           <div class="form-row">
             <div class="form-group">
-              <label>???????</label>
+              <label>วันเกิด</label>
               <input type="date" id="birthDate" class="form-control">
             </div>
           </div>
 
-          <div class="form-section-label">?? ?????????????????????</div>
+          <div class="form-section-label">📍 ที่อยู่ตามบัตรประชาชน</div>
           <div class="form-row">
             <div class="form-group">
-              <label>??????????</label>
-              <input type="text" id="idAddr_houseNo" class="form-control" placeholder="???? 123/45">
+              <label>เลขที่บ้าน</label>
+              <input type="text" id="idAddr_houseNo" class="form-control" placeholder="เช่น 123/45">
             </div>
             <div class="form-group">
-              <label>???????</label>
-              <input type="text" id="idAddr_moo" class="form-control" placeholder="???? 5">
+              <label>หมู่ที่</label>
+              <input type="text" id="idAddr_moo" class="form-control" placeholder="เช่น 5">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>???</label>
-              <input type="text" id="idAddr_soi" class="form-control" placeholder="???">
+              <label>ซอย</label>
+              <input type="text" id="idAddr_soi" class="form-control" placeholder="ซอย">
             </div>
             <div class="form-group">
-              <label>???</label>
-              <input type="text" id="idAddr_road" class="form-control" placeholder="???">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>????/????</label>
-              <input type="text" id="idAddr_subDistrict" class="form-control" placeholder="????/????">
-            </div>
-            <div class="form-group">
-              <label>?????/???</label>
-              <input type="text" id="idAddr_district" class="form-control" placeholder="?????/???">
+              <label>ถนน</label>
+              <input type="text" id="idAddr_road" class="form-control" placeholder="ถนน">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>???????</label>
-              <input type="text" id="idAddr_province" class="form-control" placeholder="???????">
+              <label>ตำบล/แขวง</label>
+              <input type="text" id="idAddr_subDistrict" class="form-control" placeholder="ตำบล/แขวง">
             </div>
             <div class="form-group">
-              <label>????????????</label>
-              <input type="text" id="idAddr_postalCode" class="form-control" placeholder="???? 10110" maxlength="5">
+              <label>อำเภอ/เขต</label>
+              <input type="text" id="idAddr_district" class="form-control" placeholder="อำเภอ/เขต">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>จังหวัด</label>
+              <input type="text" id="idAddr_province" class="form-control" placeholder="จังหวัด">
+            </div>
+            <div class="form-group">
+              <label>รหัสไปรษณีย์</label>
+              <input type="text" id="idAddr_postalCode" class="form-control" placeholder="เช่น 10110" maxlength="5">
             </div>
           </div>
 
-          <div class="form-section-label">?? ???????????????</div>
+          <div class="form-section-label">🏠 ที่อยู่ปัจจุบัน</div>
           <div style="margin-bottom:var(--spacing-md)">
             <label style="display:inline-flex;align-items:center;gap:6px;font-size:var(--text-sm);cursor:pointer">
-              <input type="checkbox" id="sameAsIdAddr" onchange="copySameAddress()"> ?????????????????????????????
+              <input type="checkbox" id="sameAsIdAddr" onchange="copySameAddress()"> ใช้ที่อยู่เดียวกับบัตรประชาชน
             </label>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>??????????</label>
-              <input type="text" id="curAddr_houseNo" class="form-control" placeholder="???? 123/45">
+              <label>เลขที่บ้าน</label>
+              <input type="text" id="curAddr_houseNo" class="form-control" placeholder="เช่น 123/45">
             </div>
             <div class="form-group">
-              <label>???????</label>
-              <input type="text" id="curAddr_moo" class="form-control" placeholder="???? 5">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>???</label>
-              <input type="text" id="curAddr_soi" class="form-control" placeholder="???">
-            </div>
-            <div class="form-group">
-              <label>???</label>
-              <input type="text" id="curAddr_road" class="form-control" placeholder="???">
+              <label>หมู่ที่</label>
+              <input type="text" id="curAddr_moo" class="form-control" placeholder="เช่น 5">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>????/????</label>
-              <input type="text" id="curAddr_subDistrict" class="form-control" placeholder="????/????">
+              <label>ซอย</label>
+              <input type="text" id="curAddr_soi" class="form-control" placeholder="ซอย">
             </div>
             <div class="form-group">
-              <label>?????/???</label>
-              <input type="text" id="curAddr_district" class="form-control" placeholder="?????/???">
+              <label>ถนน</label>
+              <input type="text" id="curAddr_road" class="form-control" placeholder="ถนน">
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>???????</label>
-              <input type="text" id="curAddr_province" class="form-control" placeholder="???????">
+              <label>ตำบล/แขวง</label>
+              <input type="text" id="curAddr_subDistrict" class="form-control" placeholder="ตำบล/แขวง">
             </div>
             <div class="form-group">
-              <label>????????????</label>
-              <input type="text" id="curAddr_postalCode" class="form-control" placeholder="???? 10110" maxlength="5">
+              <label>อำเภอ/เขต</label>
+              <input type="text" id="curAddr_district" class="form-control" placeholder="อำเภอ/เขต">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>จังหวัด</label>
+              <input type="text" id="curAddr_province" class="form-control" placeholder="จังหวัด">
+            </div>
+            <div class="form-group">
+              <label>รหัสไปรษณีย์</label>
+              <input type="text" id="curAddr_postalCode" class="form-control" placeholder="เช่น 10110" maxlength="5">
             </div>
           </div>
 
-          <!-- ??????????? read-only -->
-          <div class="form-section-label">???????????</div>
+          <!-- ข้อมูลบัญชี read-only -->
+          <div class="form-section-label">ข้อมูลบัญชี</div>
           <div class="form-row">
             <div class="form-group">
-              <label>?????</label>
-              <div class="info-readonly" id="profileEmail">�</div>
+              <label>อีเมล</label>
+              <div class="info-readonly" id="profileEmail">—</div>
             </div>
             <div class="form-group">
-              <label>??</label>
-              <div class="info-readonly" id="profileBand">�</div>
+              <label>วง</label>
+              <div class="info-readonly" id="profileBand">—</div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label>?????</label>
-              <div class="info-readonly" id="profileRole">�</div>
+              <label>บทบาท</label>
+              <div class="info-readonly" id="profileRole">—</div>
             </div>
             <div class="form-group">
-              <label>?????</label>
-              <div class="info-readonly" id="profileStatus">�</div>
+              <label>สถานะ</label>
+              <div class="info-readonly" id="profileStatus">—</div>
             </div>
           </div>
 
           <div style="margin-top:var(--spacing-xl);display:flex;gap:var(--spacing-md);flex-wrap:wrap">
-            <button type="submit" class="btn btn-primary" id="saveBtn">?? ????????????</button>
-            <button type="button" class="btn btn-secondary" onclick="history.back()">??????</button>
+            <button type="submit" class="btn btn-primary" id="saveBtn">💾 บันทึกข้อมูล</button>
+            <button type="button" class="btn btn-secondary" onclick="history.back()">ยกเลิก</button>
           </div>
         </form>
       </div>
 
-      <!-- ???????????? -->
+      <!-- เปลี่ยนอีเมล -->
       <div class="section-card">
-        <h3>?? ????????????</h3>
+        <h3>📧 เปลี่ยนอีเมล</h3>
         <p style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-md)">
-          ?????????????????????????????????? ????????????????????????????????????
+          ระบบจะส่งลิงก์ยืนยันไปยังอีเมลใหม่ เมื่อกดยืนยันแล้วอีเมลจะเปลี่ยนทันที
         </p>
         <div class="change-row">
           <div class="form-group">
-            <label>?????????</label>
+            <label>อีเมลใหม่</label>
             <input type="email" id="newEmail" class="form-control" placeholder="new@example.com">
           </div>
           <div>
-            <button type="button" class="btn btn-primary" id="changeEmailBtn" onclick="doChangeEmail()">?? ????????????</button>
+            <button type="button" class="btn btn-primary" id="changeEmailBtn" onclick="doChangeEmail()">📧 เปลี่ยนอีเมล</button>
           </div>
         </div>
         <div id="emailMsg" class="msg-box"></div>
       </div>
 
-      <!-- ??????????????? -->
+      <!-- เปลี่ยนรหัสผ่าน -->
       <div class="section-card">
-        <h3>?? ???????????????</h3>
+        <h3>🔑 เปลี่ยนรหัสผ่าน</h3>
         <div class="form-row">
           <div class="form-group">
-            <label>????????????</label>
-            <input type="password" id="newPassword" class="form-control" placeholder="????????? 6 ????????" minlength="6">
+            <label>รหัสผ่านใหม่</label>
+            <input type="password" id="newPassword" class="form-control" placeholder="อย่างน้อย 6 ตัวอักษร" minlength="6">
           </div>
           <div class="form-group">
-            <label>??????????????????</label>
-            <input type="password" id="confirmPassword" class="form-control" placeholder="?????????????" minlength="6">
+            <label>ยืนยันรหัสผ่านใหม่</label>
+            <input type="password" id="confirmPassword" class="form-control" placeholder="พิมพ์อีกครั้ง" minlength="6">
           </div>
         </div>
         <div style="margin-top:var(--spacing-md)">
-          <button type="button" class="btn btn-primary" id="changePwdBtn" onclick="doChangePassword()">?? ???????????????</button>
+          <button type="button" class="btn btn-primary" id="changePwdBtn" onclick="doChangePassword()">🔑 เปลี่ยนรหัสผ่าน</button>
         </div>
         <div id="pwdMsg" class="msg-box"></div>
 
@@ -294,54 +294,54 @@
     <!-- ===== Notification Settings Card ===== -->
     <div class="card" id="notifSettingsCard" style="max-width:680px;margin:0 auto var(--spacing-xl);margin-top:0">
       <div class="card-header" style="background:linear-gradient(135deg,#f0f9ff,#e0f2fe)">
-        <h3 class="card-title" style="margin:0">?? ????????????</h3>
+        <h3 class="card-title" style="margin:0">🔔 การแจ้งเตือน</h3>
         <span id="notifStatusBadge" style="display:inline-block;padding:2px 12px;border-radius:999px;font-size:var(--text-xs);font-weight:700;margin-left:8px"></span>
       </div>
       <div class="card-body">
         <p style="margin:0 0 var(--spacing-md);color:var(--premium-text-muted);font-size:var(--text-sm)">
-          ???????????????????????????????????????, ?????????? ??????????????
+          รับการแจ้งเตือนสำหรับงานที่กำลังจะมาถึง, การเช็คอิน และกิจกรรมในวง
         </p>
         <div id="notifPromptWrapProfile" style="margin-bottom:var(--spacing-md)"></div>
         <div id="notifActionRow" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <button id="notifToggleBtn" class="btn btn-primary" onclick="profileToggleNotif()" style="min-width:160px">? ????????????...</button>
-          <button class="btn" onclick="profileTestNotif()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db">?? ?????</button>
+          <button id="notifToggleBtn" class="btn btn-primary" onclick="profileToggleNotif()" style="min-width:160px">⏳ กำลังตรวจสอบ...</button>
+          <button class="btn" onclick="profileTestNotif()" style="background:#f3f4f6;color:#374151;border:1px solid #d1d5db">🧪 ทดสอบ</button>
         </div>
         <!-- iOS install hint -->
         <div id="notifIOSHint" style="display:none;margin-top:var(--spacing-md);padding:12px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;font-size:var(--text-sm)">
-          ?? <strong>iPhone/iPad:</strong> ?? <strong>????</strong> ? <strong>???????????????????</strong> ?????????????? Home Screen ????????????????????????
+          📱 <strong>iPhone/iPad:</strong> กด <strong>แชร์</strong> → <strong>เพิ่มไปยังหน้าจอโฮม</strong> แล้วเปิดแอปจาก Home Screen เพื่อเปิดใช้การแจ้งเตือน
         </div>
         <div id="notifMsg" style="margin-top:var(--spacing-md)"></div>
       </div>
     </div>
 
-    <!-- --- Accessibility Settings --- -->
+    <!-- ═══ Accessibility Settings ═══ -->
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">??? ???????????????????</h3>
+        <h3 class="card-title">🖥️ การตั้งค่าการแสดงผล</h3>
       </div>
       <div class="card-body">
         <p style="margin:0 0 var(--spacing-md);color:var(--premium-text-muted);font-size:var(--text-sm)">
-          ???????????????????????????? ????????????????????
+          ปรับขนาดตัวอักษรและความคมชัด เพื่อให้อ่านง่ายขึ้น
         </p>
         <!-- Text Scale -->
         <div style="margin-bottom:var(--spacing-lg)">
-          <label style="font-weight:600;margin-bottom:8px;display:block">????????????</label>
+          <label style="font-weight:600;margin-bottom:8px;display:block">ขนาดตัวอักษร</label>
           <div style="display:flex;gap:8px;flex-wrap:wrap" id="textScalePills">
-            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">S ????</button>
-            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">M ????</button>
-            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="lg" onclick="setTextScale('lg')" style="min-width:60px">L ????</button>
-            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="xl" onclick="setTextScale('xl')" style="min-width:60px">XL ???????</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">S ปกติ</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="" onclick="setTextScale('')" style="min-width:60px">M ปกติ</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="lg" onclick="setTextScale('lg')" style="min-width:60px">L ใหญ่</button>
+            <button type="button" class="btn btn-sm acc-scale-btn" data-scale="xl" onclick="setTextScale('xl')" style="min-width:60px">XL ใหญ่มาก</button>
           </div>
         </div>
         <!-- High Contrast Toggle -->
         <div style="margin-bottom:var(--spacing-lg);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <label style="font-weight:600">???????????? (High Contrast)</label>
-          <button type="button" id="contrastToggle" class="btn btn-sm btn-ghost" onclick="toggleHighContrast()" style="min-width:100px">???</button>
+          <label style="font-weight:600">ความคมชัดสูง (High Contrast)</label>
+          <button type="button" id="contrastToggle" class="btn btn-sm btn-ghost" onclick="toggleHighContrast()" style="min-width:100px">ปิด</button>
         </div>
         <!-- Simple Menu Toggle -->
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <label style="font-weight:600">?????????? (5 ????????)</label>
-          <button type="button" id="simpleMenuToggle" class="btn btn-sm btn-ghost" onclick="toggleSimpleMenu()" style="min-width:100px">???</button>
+          <label style="font-weight:600">เมนูแบบย่อ (5 หน้าหลัก)</label>
+          <button type="button" id="simpleMenuToggle" class="btn btn-sm btn-ghost" onclick="toggleSimpleMenu()" style="min-width:100px">ปิด</button>
         </div>
       </div>
     </div>

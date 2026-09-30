@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>????????? � BandThai</title>
+  <title>อุปกรณ์วง — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -21,167 +21,167 @@
   <div id="toast"></div>
   <div id="confirmModal"></div>
 
-  <!-- --------------- MODAL --------------- -->
+  <!-- ═══════════════ MODAL ═══════════════ -->
   <div id="equipModal" class="modal-backdrop" style="display:none">
     <div class="modal" style="max-width:620px">
       <div class="modal-header">
-        <h3 class="modal-title" id="equipModalTitle">????????????</h3>
-        <button class="modal-close" onclick="closeEquipModal()">�</button>
+        <h3 class="modal-title" id="equipModalTitle">เพิ่มอุปกรณ์</h3>
+        <button class="modal-close" onclick="closeEquipModal()">×</button>
       </div>
       <form id="equipForm">
         <input type="hidden" id="equipId">
         <input type="hidden" id="eExistingImageUrl">
 
-        <!-- ?????? -->
+        <!-- รูปภาพ -->
         <div class="form-group">
-          <label>?? ?????????????</label>
+          <label>📷 รูปภาพอุปกรณ์</label>
           <div class="img-upload-zone" id="uploadZone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
             <input type="file" id="eImageFile" accept="image/*" onchange="onImageSelect(event)">
             <div id="uploadPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:8px">
-              <div class="upload-icon">???</div>
-              <div class="upload-txt">?????????????????????????<br><small>JPG, PNG, WEBP ??????????? 5 MB</small></div>
+              <div class="upload-icon">🖼️</div>
+              <div class="upload-txt">คลิกหรือลากรูปมาวางที่นี่<br><small>JPG, PNG, WEBP ขนาดไม่เกิน 5 MB</small></div>
             </div>
             <img id="imgPreview" class="preview-img" style="display:none" src="" alt="preview">
-            <button type="button" class="img-remove-btn" id="imgRemoveBtn" style="display:none" onclick="removeImage(event)">?</button>
+            <button type="button" class="img-remove-btn" id="imgRemoveBtn" style="display:none" onclick="removeImage(event)">✕</button>
           </div>
         </div>
 
-        <!-- ???? + ?????? -->
+        <!-- ชื่อ + ประเภท -->
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--spacing-md)">
           <div class="form-group">
-            <label>??????????? / ?????????? *</label>
-            <input type="text" id="eName" placeholder="???? ?????? Fender Stratocaster" required>
+            <label>ชื่ออุปกรณ์ / เครื่องมือ *</label>
+            <input type="text" id="eName" placeholder="เช่น กีตาร์ Fender Stratocaster" required>
           </div>
           <div class="form-group">
-            <label>??????</label>
+            <label>ประเภท</label>
             <select id="eType">
-              <option value="instrument">?? ????????????</option>
-              <option value="audio">?? ?????/PA</option>
-              <option value="lighting">?? ???</option>
-              <option value="accessory">?? ????????????</option>
-              <option value="other">?? ?????</option>
+              <option value="instrument">🎸 เครื่องดนตรี</option>
+              <option value="audio">🔊 เสียง/PA</option>
+              <option value="lighting">💡 แสง</option>
+              <option value="accessory">🎒 อุปกรณ์เสริม</option>
+              <option value="other">📦 อื่นๆ</option>
             </select>
           </div>
         </div>
 
-        <!-- ?????????? + ?????????? -->
+        <!-- ซื้อจากไหน + วันที่ซื้อ -->
         <div style="display:grid;grid-template-columns:2fr 1fr;gap:var(--spacing-md)">
           <div class="form-group">
-            <label>?? ??????????? / ??????????</label>
-            <input type="text" id="ePurchaseSource" placeholder="???? ????????????????, ?????????? Facebook">
+            <label>🏪 ซื้อจากร้าน / แหล่งที่มา</label>
+            <input type="text" id="ePurchaseSource" placeholder="เช่น ร้านดนตรีเมเจอร์, ซื้อมือสอง Facebook">
           </div>
           <div class="form-group">
-            <label>?? ??????????</label>
+            <label>📅 วันที่ซื้อ</label>
             <input type="date" id="ePurchaseDate">
           </div>
         </div>
 
-        <!-- ???? + ?????????? -->
+        <!-- ราคา + เงินจากไหน -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
           <div class="form-group">
-            <label>?? ??????????? (???)</label>
+            <label>💰 ราคาที่ซื้อ (บาท)</label>
             <input type="number" id="ePrice" min="0" step="1" placeholder="0">
           </div>
           <div class="form-group">
-            <label>?? ??????????</label>
+            <label>🏦 ใช้เงินจาก</label>
             <select id="eFundSource">
-              <option value="">� ??????? �</option>
-              <option value="???????">?? ?????????</option>
-              <option value="???????">?? ???????</option>
-              <option value="?????">?? ?????</option>
+              <option value="">— ไม่ระบุ —</option>
+              <option value="กองกลาง">🏦 กองกลางวง</option>
+              <option value="ส่วนตัว">👤 ส่วนตัว</option>
+              <option value="อื่นๆ">📝 อื่นๆ</option>
             </select>
           </div>
         </div>
 
-        <!-- ??????? + Serial -->
+        <!-- เจ้าของ + Serial -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
           <div class="form-group">
-            <label>?? ??????? / ???????</label>
-            <input type="text" id="eOwner" placeholder="???? ?????????? ???? '??????????'">
+            <label>👤 เจ้าของ / ผู้ดูแล</label>
+            <input type="text" id="eOwner" placeholder="เช่น ชื่อสมาชิก หรือ 'ส่วนกลางวง'">
           </div>
           <div class="form-group">
-            <label>?? ??????? Serial</label>
-            <input type="text" id="eSerial" placeholder="(?????)">
+            <label>🔢 หมายเลข Serial</label>
+            <input type="text" id="eSerial" placeholder="(ถ้ามี)">
           </div>
         </div>
 
-        <!-- ????? -->
+        <!-- สถานะ -->
         <div class="form-group">
-          <label>?????</label>
+          <label>สถานะ</label>
           <div style="display:flex;gap:var(--spacing-lg)">
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="normal" checked> ? ????</label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="repair"> ?? ?????????</label>
-            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="broken"> ? ???????</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="normal" checked> ✅ ปกติ</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="repair"> 🔧 กำลังซ่อม</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="eStatus" value="broken"> ❌ เสียหาย</label>
           </div>
         </div>
 
-        <!-- ???????? -->
+        <!-- หมายเหตุ -->
         <div class="form-group">
-          <label>?? ????????</label>
-          <textarea id="eNotes" rows="2" placeholder="???????????????????, ??????, ?????????..."></textarea>
+          <label>📝 หมายเหตุ</label>
+          <textarea id="eNotes" rows="2" placeholder="รายละเอียดเพิ่มเติม, ประกัน, ข้อสังเกต..."></textarea>
         </div>
 
         <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm);margin-top:var(--spacing-md)">
-          <button type="button" class="btn btn-secondary" onclick="closeEquipModal()">??????</button>
-          <button type="button" class="btn btn-danger" id="deleteEquipBtn" style="display:none" onclick="deleteCurrentEquip()">??</button>
-          <button type="submit" class="btn btn-primary" id="saveEquipBtn">?? ??????</button>
+          <button type="button" class="btn btn-secondary" onclick="closeEquipModal()">ยกเลิก</button>
+          <button type="button" class="btn btn-danger" id="deleteEquipBtn" style="display:none" onclick="deleteCurrentEquip()">ลบ</button>
+          <button type="submit" class="btn btn-primary" id="saveEquipBtn">💾 บันทึก</button>
         </div>
       </form>
     </div>
   </div>
-  <!-- ------------------------------------ -->
+  <!-- ════════════════════════════════════ -->
 
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">?? ?????????</h1>
-        <button class="btn btn-primary" onclick="openEquipModal(null)">+ ????????????</button>
+        <h1 class="page-title">🎸 อุปกรณ์วง</h1>
+        <button class="btn btn-primary" onclick="openEquipModal(null)">+ เพิ่มอุปกรณ์</button>
       </div>
 
       <!-- Summary -->
       <div class="summary-bar" id="summaryBar" style="display:none">
         <div class="summary-chip">
-          <div class="ico">??</div>
-          <div><div class="val" id="sumTotal">0</div><div class="lbl">?????????????</div></div>
+          <div class="ico">📦</div>
+          <div><div class="val" id="sumTotal">0</div><div class="lbl">รายการทั้งหมด</div></div>
         </div>
         <div class="summary-chip">
-          <div class="ico">??</div>
-          <div><div class="val" id="sumValue">0</div><div class="lbl">????????? (???)</div></div>
+          <div class="ico">💰</div>
+          <div><div class="val" id="sumValue">0</div><div class="lbl">มูลค่ารวม (บาท)</div></div>
         </div>
         <div class="summary-chip">
-          <div class="ico">??</div>
-          <div><div class="val" id="sumRepair">0</div><div class="lbl">?????????</div></div>
+          <div class="ico">🔧</div>
+          <div><div class="val" id="sumRepair">0</div><div class="lbl">กำลังซ่อม</div></div>
         </div>
         <div class="summary-chip">
-          <div class="ico">??</div>
-          <div><div class="val" id="sumFund">0</div><div class="lbl">??????????????</div></div>
+          <div class="ico">🏦</div>
+          <div><div class="val" id="sumFund">0</div><div class="lbl">ซื้อจากกองกลาง</div></div>
         </div>
       </div>
 
       <!-- Type filter tabs -->
       <div class="type-tabs">
-        <div class="type-tab active" onclick="setFilter('all',this)">?? ???????</div>
-        <div class="type-tab" onclick="setFilter('instrument',this)">?? ????????????</div>
-        <div class="type-tab" onclick="setFilter('audio',this)">?? ?????/PA</div>
-        <div class="type-tab" onclick="setFilter('lighting',this)">?? ???</div>
-        <div class="type-tab" onclick="setFilter('accessory',this)">?? ????????????</div>
-        <div class="type-tab" onclick="setFilter('other',this)">?? ?????</div>
+        <div class="type-tab active" onclick="setFilter('all',this)">📋 ทั้งหมด</div>
+        <div class="type-tab" onclick="setFilter('instrument',this)">🎸 เครื่องดนตรี</div>
+        <div class="type-tab" onclick="setFilter('audio',this)">🔊 เสียง/PA</div>
+        <div class="type-tab" onclick="setFilter('lighting',this)">💡 แสง</div>
+        <div class="type-tab" onclick="setFilter('accessory',this)">🎒 อุปกรณ์เสริม</div>
+        <div class="type-tab" onclick="setFilter('other',this)">📦 อื่นๆ</div>
       </div>
 
       <!-- Search + status filter -->
       <div style="display:flex;gap:var(--spacing-md);margin-bottom:var(--spacing-lg);flex-wrap:wrap">
-        <input type="text" id="equipSearch" placeholder="?? ????????????????, ???????????..." oninput="renderEquip()" style="flex:1;min-width:200px">
+        <input type="text" id="equipSearch" placeholder="🔍 ค้นหาชื่ออุปกรณ์, ร้านที่ซื้อ..." oninput="renderEquip()" style="flex:1;min-width:200px">
         <select id="statusFilterEq" onchange="renderEquip()" style="min-width:130px">
-          <option value="">????????</option>
-          <option value="normal">? ????</option>
-          <option value="repair">?? ????</option>
-          <option value="broken">? ???????</option>
+          <option value="">ทุกสถานะ</option>
+          <option value="normal">✅ ปกติ</option>
+          <option value="repair">🔧 ซ่อม</option>
+          <option value="broken">❌ เสียหาย</option>
         </select>
       </div>
 
       <!-- Card grid -->
       <div class="equip-grid" id="equipGrid">
-        <div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--premium-text-muted)">?????????...</div>
+        <div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--premium-text-muted)">กำลังโหลด...</div>
       </div>
     </div>
   </main>

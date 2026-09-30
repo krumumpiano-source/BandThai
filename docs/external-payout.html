@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>?????????????? � BandThai</title>
+  <title>เบิกจ่ายงานนอก — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -23,63 +23,63 @@
 
   <div id="payModal" class="pay-modal-backdrop" style="display:none" onclick="if(event.target===this)closePayModal()">
     <div class="pay-modal-box">
-      <h3>?? ??????????? <span id="payModalName"></span></h3>
-      <div class="form-group"><label>??????</label><div style="font-size:var(--text-xl);font-weight:700;color:#276749" id="payModalFee"></div></div>
-      <div class="form-group"><label>??????????</label><input type="date" id="payModalDate"></div>
-      <div class="form-group"><label>???????????</label>
+      <h3>💰 เบิกจ่ายให้ <span id="payModalName"></span></h3>
+      <div class="form-group"><label>ค่าตัว</label><div style="font-size:var(--text-xl);font-weight:700;color:#276749" id="payModalFee"></div></div>
+      <div class="form-group"><label>วันที่จ่าย</label><input type="date" id="payModalDate"></div>
+      <div class="form-group"><label>วิธีการจ่าย</label>
         <select id="payModalMethod">
-          <option value="???????">???????</option>
-          <option value="??????">??????</option>
-          <option value="?????????">?????????</option>
-          <option value="?????">?????</option>
+          <option value="โอนเงิน">โอนเงิน</option>
+          <option value="เงินสด">เงินสด</option>
+          <option value="พร้อมเพย์">พร้อมเพย์</option>
+          <option value="อื่นๆ">อื่นๆ</option>
         </select>
       </div>
       <div class="modal-actions">
-        <button class="btn btn-ghost" onclick="closePayModal()">??????</button>
-        <button class="btn btn-primary" id="payModalConfirmBtn" onclick="doPayMember()">? ??????????</button>
+        <button class="btn btn-ghost" onclick="closePayModal()">ยกเลิก</button>
+        <button class="btn btn-primary" id="payModalConfirmBtn" onclick="doPayMember()">✅ ยืนยันจ่าย</button>
       </div>
     </div>
   </div>
 
   <main><div class="container">
     <div class="page-header">
-      <h1 class="page-title">?? ??????????????</h1>
-      <a href="job-calculator.html" class="btn btn-primary btn-sm">? ????????????</a>
+      <h1 class="page-title">💵 เบิกจ่ายงานนอก</h1>
+      <a href="job-calculator.html" class="btn btn-primary btn-sm">➕ คำนวณงานใหม่</a>
     </div>
     <div class="ep-tabs">
-      <button class="ep-tab active" onclick="switchTab('jobs')">?? ??????</button>
-      <button class="ep-tab" onclick="switchTab('external')">?? ???????????</button>
+      <button class="ep-tab active" onclick="switchTab('jobs')">🎤 งานนอก</button>
+      <button class="ep-tab" onclick="switchTab('external')">👤 จ่ายคนนอกวง</button>
     </div>
 
     <div id="panel-jobs" class="ep-panel active">
-      <div id="jobsLoading" style="text-align:center;padding:var(--spacing-xl);color:var(--premium-text-muted)">? ?????????...</div>
+      <div id="jobsLoading" style="text-align:center;padding:var(--spacing-xl);color:var(--premium-text-muted)">⏳ กำลังโหลด...</div>
       <div id="jobsList"></div>
     </div>
 
     <div id="panel-external" class="ep-panel">
       <div class="card" style="max-width:600px;margin-bottom:var(--spacing-xl)">
-        <div class="card-header"><h3 class="card-title">?? ?????????????????</h3></div>
+        <div class="card-header"><h3 class="card-title">💸 จ่ายค่าตัวคนนอกวง</h3></div>
         <form id="payoutForm" style="padding:var(--spacing-lg)">
-          <div class="form-group"><label>?????????????? *</label><input type="text" id="payeeName" required></div>
-          <div class="form-group"><label>??????</label>
+          <div class="form-group"><label>ชื่อผู้รับเงิน *</label><input type="text" id="payeeName" required></div>
+          <div class="form-group"><label>ประเภท</label>
             <select id="payeeType">
-              <option value="?????????????">?????????????</option>
-              <option value="????????????">????????????</option>
-              <option value="??????????">??????????</option>
-              <option value="?????">?????</option>
+              <option value="นักดนตรีเกสต์">นักดนตรีเกสต์</option>
+              <option value="นักร้องเกสต์">นักร้องเกสต์</option>
+              <option value="เทคนิเชียน">เทคนิเชียน</option>
+              <option value="อื่นๆ">อื่นๆ</option>
             </select>
           </div>
-          <div class="form-group"><label>?????? (???) *</label><input type="number" id="epAmount" min="0" required></div>
-          <div class="form-group"><label>??????</label><input type="date" id="epDate"></div>
-          <div class="form-group"><label>????????</label><textarea id="epNotes" rows="2"></textarea></div>
-          <div style="display:flex;justify-content:flex-end"><button type="submit" class="btn btn-primary" id="epSaveBtn">??????</button></div>
+          <div class="form-group"><label>ค่าตัว (บาท) *</label><input type="number" id="epAmount" min="0" required></div>
+          <div class="form-group"><label>วันที่</label><input type="date" id="epDate"></div>
+          <div class="form-group"><label>หมายเหตุ</label><textarea id="epNotes" rows="2"></textarea></div>
+          <div style="display:flex;justify-content:flex-end"><button type="submit" class="btn btn-primary" id="epSaveBtn">บันทึก</button></div>
         </form>
       </div>
       <div class="card">
-        <div class="card-header"><h3 class="card-title">???????</h3></div>
+        <div class="card-header"><h3 class="card-title">ประวัติ</h3></div>
         <div class="table-responsive">
-          <table class="table"><thead><tr><th>??????</th><th>??????</th><th>?????????</th><th>??????</th><th>????????</th><th></th></tr></thead>
-          <tbody id="payoutBody"><tr><td colspan="6" class="text-center">? ?????????...</td></tr></tbody></table>
+          <table class="table"><thead><tr><th>ผู้รับ</th><th>ประเภท</th><th>จำนวนเงิน</th><th>วันที่</th><th>หมายเหตุ</th><th></th></tr></thead>
+          <tbody id="payoutBody"><tr><td colspan="6" class="text-center">⏳ กำลังโหลด...</td></tr></tbody></table>
         </div>
       </div>
     </div>

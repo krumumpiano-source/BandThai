@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>????????????? � BandThai</title>
+  <title>ข้อมูลวงดนตรี — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -25,30 +25,30 @@
   <div id="memberModal" class="modal-backdrop" style="display:none">
     <div class="modal" style="max-width:520px">
       <div class="modal-header">
-        <h3 class="modal-title" id="memberModalTitle">???????????</h3>
-        <button class="modal-close" onclick="closeMemberModal()">�</button>
+        <h3 class="modal-title" id="memberModalTitle">เพิ่มสมาชิก</h3>
+        <button class="modal-close" onclick="closeMemberModal()">×</button>
       </div>
       <form id="memberForm">
         <input type="hidden" id="memberId">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
-          <div class="form-group"><label>????-??????? *</label><input type="text" id="mName" required></div>
-          <div class="form-group"><label>??????? / ????????????</label><input type="text" id="mPosition" placeholder="??????, ???????..."></div>
+          <div class="form-group"><label>ชื่อ-นามสกุล *</label><input type="text" id="mName" required></div>
+          <div class="form-group"><label>ตำแหน่ง / เครื่องดนตรี</label><input type="text" id="mPosition" placeholder="กีตาร์, มือกลอง..."></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
-          <div class="form-group"><label>????????</label><input type="tel" id="mPhone"></div>
-          <div class="form-group"><label>?????</label><input type="email" id="mEmail"></div>
+          <div class="form-group"><label>เบอร์โทร</label><input type="tel" id="mPhone"></div>
+          <div class="form-group"><label>อีเมล</label><input type="email" id="mEmail"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--spacing-md)">
-          <div class="form-group"><label>??????/??? (???)</label><input type="number" id="mRate" min="0" value="1500"></div>
-          <div class="form-group"><label>?????</label>
-            <select id="mStatus"><option value="active">??????</option><option value="inactive">?????????</option></select>
+          <div class="form-group"><label>ค่าตัว/งาน (บาท)</label><input type="number" id="mRate" min="0" value="1500"></div>
+          <div class="form-group"><label>สถานะ</label>
+            <select id="mStatus"><option value="active">ใช้งาน</option><option value="inactive">ไม่ใช้งาน</option></select>
           </div>
         </div>
-        <div class="form-group"><label>????????</label><textarea id="mNotes" rows="2"></textarea></div>
+        <div class="form-group"><label>หมายเหตุ</label><textarea id="mNotes" rows="2"></textarea></div>
         <div style="display:flex;justify-content:flex-end;gap:var(--spacing-sm)">
-          <button type="button" class="btn btn-secondary" onclick="closeMemberModal()">??????</button>
-          <button type="button" class="btn btn-danger" id="deleteMemberBtn" style="display:none" onclick="deleteCurrentMember()">??</button>
-          <button type="submit" class="btn btn-primary" id="saveMemberBtn">??????</button>
+          <button type="button" class="btn btn-secondary" onclick="closeMemberModal()">ยกเลิก</button>
+          <button type="button" class="btn btn-danger" id="deleteMemberBtn" style="display:none" onclick="deleteCurrentMember()">ลบ</button>
+          <button type="submit" class="btn btn-primary" id="saveMemberBtn">บันทึก</button>
         </div>
       </form>
     </div>
@@ -57,53 +57,53 @@
   <main>
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">????????</h1>
-        <button class="btn btn-primary" id="addMemberBtn" style="display:none" onclick="openMemberModal(null)">+ ???????????</button>
+        <h1 class="page-title">ข้อมูลวง</h1>
+        <button class="btn btn-primary" id="addMemberBtn" style="display:none" onclick="openMemberModal(null)">+ เพิ่มสมาชิก</button>
       </div>
 
-      <!-- -- Band header -- -->
+      <!-- ── Band header ── -->
       <div class="band-header-card">
-        <div class="band-logo">??</div>
+        <div class="band-logo">🎵</div>
         <div class="band-header-info">
-          <h2 id="bName">�</h2>
+          <h2 id="bName">—</h2>
           <div class="band-meta-row">
-            <div class="band-meta-chip" id="bProvinceChip" style="display:none">?? <span id="bProvince"></span></div>
-            <div class="band-meta-chip" id="bManagerChip" style="display:none">?? ?????????: <span id="bManager"></span></div>
+            <div class="band-meta-chip" id="bProvinceChip" style="display:none">📍 <span id="bProvince"></span></div>
+            <div class="band-meta-chip" id="bManagerChip" style="display:none">👤 ผู้จัดการ: <span id="bManager"></span></div>
           </div>
           <div class="band-stats">
-            <div class="band-stat"><div class="stat-val" id="bMemberCount">�</div><div class="stat-lbl">??????</div></div>
-            <div class="band-stat"><div class="stat-val" id="bVenueCount">�</div><div class="stat-lbl">???????????</div></div>
-            <div class="band-stat"><div class="stat-val" id="bSlotCount">�</div><div class="stat-lbl">???/???????</div></div>
+            <div class="band-stat"><div class="stat-val" id="bMemberCount">—</div><div class="stat-lbl">สมาชิก</div></div>
+            <div class="band-stat"><div class="stat-val" id="bVenueCount">—</div><div class="stat-lbl">ร้านที่เล่น</div></div>
+            <div class="band-stat"><div class="stat-val" id="bSlotCount">—</div><div class="stat-lbl">รอบ/สัปดาห์</div></div>
           </div>
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <a href="band-settings.html" class="btn btn-ghost btn-sm">?? ???????</a>
+          <a href="band-settings.html" class="btn btn-ghost btn-sm">⚙️ ตั้งค่า</a>
         </div>
       </div>
 
-      <!-- -- Venues & Schedule -- -->
+      <!-- ── Venues & Schedule ── -->
       <div style="margin-bottom:var(--spacing-xl)">
-        <h3 style="margin-bottom:var(--spacing-md)">?? ??????????? &amp; ??????????</h3>
+        <h3 style="margin-bottom:var(--spacing-md)">📍 ร้านที่เล่น &amp; ตารางประจำ</h3>
         <div class="venue-grid" id="venueGrid">
-          <div style="color:var(--premium-text-muted);font-size:var(--text-sm)">?????????...</div>
+          <div style="color:var(--premium-text-muted);font-size:var(--text-sm)">กำลังโหลด...</div>
         </div>
       </div>
 
-      <!-- -- Members -- -->
+      <!-- ── Members ── -->
       <div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--spacing-md);margin-bottom:var(--spacing-md)">
-          <h3 style="margin:0">?? ????????</h3>
+          <h3 style="margin:0">👥 สมาชิกวง</h3>
           <div style="display:flex;gap:var(--spacing-sm)">
-            <input type="text" id="memberSearch" placeholder="?? ?????????..." oninput="filterMembers()" style="max-width:200px">
+            <input type="text" id="memberSearch" placeholder="🔍 ค้นหาชื่อ..." oninput="filterMembers()" style="max-width:200px">
             <select id="statusFilter" onchange="filterMembers()">
-              <option value="">???????</option>
-              <option value="active">??????</option>
-              <option value="inactive">?????????</option>
+              <option value="">ทั้งหมด</option>
+              <option value="active">ใช้งาน</option>
+              <option value="inactive">ไม่ใช้งาน</option>
             </select>
           </div>
         </div>
         <div class="member-cards" id="memberCards">
-          <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">?????????...</div>
+          <div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">กำลังโหลด...</div>
         </div>
       </div>
     </div>
@@ -113,19 +113,19 @@
   <script src="js/app.js"></script>
   <script src="js/nav.js?v=20260319b"></script>
   <script>
-  /* --------------------------------------------
-     Band Info � BandThai
+  /* ════════════════════════════════════════════
+     Band Info — BandThai
      (load band-members.js AFTER override is set)
-  -------------------------------------------- */
+  ════════════════════════════════════════════ */
   var _schedule = {};
   var _venues   = [];
-  var DAY_TH    = ['???????','??????','??????','???','????????','?????','?????'];
-  var DAY_SHORT  = ['??.','?.','?.','?.','??.','?.','?.'];
+  var DAY_TH    = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  var DAY_SHORT  = ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
 
   </script>
   <script src="js/band-members.js"></script>
   <script>
-  /* Override renderMemberCards � assignment after band-members.js, so it wins */
+  /* Override renderMemberCards — assignment after band-members.js, so it wins */
   renderMemberCards = function(members) {
     var container = document.getElementById('memberCards');
     if (!container) return;
@@ -134,7 +134,7 @@
     if (mc) mc.textContent = (_allMembers||[]).filter(function(m){ return m.status==='active'; }).length;
 
     if (!members || !members.length) {
-      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">???????????</div>';
+      container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:32px;color:var(--premium-text-muted)">ไม่พบสมาชิก</div>';
       return;
     }
 
@@ -149,7 +149,7 @@
           var venue = _venues.find(function(v){ return v.id===slot.venueId; });
           pills.push('<span class="sched-pill">'
             + (DAY_SHORT[parseInt(dayIdx)]||'?') + ' ' + (slot.startTime||'?')
-            + (venue ? ' � ' + escapeHtml(venue.name) : '') + '</span>');
+            + (venue ? ' · ' + escapeHtml(venue.name) : '') + '</span>');
         });
       });
       var parts = (m.name||'').trim().split(' ');
@@ -157,18 +157,18 @@
         ? (parts[0][0]||'') + (parts[parts.length-1][0]||'')
         : (parts[0]||'').substring(0,2) || '?';
       return '<div class="member-card">'
-        + (isManager ? '<div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">??</button></div>' : '')
+        + (isManager ? '<div class="card-actions"><button class="btn btn-ghost btn-sm" onclick="openMemberModal(\'' + escapeHtml(m.id||'') + '\')">✏️</button></div>' : '')
         + '<div class="member-avatar">' + escapeHtml(initials) + '</div>'
         + '<div class="member-body">'
           + '<div class="member-name">' + escapeHtml(m.name||'') + '</div>'
-          + '<div class="member-position">' + escapeHtml(m.position||'??????') + '</div>'
+          + '<div class="member-position">' + escapeHtml(m.position||'สมาชิก') + '</div>'
           + '<div class="member-contact">'
-            + (m.phone ? '<span>?? <a href="tel:' + escapeHtml(m.phone) + '">' + escapeHtml(m.phone) + '</a></span>' : '')
-            + (m.email ? '<span>?? <a href="mailto:' + escapeHtml(m.email) + '">' + escapeHtml(m.email) + '</a></span>' : '')
+            + (m.phone ? '<span>📞 <a href="tel:' + escapeHtml(m.phone) + '">' + escapeHtml(m.phone) + '</a></span>' : '')
+            + (m.email ? '<span>✉️ <a href="mailto:' + escapeHtml(m.email) + '">' + escapeHtml(m.email) + '</a></span>' : '')
             + '<span><span class="status-dot ' + (m.status==='active'?'active':'inactive') + '"></span>'
-            + (m.status==='active'?'??????':'?????????') + '</span>'
+            + (m.status==='active'?'ใช้งาน':'ไม่ใช้งาน') + '</span>'
           + '</div>'
-          + (pills.length ? '<div class="member-sched-row"><div class="member-sched-title">?? ????????</div><div class="sched-pills">' + pills.join('') + '</div></div>' : '')
+          + (pills.length ? '<div class="member-sched-row"><div class="member-sched-title">📅 ตารางงาน</div><div class="sched-pills">' + pills.join('') + '</div></div>' : '')
         + '</div>'
         + '</div>';
     }).join('');
@@ -262,7 +262,7 @@
   function renderVenueSchedule() {
     var grid = document.getElementById('venueGrid');
     if (!_venues.length) {
-      grid.innerHTML = '<div class="card" style="padding:var(--spacing-xl);color:var(--premium-text-muted);text-align:center">?????????????????? � ????????????????? <a href="band-settings.html">?????????</a></div>';
+      grid.innerHTML = '<div class="card" style="padding:var(--spacing-xl);color:var(--premium-text-muted);text-align:center">ยังไม่มีข้อมูลร้าน — ตั้งค่าได้ที่หน้า <a href="band-settings.html">ตั้งค่าวง</a></div>';
       return;
     }
 
@@ -282,14 +282,14 @@
         var pills = memberNames.map(function(n){ return '<span class="slot-member-pill">' + n + '</span>'; }).join('');
         return '<div class="slot-row">'
           + '<div class="slot-day">' + (DAY_TH[s.day]||'?') + '</div>'
-          + '<div class="slot-time">? ' + (s.slot.startTime||'?') + ' � ' + (s.slot.endTime||'?') + '</div>'
+          + '<div class="slot-time">⏰ ' + (s.slot.startTime||'?') + ' – ' + (s.slot.endTime||'?') + '</div>'
           + (pills ? '<div class="slot-members">' + pills + '</div>' : '')
           + '</div>';
-      }).join('') : '<div style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:8px 0">????????????????????</div>';
+      }).join('') : '<div style="color:var(--premium-text-muted);font-size:var(--text-sm);padding:8px 0">ยังไม่มีรอบที่จัดไว้</div>';
 
       return '<div class="venue-card">'
-        + '<div class="venue-card-header"><h4>?? ' + escapeHtml(venue.name||'') + '</h4>'
-          + (venue.address ? '<div class="vaddr">?? ' + escapeHtml(venue.address) + '</div>' : '') + '</div>'
+        + '<div class="venue-card-header"><h4>🏪 ' + escapeHtml(venue.name||'') + '</h4>'
+          + (venue.address ? '<div class="vaddr">📍 ' + escapeHtml(venue.address) + '</div>' : '') + '</div>'
         + '<div class="venue-card-body">' + slotsHtml + '</div>'
         + '</div>';
     }).join('');
@@ -297,11 +297,11 @@
 
   function deleteCurrentMember() {
     var id = document.getElementById('memberId').value;
-    showConfirm('???????????', '?????????????????????', {danger:true, confirmText:'??'}).then(function(ok) {
+    showConfirm('ยืนยันการลบ', 'ต้องการลบสมาชิกคนนี้?', {danger:true, confirmText:'ลบ'}).then(function(ok) {
       if (!ok) return;
       apiCall('deleteBandMember', { memberId: id }, function(r) {
-        if (r && r.success) { showToast('??????', 'success'); closeMemberModal(); loadBandMembers(); }
-        else showToast((r && r.message)||'??????????????', 'error');
+        if (r && r.success) { showToast('ลบแล้ว', 'success'); closeMemberModal(); loadBandMembers(); }
+        else showToast((r && r.message)||'เกิดข้อผิดพลาด', 'error');
       });
     });
   }

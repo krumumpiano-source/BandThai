@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
@@ -9,7 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#1a1a1a">
-  <title>???????????????? � BandThai</title>
+  <title>สัญญาจ้างวงดนตรี — BandThai</title>
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;700&family=Sarabun:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/nav.css">
@@ -20,98 +20,98 @@
   <div id="mainNav"></div>
   <div id="toast"></div>
 
-  <!-- -- Print target -- -->
+  <!-- ══ Print target ══ -->
   <div id="ctDoc" style="display:none"></div>
 
   <main>
     <div class="container">
       <div class="page-header no-print">
-        <h1 class="page-title">?? ????????????????</h1>
+        <h1 class="page-title">📜 สัญญาจ้างวงดนตรี</h1>
         <div style="display:flex;gap:var(--spacing-sm);flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm no-print" onclick="history.back()">?? ????</button>
-          <button class="btn btn-secondary no-print" onclick="doPrint()">??? ?????</button>
-          <button class="btn btn-primary no-print" onclick="doPrint()">?? ?????? PDF</button>
-          <button class="btn no-print" id="confirmContractBtn" style="background:#276749;color:#fff;border:none" onclick="confirmContract()">? ??????????? &amp; ???????????</button>
+          <button class="btn btn-ghost btn-sm no-print" onclick="history.back()">🔙 กลับ</button>
+          <button class="btn btn-secondary no-print" onclick="doPrint()">🖨️ พิมพ์</button>
+          <button class="btn btn-primary no-print" onclick="doPrint()">📄 บันทึก PDF</button>
+          <button class="btn no-print" id="confirmContractBtn" style="background:#276749;color:#fff;border:none" onclick="confirmContract()">✅ ยืนยันสัญญา &amp; สร้างงานนอก</button>
         </div>
       </div>
 
       <div class="ct-grid no-print">
 
-        <!-- --- LEFT FORM --- -->
+        <!-- ═══ LEFT FORM ═══ -->
         <div class="ct-sticky no-print">
           <div class="card" style="max-height:88vh;overflow-y:auto">
-            <div style="font-size:var(--text-sm);color:var(--premium-gold);font-weight:700;margin-bottom:var(--spacing-md)">?? ????????????????</div>
+            <div style="font-size:var(--text-sm);color:var(--premium-gold);font-weight:700;margin-bottom:var(--spacing-md)">✏️ แก้ไขข้อมูลสัญญา</div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin-bottom:var(--spacing-xs);text-transform:uppercase">?? ????????????</div>
-            <div class="form-group"><label>?????????????</label><input type="date" id="ctContractDate" oninput="renderContract()"></div>
-            <div class="form-group"><label>???/????? (??????????????)</label><input type="text" id="ctContractPlace" placeholder="???? ????????? ?????????????" oninput="renderContract()"></div>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin-bottom:var(--spacing-xs);text-transform:uppercase">📋 ข้อมูลทั่วไป</div>
+            <div class="form-group"><label>วันที่ทำสัญญา</label><input type="date" id="ctContractDate" oninput="renderContract()"></div>
+            <div class="form-group"><label>เขต/อำเภอ (สถานที่ทำสัญญา)</label><input type="text" id="ctContractPlace" placeholder="เช่น เขตบางรัก กรุงเทพมหานคร" oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">?? ??????? 1 � ?????????? (???????)</div>
-            <div class="form-group"><label>????-??????? / ????????????? *</label><input type="text" id="ctParty1Name" placeholder="???/???/??????..." oninput="renderContract()"></div>
-            <div class="form-group"><label>???????</label><textarea id="ctParty1Address" rows="2" placeholder="?????????????????" oninput="renderContract()"></textarea></div>
-            <div class="form-group"><label>?????????????? / ????????????</label><input type="text" id="ctParty1Id" placeholder="1-xxxx-xxxxx-xx-x" oninput="renderContract()"></div>
-            <div class="form-group"><label>?????????????</label><input type="tel" id="ctParty1Phone" placeholder="0812345678" oninput="renderContract()"></div>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎤 ฝ่ายที่ 1 — ผู้ว่าจ้าง (เจ้าภาพ)</div>
+            <div class="form-group"><label>ชื่อ-นามสกุล / ชื่อนิติบุคคล *</label><input type="text" id="ctParty1Name" placeholder="นาย/นาง/บริษัท..." oninput="renderContract()"></div>
+            <div class="form-group"><label>ที่อยู่</label><textarea id="ctParty1Address" rows="2" placeholder="ที่อยู่ผู้ว่าจ้าง" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>เลขบัตรประชาชน / เลขนิติบุคคล</label><input type="text" id="ctParty1Id" placeholder="1-xxxx-xxxxx-xx-x" oninput="renderContract()"></div>
+            <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="ctParty1Phone" placeholder="0812345678" oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">?? ??????? 2 � ?????????? (???????)</div>
-            <div class="form-group"><label>?????? *</label><input type="text" id="ctParty2Name" oninput="renderContract()"></div>
-            <div class="form-group"><label>???????????? / ?????????</label><input type="text" id="ctParty2Rep" placeholder="????-??????? ?????????" oninput="renderContract()"></div>
-            <div class="form-group"><label>???????</label><textarea id="ctParty2Address" rows="2" placeholder="???????????????????" oninput="renderContract()"></textarea></div>
-            <div class="form-group"><label>?????????????</label><input type="tel" id="ctParty2Phone" oninput="renderContract()"></div>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎸 ฝ่ายที่ 2 — ผู้รับจ้าง (วงดนตรี)</div>
+            <div class="form-group"><label>ชื่อวง *</label><input type="text" id="ctParty2Name" oninput="renderContract()"></div>
+            <div class="form-group"><label>ชื่อผู้แทนวง / หัวหน้าวง</label><input type="text" id="ctParty2Rep" placeholder="ชื่อ-นามสกุล หัวหน้าวง" oninput="renderContract()"></div>
+            <div class="form-group"><label>ที่อยู่</label><textarea id="ctParty2Address" rows="2" placeholder="ที่อยู่สำหรับติดต่อ" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" id="ctParty2Phone" oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">?? ?????????????</div>
-            <div class="form-group"><label>??????? / ???????</label><input type="text" id="ctJobName" placeholder="???? ?????????? ????????????" oninput="renderContract()"></div>
-            <div class="form-group"><label>???-????????</label>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎵 รายละเอียดงาน</div>
+            <div class="form-group"><label>ชื่องาน / อีเวนต์</label><input type="text" id="ctJobName" placeholder="เช่น งานแต่งงาน สัมมนาบริษัท" oninput="renderContract()"></div>
+            <div class="form-group"><label>วัน-เวลาแสดง</label>
               <div class="form-grid-2">
                 <input type="date" id="ctEventDate" oninput="renderContract()">
                 <input type="time" id="ctEventTime" oninput="renderContract()">
               </div>
             </div>
-            <div class="form-group"><label>??????????? (???????)</label><textarea id="ctVenue" rows="2" placeholder="??????????? ???????????" oninput="renderContract()"></textarea></div>
-            <div class="form-group"><label>????????????</label><input type="text" id="ctShowDuration" placeholder="???? 3 ??????? 2 ??? ??? 15 ????" oninput="renderContract()"></div>
-            <div class="form-group"><label>????????????????????</label><input type="text" id="ctMembers" placeholder="???? 5 ?? (?????? ??? ???? ????????? ???????)" oninput="renderContract()"></div>
+            <div class="form-group"><label>สถานที่แสดง (ละเอียด)</label><textarea id="ctVenue" rows="2" placeholder="ชื่อสถานที่ ที่อยู่เต็ม" oninput="renderContract()"></textarea></div>
+            <div class="form-group"><label>ระยะเวลาแสดง</label><input type="text" id="ctShowDuration" placeholder="เช่น 3 ชั่วโมง 2 รอบ พัก 15 นาที" oninput="renderContract()"></div>
+            <div class="form-group"><label>จำนวนนักดนตรีที่ร่วม</label><input type="text" id="ctMembers" placeholder="เช่น 5 คน (กีตาร์ เบส กลอง คีย์บอร์ด นักร้อง)" oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">?? ?????????????????????</div>
-            <div class="form-group"><label>?????????????? (???) *</label><input type="number" id="ctFee" value="0" min="0" step="500" oninput="renderContract()"></div>
-            <div class="form-group"><label>????????? (???)</label><input type="number" id="ctDeposit" value="0" min="0" step="500" oninput="renderContract()"></div>
-            <div class="form-group"><label>????????????</label><input type="date" id="ctDepositDate" oninput="renderContract()"></div>
-            <div class="form-group"><label>??????????? (???)</label><input type="number" id="ctRemaining" value="0" min="0" step="500" oninput="renderContract()"></div>
-            <div class="form-group"><label>???????????????????????</label>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">💰 ค่าจ้างและการชำระเงิน</div>
+            <div class="form-group"><label>ค่าจ้างทั้งหมด (บาท) *</label><input type="number" id="ctFee" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>เงินมัดจำ (บาท)</label><input type="number" id="ctDeposit" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>วันชำระมัดจำ</label><input type="date" id="ctDepositDate" oninput="renderContract()"></div>
+            <div class="form-group"><label>ยอดที่เหลือ (บาท)</label><input type="number" id="ctRemaining" value="0" min="0" step="500" oninput="renderContract()"></div>
+            <div class="form-group"><label>วันชำระเงินส่วนที่เหลือ</label>
               <select id="ctPayWhen" oninput="renderContract()">
-                <option value="????????????? 1 ???????">????????????? 1 ???????</option>
-                <option value="??????? ?????????">??????? ?????????</option>
-                <option value="???????????? ?????">???????????? ?????</option>
-                <option value="????? 3 ??????????">????? 3 ??????????</option>
-                <option value="????? 7 ??????????">????? 7 ??????????</option>
-                <option value="????????????????????????????">????????????????????????????</option>
+                <option value="ก่อนเริ่มแสดง 1 ชั่วโมง">ก่อนเริ่มแสดง 1 ชั่วโมง</option>
+                <option value="วันแสดง ก่อนเริ่ม">วันแสดง ก่อนเริ่ม</option>
+                <option value="หลังเสร็จงาน ทันที">หลังเสร็จงาน ทันที</option>
+                <option value="ภายใน 3 วันหลังงาน">ภายใน 3 วันหลังงาน</option>
+                <option value="ภายใน 7 วันหลังงาน">ภายใน 7 วันหลังงาน</option>
+                <option value="ชำระเต็มจำนวนล่วงหน้าก่อนงาน">ชำระเต็มจำนวนล่วงหน้าก่อนงาน</option>
               </select>
             </div>
-            <div class="form-group"><label>????????????</label>
+            <div class="form-group"><label>วิธีชำระเงิน</label>
               <select id="ctPayMethod" oninput="renderContract()">
-                <option value="??????????????????????">??????????????????????</option>
-                <option value="??????">??????</option>
-                <option value="?????? ???? ???????">?????? ???? ???????</option>
-                <option value="?????????">?????????</option>
+                <option value="โอนเงินเข้าบัญชีธนาคาร">โอนเงินเข้าบัญชีธนาคาร</option>
+                <option value="เงินสด">เงินสด</option>
+                <option value="เงินสด หรือ โอนเงิน">เงินสด หรือ โอนเงิน</option>
+                <option value="พร้อมเพย์">พร้อมเพย์</option>
               </select>
             </div>
-            <div class="form-group"><label>??????????????????</label><input type="text" id="ctBankInfo" placeholder="???? ?????????????? ?.???????? ?????? XXX-X-XXXXX-X" oninput="renderContract()"></div>
+            <div class="form-group"><label>ข้อมูลบัญชีรับเงิน</label><input type="text" id="ctBankInfo" placeholder="เช่น บัญชีออมทรัพย์ ธ.กสิกรไทย เลขที่ XXX-X-XXXXX-X" oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">??? ??????????????????????????????</div>
-            <div class="form-group"><label>????????????????????????????? (?????????????)</label>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">🎛️ สิ่งที่ผู้ว่าจ้างต้องจัดเตรียม</div>
+            <div class="form-group"><label>เลือกสิ่งที่เจ้าภาพต้องเตรียม (หลายรายการได้)</label>
               <div id="equipCheckboxes" style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:4px"></div>
             </div>
-            <div class="form-group"><label>????? ?????????</label><input type="text" id="ctEquipOther" placeholder="?????????????..." oninput="renderContract()"></div>
+            <div class="form-group"><label>อื่นๆ เพิ่มเติม</label><input type="text" id="ctEquipOther" placeholder="ระบุเพิ่มเติม..." oninput="renderContract()"></div>
 
-            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">?? ????????????? / ????????</div>
-            <div class="form-group"><label>?????????????</label><textarea id="ctSpecial" rows="3" placeholder="???? ??????????????????????????????????????, ????? OT ?????????????..." oninput="renderContract()"></textarea></div>
+            <div style="font-size:var(--text-xs);font-weight:700;color:var(--premium-text-muted);margin:var(--spacing-md) 0 var(--spacing-xs);text-transform:uppercase">📝 เงื่อนไขพิเศษ / หมายเหตุ</div>
+            <div class="form-group"><label>เงื่อนไขพิเศษ</label><textarea id="ctSpecial" rows="3" placeholder="เช่น วงจะไม่รับผิดชอบหากเครื่องเสียงเสียหาย, มีค่า OT หลังเที่ยงคืน..." oninput="renderContract()"></textarea></div>
 
-            <button class="btn btn-primary" style="width:100%" onclick="doPrint()">?? ????? / ?????? PDF</button>
+            <button class="btn btn-primary" style="width:100%" onclick="doPrint()">📄 พิมพ์ / บันทึก PDF</button>
           </div>
         </div>
 
-        <!-- --- RIGHT: LIVE PREVIEW --- -->
+        <!-- ═══ RIGHT: LIVE PREVIEW ═══ -->
         <div>
           <div style="font-size:var(--text-sm);color:var(--premium-text-muted);margin-bottom:var(--spacing-sm)" class="no-print">
-            ? ????????????? (???????) � ?? "?????" ??????????????????
+            ↓ ตัวอย่างสัญญา (ขนาดย่อ) — กด "พิมพ์" เพื่อได้เอกสารเต็ม
           </div>
           <div class="preview-card no-print">
             <div class="preview-scale" id="ctPreviewWrap"></div>
