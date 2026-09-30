@@ -1635,6 +1635,7 @@ function loadExistingPlaylist(idx, silent) {
   });
   renderPlaylist();
   applyPlaylistContext(p);
+  window._lastSavedSlot = (p.venue || '') + '|' + (p.timeSlot || '');
   if (!silent) {
     showSongsAlert('✅ โหลดลิสแล้ว ' + (p.venue ? p.venue + ' · ' : '') + (p.timeSlot || ''));
   }
@@ -2968,6 +2969,31 @@ renderPlaylist = function() {
   updatePlaylistFloating();
 };
 
+// ── Guard against accidental overwrite ──
+window._lastSavedSlot = "";
+function checkOverwriteAndSave(actionFn) {
+  var selectedVenue = plGetSelectedVenue();
+  var selectedSlot = getActiveTimeSlotValue();
+  var exists = false;
+  if (window._plExistingForDate && window._plExistingForDate.length > 0) {
+    var matches = window._plExistingForDate.filter(function(e) {
+      return plEntryMatches(e, selectedVenue, selectedSlot);
+    });
+    exists = matches.length > 0;
+  }
+  
+  var currentSlotKey = selectedVenue + '|' + selectedSlot;
+  if (exists && window._lastSavedSlot !== currentSlotKey) {
+    if (confirm('⚠️ ค้นพบลิสเพลงของเบรค/รอบเวลานี้อยู่แล้วในระบบ\n\n- กด OK หากคุณต้องการอัปเดต(เซฟทับ)ลิสเดิม\n- กด Cancel หากคุณลืมเปลี่ยนรอบเวลาสำหรับเบรคใหม่')) {
+      window._lastSavedSlot = currentSlotKey;
+      actionFn();
+    }
+  } else {
+    window._lastSavedSlot = currentSlotKey;
+    actionFn();
+  }
+}
+
 // ── Patch goLiveMode, copyPlaylist and saveHistoryManual (after they are defined) ──
 var _origGoLiveMode = goLiveMode;
 goLiveMode = function() {
@@ -2975,12 +3001,12 @@ goLiveMode = function() {
 };
 var _origCopyPlaylist = copyPlaylist;
 copyPlaylist = function() {
-  _checkDurBeforeAction('บันทึกลิส', function(){ _origCopyPlaylist(); });
+  _checkDurBeforeAction('บันทึกลิส', function(){ checkOverwriteAndSave(_origCopyPlaylist); });
 };
 if (typeof saveHistoryManual === 'function') {
   var _origSaveHistoryManual = saveHistoryManual;
   saveHistoryManual = function() {
-    _checkDurBeforeAction('บันทึกลิส', function(){ _origSaveHistoryManual(); });
+    _checkDurBeforeAction('บันทึกลิส', function(){ checkOverwriteAndSave(_origSaveHistoryManual); });
   };
 }
 
