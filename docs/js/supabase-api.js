@@ -773,20 +773,39 @@
         var all = [];
 
         // 1. Referenced global songs
-        var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
-          .eq('band_id', bandId);
-        if (refErr) throw refErr;
-        (refs || []).forEach(function(r) {
+        var refs = [];
+        var fromRefs = 0;
+        while(true) {
+          var { data: rPage, error: refErr } = await sb.from('band_song_refs')
+            .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
+            .eq('band_id', bandId)
+            .range(fromRefs, fromRefs + PAGE - 1);
+          if (refErr) throw refErr;
+          if (!rPage || rPage.length === 0) break;
+          refs = refs.concat(rPage);
+          if (rPage.length < PAGE) break;
+          fromRefs += PAGE;
+        }
+        refs.forEach(function(r) {
           var s = r.band_songs;
           if (s) { s.lib_type = 'ref'; all.push(s); }
         });
 
         // 2. Band-owned songs
-        var { data: owned, error: ownErr } = await sb.from('band_songs')
-          .select('*').eq('band_id', bandId);
-        if (ownErr) throw ownErr;
-        (owned || []).forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
+        var owned = [];
+        var fromOwned = 0;
+        while(true) {
+          var { data: oPage, error: ownErr } = await sb.from('band_songs')
+            .select('*')
+            .eq('band_id', bandId)
+            .range(fromOwned, fromOwned + PAGE - 1);
+          if (ownErr) throw ownErr;
+          if (!oPage || oPage.length === 0) break;
+          owned = owned.concat(oPage);
+          if (oPage.length < PAGE) break;
+          fromOwned += PAGE;
+        }
+        owned.forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
 
         all.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
         return { success: true, data: toCamelList(all) };
@@ -844,20 +863,40 @@
         var all = [];
 
         // 1. Referenced global songs
-        var { data: refs, error: refErr } = await sb.from('band_song_refs')
-          .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
-          .eq('band_id', bandId);
-        if (refErr) throw refErr;
-        (refs || []).forEach(function(r) {
+        var refs = [];
+        var fromRefs = 0;
+        var PAGE = 1000;
+        while(true) {
+          var { data: rPage, error: refErr } = await sb.from('band_song_refs')
+            .select('song_id, band_songs!inner(id, name, artist, key, bpm, singer, era, nationality, mood, tags, notes, source, created_at, updated_at)')
+            .eq('band_id', bandId)
+            .range(fromRefs, fromRefs + PAGE - 1);
+          if (refErr) throw refErr;
+          if (!rPage || rPage.length === 0) break;
+          refs = refs.concat(rPage);
+          if (rPage.length < PAGE) break;
+          fromRefs += PAGE;
+        }
+        refs.forEach(function(r) {
           var s = r.band_songs;
           if (s) { s.lib_type = 'ref'; all.push(s); }
         });
 
         // 2. Band-owned songs
-        var { data: owned, error: ownErr } = await sb.from('band_songs')
-          .select('*').eq('band_id', bandId);
-        if (ownErr) throw ownErr;
-        (owned || []).forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
+        var owned = [];
+        var fromOwned = 0;
+        while(true) {
+          var { data: oPage, error: ownErr } = await sb.from('band_songs')
+            .select('*')
+            .eq('band_id', bandId)
+            .range(fromOwned, fromOwned + PAGE - 1);
+          if (ownErr) throw ownErr;
+          if (!oPage || oPage.length === 0) break;
+          owned = owned.concat(oPage);
+          if (oPage.length < PAGE) break;
+          fromOwned += PAGE;
+        }
+        owned.forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
 
         // Apply filters client-side
         if (search) {
