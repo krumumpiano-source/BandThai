@@ -771,25 +771,29 @@
 
       try {
         // --- SMART CACHE: Check if we really need to download everything ---
-        var latestUpdate = 0;
+        var cacheCheckVal = '';
         if (source === 'band' && bandId) {
-          var { data: t1 } = await sb.from('band_song_refs').select('created_at').eq('band_id', bandId).order('created_at', { ascending: false }).limit(1);
+          // Check 1: Has any owned song been updated?
           var { data: t2 } = await sb.from('band_songs').select('updated_at').eq('band_id', bandId).order('updated_at', { ascending: false }).limit(1);
-          var d1 = (t1 && t1[0]) ? new Date(t1[0].created_at).getTime() : 0;
           var d2 = (t2 && t2[0]) ? new Date(t2[0].updated_at).getTime() : 0;
-          latestUpdate = Math.max(d1, d2);
+          
+          // Check 2: Has the number of referenced songs changed? (Use count instead of created_at to prevent 400 error)
+          var { count: refCount, error: countErr } = await sb.from('band_song_refs').select('*', { count: 'exact', head: true }).eq('band_id', bandId);
+          if (countErr) { console.warn('countErr', countErr); refCount = 0; }
+          
+          cacheCheckVal = d2 + '_' + refCount;
         } else {
           var { data: t3 } = await sb.from('band_songs').select('updated_at').is('band_id', null).order('updated_at', { ascending: false }).limit(1);
           var { data: t4 } = await sb.from('band_songs').select('updated_at').eq('band_id', bandId || '').order('updated_at', { ascending: false }).limit(1);
           var d3 = (t3 && t3[0]) ? new Date(t3[0].updated_at).getTime() : 0;
           var d4 = (t4 && t4[0]) ? new Date(t4[0].updated_at).getTime() : 0;
-          latestUpdate = Math.max(d3, d4);
+          cacheCheckVal = Math.max(d3, d4) + '_0';
         }
 
         var cached = localStorage.getItem(cacheKey);
-        if (cached && latestUpdate > 0) {
+        if (cached && cacheCheckVal && cacheCheckVal !== '0_0') {
           var parsed = JSON.parse(cached);
-          if (parsed.latestUpdate === latestUpdate && parsed.data && parsed.data.length > 0) {
+          if (parsed.cacheCheckVal === cacheCheckVal && parsed.data && parsed.data.length > 0) {
             console.log('✅ [Smart Cache] Loaded ' + parsed.data.length + ' songs from LocalStorage (0 Bandwidth used!)');
             return { success: true, data: parsed.data };
           }
@@ -841,7 +845,7 @@
         all.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
         
         var finalResult = toCamelList(all);
-        try { localStorage.setItem(cacheKey, JSON.stringify({ latestUpdate: latestUpdate, data: finalResult })); } catch(e){}
+        try { localStorage.setItem(cacheKey, JSON.stringify({ cacheCheckVal: cacheCheckVal, data: finalResult })); } catch(e){}
         return { success: true, data: finalResult };
       }
 
@@ -868,7 +872,7 @@
       }
 
       var finalResultGlobal = toCamelList(all);
-      try { localStorage.setItem(cacheKey, JSON.stringify({ latestUpdate: latestUpdate, data: finalResultGlobal })); } catch(e){}
+      try { localStorage.setItem(cacheKey, JSON.stringify({ cacheCheckVal: cacheCheckVal, data: finalResultGlobal })); } catch(e){}
       return { success: true, data: finalResultGlobal };
     }
 
