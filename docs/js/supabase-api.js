@@ -766,10 +766,41 @@
     async function doGetAllSongs(d) {
       var source = d.source || 'global';
       var PAGE = 500;
+      var bandId = d.bandId || getBandId();
+      var cacheKey = 'bandthai_songs_cache_' + source + '_' + (bandId || 'global');
+
+      try {
+        // --- SMART CACHE: Check if we really need to download everything ---
+        var latestUpdate = 0;
+        if (source === 'band' && bandId) {
+          var { data: t1 } = await sb.from('band_song_refs').select('created_at').eq('band_id', bandId).order('created_at', { ascending: false }).limit(1);
+          var { data: t2 } = await sb.from('band_songs').select('updated_at').eq('band_id', bandId).order('updated_at', { ascending: false }).limit(1);
+          var d1 = (t1 && t1[0]) ? new Date(t1[0].created_at).getTime() : 0;
+          var d2 = (t2 && t2[0]) ? new Date(t2[0].updated_at).getTime() : 0;
+          latestUpdate = Math.max(d1, d2);
+        } else {
+          var { data: t3 } = await sb.from('band_songs').select('updated_at').is('band_id', null).order('updated_at', { ascending: false }).limit(1);
+          var { data: t4 } = await sb.from('band_songs').select('updated_at').eq('band_id', bandId || '').order('updated_at', { ascending: false }).limit(1);
+          var d3 = (t3 && t3[0]) ? new Date(t3[0].updated_at).getTime() : 0;
+          var d4 = (t4 && t4[0]) ? new Date(t4[0].updated_at).getTime() : 0;
+          latestUpdate = Math.max(d3, d4);
+        }
+
+        var cached = localStorage.getItem(cacheKey);
+        if (cached && latestUpdate > 0) {
+          var parsed = JSON.parse(cached);
+          if (parsed.latestUpdate === latestUpdate && parsed.data && parsed.data.length > 0) {
+            console.log('✅ [Smart Cache] Loaded ' + parsed.data.length + ' songs from LocalStorage (0 Bandwidth used!)');
+            return { success: true, data: parsed.data };
+          }
+        }
+      } catch(e) { console.warn('Cache check failed', e); }
+
+      console.warn('⚠️ [Smart Cache] Miss/Outdated. Downloading full song library from Supabase...');
+      // --- END SMART CACHE CHECK ---
 
       if (source === 'band') {
         // Reference-based: get refs joined with global songs + band-owned songs
-        var bandId = d.bandId || getBandId();
         var all = [];
 
         // 1. Referenced global songs
@@ -808,7 +839,10 @@
         owned.forEach(function(s) { s.lib_type = 'owned'; all.push(s); });
 
         all.sort(function(a, b) { return (a.name || '').localeCompare(b.name || ''); });
-        return { success: true, data: toCamelList(all) };
+        
+        var finalResult = toCamelList(all);
+        try { localStorage.setItem(cacheKey, JSON.stringify({ latestUpdate: latestUpdate, data: finalResult })); } catch(e){}
+        return { success: true, data: finalResult };
       }
 
       // Global songs (unchanged)
@@ -826,7 +860,6 @@
       }
 
       // Also fetch band-owned songs for Admin Mode (so they appear in คลังวง tab)
-      var bandId = d.bandId || getBandId();
       if (bandId) {
         var { data: owned, error: ownErr } = await sb.from('band_songs').select('*').eq('band_id', bandId);
         if (!ownErr && owned && owned.length > 0) {
@@ -834,7 +867,9 @@
         }
       }
 
-      return { success: true, data: toCamelList(all) };
+      var finalResultGlobal = toCamelList(all);
+      try { localStorage.setItem(cacheKey, JSON.stringify({ latestUpdate: latestUpdate, data: finalResultGlobal })); } catch(e){}
+      return { success: true, data: finalResultGlobal };
     }
 
     async function doGetSongsPage(d) {

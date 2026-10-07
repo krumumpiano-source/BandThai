@@ -472,8 +472,13 @@ function apRenderAttendance() {
         else if (subCovered) tdCls += ';background:rgba(128,90,213,0.08)';
         else if (!hasCheckIn && ri.assigned) tdCls += ';background:rgba(255,193,7,0.08)';
         b += '<td style="' + tdCls + '">';
+        b += '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">';
         b += '<input type="checkbox" class="ap-cb" data-m="' + apEsc(m.id) +
           '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '" data-extra="' + (isExtra?'1':'0') + '"' + (checked ? ' checked' : '') + (!apIsAdmin ? ' disabled' : '') + '>';
+        if (apIsAdmin) {
+          b += '<button class="ap-sub-btn" data-m="' + apEsc(m.id) + '" data-d="' + dateStr + '" data-s="' + apEsc(sk) + '" style="background:none;border:none;cursor:pointer;font-size:12px;padding:0;color:#718096" title="ระบุคนแทน">🔄</button>';
+        }
+        b += '</div>';
         
         var _sPay = isExtra ? apExtraSlotPay(slot, m.id) : apSlotPay(slot, m.id, dateStr);
         var _defPay = (typeof BandWage !== 'undefined')
@@ -493,13 +498,15 @@ function apRenderAttendance() {
             b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px;display:block" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
           }
           b += '<span class="ap-ci-badge" style="color:#718096;font-size:8px;display:block">' + apEsc(m.name) + '</span>';
-        } else if (checked && ciSt) {
-          var badgeTip = ciSt==='confirmed'?'ยืนยันแล้ว':'รอยืนยัน';
+        } else if (checked && (ciSt || (subInfo && subInfo.name))) {
+          var badgeTip = ciSt==='confirmed'?'ยืนยันแล้ว':(ciSt? 'รอยืนยัน' : 'เช็คอินโดยแอดมิน');
           if (subInfo && subInfo.name) badgeTip += ' (แทน: ' + subInfo.name + ')';
           if (ciSt==='confirmed') {
             b += '<span class="ap-ci-badge ap-ci-' + apEsc(ciSt) + '" title="' + apEsc(badgeTip) + '">✅</span>';
+          } else if (!ciSt && subCovered) {
+             b += '<span class="ap-ci-badge" style="background:#edf2f7;color:#4a5568;border-radius:4px;padding:1px 4px;font-size:9px;display:inline-block;margin-top:2px" title="' + apEsc(badgeTip) + '">✓</span>';
           }
-          if (subInfo && subInfo.name) b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
+          if (subInfo && subInfo.name) b += '<span class="ap-ci-badge" style="color:#805ad5;font-size:9px;display:block" title="คนแทน: ' + apEsc(subInfo.name) + '">🔄 ' + apEsc(subInfo.name) + '</span>';
         } else if (!isExtra && !hasCheckIn && ri.assigned) {
           b += '<span class="ap-ci-badge ap-ci-absent" title="ยังไม่ลงเวลา">—</span>';
         }
@@ -540,6 +547,30 @@ function apRenderAttendance() {
       apRenderPayout();
     });
   });
+  
+  tbody.querySelectorAll('.ap-sub-btn').forEach(function(btn) {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      var mid = this.dataset.m, d = this.dataset.d, s = this.dataset.s;
+      var currentSub = (apCheckInSub[mid] && apCheckInSub[mid][d] && apCheckInSub[mid][d][s]) ? apCheckInSub[mid][d][s].name : '';
+      var subName = prompt('ระบุชื่อคนแทน (เว้นว่างเพื่อยกเลิกคนแทน):', currentSub);
+      if (subName !== null) {
+        if (!apCheckInSub[mid]) apCheckInSub[mid] = {};
+        if (!apCheckInSub[mid][d]) apCheckInSub[mid][d] = {};
+        if (subName.trim()) {
+           apCheckInSub[mid][d][s] = { name: subName.trim(), contact: '' };
+           if (!apChecked[mid]) apChecked[mid] = {};
+           if (!apChecked[mid][d]) apChecked[mid][d] = [];
+           if (apChecked[mid][d].indexOf(s) === -1) apChecked[mid][d].push(s);
+        } else {
+           delete apCheckInSub[mid][d][s];
+        }
+        apRenderAttendance();
+        apRenderPayout();
+      }
+    });
+  });
+  
   apCalcTotals();
 }
 
@@ -925,9 +956,21 @@ function apPrintVenueReceipt() {
 
   // ── Member headers ──
   var memberHeaders = '';
+  var repDate = apDateRange.length ? apDateRange[0] : null;
+  var repSlot = null;
+  if (repDate) {
+    var dtObj = new Date(repDate), repDow = dtObj.getDay();
+    var repSlots = apSlotsForDay(repDow);
+    if (repSlots.length > 0) repSlot = repSlots[0];
+  }
+  
   apMembers.forEach(function(m) {
     var dr = apDefaultRate(m.id);
     var rateTxt = dr.rate > 0 ? dr.rate.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'') : '—';
+    if (repDate && repSlot) {
+      var eff = apSlotPay(repSlot, m.id, repDate);
+      if (eff > 0) rateTxt = eff.toLocaleString('th-TH') + ' ' + (RL[dr.type]||'');
+    }
     memberHeaders += '<th style="' + HEAD + ';min-width:72px">' + apEsc(m.name) +
       (m.position ? '<br><span style="font-weight:400;color:#bdc3c7;font-size:10px">' + apEsc(m.position) + '</span>' : '') +
       '<br><span style="font-weight:400;color:#f39c12;font-size:10px">(' + rateTxt + ')</span></th>';
