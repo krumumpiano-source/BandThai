@@ -8,3 +8,11 @@ node_modules/
 .env
 sb-deploy.js
 sb-query.ps1
+
+# AI/IDE Extension temp folders
+.clj-kondo/
+.lsp/
+.kilo/
+.kilocode/
+.qodo/
+.sixth/

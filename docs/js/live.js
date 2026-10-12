@@ -49,6 +49,20 @@ var _lastLocalCurrentChange = 0; // timestamp เมื่อกดเปลี�
 var _currentUpdatedAt = 0; // timestamp ของ _current ล่าสุด (0 = เริ่มต้น, ยอมรับ remote state ทันที)
 var _lastLocalDeleteTime = 0; // timestamp เมื่อลบเพลงในเครื่องนี้ (ป้องกัน state_sync เก่าดึงเพลงกลับมา)
 var _playlistVersion = 0;     // เพิ่มทุกครั้งที่ playlist เปลี่ยน — ป้องกัน state_sync เก่าเขียนทับ
+var _deletedUids = {};        // { uid: timestamp } บันทึก UID เพลงที่ลบในเซสชันนี้ ป้องกันฟื้นชีพจาก stale sync
+
+function generateUid() {
+  return 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function ensureSongUids() {
+  if (!Array.isArray(_playlist)) return;
+  _playlist.forEach(function(s) {
+    if (s && !s._uid) {
+      s._uid = generateUid();
+    }
+  });
+}
 
 // ── Marquee / title display ───────────────────────────────────────
 var _marqueeColorsDark  = ['#fde68a','#86efac','#93c5fd','#f9a8d4'];
@@ -122,6 +136,7 @@ var _isGuest   = false; // guest mode (no login required)
 
 function normalizePlaylistState(preferredCurrent) {
   if (!Array.isArray(_playlist)) _playlist = [];
+  ensureSongUids();
   if (_playlist.length === 0) {
     _current = 0;
     return;
@@ -160,7 +175,7 @@ function removeSongAtIndex(idx) {
   }
   if (idx < _current) {
     _current--;
-  } else if (idx === _current && _current >= _playlist.length) {
+  } else if (_current >= _playlist.length) {
     _current = _playlist.length - 1;
   }
   normalizePlaylistState();
@@ -230,12 +245,18 @@ document.addEventListener('DOMContentLoaded', function() {
     var _tsM = _timeSlot.match(/(\d{1,2}):(\d{2})/);
     if (_tsM) _scheduledStartMin = parseInt(_tsM[1], 10) * 60 + parseInt(_tsM[2], 10);
   }
+  // Restore deleted UIDs from this session
+  try {
+    var savedDeleted = sessionStorage.getItem('live_deleted_uids_' + _bandId + '_' + _date);
+    if (savedDeleted) _deletedUids = JSON.parse(savedDeleted) || {};
+  } catch(e) {}
   // Restore timer if page was refreshed mid-break
   try {
     var _savedBst = sessionStorage.getItem('_breakStartTime');
     if (_savedBst && !_isGuest) {
       _breakStartTime = parseInt(_savedBst, 10);
       _breakStarted = true;
+      _breakStartedByMe = (sessionStorage.getItem('_breakStartedByMe') === '1');
       var _sb = document.getElementById('startBreakBtn');
       var _eb = document.getElementById('endBreakBtn');
       var _tb = document.getElementById('breakTimerBar');
@@ -555,6 +576,8 @@ function syncPlaylistWithLibrary() {
 function loadPlaylist() {
   if (!_date) { showEmpty(); initRealtime(); return; }
   console.log('[Live] loadPlaylist:', { bandId: _bandId, date: _date, venue: _venue, timeSlot: _timeSlot });
+  // Initialize Realtime immediately — zero delay joining the channel
+  initRealtime();
   // Preload band song library in parallel so songs have updated key/bpm/singer
   preloadBandSongs();
 
@@ -565,7 +588,9 @@ function loadPlaylist() {
       var bk = JSON.parse(bkData);
       if (bk.playlist && Array.isArray(bk.playlist) && bk.playlist.length > 0) {
         console.log('[Live] loaded from local backup');
-        _playlist = bk.playlist;
+        _playlist = bk.playlist.filter(function(s) {
+          return !s._uid || !_deletedUids[s._uid];
+        });
         _current = typeof bk.current === 'number' ? bk.current : 0;
         normalizePlaylistState();
         renderNowPlaying();
@@ -575,16 +600,24 @@ function loadPlaylist() {
   } catch(e) {}
 
 
-  // Timeout: ถ้า API ไม่ตอบใน 8 วิ → แสดง waiting + init realtime
+  // Timeout: ถ้า API ไม่ตอบใน 8 วิ → แสดง waiting
   var _loadTimeout = setTimeout(function() {
     _loadTimeout = null;
-    showWaitingForSync();
-    initRealtime();
-    showToast('⚠️ โหลดข้อมูลช้า — รอซิงค์จากสมาชิก...');
+    if (_playlist.length === 0) {
+      showWaitingForSync();
+      showToast('⚠️ โหลดข้อมูลช้า — รอซิงค์จากสมาชิก...');
+    }
   }, 8000);
   apiCall('getPlaylistHistoryByDate', { bandId: _bandId, date: _date }, function(r) {
     if (_loadTimeout) { clearTimeout(_loadTimeout); _loadTimeout = null; }
     if (r && !r.success) console.warn('[Live] API error:', r.message);
+
+    // CRITICAL GUARD: If we already received state from realtime or user already modified playlist, don't overwrite!
+    if (_syncReceived || _modified || _playlistVersion > 0 || _playlist.length > 0) {
+      console.log('[Live] Keeping active live playlist, skipping DB overwrite');
+      return;
+    }
+
     var rows = (r && r.success && r.data) ? r.data : [];
     console.log('[Live] playlist rows found:', rows.length);
     // filter by venue+timeSlot if provided
@@ -605,8 +638,7 @@ function loadPlaylist() {
       // No match — do not silently load wrong playlist; wait for realtime sync
       if (!row) {
         console.warn('[Live] No matching playlist for venue/timeSlot, waiting for realtime sync');
-        showWaitingForSync();
-        initRealtime();
+        if (_playlist.length === 0) showWaitingForSync();
         return;
       }
     } else {
@@ -615,8 +647,7 @@ function loadPlaylist() {
     if (!row || !row.songs || row.songs.length === 0) {
       // ไม่พบใน DB — แสดง loading และรอรับ state จากสมาชิกผ่าน realtime
       console.log('[Live] No playlist in DB, waiting for realtime sync');
-      showWaitingForSync();
-      initRealtime();
+      if (_playlist.length === 0) showWaitingForSync();
       return;
     }
     // Update venue/timeSlot from loaded row if not specified in URL
@@ -648,17 +679,18 @@ function loadPlaylist() {
         }
       }
 
-      return { id: id, name: name, key: key, bpm: bpm,
+      return { _uid: s._uid || generateUid(), id: id, name: name, key: key, bpm: bpm,
                singer: singer, artist: artist,
                _key: s._key || key, _note: s._note || '', _skipped: !!s._skipped,
                _isRequest: !!s._isRequest, _isRequestTime: s._isRequestTime || '',
                _isEncore: !!s._isEncore };
+    }).filter(function(s) {
+      return !s._uid || !_deletedUids[s._uid];
     });
     _current = 0;
     normalizePlaylistState();
     renderSongList();
     renderNowPlaying();
-    initRealtime();
   });
 }
 
@@ -937,7 +969,7 @@ function renderSongList() {
           (s._note ? '<div class="si-note">' + escHtml(s._note) + '</div>' : '') +
         '</div>' +
         '<div class="si-badges">' + badges + '</div>' +
-        '<button class="si-del" onclick="removeSong(event,' + i + ')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
+        '<button class="si-del" onclick="removeSong(event,' + i + ',\'' + escHtml(s._uid || '') + '\')" title="\u0e25\u0e1a\u0e40\u0e1e\u0e25\u0e07\u0e19\u0e35\u0e49">\u2715</button>' +
       '</div>'
     );
   });
@@ -1028,21 +1060,50 @@ function renderSongList() {
 }
 
 // ─── REMOVE SONG FROM PLAYLIST ────────────────────────────────────────────────
-function removeSong(e, idx) {
-  e.stopPropagation();
-  var name = _playlist[idx] ? _playlist[idx].name : '';
+function removeSong(e, idx, uid) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  var s = (typeof idx === 'number' && _playlist[idx]) ? _playlist[idx] : null;
+  if (!s && uid) {
+    s = _playlist.find(function(item) { return item._uid === uid; });
+    if (s) idx = _playlist.indexOf(s);
+  }
+  if (!s) return;
+  var name = s.name || '';
+  var songUid = uid || s._uid;
   if (!confirm('ลบ "' + name + '" ออกจากลิสต์?')) return;
-  if (!removeSongAtIndex(idx)) return;
+  doRemoveSong(idx, songUid, name);
+}
+
+function doRemoveSong(idx, uid, name) {
+  var targetIdx = -1;
+  if (uid) {
+    targetIdx = _playlist.findIndex(function(s) { return s._uid === uid; });
+  }
+  if (targetIdx === -1 && typeof idx === 'number') {
+    targetIdx = idx;
+  }
+  if (targetIdx < 0 || targetIdx >= _playlist.length) return;
+
+  var removed = _playlist[targetIdx];
+  var removedUid = uid || (removed && removed._uid);
+  if (removedUid) {
+    _deletedUids[removedUid] = Date.now();
+    try {
+      sessionStorage.setItem('live_deleted_uids_' + _bandId + '_' + _date, JSON.stringify(_deletedUids));
+    } catch(e) {}
+  }
+
+  if (!removeSongAtIndex(targetIdx)) return;
   _modified = true;
   _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
-  _playlistVersion++;                    // [FIX] เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
+  _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   _currentUpdatedAt = Date.now();        // อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
   _lastLocalCurrentChange = Date.now(); // guard สำหรับ song_ending / current_changed
   renderNowPlaying();
   renderSongList();
-  broadcastEvent('remove', { idx: idx });
+  broadcastEvent('remove', { idx: targetIdx, uid: removedUid, name: name || (removed ? removed.name : '') });
   scheduleStateSync();
-  showToast('ลบ "' + name + '" แล้ว');
+  showToast('ลบ "' + (name || (removed ? removed.name : '')) + '" แล้ว');
 }
 
 function scrollToCurrent() {
@@ -1723,11 +1784,13 @@ function addSongToPlaylist(name, key, bpm, singer, artist, isRequest, id) {
   if (dup && !confirm('เพลง "' + name + '"' + (singer ? ' (' + singer + ')' : '') + ' มีอยู่ในลิสต์แล้ว เพิ่มซ้ำ?')) return;
 
   _pendingSong = {
+    _uid: generateUid(),
     id: id || '',
     name: name, key: key, bpm: bpm, singer: singer, artist: artist,
     _key: key || '', _note: '', _skipped: false,  // เก็บค่า raw key (formatKey เรียกตอน render เท่านั้น)
     _isRequest: !!isRequest, _isEncore: false
   };
+  closeChatSuggest();
   openInsertPos();
 }
 
@@ -1777,38 +1840,45 @@ function openInsertPos() {
   }
 
   // Build position list
-  var visible = _playlist.filter(function(s) { return !s._skipped; });
   var list = document.getElementById('insertPosList');
   var html = '';
-  // Default insert: right after current song's request block (FIFO)
-  var defaultAt = _current + 1;
-  for (var qi = _current + 1; qi < _playlist.length; qi++) {
-    if (_playlist[qi]._isRequest) { defaultAt = qi + 1; } else { break; }
-  }
 
-  for (var i = 0; i <= _playlist.length; i++) {
-    if (i <= _current) continue; // ไม่ให้แทรกก่อนเพลงที่กำลังเล่น
-    var isDefault = (i === defaultAt);
-    var isCurrent = (i <= _current);
+  if (_playlist.length === 0) {
+    html = '<div class="ip-item ip-default" data-pos="0">' +
+      '<div class="ip-num">1</div>' +
+      '<div class="ip-name" style="color:var(--text3);font-style:italic">— เริ่มต้นลิสต์ —</div>' +
+      '<div class="ip-hint">ตำแหน่งแรก</div>' +
+    '</div>';
+  } else {
+    // Default insert: right after current song's request block (FIFO)
+    var defaultAt = _current + 1;
+    for (var qi = _current + 1; qi < _playlist.length; qi++) {
+      if (_playlist[qi]._isRequest) { defaultAt = qi + 1; } else { break; }
+    }
 
-    if (i === _playlist.length) {
-      // ตำแหน่งสุดท้าย
-      html += '<div class="ip-item' + (isDefault ? ' ip-default' : '') + '" data-pos="' + i + '">' +
-        '<div class="ip-num">' + (i + 1) + '</div>' +
-        '<div class="ip-name" style="color:var(--text3);font-style:italic">— ท้ายลิส —</div>' +
-        (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
-      '</div>';
-    } else {
-      var s = _playlist[i];
-      var num = i + 1;
-      var cls = 'ip-item';
-      if (isDefault) cls += ' ip-default';
-      if (i === _current) cls += ' ip-current';
-      html += '<div class="' + cls + '" data-pos="' + i + '">' +
-        '<div class="ip-num">' + num + '</div>' +
-        '<div class="ip-name">' + escHtml(s.name) + (s._isRequest ? ' 🙏' : '') + '</div>' +
-        (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
-      '</div>';
+    for (var i = 0; i <= _playlist.length; i++) {
+      if (i <= _current) continue; // ไม่ให้แทรกก่อนเพลงที่กำลังเล่น
+      var isDefault = (i === defaultAt);
+
+      if (i === _playlist.length) {
+        // ตำแหน่งสุดท้าย
+        html += '<div class="ip-item' + (isDefault ? ' ip-default' : '') + '" data-pos="' + i + '">' +
+          '<div class="ip-num">' + (i + 1) + '</div>' +
+          '<div class="ip-name" style="color:var(--text3);font-style:italic">— ท้ายลิส —</div>' +
+          (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
+        '</div>';
+      } else {
+        var s = _playlist[i];
+        var num = i + 1;
+        var cls = 'ip-item';
+        if (isDefault) cls += ' ip-default';
+        if (i === _current) cls += ' ip-current';
+        html += '<div class="' + cls + '" data-pos="' + i + '">' +
+          '<div class="ip-num">' + num + '</div>' +
+          '<div class="ip-name">' + escHtml(s.name) + (s._isRequest ? ' 🙏' : '') + '</div>' +
+          (isDefault ? '<div class="ip-hint">แนะนำ</div>' : '') +
+        '</div>';
+      }
     }
   }
 
@@ -1839,6 +1909,8 @@ function confirmInsertAt(pos) {
 
   // จับเวลา insert จริง (แม่นกว่าเวลาที่กด toggle)
   if (song._isRequest) { song._isRequestTime = _nowHHMM(); }
+  if (!song._uid) { song._uid = generateUid(); }
+  if (_deletedUids[song._uid]) { delete _deletedUids[song._uid]; }
 
   _playlist.splice(pos, 0, song);
   _modified = true;
@@ -1849,10 +1921,13 @@ function confirmInsertAt(pos) {
 
   // Clear chat bar
   var inp = document.getElementById('chatBarInput');
-  inp.value = '';
-  document.getElementById('chatBarSend').disabled = true;
+  if (inp) {
+    inp.value = '';
+    inp.blur();
+  }
+  var sendBtn = document.getElementById('chatBarSend');
+  if (sendBtn) sendBtn.disabled = true;
   closeChatSuggest();
-  inp.blur();
 
   renderNowPlaying(); // [FIX] อัปเดตตัวนับ "X/ทั้งหมด" ใน Now Playing
   renderSongList();
@@ -1915,29 +1990,32 @@ function playNow(idx) {
   _modified = true;
   normalizePlaylistState();
   haptic(80);
+  var s = _playlist[idx];
   // broadcast ให้ทุกเครื่องเปลี่ยนเพลงพร้อมกัน
-  broadcastEvent('current_changed', { idx: idx, bpm: (_playlist[idx] || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
+  broadcastEvent('current_changed', { idx: idx, uid: s ? s._uid : null, bpm: (s || {}).bpm || 0, currentUpdatedAt: _currentUpdatedAt });
   scheduleStateSync();
   renderNowPlaying();
   renderSongList();
-  showToast('▶ เล่น: ' + (_playlist[idx] ? _playlist[idx].name : ''));
+  showToast('▶ เล่น: ' + (s ? s.name : ''));
 }
 
 function setAsNext(idx) {
   if (idx === _current || _isEnding) return; // ไม่อนุญาตเปลี่ยนลำดับขณะ transition กำลังทำงาน
   var nextPos = _current + 1;
-  if (idx === nextPos) { showToast('"' + (_playlist[idx]||{name:''}).name + '" เป็นเพลงถัดไปอยู่แล้ว ✅'); return; }
-  var song = _playlist.splice(idx, 1)[0];
+  var song = _playlist[idx];
+  if (!song) return;
+  if (idx === nextPos) { showToast('"' + song.name + '" เป็นเพลงถัดไปอยู่แล้ว ✅'); return; }
+  var moved = _playlist.splice(idx, 1)[0];
   var insertAt = _current + 1;
   if (idx < _current) { _current--; insertAt = _current + 1; }
-  _playlist.splice(insertAt, 0, song);
+  _playlist.splice(insertAt, 0, moved);
   _modified = true;
   _playlistVersion++;
-  broadcastEvent('set_next', { idx: idx });
+  broadcastEvent('set_next', { idx: idx, uid: moved._uid });
   scheduleStateSync();
   renderNowPlaying();
   renderSongList();
-  showToast('"' + song.name + '" → เพลงถัดไป ✅');
+  showToast('"' + moved.name + '" → เพลงถัดไป ✅');
   haptic(60);
 }
 
@@ -1945,23 +2023,26 @@ function setAsNext(idx) {
 //  SKIP / UNSKIP
 // ─────────────────────────────────────────────────────────────────
 function skipSong(idx) {
-  if (_playlist[idx]._skipped) return;
+  var s = _playlist[idx];
+  if (!s || s._skipped) return;
   haptic(50);
-  _playlist[idx]._skipped = true;
+  s._skipped = true;
   _modified = true;
   _playlistVersion++;
-  broadcastEvent('skip_song', { idx: idx });
+  broadcastEvent('skip_song', { idx: idx, uid: s._uid });
   scheduleStateSync();
   if (idx === _current) advanceSong();
   else renderSongList();
 }
 
 function unskipSong(e, idx) {
-  e.stopPropagation();
-  _playlist[idx]._skipped = false;
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  var s = _playlist[idx];
+  if (!s) return;
+  s._skipped = false;
   _modified = true;
   _playlistVersion++;
-  broadcastEvent('unskip_song', { idx: idx });
+  broadcastEvent('unskip_song', { idx: idx, uid: s._uid });
   scheduleStateSync();
   renderSongList();
 }
@@ -2418,8 +2499,10 @@ function startBreak() {
   _breakStartTime          = Date.now();
   _lastEndedBreakStartTime = 0;     // reset: new break started
   _breakWarnedAt55         = false;
-  _breakWarnedDone         = false;
-  try { sessionStorage.setItem('_breakStartTime', String(_breakStartTime)); } catch(e) {}
+  try {
+    sessionStorage.setItem('_breakStartTime', String(_breakStartTime));
+    sessionStorage.setItem('_breakStartedByMe', '1');
+  } catch(e) {}
 
   var sbtn = document.getElementById('startBreakBtn');
   var ebtn = document.getElementById('endBreakBtn');
@@ -2525,7 +2608,10 @@ function endBreakConfirmed() {
   _lastEndedBreakStartTime = oldBreakStartTime; // บันทึกว่าเบรคไหนจบไปแล้ว
   _breakStartTime          = 0;
   _endBreakDone            = false;
-  try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+  try {
+    sessionStorage.removeItem('_breakStartTime');
+    sessionStorage.removeItem('_breakStartedByMe');
+  } catch(e) {}
   // Hide timer bar and reset start button so user can start next break when ready
   var _tbar = document.getElementById('breakTimerBar');
   var _sbtn = document.getElementById('startBreakBtn');
@@ -2582,9 +2668,9 @@ function endBreakConfirmed() {
       // บันทึกไม่สำเร็จ — คืน state ให้กดใหม่ได้
       showToast('⚠️ บันทึกไม่สำเร็จ — คัดลอกรายการแทนได้');
     } else {
-      // สำเร็จแล้ว — broadcast ให้เครื่องอื่นรู้
+      // สำเร็จแล้ว — broadcast ให้เครื่องอื่นรู้ พร้อม proof
       _endBreakDone = false;
-      broadcastEvent('end_break_done', { by: localStorage.getItem('userName') || '' });
+      broadcastEvent('end_break_done', { by: localStorage.getItem('userName') || '', lastEndedBreakStartTime: oldBreakStartTime });
     }
     _showClipModal(snapshotPlaylist);
     // บันทึก snapshot ไว้ใน sessionStorage ให้เปิดดูทีหลังได้
@@ -2840,10 +2926,16 @@ function initRealtime() {
         scheduleStateSync();
         return;
       }
-      // sync _current ให้ตรงกับผู้กดก่อน จากนั้น advance ไป next เดียวกัน
-      if (typeof d.from === 'number' && d.from >= 0 && d.from < _playlist.length) {
-        _current = d.from;
+      var fromIdx = -1;
+      if (d.fromUid) fromIdx = _playlist.findIndex(function(s){ return s._uid === d.fromUid; });
+      if (fromIdx === -1 && typeof d.from === 'number') fromIdx = d.from;
+      if (fromIdx >= 0 && fromIdx < _playlist.length) {
+        _current = fromIdx;
       }
+      var nextIdx = -1;
+      if (d.nextUid) nextIdx = _playlist.findIndex(function(s){ return s._uid === d.nextUid; });
+      if (nextIdx === -1 && typeof d.next === 'number') nextIdx = d.next;
+
       _currentUpdatedAt = Math.max(_currentUpdatedAt, remoteUpdatedAt);
       if (_isEnding) {
         // เครื่องนี้กำลังทำ animation อยู่ (หรือ animation ค้าง) — force-reset และรับคำสั่งจากเครื่องอื่น
@@ -2852,19 +2944,22 @@ function initRealtime() {
         var _npEl = document.getElementById('nowPlaying');
         if (_npEl) _npEl.classList.remove('pulsing');
       }
-      triggerEnding(typeof d.next === 'number' ? d.next : -1);
+      triggerEnding(nextIdx);
     })
     .on('broadcast', { event: 'current_changed' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var remoteUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
-      if (typeof d.idx === 'number' && d.idx >= 0 && d.idx < _playlist.length) {
+      var targetIdx = -1;
+      if (d.uid) targetIdx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (targetIdx === -1 && typeof d.idx === 'number') targetIdx = d.idx;
+      if (targetIdx >= 0 && targetIdx < _playlist.length) {
         // Guard: ถ้าเพิ่งกดเปลี่ยนเพลงในเครื่องนี้เองจริง ๆ (< 2.5 วิ) เท่านั้นถึงจะ ignore
         if (_lastLocalCurrentChange > 0 && Date.now() - _lastLocalCurrentChange < 2500) {
           scheduleStateSync();
           return;
         }
-        _current = d.idx;
+        _current = targetIdx;
         _currentUpdatedAt = Math.max(_currentUpdatedAt, remoteUpdatedAt);
         _modified = true;
         normalizePlaylistState();
@@ -2880,8 +2975,11 @@ function initRealtime() {
     .on('broadcast', { event: 'transpose' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._key = d.key; _modified = true; }
-      if (d.idx === _current) {
+      var idx = -1;
+      if (d.uid) idx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (idx === -1 && typeof d.idx === 'number') idx = d.idx;
+      if (_playlist[idx]) { _playlist[idx]._key = d.key; _modified = true; }
+      if (idx === _current) {
         document.getElementById('nowKey').textContent = d.key || '—';
         document.getElementById('trDisplay').textContent = d.key || '—';
       }
@@ -2890,19 +2988,25 @@ function initRealtime() {
     .on('broadcast', { event: 'note_update' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._note = d.note; _modified = true; }
-      if (d.idx === _current) _updateNoteMarquee(d.note || '');
+      var idx = -1;
+      if (d.uid) idx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (idx === -1 && typeof d.idx === 'number') idx = d.idx;
+      if (_playlist[idx]) { _playlist[idx]._note = d.note; _modified = true; }
+      if (idx === _current) _updateNoteMarquee(d.note || '');
       renderSongList();
     })
     .on('broadcast', { event: 'edit_keybpm' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      var s = _playlist[d.idx];
+      var idx = -1;
+      if (d.uid) idx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (idx === -1 && typeof d.idx === 'number') idx = d.idx;
+      var s = _playlist[idx];
       if (s) {
         if (d.key !== undefined) { s.key = d.key; s._key = d.key; }
         if (d.bpm !== undefined) s.bpm = d.bpm;
         _modified = true;
-        if (d.idx === _current) renderNowPlaying();
+        if (idx === _current) renderNowPlaying();
         renderSongList();
       }
     })
@@ -2910,46 +3014,80 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       if (d.song) {
-        // รับ insertAt ตรง ๆ (ตำแหน่งที่แน่นอน) — fallback insertAfter สำหรับ client เก่า
+        if (!d.song._uid) d.song._uid = generateUid();
+        if (_deletedUids[d.song._uid]) delete _deletedUids[d.song._uid];
+        // ป้องกัน broadcast ซ้ำสำหรับ instance เดียวกัน
+        if (_playlist.some(function(s){ return s._uid === d.song._uid; })) return;
+
         var insertPos;
         if (typeof d.insertAt === 'number') {
           insertPos = Math.max(0, Math.min(d.insertAt, _playlist.length));
         } else {
           insertPos = (typeof d.insertAfter === 'number' ? d.insertAfter : _current) + 1;
         }
+        if (insertPos <= _current) _current++;
         _playlist.splice(insertPos, 0, d.song);
         _modified = true;
-        _playlistVersion++; // track version on receive
+        _playlistVersion++;
         normalizePlaylistState();
+        renderNowPlaying();
+        renderSongList();
+        showToast('➕ เพลงขอใหม่: ' + d.song.name);
       }
-      renderSongList();
     })
     .on('broadcast', { event: 'skip_song' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = true; _modified = true; _playlistVersion++; }
+      var idx = -1;
+      if (d.uid) idx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (idx === -1 && typeof d.idx === 'number') idx = d.idx;
+      if (_playlist[idx]) { _playlist[idx]._skipped = true; _modified = true; _playlistVersion++; }
       renderSongList();
     })
     .on('broadcast', { event: 'unskip_song' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (_playlist[d.idx]) { _playlist[d.idx]._skipped = false; _modified = true; _playlistVersion++; }
+      var idx = -1;
+      if (d.uid) idx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+      if (idx === -1 && typeof d.idx === 'number') idx = d.idx;
+      if (_playlist[idx]) { _playlist[idx]._skipped = false; _modified = true; _playlistVersion++; }
       renderSongList();
     })
     .on('broadcast', { event: 'remove' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
-      if (removeSongAtIndex(d.idx)) {
-        _modified = true;
-        _playlistVersion++; // track version on receive
-        renderNowPlaying();
-        renderSongList();
+      var targetIdx = -1;
+      if (d.uid) {
+        _deletedUids[d.uid] = Date.now();
+        try { sessionStorage.setItem('live_deleted_uids_' + _bandId + '_' + _date, JSON.stringify(_deletedUids)); } catch(e) {}
+        targetIdx = _playlist.findIndex(function(s) { return s._uid === d.uid; });
+      }
+      if (targetIdx === -1 && typeof d.idx === 'number') {
+        targetIdx = d.idx;
+      }
+      if (targetIdx >= 0 && targetIdx < _playlist.length) {
+        var removedSong = _playlist[targetIdx];
+        if (removedSong && removedSong._uid) {
+          _deletedUids[removedSong._uid] = Date.now();
+          try { sessionStorage.setItem('live_deleted_uids_' + _bandId + '_' + _date, JSON.stringify(_deletedUids)); } catch(e) {}
+        }
+        if (removeSongAtIndex(targetIdx)) {
+          _modified = true;
+          _playlistVersion++;
+          renderNowPlaying();
+          renderSongList();
+          showToast('ลบ "' + (d.name || (removedSong ? removedSong.name : '')) + '" แล้ว (เครื่องอื่น)');
+        }
       }
     })
     .on('broadcast', { event: 'reorder' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var from = d.from; var to = d.to;
+      if (d.uid) {
+        var realFrom = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+        if (realFrom !== -1) from = realFrom;
+      }
       if (typeof from === 'number' && typeof to === 'number' && from !== to &&
           from >= 0 && to >= 0 && from < _playlist.length && to <= _playlist.length) {
         var song = _playlist.splice(from, 1)[0];
@@ -2966,6 +3104,7 @@ function initRealtime() {
     })
     .on('broadcast', { event: 'request_state' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
+      if (_isGuest) return; // Guests never dictate state
       // someone is asking for state — respond if we have a non-empty playlist
       var d = payload.payload || {};
       if (_isExplicitMaster) {
@@ -3000,6 +3139,10 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       var idx = d.idx;
+      if (d.uid) {
+        var foundIdx = _playlist.findIndex(function(s){ return s._uid === d.uid; });
+        if (foundIdx !== -1) idx = foundIdx;
+      }
       if (typeof idx !== 'number' || idx === _current || idx < 0 || idx >= _playlist.length) return;
       var song = _playlist.splice(idx, 1)[0];
       var insertAt = _current + 1;
@@ -3112,6 +3255,23 @@ function initRealtime() {
         if (_syncRetryTimer) { clearTimeout(_syncRetryTimer); _syncRetryTimer = null; }
       }
 
+      // Filter out songs that have been deleted locally
+      var filteredIncoming = [];
+      var hadDeletedSongs = false;
+      for (var fsi = 0; fsi < d.playlist.length; fsi++) {
+        var fs = d.playlist[fsi];
+        if (fs && fs._uid && _deletedUids[fs._uid]) {
+          hadDeletedSongs = true;
+          continue;
+        }
+        filteredIncoming.push(fs);
+      }
+      if (hadDeletedSongs) {
+        d.playlist = filteredIncoming;
+        _playlistVersion = Math.max(_playlistVersion, (typeof d.playlistVersion === 'number' ? d.playlistVersion : 0) + 1);
+        scheduleStateSync();
+      }
+
       // Always accept on first sync (rejoin scenario — DB state may be stale)
       var incomingCurrent = typeof d.current === 'number' ? d.current : 0;
       var incomingCurrentUpdatedAt = typeof d.currentUpdatedAt === 'number' ? d.currentUpdatedAt : 0;
@@ -3162,6 +3322,7 @@ function initRealtime() {
       // อัปเดต playlistVersion เป็นค่าที่มากกว่า (incoming อาจมีมากกว่าจาก remote mutations)
       _playlistVersion = Math.max(_playlistVersion, typeof d.playlistVersion === 'number' ? d.playlistVersion : 0);
       _playlist = d.playlist;
+      ensureSongUids();
       // Timestamp guard สำหรับ _current: newer timestamp wins เสมอ (แก้ปัญหาเพลงเด้งกลับ)
       if (incomingCurrentUpdatedAt > _currentUpdatedAt) {
         _current = incomingCurrent;
@@ -3184,6 +3345,7 @@ function initRealtime() {
         _lastEndedBreakStartTime = d.lastEndedBreakStartTime;
         if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
         try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+        try { sessionStorage.removeItem('_breakStartedByMe'); } catch(e) {}
         var _ssbl = document.getElementById('startBreakBtn');
         var _sebl = document.getElementById('endBreakBtn');
         var _stbl = document.getElementById('breakTimerBar');
@@ -3211,37 +3373,23 @@ function initRealtime() {
           updateBreakTimer();
           _breakTimerIval = setInterval(updateBreakTimer, 1000); // อัพเดททุก 1 วินาที
         }
-      } else if (d.endBreakDone && _breakStarted) {
-        // leader says break was definitively ended — stop our local timer
-        _endBreakDone     = true;
-        _breakStarted     = false;
-        _breakStartedByMe = false;
-        if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
-        try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
-        var _ssb2 = document.getElementById('startBreakBtn');
-        var _seb2 = document.getElementById('endBreakBtn');
-        var _stb2 = document.getElementById('breakTimerBar');
-        if (_ssb2) _ssb2.style.display = ''; // ✅ คืนปุ่มเริ่มเบรค ให้กดเริ่มเบรคต่อไปได้
-        if (_seb2) _seb2.style.display = 'none';
-        if (_stb2) _stb2.style.display = 'none';
-      } else if (!d.breakStarted && _breakStarted && isFirstSync) {
+      } else if (!d.breakStarted && _breakStarted) {
         // leader says break not started, but we have it running locally.
-        // ถ้าเครื่องนี้ไม่ได้กด startBreak() เอง (เช่น restore จาก sessionStorage หลัง refresh)
-        // ให้เชื่อ leader และหยุด timer ทันที เพื่อป้องกันเวลาเบรคเก่าฟื้นชีพ
-        if (!_breakStartedByMe || Date.now() - _breakStartTime > 8 * 60 * 60 * 1000) {
-           _breakStarted     = false;
-           _breakStartedByMe = false;
-           if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
-           try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
-           var _ssb3 = document.getElementById('startBreakBtn');
-           var _seb3 = document.getElementById('endBreakBtn');
-           var _stb3 = document.getElementById('breakTimerBar');
-           if (_ssb3) _ssb3.style.display = '';
-           if (_seb3) _seb3.style.display = 'none';
-           if (_stb3) _stb3.style.display = 'none';
+        if (Date.now() - _breakStartTime > 12 * 60 * 60 * 1000) {
+          _breakStarted     = false;
+          _breakStartedByMe = false;
+          if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+          try { sessionStorage.removeItem('_breakStartTime'); } catch(e) {}
+          try { sessionStorage.removeItem('_breakStartedByMe'); } catch(e) {}
+          var _ssb3 = document.getElementById('startBreakBtn');
+          var _seb3 = document.getElementById('endBreakBtn');
+          var _stb3 = document.getElementById('breakTimerBar');
+          if (_ssb3) _ssb3.style.display = '';
+          if (_seb3) _seb3.style.display = 'none';
+          if (_stb3) _stb3.style.display = 'none';
+        } else {
+          scheduleStateSync();
         }
-        // else: เครื่องนี้กด startBreak() เอง แต่ leader ยังไม่รู้ (อาจ broadcast หลุด)
-        // → คงนับต่อไป และรอ periodic sync ส่ง breakStartTime ไปอัพเดต leader
       }
       renderNowPlaying();
       renderSongList();
@@ -3308,6 +3456,10 @@ function initRealtime() {
       showToast('✅ ' + (d.by || 'สมาชิก') + ' บันทึกลิสเรียบร้อย');
       _showClipModal();
     })
+    .on('broadcast', { event: 'ping' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
+      _rtTrackRecv('ping');
+    })
     .on('broadcast', { event: 'test_ping' }, function(payload) {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
@@ -3352,7 +3504,6 @@ function getState() {
     breakStarted: _breakStarted,
     breakStartTime: _breakStartTime,
     lastEndedBreakStartTime: _lastEndedBreakStartTime, // proof เบรคล่าสุดที่จบแล้ว
-    endBreakDone: _endBreakDone,
     masterBy: _isExplicitMaster ? (localStorage.getItem('userName') || 'Admin') : _currentMasterName
   };
 }
@@ -3427,8 +3578,10 @@ function _startHeartbeat() {
       return;
     }
     var elapsed = Date.now() - _rtLastActivity;
-    // If no activity for 45 seconds (30s periodic + 15s buffer), channel may be silently dead → reconnect
-    if (elapsed > 45000) {
+    // Send keepalive ping after 20s of inactivity to keep connection fresh
+    if (elapsed > 20000 && elapsed <= 75000) {
+      broadcastEvent('ping', { t: Date.now() });
+    } else if (elapsed > 75000) {
       console.log('[Live-RT] heartbeat: no activity for', Math.round(elapsed/1000), 's — reconnecting...');
       initRealtime();
     }
@@ -4204,7 +4357,13 @@ function ctxAction(action) {
       renderSongList();
       showToast('✓ ยกเลิกเครื่องหมายเพลงขอแล้ว');
       break;
-    case 'remove': removeSongDirect(idx); break;
+    case 'remove':
+      var s = _playlist[idx];
+      if (s) {
+        if (!confirm('ลบ "' + s.name + '" ออกจากลิสต์?')) return;
+        doRemoveSong(idx, s._uid, s.name);
+      }
+      break;
   }
 }
 
@@ -4233,19 +4392,12 @@ function _doMoveSong(from, to) {
   scheduleStateSync();
 }
 
-// ── Called when REMOTE 'remove' broadcast received — no confirm needed ──────────
+// ── Helper to remove song directly and broadcast ──────────
 function removeSongDirect(idx) {
-  var name = _playlist[idx] ? _playlist[idx].name : '';
-  if (!removeSongAtIndex(idx)) return;
-  _modified = true;
-  _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
-  _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
-  _currentUpdatedAt = Date.now();        // อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
-  _lastLocalCurrentChange = Date.now(); // guard สำหรับ current_changed event
-  renderNowPlaying();
-  renderSongList();
-  scheduleStateSync();
-  showToast('ลบ "' + name + '" แล้ว (เครื่องอื่น)');
+  var s = _playlist[idx];
+  if (s) {
+    doRemoveSong(idx, s._uid, s.name);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────
