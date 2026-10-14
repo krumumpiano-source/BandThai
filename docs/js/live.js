@@ -188,6 +188,7 @@ var _date      = _params.get('date') || '';
 var _venue     = _params.get('venue') || '';
 var _timeSlot  = _params.get('timeSlot') || '';
 var _guestToken = _params.get('token') || '';
+var _allDayPlaylists = []; // all playlist history rows for _date
 
 // Default to today if no date in URL
 if (!_date) {
@@ -198,6 +199,26 @@ if (!_date) {
 if (_params.get('guest') === '1') {
   _isGuest = true;
   _bandId  = _params.get('band') || _bandId;
+}
+
+function normTimeSlotString(str) {
+  return (str || '').toString().toLowerCase().replace(/[\s\-_:]/g, '');
+}
+
+function getLiveBackupKey(bandId, date, venue, timeSlot) {
+  var b = bandId || _bandId || '';
+  var d = date || _date || '';
+  var v = (typeof venue !== 'undefined' ? venue : (_venue || '')).trim();
+  var ts = (typeof timeSlot !== 'undefined' ? timeSlot : (_timeSlot || '')).trim();
+  return 'live_backup_' + b + '_' + d + (v ? '_' + v : '') + (ts ? '_' + ts : '');
+}
+
+function getLiveDeletedUidsKey(bandId, date, venue, timeSlot) {
+  var b = bandId || _bandId || '';
+  var d = date || _date || '';
+  var v = (typeof venue !== 'undefined' ? venue : (_venue || '')).trim();
+  var ts = (typeof timeSlot !== 'undefined' ? timeSlot : (_timeSlot || '')).trim();
+  return 'live_deleted_uids_' + b + '_' + d + (v ? '_' + v : '') + (ts ? '_' + ts : '');
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -222,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
   _startHbdTimer();
   acquireWakeLock();
   _updateMasterOuterBtn();
-  document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+  updateVenueLabel();
 
   // ── Break Timer Init ────────────────────────────────────────────
   try {
@@ -247,7 +268,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   // Restore deleted UIDs from this session
   try {
-    var savedDeleted = sessionStorage.getItem('live_deleted_uids_' + _bandId + '_' + _date);
+    var savedDeleted = sessionStorage.getItem(getLiveDeletedUidsKey());
     if (savedDeleted) _deletedUids = JSON.parse(savedDeleted) || {};
   } catch(e) {}
   // Restore timer if page was refreshed mid-break
@@ -363,7 +384,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('guestBadge').style.display = 'inline-block';
     document.getElementById('nudgeBtn').style.display = 'inline-block';
     if (!_bandId || !_date) { showInvalidToken(); return; }
-    document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+    updateVenueLabel();
 
     // ── ตรวจว่าผู้ใช้นี้เป็นสมาชิกวงจริงหรือเปล่า ──
     var storedBand  = localStorage.getItem('bandId')     || '';
@@ -388,7 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
           if (rv.data.date)     _date     = rv.data.date;
           if (rv.data.venue)    _venue    = rv.data.venue;
           if (rv.data.timeSlot) _timeSlot = rv.data.timeSlot;
-          document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+          updateVenueLabel();
           loadPlaylist();
           setupBreakWarning();
           showHintsIfFirstTime();
@@ -571,6 +592,270 @@ function syncPlaylistWithLibrary() {
 }
 
 // ─────────────────────────────────────────────────────────────────
+//  BREAK PLAYLISTS & SWITCHER
+// ─────────────────────────────────────────────────────────────────
+function sortPlaylistsChronologically(rows) {
+  if (!rows || rows.length <= 1) return rows || [];
+  return rows.slice().sort(function(a, b) {
+    var sA = (a.timeSlot || '').trim();
+    var sB = (b.timeSlot || '').trim();
+
+    // 1. Try matching HH:MM (e.g. "18:00" vs "20:00")
+    var timeA = sA.match(/(\d{1,2}):(\d{2})/);
+    var timeB = sB.match(/(\d{1,2}):(\d{2})/);
+    if (timeA && timeB) {
+      var minA = parseInt(timeA[1], 10) * 60 + parseInt(timeA[2], 10);
+      var minB = parseInt(timeB[1], 10) * 60 + parseInt(timeB[2], 10);
+      if (minA < 360) minA += 1440;
+      if (minB < 360) minB += 1440;
+      if (minA !== minB) return minA - minB;
+    }
+
+    // 2. Try matching break number (e.g. "เบรค 1", "เบรค 2")
+    var numA = sA.match(/\d+/);
+    var numB = sB.match(/\d+/);
+    if (numA && numB && !timeA && !timeB) {
+      var nA = parseInt(numA[0], 10);
+      var nB = parseInt(numB[0], 10);
+      if (nA !== nB) return nA - nB;
+    }
+
+    // 3. Fallback to createdAt ASC (first created is Break 1)
+    var cA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    var cB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    if (cA && cB && cA !== cB) return cA - cB;
+
+    return 0;
+  });
+}
+
+function updateVenueLabel() {
+  var vBtn = document.getElementById('venueLabel');
+  if (!vBtn) return;
+  var text = [_venue, _timeSlot].filter(Boolean).join(' · ');
+  if (!text) text = 'Live Mode';
+
+  if (_allDayPlaylists && _allDayPlaylists.length > 1) {
+    vBtn.innerHTML = '🎵 ' + escHtml(text) + ' <span style="font-size:0.75em;opacity:0.85">▾</span>';
+    vBtn.classList.add('has-multiple');
+    vBtn.title = 'มี ' + _allDayPlaylists.length + ' เบรคสำหรับวันนี้ (แตะเพื่อสลับเบรค)';
+    vBtn.style.cursor = 'pointer';
+  } else {
+    vBtn.textContent = '🎵 ' + text;
+    vBtn.classList.remove('has-multiple');
+    vBtn.title = text;
+    vBtn.style.cursor = 'default';
+  }
+}
+
+function getCurrentBreakIndex() {
+  if (!_allDayPlaylists || !_allDayPlaylists.length) return -1;
+  var nTargetSlot = normTimeSlotString(_timeSlot);
+  return _allDayPlaylists.findIndex(function(x) {
+    var slotMatch = (!_timeSlot && !x.timeSlot) ||
+                    (x.timeSlot === _timeSlot) ||
+                    (nTargetSlot && normTimeSlotString(x.timeSlot) === nTargetSlot);
+    var venueMatch = !_venue || (x.venue === _venue);
+    return slotMatch && venueMatch;
+  });
+}
+
+function openBreakPicker() {
+  renderBreakPickerList();
+  var m = document.getElementById('breakPickerModal');
+  if (m) m.classList.add('show');
+}
+
+function closeBreakPicker() {
+  var m = document.getElementById('breakPickerModal');
+  if (m) m.classList.remove('show');
+}
+
+function renderBreakPickerList() {
+  var listEl = document.getElementById('breakPickerList');
+  if (!listEl) return;
+  if (!_allDayPlaylists || _allDayPlaylists.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center;color:var(--text3);padding:24px 0">ไม่พบเบรคอื่นสำหรับวันนี้</div>';
+    return;
+  }
+  var curIdx = getCurrentBreakIndex();
+  listEl.innerHTML = _allDayPlaylists.map(function(pl, i) {
+    var isCurrent = (i === curIdx);
+    var slotLabel = pl.timeSlot || ('เบรคที่ ' + (i + 1));
+    var venueLabel = pl.venue || '';
+    var fullTitle = [venueLabel, slotLabel].filter(Boolean).join(' · ');
+    var count = pl.songs ? pl.songs.length : 0;
+    var previewSongs = (pl.songs || []).slice(0, 3).map(function(s){ return s.name; }).join(', ');
+    if (count > 3) previewSongs += '...';
+
+    return '<div class="break-picker-item' + (isCurrent ? ' active' : '') + '" onclick="onSelectBreakFromPicker(' + i + ')" style="' +
+      'background:' + (isCurrent ? 'rgba(234,179,8,0.12)' : 'var(--bg3)') + ';' +
+      'border:1.5px solid ' + (isCurrent ? 'var(--gold)' : '#333') + ';' +
+      'border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .15s;position:relative">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
+        '<div style="font-weight:700;font-size:0.95rem;color:' + (isCurrent ? 'var(--gold)' : 'var(--text)') + '">🎵 ' + escHtml(fullTitle) + '</div>' +
+        (isCurrent ? '<span style="font-size:0.75rem;background:var(--gold);color:#000;font-weight:700;padding:2px 8px;border-radius:10px">กำลังเล่น ✓</span>' : '') +
+      '</div>' +
+      '<div style="font-size:0.8rem;color:var(--text2)">' + count + ' เพลง' + (previewSongs ? ' · <span style="color:var(--text3)">' + escHtml(previewSongs) + '</span>' : '') + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function onSelectBreakFromPicker(idx) {
+  var curIdx = getCurrentBreakIndex();
+  if (idx === curIdx) {
+    closeBreakPicker();
+    return;
+  }
+  if (_breakStarted) {
+    if (!confirm('กำลังจับเวลาเบรคปัจจุบันอยู่ ต้องการสลับเบรคหรือไม่?')) return;
+  }
+  closeBreakPicker();
+  switchToBreak(idx);
+}
+
+function refreshBreakPlaylists() {
+  if (!_date || !_bandId) return;
+  showToast('🔄 กำลังโหลดรายการเบรค...');
+  apiCall('getPlaylistHistoryByDate', { bandId: _bandId, date: _date }, function(r) {
+    if (r && r.success && r.data) {
+      _allDayPlaylists = sortPlaylistsChronologically(r.data);
+      renderBreakPickerList();
+      updateVenueLabel();
+      showToast('✅ อัปเดตรายการเบรคแล้ว (' + _allDayPlaylists.length + ' เบรค)');
+    } else {
+      showToast('⚠️ โหลดไม่สำเร็จ');
+    }
+  });
+}
+
+function switchToBreak(idx, autoStart, remoteTriggered) {
+  if (!_allDayPlaylists || !_allDayPlaylists[idx]) {
+    console.warn('[Live] switchToBreak: invalid index', idx);
+    return;
+  }
+  var targetRow = _allDayPlaylists[idx];
+  console.log('[Live] Switching to break:', idx, targetRow.timeSlot, targetRow.venue);
+
+  // Stop break timer if running
+  if (_breakTimerIval) { clearInterval(_breakTimerIval); _breakTimerIval = null; }
+  _breakStarted = false;
+  _breakStartedByMe = false;
+  _breakStartTime = 0;
+  _endBreakDone = false;
+  try {
+    sessionStorage.removeItem('_breakStartTime');
+    sessionStorage.removeItem('_breakStartedByMe');
+  } catch(e) {}
+  var _tbar = document.getElementById('breakTimerBar');
+  var _sbtn = document.getElementById('startBreakBtn');
+  var _ebtn = document.getElementById('endBreakBtn');
+  if (_tbar) _tbar.style.display = 'none';
+  if (_sbtn) _sbtn.style.display = '';
+  if (_ebtn) _ebtn.style.display = 'none';
+
+  // If this device initiated switch, broadcast on the OLD channel first so other members follow!
+  if (!remoteTriggered && _channel) {
+    broadcastEvent('break_switched', {
+      breakIndex: idx,
+      venue: targetRow.venue || '',
+      timeSlot: targetRow.timeSlot || '',
+      by: localStorage.getItem('userName') || ''
+    });
+  }
+
+  // Update venue and timeSlot
+  _venue = targetRow.venue || '';
+  _timeSlot = targetRow.timeSlot || '';
+
+  // Update URL search parameters without reloading page
+  try {
+    var u = new URL(window.location.href);
+    if (_venue) u.searchParams.set('venue', _venue); else u.searchParams.delete('venue');
+    if (_timeSlot) u.searchParams.set('timeSlot', _timeSlot); else u.searchParams.delete('timeSlot');
+    window.history.replaceState({}, '', u.toString());
+  } catch(e) {}
+
+  // Remember last active break slot in localStorage for this date
+  try {
+    localStorage.setItem('live_last_slot_' + _bandId + '_' + _date, _timeSlot);
+  } catch(e) {}
+
+  // Reset playlist state for the new break
+  _current = 0;
+  _modified = false;
+  _playlistVersion = 0;
+  _deletedUids = {};
+  _syncReceived = false;
+  _undoStack = [];
+  _updateUndoBtn();
+
+  // Load songs from the target row
+  _playlist = (targetRow.songs || []).map(function(s) {
+    var name   = s.name || '';
+    var key    = s.key || '';
+    var bpm    = s.bpm || 0;
+    var singer = s.singer || '';
+    var artist = s.artist || '';
+    var id     = s.id || s.songId || '';
+
+    if (_allSongsLoaded && _allSongs.length > 0) {
+      var match = findBestSongMatch({id: id, name: name, singer: singer, key: key}, _allSongs);
+      if (match) {
+        if (match.bpm) bpm = match.bpm;
+        if (match.key && (!s._key || s._key === s.key)) key = match.key;
+        if (match.singer && !singer) singer = match.singer;
+        if (match.artist) artist = match.artist;
+        if (match.id) id = match.id;
+      }
+    }
+
+    return {
+      _uid: s._uid || generateUid(),
+      id: id, name: name, key: key, bpm: bpm,
+      singer: singer, artist: artist,
+      _key: s._key || key, _note: s._note || '', _skipped: !!s._skipped,
+      _isRequest: !!s._isRequest, _isRequestTime: s._isRequestTime || '',
+      _isEncore: !!s._isEncore
+    };
+  });
+
+  normalizePlaylistState();
+  updateVenueLabel();
+  renderSongList();
+  renderNowPlaying();
+
+  // Switch to the Realtime channel for this break
+  initRealtime();
+
+  // Pre-generate guest QR token for the new break
+  preGenerateToken();
+
+  var dispLabel = [_venue, _timeSlot].filter(Boolean).join(' · ') || ('เบรค ' + (idx + 1));
+  showToast('🎵 เปลี่ยนเป็น ' + dispLabel + ' (' + _playlist.length + ' เพลง)');
+
+  if (autoStart) {
+    setTimeout(function() {
+      startBreak();
+    }, 300);
+  }
+}
+
+function goToNextBreak() {
+  var curIdx = getCurrentBreakIndex();
+  var nextIdx = curIdx + 1;
+  if (!_allDayPlaylists || !_allDayPlaylists[nextIdx]) {
+    nextIdx = (_allDayPlaylists || []).findIndex(function(pl, i) { return i !== curIdx; });
+  }
+  if (nextIdx >= 0 && _allDayPlaylists[nextIdx]) {
+    closeClipOnly();
+    switchToBreak(nextIdx);
+  } else {
+    showToast('ไม่มีเบรคถัดไป');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 //  LOAD PLAYLIST
 // ─────────────────────────────────────────────────────────────────
 function loadPlaylist() {
@@ -581,12 +866,19 @@ function loadPlaylist() {
   // Preload band song library in parallel so songs have updated key/bpm/singer
   preloadBandSongs();
 
-  var bkKey = 'live_backup_' + _bandId + '_' + _date;
+  var bkKey = getLiveBackupKey();
   try {
     var bkData = localStorage.getItem(bkKey);
+    // If not found with exact venue/timeSlot, ONLY try global fallback if NEITHER venue nor timeSlot was specified in URL
+    if (!bkData && !_venue && !_timeSlot) {
+      bkData = localStorage.getItem('live_backup_' + _bandId + '_' + _date);
+    }
     if (bkData) {
       var bk = JSON.parse(bkData);
-      if (bk.playlist && Array.isArray(bk.playlist) && bk.playlist.length > 0) {
+      // Double check: if URL specified venue/timeSlot, strictly require match
+      var bkVenueMatch = !_venue ? true : !!(bk.venue && bk.venue === _venue);
+      var bkSlotMatch = !_timeSlot ? true : !!(bk.timeSlot && normTimeSlotString(bk.timeSlot) === normTimeSlotString(_timeSlot));
+      if (bkVenueMatch && bkSlotMatch && bk.playlist && Array.isArray(bk.playlist) && bk.playlist.length > 0) {
         console.log('[Live] loaded from local backup');
         _playlist = bk.playlist.filter(function(s) {
           return !s._uid || !_deletedUids[s._uid];
@@ -598,7 +890,6 @@ function loadPlaylist() {
       }
     }
   } catch(e) {}
-
 
   // Timeout: ถ้า API ไม่ตอบใน 8 วิ → แสดง waiting
   var _loadTimeout = setTimeout(function() {
@@ -612,52 +903,93 @@ function loadPlaylist() {
     if (_loadTimeout) { clearTimeout(_loadTimeout); _loadTimeout = null; }
     if (r && !r.success) console.warn('[Live] API error:', r.message);
 
-    // CRITICAL GUARD: If we already received state from realtime or user already modified playlist, don't overwrite!
-    if (_syncReceived || _modified || _playlistVersion > 0 || _playlist.length > 0) {
+    var rawRows = (r && r.success && r.data) ? r.data : [];
+    console.log('[Live] playlist rows found:', rawRows.length);
+    _allDayPlaylists = sortPlaylistsChronologically(rawRows);
+
+    // CRITICAL GUARD: Only skip DB overwrite if we ALREADY received remote state or user made live modifications!
+    // Local backup preview does NOT count as a live modification.
+    if (_syncReceived || _modified || _playlistVersion > 0) {
       console.log('[Live] Keeping active live playlist, skipping DB overwrite');
+      updateVenueLabel();
       return;
     }
 
-    var rows = (r && r.success && r.data) ? r.data : [];
-    console.log('[Live] playlist rows found:', rows.length);
-    // filter by venue+timeSlot if provided
     var row = null;
-    if (_venue || _timeSlot) {
-      // Exact match first
-      row = rows.find(function(x) {
-        return x.venue === _venue && x.timeSlot === _timeSlot;
+    var targetSlot = (_timeSlot || '').trim();
+    var targetVenue = (_venue || '').trim();
+    var targetSlotNorm = normTimeSlotString(targetSlot);
+
+    if (targetVenue && targetSlot) {
+      // 1. Exact venue + exact slot
+      row = _allDayPlaylists.find(function(x) {
+        return (x.venue || '').trim() === targetVenue && (x.timeSlot || '').trim() === targetSlot;
       });
-      // Partial match: venue only
-      if (!row && _venue) {
-        row = rows.find(function(x) { return x.venue === _venue; });
-      }
-      // Partial match: timeSlot only
-      if (!row && _timeSlot) {
-        row = rows.find(function(x) { return x.timeSlot === _timeSlot; });
-      }
-      // No match — do not silently load wrong playlist; wait for realtime sync
+      // 2. Exact venue + normalized slot
       if (!row) {
-        console.warn('[Live] No matching playlist for venue/timeSlot, waiting for realtime sync');
-        if (_playlist.length === 0) showWaitingForSync();
-        return;
+        row = _allDayPlaylists.find(function(x) {
+          return (x.venue || '').trim() === targetVenue && normTimeSlotString(x.timeSlot) === targetSlotNorm;
+        });
       }
-    } else {
-      row = rows[0];
+      // 3. Normalized slot only (if venue empty in DB or slightly different)
+      if (!row) {
+        row = _allDayPlaylists.find(function(x) {
+          return normTimeSlotString(x.timeSlot) === targetSlotNorm;
+        });
+      }
+    } else if (targetSlot) {
+      // Slot provided, no venue
+      // 1. Exact slot
+      row = _allDayPlaylists.find(function(x) {
+        return (x.timeSlot || '').trim() === targetSlot;
+      });
+      // 2. Normalized slot
+      if (!row) {
+        row = _allDayPlaylists.find(function(x) {
+          return normTimeSlotString(x.timeSlot) === targetSlotNorm;
+        });
+      }
+    } else if (targetVenue) {
+      // Venue provided, no slot
+      // 1. Exact venue
+      row = _allDayPlaylists.find(function(x) {
+        return (x.venue || '').trim() === targetVenue;
+      });
     }
+
+    // Fallback: If neither venue nor slot was specified in URL
+    if (!row && !targetVenue && !targetSlot) {
+      var lastSlot = localStorage.getItem('live_last_slot_' + _bandId + '_' + _date);
+      if (lastSlot) {
+        var nLast = normTimeSlotString(lastSlot);
+        row = _allDayPlaylists.find(function(x) {
+          return normTimeSlotString(x.timeSlot) === nLast;
+        });
+      }
+      if (!row) {
+        row = _allDayPlaylists[0];
+      }
+    }
+
     if (!row || !row.songs || row.songs.length === 0) {
-      // ไม่พบใน DB — แสดง loading และรอรับ state จากสมาชิกผ่าน realtime
-      console.log('[Live] No playlist in DB, waiting for realtime sync');
+      console.log('[Live] No matching playlist in DB, waiting for realtime sync');
       if (_playlist.length === 0) showWaitingForSync();
+      updateVenueLabel();
       return;
     }
+
     // Update venue/timeSlot from loaded row if not specified in URL
+    var prevVenue = _venue;
+    var prevTimeSlot = _timeSlot;
     if (!_venue && row.venue) {
       _venue = row.venue;
-      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
     }
     if (!_timeSlot && row.timeSlot) {
       _timeSlot = row.timeSlot;
-      document.getElementById('venueLabel').textContent = [_venue, _timeSlot].filter(Boolean).join(' · ');
+    }
+    updateVenueLabel();
+    if (_venue !== prevVenue || _timeSlot !== prevTimeSlot) {
+      initRealtime();
     }
     _playlist = row.songs.map(function(s) {
       var name = s.name || '';
@@ -918,9 +1250,11 @@ function renderNextPreview() {
 function renderSongList() {
   if (_bandId && _date) {
     try {
-      localStorage.setItem('live_backup_' + _bandId + '_' + _date, JSON.stringify({
+      localStorage.setItem(getLiveBackupKey(), JSON.stringify({
         playlist: _playlist,
         current: _current,
+        venue: _venue,
+        timeSlot: _timeSlot,
         ts: Date.now()
       }));
     } catch(e) {}
@@ -1089,7 +1423,7 @@ function doRemoveSong(idx, uid, name) {
   if (removedUid) {
     _deletedUids[removedUid] = Date.now();
     try {
-      sessionStorage.setItem('live_deleted_uids_' + _bandId + '_' + _date, JSON.stringify(_deletedUids));
+      sessionStorage.setItem(getLiveDeletedUidsKey(), JSON.stringify(_deletedUids));
     } catch(e) {}
   }
 
@@ -2493,6 +2827,21 @@ function _doSaveKeyBpm(song, key, bpm, newGender) {
 // ─────────────────────────────────────────────────────────────────
 function startBreak() {
   if (_isGuest) return;
+  // If a break just ended on this device, and a next break exists in today's playlists, offer to switch
+  if (_lastEndedBreakStartTime > 0 && _allDayPlaylists && _allDayPlaylists.length > 1) {
+    var curIdx = getCurrentBreakIndex();
+    if (curIdx >= 0 && curIdx < _allDayPlaylists.length - 1) {
+      var nextRow = _allDayPlaylists[curIdx + 1];
+      var nextSlot = nextRow.timeSlot || ('เบรค ' + (curIdx + 2));
+      var nextCount = nextRow.songs ? nextRow.songs.length : 0;
+      var ok = confirm('เบรคเดิมเพิ่งจบไป\n\nต้องการเริ่ม ' + nextSlot + ' (' + nextCount + ' เพลง) เลยหรือไม่?\n\n[OK] เพื่อเริ่ม ' + nextSlot + '\n[Cancel] เพื่อเล่นเบรคเดิมต่อ');
+      if (ok) {
+        _lastEndedBreakStartTime = 0;
+        switchToBreak(curIdx + 1, true);
+        return;
+      }
+    }
+  }
   _endBreakDone            = false;
   _breakStarted            = true;
   _breakStartedByMe        = true;  // this device pressed the button
@@ -2741,6 +3090,22 @@ function _showClipModal(overrideList, isReview) {
     section.style.display = 'none';
   }
 
+  // Next Break button logic in clip modal
+  var nextActionWrap = document.getElementById('nextBreakActionWrap');
+  var nextBreakBtn = document.getElementById('nextBreakBtn');
+  if (nextActionWrap && nextBreakBtn) {
+    var curIdx = getCurrentBreakIndex();
+    var nextRow = (_allDayPlaylists && curIdx >= 0 && curIdx < _allDayPlaylists.length - 1) ? _allDayPlaylists[curIdx + 1] : null;
+    if (nextRow && !isReview) {
+      var nextSlot = nextRow.timeSlot || ('เบรค ' + (curIdx + 2));
+      var nextCount = nextRow.songs ? nextRow.songs.length : 0;
+      nextBreakBtn.textContent = '⏭ ไปเบรคถัดไป (' + nextSlot + ' · ' + nextCount + ' เพลง)';
+      nextActionWrap.style.display = 'block';
+    } else {
+      nextActionWrap.style.display = 'none';
+    }
+  }
+
   document.getElementById('clipModal').classList.add('show');
   // ถ้าเปิดจากปุ่ม "📋 รายการ" (isReview) → ปุ่มเป็น "ปิด" แทน "ปิด & ออก"
   var exitBtn = document.getElementById('clipCloseBtn');
@@ -2911,7 +3276,7 @@ function initRealtime() {
   var normTimeSlot = (_timeSlot || '').trim();
   var channelName = 'live-' + _bandId + '-' + _date
     + (normVenue ? '-' + _sanitizeChannelPart(normVenue) : '')
-    + (normTimeSlot ? '-' + normTimeSlot.replace(/[^0-9]/g, '') : '');
+    + (normTimeSlot ? '-' + _sanitizeChannelPart(normTimeSlot) : '');
   _channelName = channelName;
   console.log('[Live-RT] channel:', channelName, 'bandId:', _bandId, 'guest:', _isGuest);
   _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
@@ -3464,6 +3829,25 @@ function initRealtime() {
       if (isOwnBroadcast(payload)) return;
       var d = payload.payload || {};
       showToast('🔔 Ping จาก ' + (d.from || 'unknown') + ' — Realtime ทำงานปกติ!');
+    })
+    .on('broadcast', { event: 'break_switched' }, function(payload) {
+      if (isOwnBroadcast(payload)) return;
+      var d = payload.payload || {};
+      var targetLabel = [d.venue, d.timeSlot].filter(Boolean).join(' · ') || 'เบรคถัดไป';
+      showToast('⏭ เครื่องอื่นสลับไป: ' + targetLabel);
+      if (typeof d.breakIndex === 'number' && _allDayPlaylists && _allDayPlaylists[d.breakIndex]) {
+        switchToBreak(d.breakIndex, false, true);
+      } else if (d.timeSlot || d.venue) {
+        var nTarget = normTimeSlotString(d.timeSlot);
+        var fIdx = (_allDayPlaylists || []).findIndex(function(x) {
+          var sMatch = !d.timeSlot || x.timeSlot === d.timeSlot || normTimeSlotString(x.timeSlot) === nTarget;
+          var vMatch = !d.venue || x.venue === d.venue;
+          return sMatch && vMatch;
+        });
+        if (fIdx >= 0) {
+          switchToBreak(fIdx, false, true);
+        }
+      }
     })
     .subscribe(function(status) {
       var ind = document.getElementById('realtimeIndicator');

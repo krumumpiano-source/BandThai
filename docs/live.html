@@ -13,7 +13,7 @@
   <script src="js/config.js?v=20260930b"></script>
   <script src="js/supabase-api.js?v=20260930b"></script>
   <script src="js/key-utils.js"></script>
-  <link rel="stylesheet" href="css/live.css?v=20260930b">
+  <link rel="stylesheet" href="css/live.css?v=20261014b">
   <link rel="manifest" href="manifest.json">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -57,7 +57,7 @@
       <div id="realtimeIndicator" title="แตะเพื่อซิงค์ข้อมูลกับเครื่องอื่น"></div>
       <div id="songCounter">- / -</div>
     </div>
-    <div id="venueLabel"></div>
+    <button id="venueLabel" type="button" onclick="openBreakPicker()" title="เลือกเบรค"></button>
     <div class="tb-right">
       <span id="guestBadge" class="guest-badge" style="display:none">👤 Guest</span>
       <button id="showClipBtn" onclick="showLastClip()" title="ดูรายการเพลงล่าสุด" style="display:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap">📋 รายการ</button>
@@ -214,6 +214,12 @@
       <button class="modal-btn primary" id="saveToLibBtn" onclick="saveRequestsToLibrary()">📥 เพิ่มลงคลังเพลง</button>
     </div>
 
+    <div id="nextBreakActionWrap" style="display:none;margin-top:14px">
+      <button class="modal-btn primary" id="nextBreakBtn" onclick="goToNextBreak()" style="width:100%;background:#22c55e;color:#000;font-weight:700;font-size:0.95rem;padding:12px;border-radius:10px;box-shadow:0 0 12px rgba(34,197,94,0.3)">
+        ⏭ ไปเบรคถัดไป
+      </button>
+    </div>
+
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn secondary" id="clipCloseBtn" onclick="closeClipAndExit()">ปิด & ออก</button>
       <button class="modal-btn secondary" id="clipJustCloseBtn" onclick="closeClipOnly()" style="display:none">ปิด</button>
@@ -291,6 +297,21 @@
     <div id="insertPosList" style="max-height:50vh;overflow-y:auto;margin:0 -8px"></div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="modal-btn secondary" onclick="closeInsertPos()">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BREAK PICKER MODAL ── -->
+<div class="modal-backdrop" id="breakPickerModal">
+  <div class="modal-sheet" style="max-width:440px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h3 style="margin:0;font-size:1.1rem;color:var(--gold)">🎵 เลือกเบรควันนี้</h3>
+      <button class="modal-btn secondary" style="min-width:0;padding:4px 10px;font-size:0.85rem;border-radius:8px" onclick="closeBreakPicker()">✕</button>
+    </div>
+    <div id="breakPickerList" style="max-height:60vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+    <div class="modal-actions" style="margin-top:14px;justify-content:space-between">
+      <button class="modal-btn secondary" style="min-width:0;padding:6px 14px;font-size:0.82rem" onclick="refreshBreakPlaylists()">🔄 รีเฟรช</button>
+      <button class="modal-btn secondary" onclick="closeBreakPicker()">ปิด</button>
     </div>
   </div>
 </div>
@@ -404,6 +425,6 @@
   </div>
 </div>
 
-<script src="js/live.js?v=20261012c"></script>
+<script src="js/live.js?v=20261014b"></script>
 </body>
 </html>

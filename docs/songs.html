@@ -1244,7 +1244,12 @@ function plGetSlotsForDate() {
 function plEntryMatches(entry, venueName, timeSlot) {
   if (!entry) return false;
   if (venueName && entry.venue !== venueName) return false;
-  if (timeSlot && entry.timeSlot !== timeSlot) return false;
+  if (timeSlot) {
+    if (entry.timeSlot === timeSlot) return true;
+    var n1 = (entry.timeSlot || '').toString().toLowerCase().replace(/[\s\-_:]/g, '');
+    var n2 = (timeSlot || '').toString().toLowerCase().replace(/[\s\-_:]/g, '');
+    if (n1 !== n2) return false;
+  }
   return true;
 }
 
@@ -1667,23 +1672,25 @@ function autoLoadPlaylistForSlot() {
   if (!timeEl || !timeEl.value || timeEl.value === '__custom__' || !_plExistingForDate.length) return;
   var slot = timeEl.value;
   var idx = plFindExistingIndex(plGetSelectedVenue(), slot);
-  if (idx === -1) return; // no existing playlist for this slot
-  if (playlistData.length > 0) return; // don't overwrite if user already has songs
-  // Auto-load silently
-  playlistData = (_plExistingForDate[idx].songs || []).map(function(s) {
-    return enrichSongFromBandLibrary({
-      name: s.name || '',
-      key: s.key || '',
-      bpm: s.bpm || 0,
-      singer: s.singer || '',
-      artist: s.artist || '',
-      tags: s.tags || '',
-      transpose: 0,
-      mode: 'major'
-    });
-  });
-  renderPlaylist();
-  showSongsAlert('✅ โหลดลิสของสล็อตนี้อัตโนมัติ (' + playlistData.length + ' เพลง)');
+  if (idx !== -1) {
+    if (playlistData.length > 0) {
+      var existingCount = (_plExistingForDate[idx].songs || []).length;
+      if (confirm('สล็อต "' + slot + '" มีลิสที่บันทึกไว้แล้ว (' + existingCount + ' เพลง)\n\nต้องการโหลดลิสของสล็อตนี้ขึ้นมาแสดงแทนลิสปัจจุบันหรือไม่?')) {
+        loadExistingPlaylist(idx, false);
+      }
+      return;
+    }
+    // Auto-load silently if playlist is empty
+    loadExistingPlaylist(idx, true);
+    return;
+  }
+  // idx === -1: no existing playlist for this slot
+  if (playlistData.length > 0) {
+    if (confirm('คุณเปลี่ยนมาที่สล็อต "' + slot + '" (ยังไม่มีลิสเพลง)\n\nต้องการล้างลิสเดิมเพื่อเริ่มจัดเพลงสำหรับเบรคใหม่นี้หรือไม่?')) {
+      playlistData = [];
+      renderPlaylist();
+    }
+  }
 }
 
 window.onload = function() {
@@ -2393,7 +2400,10 @@ function goLiveMode() {
         artist: s.artist || ''
       };
     });
-    localStorage.setItem('live_backup_' + bandId + '_' + date, JSON.stringify({ current: 0, playlist: backupSongs }));
+    var bkKey = 'live_backup_' + bandId + '_' + date +
+      (venue ? '_' + venue.trim() : '') +
+      (slot ? '_' + slot.trim() : '');
+    localStorage.setItem(bkKey, JSON.stringify({ current: 0, playlist: backupSongs, venue: venue, timeSlot: slot }));
   }
 
   // บันทึกลิสปัจจุบันลง DB อัตโนมัติก่อนเข้า Live Mode เพื่อให้ Live Mode ได้ข้อมูลเพลงล่าสุดตรงกันทันที
@@ -3006,7 +3016,9 @@ function checkOverwriteAndSave(actionFn) {
 // ── Patch goLiveMode, copyPlaylist and saveHistoryManual (after they are defined) ──
 var _origGoLiveMode = goLiveMode;
 goLiveMode = function() {
-  _checkDurBeforeAction('เข้า Live Mode', function(){ _origGoLiveMode(); });
+  _checkDurBeforeAction('เข้า Live Mode', function(){
+    checkOverwriteAndSave(_origGoLiveMode);
+  });
 };
 var _origCopyPlaylist = copyPlaylist;
 copyPlaylist = function() {
