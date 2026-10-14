@@ -37,6 +37,7 @@ var _lastLocalModificationTime = 0;
 var _lastScrolledCurrent = -1;
 var _current   = 0;    // index of now playing
 var _modified  = false;
+var _userMadeLiveEdits = false; // true = user explicitly added/deleted/reordered songs on this device in this session
 var _channel   = null; // Supabase Broadcast
 var _bandId    = localStorage.getItem('bandId') || '';
 var _joinedAt  = Date.now();
@@ -784,6 +785,7 @@ function switchToBreak(idx, autoStart, remoteTriggered) {
   // Reset playlist state for the new break
   _current = 0;
   _modified = false;
+  _userMadeLiveEdits = false;
   _playlistVersion = 0;
   _deletedUids = {};
   _syncReceived = false;
@@ -907,14 +909,6 @@ function loadPlaylist() {
     console.log('[Live] playlist rows found:', rawRows.length);
     _allDayPlaylists = sortPlaylistsChronologically(rawRows);
 
-    // CRITICAL GUARD: Only skip DB overwrite if we ALREADY received remote state or user made live modifications!
-    // Local backup preview does NOT count as a live modification.
-    if (_syncReceived || _modified || _playlistVersion > 0) {
-      console.log('[Live] Keeping active live playlist, skipping DB overwrite');
-      updateVenueLabel();
-      return;
-    }
-
     var row = null;
     var targetSlot = (_timeSlot || '').trim();
     var targetVenue = (_venue || '').trim();
@@ -991,6 +985,13 @@ function loadPlaylist() {
     if (_venue !== prevVenue || _timeSlot !== prevTimeSlot) {
       initRealtime();
     }
+
+    // CRITICAL GUARD: Only skip DB overwrite if user on THIS device made explicit live edits in this session!
+    if (_userMadeLiveEdits) {
+      console.log('[Live] User made active live edits, skipping DB overwrite');
+      return;
+    }
+
     _playlist = row.songs.map(function(s) {
       var name = s.name || '';
       var key = s.key || '';
@@ -1019,6 +1020,10 @@ function loadPlaylist() {
     }).filter(function(s) {
       return !s._uid || !_deletedUids[s._uid];
     });
+
+    _syncReceived = false;
+    _modified = false;
+    _playlistVersion = 0;
     _current = 0;
     normalizePlaylistState();
     renderSongList();
@@ -1429,6 +1434,7 @@ function doRemoveSong(idx, uid, name) {
 
   if (!removeSongAtIndex(targetIdx)) return;
   _modified = true;
+  _userMadeLiveEdits = true;
   _lastLocalDeleteTime = Date.now();    // บันทึกเวลาที่ลบเพลงในเครื่องนี้
   _playlistVersion++;                    // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   _currentUpdatedAt = Date.now();        // อัปเดต timestamp ป้องกัน state_sync เขียนทับ _current
@@ -2248,6 +2254,7 @@ function confirmInsertAt(pos) {
 
   _playlist.splice(pos, 0, song);
   _modified = true;
+  _userMadeLiveEdits = true;
   _lastLocalAddTime = Date.now(); // บันทึกเวลาที่เพิ่มเพลงในเครื่องนี้
   _playlistVersion++;             // เพิ่ม version ทุกครั้งที่ playlist เปลี่ยน
   broadcastEvent('request_song', { song: song, insertAt: pos });
@@ -2433,6 +2440,7 @@ function onDragEnd(e) {
     else if (from < to && _current > from && _current <= to) _current--;
     else if (from > to && _current < from && _current >= to) _current++;
     _modified = true;
+    _userMadeLiveEdits = true;
     _playlistVersion++;
     renderNowPlaying();
     renderSongList();
@@ -3260,10 +3268,17 @@ function initRealtime() {
     setTimeout(initRealtime, 500);
     return;
   }
-  // Debounce: ถ้ามี call ที่รออยู่ใน queue แล้ว ไม่ต้องเริ่มใหม่
-  if (_initRealtimePending) { return; }
+  // Normalize venue/timeSlot for consistent channel naming
+  var normVenue = (_venue || '').trim();
+  var normTimeSlot = (_timeSlot || '').trim();
+  var channelName = 'live-' + _bandId + '-' + _date
+    + (normVenue ? '-' + _sanitizeChannelPart(normVenue) : '')
+    + (normTimeSlot ? '-' + _sanitizeChannelPart(normTimeSlot) : '');
+
+  // Debounce: Only if already connecting/connected to this EXACT channel
+  if (_channel && _channelName === channelName && _initRealtimePending) { return; }
   _initRealtimePending = true;
-  setTimeout(function() { _initRealtimePending = false; }, 800);
+  setTimeout(function() { _initRealtimePending = false; }, 600);
   _channelStatus = '';
   var ind = document.getElementById('realtimeIndicator');
   if (ind) ind.className = 'connecting';
@@ -3271,12 +3286,7 @@ function initRealtime() {
   if (_channel) { try { _channel.unsubscribe(); } catch(e) {} _channel = null; }
   // Stop heartbeat timer
   if (_rtHeartbeatTimer) { clearInterval(_rtHeartbeatTimer); _rtHeartbeatTimer = null; }
-  // Normalize venue/timeSlot for consistent channel naming
-  var normVenue = (_venue || '').trim();
-  var normTimeSlot = (_timeSlot || '').trim();
-  var channelName = 'live-' + _bandId + '-' + _date
-    + (normVenue ? '-' + _sanitizeChannelPart(normVenue) : '')
-    + (normTimeSlot ? '-' + _sanitizeChannelPart(normTimeSlot) : '');
+
   _channelName = channelName;
   console.log('[Live-RT] channel:', channelName, 'bandId:', _bandId, 'guest:', _isGuest);
   _channel = window._sb.channel(channelName, { config: { broadcast: { self: false } } });
@@ -3613,6 +3623,16 @@ function initRealtime() {
       
       if (!d.playlist || d.playlist.length === 0) return;
 
+      // Guard: Reject state_sync from different break or venue!
+      if (d.timeSlot && _timeSlot && normTimeSlotString(d.timeSlot) !== normTimeSlotString(_timeSlot)) {
+        console.log('[Live-RT] Ignored state_sync for different timeSlot:', d.timeSlot, 'vs local:', _timeSlot);
+        return;
+      }
+      if (d.venue && _venue && d.venue.trim() !== _venue.trim()) {
+        console.log('[Live-RT] Ignored state_sync for different venue:', d.venue, 'vs local:', _venue);
+        return;
+      }
+
       // Cancel retry timer on first sync
       var isFirstSync = !_syncReceived;
       if (!_syncReceived) {
@@ -3880,6 +3900,8 @@ function initRealtime() {
 
 function getState() {
   return {
+    venue: _venue,
+    timeSlot: _timeSlot,
     playlist: _playlist,
     current: _current,
     currentUpdatedAt: _currentUpdatedAt,
