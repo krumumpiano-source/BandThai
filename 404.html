@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BandThai ย้ายไปที่อยู่ใหม่</title>
+<meta name="robots" content="noindex">
+<script>
+(function(){
+  var NEW = 'https://bandthai.pages.dev/';
+  var p = location.pathname.replace(/^\/BandThai\/?/i, '');
+  if (p === 'index.html') p = '';
+  var target = NEW + p + location.search + location.hash;
+  location.replace(target);
+})();
+</script>
+<style>body{font-family:sans-serif;background:#111;color:#eee;text-align:center;padding:40px}a{color:#f6ad55}</style>
+</head><body>
+<h2>BandThai ย้ายไปที่อยู่ใหม่แล้ว</h2>
+<p>กำลังพาไปที่ <a id="go" href="https://bandthai.pages.dev/">bandthai.pages.dev</a> ...</p>
+<p>ถ้าติดตั้งแอปไว้ในมือถือ กรุณาเปิดลิงก์ใหม่แล้วกด "เพิ่มไปยังหน้าจอหลัก" อีกครั้ง</p>
+</body></html>
